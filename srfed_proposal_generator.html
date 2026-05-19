@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SRFed Proposal Generator</title>
+<style>
+  :root {
+    --blue: #1F4E79;
+    --mid-blue: #2E75B6;
+    --light-blue: #BDD7EE;
+    --pale: #EAF2FA;
+    --white: #ffffff;
+    --gray: #f4f5f7;
+    --border: #d0d7de;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --success: #166534;
+    --success-bg: #dcfce7;
+    --warn: #92400e;
+    --warn-bg: #fef3c7;
+    --error: #991b1b;
+    --error-bg: #fee2e2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--blue);
+    color: white;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .app-header .logo-text { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+  .app-header .tagline { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+  .header-left { display: flex; flex-direction: column; }
+  .header-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── CARDS ── */
+  .card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--blue);
+    color: white;
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-header .icon { font-size: 16px; }
+  .card-body { padding: 20px; }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 2px dashed var(--mid-blue);
+    border-radius: 8px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--pale);
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--blue);
+    background: var(--light-blue);
+    transform: scale(1.01);
+  }
+  .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-zone .dz-icon { font-size: 36px; margin-bottom: 12px; }
+  .drop-zone .dz-title { font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+  .drop-zone .dz-sub { font-size: 13px; color: var(--muted); }
+
+  /* ── FILE LIST ── */
+  .file-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--pale);
+    border: 1px solid var(--light-blue);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .file-item .file-icon { font-size: 18px; flex-shrink: 0; }
+  .file-item .file-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item .file-size { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+  .file-item .file-remove { cursor: pointer; color: var(--muted); font-size: 16px; flex-shrink: 0; }
+  .file-item .file-remove:hover { color: var(--error); }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--mid-blue);
+    box-shadow: 0 0 0 3px rgba(46,117,182,0.1);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  /* ── CHECKBOXES ── */
+  .volumes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .vol-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .vol-check:hover { border-color: var(--mid-blue); background: var(--pale); }
+  .vol-check input[type=checkbox] { accent-color: var(--blue); width: 16px; height: 16px; }
+  .vol-check.checked { border-color: var(--mid-blue); background: var(--pale); font-weight: 600; color: var(--blue); }
+
+  /* ── BUTTON ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    letter-spacing: .3px;
+  }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover:not(:disabled) { background: #163c5e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31,78,121,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: white; color: var(--blue); border: 1.5px solid var(--mid-blue); }
+  .btn-secondary:hover { background: var(--pale); }
+  .btn-sm { padding: 7px 16px; font-size: 13px; }
+  .btn-block { width: 100%; justify-content: center; }
+
+  /* ── STATUS / PROGRESS ── */
+  .status-bar {
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .status-bar.info    { background: var(--pale); border: 1px solid var(--light-blue); color: var(--blue); }
+  .status-bar.success { background: var(--success-bg); border: 1px solid #86efac; color: var(--success); }
+  .status-bar.warn    { background: var(--warn-bg); border: 1px solid #fcd34d; color: var(--warn); }
+  .status-bar.error   { background: var(--error-bg); border: 1px solid #fca5a5; color: var(--error); }
+  .status-bar .status-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .status-bar .status-text { flex: 1; }
+  .status-bar .status-title { font-weight: 700; margin-bottom: 4px; }
+
+  .progress-wrap { margin-top: 12px; }
+  .progress-bar { height: 6px; background: var(--light-blue); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--mid-blue); border-radius: 3px; transition: width 0.4s ease; }
+  .progress-steps { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+  .progress-step { font-size: 13px; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .progress-step.done { color: var(--success); }
+  .progress-step.active { color: var(--blue); font-weight: 600; }
+  .step-icon { width: 18px; text-align: center; }
+
+  /* ── DOWNLOAD SECTION ── */
+  .downloads { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .download-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: box-shadow 0.15s;
+  }
+  .download-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .download-left { display: flex; align-items: center; gap: 10px; }
+  .download-icon { font-size: 28px; }
+  .download-name { font-weight: 600; font-size: 14px; }
+  .download-desc { font-size: 12px; color: var(--muted); }
+
+  /* ── LOG ── */
+  .log-box {
+    background: #0d1117;
+    color: #7ee787;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 16px;
+  }
+  .log-box .log-line { margin-bottom: 2px; }
+  .log-box .log-line.err { color: #f85149; }
+  .log-box .log-line.warn { color: #e3b341; }
+
+  /* ── SPINNER ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+  /* ── DIVIDER ── */
+  .section-divider { margin: 28px 0; border: none; border-top: 1px solid var(--border); }
+
+  /* ── FULL WIDTH ROW ── */
+  .full-row { margin-top: 24px; }
+
+  .tip { font-size: 12px; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <div class="logo-text">SRFed Proposal Generator</div>
+    <div class="tagline">Navigate With Confidence</div>
+  </div>
+  <div class="header-badge">SDVOSB · Internal Tool</div>
+</header>
+
+<div class="container">
+
+  <!-- STATUS BAR -->
+  <div id="statusBar" class="status-bar info" style="display:none">
+    <div class="status-icon" id="statusIcon">ℹ️</div>
+    <div class="status-text">
+      <div class="status-title" id="statusTitle"></div>
+      <div id="statusMsg"></div>
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="progress-steps" id="progressSteps"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- LEFT: INPUTS -->
+    <div>
+      <!-- RFP Documents -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="icon">📁</span> Step 1: Drop RFP Documents</div>
+        <div class="card-body">
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.xlsx,.xls"/>
+            <div class="dz-icon">📂</div>
+            <div class="dz-title">Drag & Drop RFP Files Here</div>
+            <div class="dz-sub">PDF, Word, Excel · Multiple files supported</div>
+          </div>
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </div>
+
+      <!-- Proposal Details -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="icon">📋</span> Step 2: Proposal Details</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Solicitation Number</label>
+            <input type="text" id="solNum" placeholder="e.g. N6660426R3005"/>
+          </div>
+          <div class="form-group">
+            <label>Requirement / Contract Title</label>
+            <input type="text" id="reqTitle" placeholder="e.g. Code 70 Business Support Services"/>
+          </div>
+          <div class="form-group">
+            <label>Government Agency / Office</label>
+            <input type="text" id="agencyName" placeholder="e.g. NUWC DIV NEWPORT"/>
+          </div>
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>Agency Address</label>
+              <input type="text" id="agencyAddr" placeholder="1176 Howell St, Newport, RI"/>
+            </div>
+            <div class="form-group">
+              <label>Submission Date</label>
+              <input type="date" id="subDate"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Government POC Name</label>
+            <input type="text" id="pocName" placeholder="Contracting Officer name"/>
+          </div>
+          <div class="two-col" style="gap:12px">
+            <div class="form-group">
+              <label>POC Email</label>
+              <input type="email" id="pocEmail" placeholder="poc@agency.gov"/>
+            </div>
+            <div class="form-group">
+              <label>POC Phone</label>
+              <input type="text" id="pocPhone" placeholder="(XXX) XXX-XXXX"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Additional Context / Notes for Claude</label>
+            <textarea id="additionalNotes" placeholder="Any specific instructions, focus areas, teaming partners, unique requirements, or notes you want the AI to consider when writing the proposal..."></textarea>
+            <div class="tip">💡 Tip: The more context you give, the better tailored the output will be.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Volumes to Generate -->
+      <div class="card">
+        <div class="card-header"><span class="icon">📄</span> Step 3: Select Volumes to Generate</div>
+        <div class="card-body">
+          <div class="volumes-grid">
+            <label class="vol-check checked" id="volCheck1">
+              <input type="checkbox" id="vol1" checked/> Vol I – Technical
+            </label>
+            <label class="vol-check checked" id="volCheck2">
+              <input type="checkbox" id="vol2" checked/> Vol II – Past Performance
+            </label>
+            <label class="vol-check checked" id="volCheck3">
+              <input type="checkbox" id="vol3" checked/> Vol III – Price Narrative
+            </label>
+            <label class="vol-check checked" id="volCheck4">
+              <input type="checkbox" id="vol4" checked/> Vol IV – Contract Docs
+            </label>
+          </div>
+          <p class="tip" style="margin-top:12px">📊 Note: Pricing Excel is not generated (you'll complete that manually). The Price Narrative Word doc will be generated with bones/placeholders for your numbers.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RUN + OUTPUT -->
+    <div>
+      <!-- SharePoint Panel -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="icon">🔗</span> SharePoint Content Library</div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Connect your SharePoint to pull past performance write-ups, resumes, and boilerplate automatically.</p>
+          <div class="form-group">
+            <label>SharePoint Past Performance Folder URL</label>
+            <input type="text" id="spPP" placeholder="https://yourcompany.sharepoint.com/..."/>
+          </div>
+          <div class="form-group">
+            <label>SharePoint Resumes Folder URL</label>
+            <input type="text" id="spResumes" placeholder="https://yourcompany.sharepoint.com/..."/>
+          </div>
+          <div class="form-group">
+            <label>SharePoint Boilerplate / Capabilities Folder URL</label>
+            <input type="text" id="spBoilerplate" placeholder="https://yourcompany.sharepoint.com/..."/>
+          </div>
+          <p class="tip">SharePoint integration uses your existing Microsoft 365 authentication. Folders will be scanned and relevant documents automatically selected based on the RFP requirements.</p>
+        </div>
+      </div>
+
+      <!-- RUN BUTTON -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="icon">🚀</span> Step 4: Generate Proposal</div>
+        <div class="card-body">
+          <button class="btn btn-primary btn-block" id="runBtn" onclick="runGeneration()">
+            <span id="runBtnIcon">✨</span>
+            <span id="runBtnText">Generate Proposal Documents</span>
+          </button>
+          <p class="tip" style="margin-top:12px;text-align:center">Generation typically takes 60–120 seconds depending on document size.</p>
+        </div>
+      </div>
+
+      <!-- DOWNLOADS -->
+      <div class="card" id="downloadCard" style="display:none">
+        <div class="card-header"><span class="icon">📥</span> Download Generated Documents</div>
+        <div class="card-body">
+          <div class="downloads" id="downloadList"></div>
+          <hr class="section-divider"/>
+          <p style="font-size:13px;color:var(--muted)">⚠️ <strong>Review required before submission.</strong> AI-generated content should be verified for accuracy, completeness, and compliance with the solicitation.</p>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div class="log-box" id="logBox" style="display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let uploadedFiles = [];
+let generatedDocs = {};
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  addFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+
+function addFiles(newFiles) {
+  newFiles.forEach(f => {
+    if (!uploadedFiles.find(x => x.name === f.name)) uploadedFiles.push(f);
+  });
+  renderFileList();
+}
+
+function removeFile(name) {
+  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+  renderFileList();
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  if (uploadedFiles.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = uploadedFiles.map(f => {
+    const icon = f.name.endsWith('.pdf') ? '📄' : f.name.match(/\.docx?$/) ? '📝' : '📊';
+    const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+    return `<div class="file-item">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${size}</span>
+      <span class="file-remove" onclick="removeFile('${f.name.replace(/'/g,"\\'")}')">✕</span>
+    </div>`;
+  }).join('');
+}
+
+// Checkbox state
+['1','2','3','4'].forEach(n => {
+  const cb = document.getElementById(`vol${n}`);
+  cb.addEventListener('change', () => {
+    document.getElementById(`volCheck${n}`).classList.toggle('checked', cb.checked);
+  });
+});
+
+// ─── STATUS HELPERS ───────────────────────────────────────────────────────────
+function showStatus(type, title, msg, showProgress = false) {
+  const icons = { info: 'ℹ️', success: '✅', warn: '⚠️', error: '❌' };
+  const bar = document.getElementById('statusBar');
+  bar.className = `status-bar ${type}`;
+  bar.style.display = 'flex';
+  document.getElementById('statusIcon').textContent = icons[type];
+  document.getElementById('statusTitle').textContent = title;
+  document.getElementById('statusMsg').textContent = msg;
+  const pw = document.getElementById('progressWrap');
+  pw.style.display = showProgress ? 'block' : 'none';
+}
+
+function setProgress(pct, steps) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (steps) {
+    document.getElementById('progressSteps').innerHTML = steps.map(s =>
+      `<div class="progress-step ${s.status}"><span class="step-icon">${s.status === 'done' ? '✅' : s.status === 'active' ? '⏳' : '○'}</span>${s.text}</div>`
+    ).join('');
+  }
+}
+
+function log(msg, type = '') {
+  const box = document.getElementById('logBox');
+  box.style.display = 'block';
+  box.innerHTML += `<div class="log-line ${type}">${escHtml(msg)}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setRunning(running) {
+  const btn = document.getElementById('runBtn');
+  const icon = document.getElementById('runBtnIcon');
+  const text = document.getElementById('runBtnText');
+  btn.disabled = running;
+  if (running) {
+    icon.outerHTML = '<span id="runBtnIcon" class="spinner"></span>';
+    text.textContent = 'Generating…';
+  } else {
+    document.getElementById('runBtnIcon').outerHTML = '<span id="runBtnIcon">✨</span>';
+    text.textContent = 'Generate Proposal Documents';
+  }
+}
+
+// ─── READ FILE AS BASE64 ──────────────────────────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function getMimeType(file) {
+  if (file.name.endsWith('.pdf')) return 'application/pdf';
+  if (file.name.match(/\.docx?$/)) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (file.name.match(/\.xlsx?$/)) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  return 'application/octet-stream';
+}
+
+// ─── MAIN GENERATION FLOW ─────────────────────────────────────────────────────
+async function runGeneration() {
+  const solNum    = document.getElementById('solNum').value.trim();
+  const reqTitle  = document.getElementById('reqTitle').value.trim();
+  const agencyName = document.getElementById('agencyName').value.trim();
+  const agencyAddr = document.getElementById('agencyAddr').value.trim();
+  const subDate   = document.getElementById('subDate').value;
+  const pocName   = document.getElementById('pocName').value.trim();
+  const pocEmail  = document.getElementById('pocEmail').value.trim();
+  const pocPhone  = document.getElementById('pocPhone').value.trim();
+  const notes     = document.getElementById('additionalNotes').value.trim();
+
+  const genVols = ['1','2','3','4'].filter(n => document.getElementById(`vol${n}`).checked);
+
+  if (uploadedFiles.length === 0) {
+    showStatus('warn', 'No documents uploaded', 'Please upload your RFP documents (PDF, Word, or Excel) before generating.');
+    return;
+  }
+  if (!reqTitle && !solNum) {
+    showStatus('warn', 'Missing information', 'Please enter at least the solicitation number or requirement title.');
+    return;
+  }
+
+  setRunning(true);
+  document.getElementById('downloadCard').style.display = 'none';
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('logBox').style.display = 'block';
+
+  showStatus('info', 'Generating your proposal…', 'Please wait while Claude analyzes your RFP documents and generates the proposal volumes.', true);
+
+  const allSteps = [
+    { text: 'Reading and analyzing RFP documents', status: 'active' },
+    { text: 'Extracting requirements and evaluation criteria', status: '' },
+    { text: 'Matching SRFed past performance', status: '' },
+    { text: 'Writing Technical Approach', status: '' },
+    { text: 'Writing Past Performance', status: '' },
+    { text: 'Writing Pricing Narrative', status: '' },
+    { text: 'Writing Contract Documentation', status: '' },
+    { text: 'Assembling Word documents', status: '' },
+  ];
+  setProgress(5, allSteps);
+  log('Starting proposal generation...');
+  log(`Files: ${uploadedFiles.map(f => f.name).join(', ')}`);
+
+  try {
+    // ── STEP 1: Send documents to Claude for analysis ──────────────────────
+    log('Sending documents to Claude API for analysis...');
+    allSteps[0].status = 'active'; setProgress(10, allSteps);
+
+    const messageContent = [];
+
+    // Attach all uploaded files
+    for (const file of uploadedFiles) {
+      const b64 = await fileToBase64(file);
+      const mime = getMimeType(file);
+      if (mime === 'application/pdf') {
+        messageContent.push({
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: b64 }
+        });
+        log(`  Attached: ${file.name} (PDF)`);
+      } else {
+        // For Word/Excel, attach as document
+        messageContent.push({
+          type: 'text',
+          text: `[Attached file: ${file.name} — Note: Word/Excel files should be parsed for requirements]`
+        });
+        log(`  Referenced: ${file.name}`, 'warn');
+      }
+    }
+
+    // Build the master prompt
+    const dateStr = subDate ? new Date(subDate).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) : new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+    messageContent.push({
+      type: 'text',
+      text: `You are an expert government proposal writer for South River Federal Solutions LLC (SRFed), a Service-Disabled Veteran-Owned Small Business (SDVOSB) headquartered in Edgewater, MD. SRFed's tagline is "Navigate With Confidence."
+
+I have provided the RFP/solicitation documents above. Your job is to analyze them thoroughly and generate complete, tailored proposal content for the following volumes.
+
+## PROPOSAL METADATA
+- Solicitation Number: ${solNum || '[TBD]'}
+- Requirement Title: ${reqTitle || '[TBD]'}
+- Government Agency: ${agencyName || '[TBD]'}
+- Agency Address: ${agencyAddr || '[TBD]'}
+- POC: ${pocName || '[TBD]'} | ${pocEmail || '[TBD]'} | ${pocPhone || '[TBD]'}
+- Submission Date: ${dateStr}
+- Volumes Requested: ${genVols.map(v => `Volume ${v}`).join(', ')}
+
+## SRFED COMPANY PROFILE (use this to write about the company)
+- Full Legal Name: South River Federal Solutions LLC
+- Abbreviation: SRFed
+- Business Type: SDVOSB, Small Business
+- CEO: Matthew Tarjick (LTC, US Army ret.) — 20+ years DoD/healthcare finance experience
+- COO: Paul Scace — Financial analyst, ERP systems expert, PMP, MBA Kellogg
+- Director of Analytics: Garrett Alarcon — TS/SCI, MS Operations Research/Data Science, USAF
+- Change Management Lead: Eric Olsen — 25+ years, PMP, West Point, USAF
+- Key Capabilities: Program Management, Financial Management, Data Analytics, Earned Value Management, Administrative Support, Property Management
+- Systems Expertise: Navy ERP, GFEBS, FMIS, MEPRS, DMHRSi, Power BI, Tableau, SharePoint, Microsoft Project
+- Clearances: Active SECRET Facility Clearance (FCL); key personnel hold SECRET or above
+- GSA MAS Contract: 47QRAA25D006B
+- CAGE: 8BMQ1 | UEI: N5RZPM2JPJ21
+
+## PAST PERFORMANCE (use these as references when writing Vol II)
+1. **BOMES Hub and Spoke** (HT001423F0097, Subcontract MDC-05122023)
+   - Customer: DHA NCR HSPMO (sub to IT Data Consulting LLC)
+   - Period: 05/2023–05/2026 | SRFed Value: $1,356,522 | CPFF
+   - Work: Program management, financial analysis, governance frameworks, dashboards, stakeholder coordination across Military Treatment Facilities
+
+2. **Military Health Systems Financial Operations Support** (HT001119C0022)
+   - Customer: DHA NCR J-1/J-8 (sub to Advancia Technologies)
+   - Period: 09/2019–09/2024 | SRFed Value: $1,310,675 | FFP
+   - Work: Budget formulation/execution, financial forecasting, ERP/GFEBS analysis, $1.7B portfolio oversight, Power BI dashboards, Status of Funds briefings
+
+3. **GFEBS Global Technical Support** (HT001120C0017, Subcontract AT202055S)
+   - Customer: DHA (sub to Advancia Technologies)
+   - Period: 08/2020–08/2024 | SRFed Value: $493,445 | FFP
+   - Work: Budget data modeling, GFEBS optimization, automated dashboards, process improvement, MEPRS/DMHRSi support
+
+## WRITING STYLE GUIDE
+- Confident, professional, mission-focused government proposal language
+- Use "SRFed" as the company abbreviation throughout
+- Emphasize: low-risk, high-value, data-driven, proactive, integrated, disciplined
+- Always connect SRFed capabilities back to specific Government needs from the PWS/SOW
+- Use complete sentences and flowing prose for narrative sections
+- Use bullet points for lists of capabilities, deliverables, or evidence
+- Every section should demonstrate understanding of the SPECIFIC requirement (not generic boilerplate)
+- Signature phrases: "Navigate With Confidence," "low-risk, high-value solution," "data-driven decision-making"
+
+## ADDITIONAL NOTES FROM PROPOSAL MANAGER
+${notes || 'No additional notes provided.'}
+
+## YOUR TASK
+Analyze the RFP documents provided and generate proposal content. Return a JSON object (and ONLY a JSON object, no markdown fences, no preamble) with this structure:
+
+{
+  "solicitation_number": "string",
+  "requirement_title": "string", 
+  "agency_name": "string",
+  "agency_address": "string",
+  "agency_poc": "string",
+  "agency_poc_email": "string",
+  "agency_poc_phone": "string",
+  "submission_date": "string",
+  "output_prefix": "SRFed_Proposal",
+  "volume1": {
+    "understanding_of_requirement": "2-3 paragraph prose narrative showing deep understanding of THIS specific requirement",
+    "technical_approach": "3-4 paragraph prose narrative of the technical approach tailored to THIS PWS/SOW task areas",
+    "integrated_methodology": "2 paragraph narrative",
+    "staffing_plan": "narrative describing the staffing approach for this specific requirement",
+    "key_personnel_intro": "paragraph introducing key personnel",
+    "sample_tasks": ["array of 2-3 sample task responses tailored to this specific RFP if sample tasks are requested"]
+  },
+  "volume2": {
+    "references": [
+      {
+        "program_name": "string",
+        "contract_number": "string",
+        "pm_name": "string", "pm_phone": "string", "pm_email": "string",
+        "co_name": "string", "co_phone": "string", "co_email": "string",
+        "cor_name": "string", "cor_phone": "string", "cor_email": "string",
+        "contract_type": "string",
+        "period_of_performance": "string",
+        "total_value": "string",
+        "prime_or_sub": "string",
+        "overview": "2 paragraph prose overview tailored to show relevance",
+        "scope": "prose paragraph plus bullet points of scope items",
+        "relevance": "prose explaining how this maps to THIS solicitation's task areas",
+        "similarity": "bullet points of similarity factors"
+      }
+    ]
+  },
+  "volume3": {
+    "pricing_philosophy": "2 paragraph narrative tailored to THIS agency/requirement",
+    "boe_narrative": "2 paragraph BOE narrative (leave $ amounts as placeholders like [RATE] for manual entry)",
+    "wrap_rate_narrative": "narrative explaining wrap rate components",
+    "total_price_narrative": "narrative with [TOTAL] and [BASE YEAR TOTAL] placeholders",
+    "compliance_additional": "any solicitation-specific compliance items found in the RFP",
+    "labor_categories": []
+  },
+  "volume4": {
+    "cover_letter_additional": "any solicitation-specific acknowledgements or statements needed",
+    "additional_fill_ins": ["list of specific fill-ins required by this solicitation"],
+    "clearance_plan_additional": "any solicitation-specific clearance requirements",
+    "gfp": "GFP section tailored to this requirement",
+    "cmmc": "CMMC section with any requirement-specific details"
+  }
+}`
+    });
+
+    allSteps[0].status = 'done';
+    allSteps[1].status = 'active';
+    setProgress(20, allSteps);
+
+    // Call Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        messages: [{ role: 'user', content: messageContent }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Claude API error ${response.status}: ${err}`);
+    }
+
+    const apiData = await response.json();
+    const rawText = apiData.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    log('Claude API response received. Parsing...');
+
+    allSteps[1].status = 'done';
+    allSteps[2].status = 'done';
+    allSteps[3].status = 'active';
+    setProgress(50, allSteps);
+
+    // Parse JSON
+    let proposalData;
+    try {
+      const clean = rawText.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+      proposalData = JSON.parse(clean);
+    } catch(e) {
+      log('JSON parse failed, attempting extraction...', 'warn');
+      const match = rawText.match(/\{[\s\S]+\}/);
+      if (match) {
+        proposalData = JSON.parse(match[0]);
+      } else {
+        throw new Error('Could not parse Claude response as JSON. Raw: ' + rawText.substring(0, 300));
+      }
+    }
+
+    // Fill in any missing metadata from user inputs
+    proposalData.solicitation_number = proposalData.solicitation_number || solNum;
+    proposalData.requirement_title   = proposalData.requirement_title   || reqTitle;
+    proposalData.agency_name         = proposalData.agency_name         || agencyName;
+    proposalData.agency_address      = proposalData.agency_address      || agencyAddr;
+    proposalData.agency_poc          = proposalData.agency_poc          || pocName;
+    proposalData.agency_poc_email    = proposalData.agency_poc_email    || pocEmail;
+    proposalData.agency_poc_phone    = proposalData.agency_poc_phone    || pocPhone;
+    proposalData.submission_date     = proposalData.submission_date     || dateStr;
+    proposalData.output_prefix       = 'SRFed_Proposal_' + (proposalData.solicitation_number || 'Draft').replace(/[^a-zA-Z0-9_]/g,'_');
+
+    log('Proposal data extracted successfully.');
+    log('Requirements identified: ' + (proposalData.volume1?.understanding_of_requirement?.length > 50 ? 'YES' : 'PARTIAL'));
+
+    allSteps[3].status = 'done';
+    allSteps[4].status = 'done';
+    allSteps[5].status = 'done';
+    allSteps[6].status = 'done';
+    allSteps[7].status = 'active';
+    setProgress(75, allSteps);
+
+    // ── STEP 2: Send to backend for Word doc generation ───────────────────
+    log('Sending to document generation service...');
+
+    const genResponse = await fetch('/.netlify/functions/generate-docs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proposalData, volumes: genVols })
+    });
+
+    let docs;
+    if (!genResponse.ok) {
+      // Fallback: generate client-side using JS docx library
+      log('Backend not available. Using client-side generation...', 'warn');
+      docs = await generateDocsClientSide(proposalData, genVols);
+    } else {
+      const result = await genResponse.json();
+      docs = result.documents;
+    }
+
+    allSteps[7].status = 'done';
+    setProgress(100, allSteps);
+
+    log('All documents generated successfully! 🎉');
+    showStatus('success', 'Proposal generated!', 'Your proposal volumes are ready to download. Review all content before submission.');
+
+    renderDownloads(docs);
+    setRunning(false);
+
+  } catch(err) {
+    log('ERROR: ' + err.message, 'err');
+    showStatus('error', 'Generation failed', err.message);
+    setRunning(false);
+  }
+}
+
+// ─── CLIENT-SIDE DOCX GENERATION ─────────────────────────────────────────────
+// Fallback: generate a rich HTML representation that can be opened in Word
+async function generateDocsClientSide(proposalData, volumes) {
+  const docs = {};
+  const prefix = proposalData.output_prefix || 'SRFed_Proposal';
+
+  const volConfigs = {
+    '1': { title: 'Technical', label: 'Volume I – Technical', content: buildVol1HTML(proposalData) },
+    '2': { title: 'Past_Performance', label: 'Volume II – Past Performance', content: buildVol2HTML(proposalData) },
+    '3': { title: 'Price_Narrative', label: 'Volume III – Price Narrative', content: buildVol3HTML(proposalData) },
+    '4': { title: 'Contract_Documentation', label: 'Volume IV – Contract Documentation', content: buildVol4HTML(proposalData) },
+  };
+
+  for (const vol of volumes) {
+    const cfg = volConfigs[vol];
+    const htmlContent = wrapInWordHTML(cfg.content, proposalData, cfg.label);
+    const blob = new Blob([htmlContent], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    docs[vol] = {
+      label: cfg.label,
+      filename: `${prefix}_Volume_${vol ? vol : ''}_${cfg.title}.doc`,
+      url,
+    };
+    log(`  Generated: ${cfg.label}`);
+  }
+
+  return docs;
+}
+
+function wrapInWordHTML(body, data, volumeLabel) {
+  const solNum = data.solicitation_number || '';
+  const date   = data.submission_date || '';
+  return `
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>${volumeLabel}</title>
+<style>
+  @page { size: 8.5in 11in; margin: 1in; mso-header-margin: 0.5in; mso-footer-margin: 0.5in; }
+  body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; }
+  h1 { font-family: 'Times New Roman', serif; font-size: 13pt; font-weight: bold; border-bottom: 1px solid #1F4E79; padding-bottom: 4pt; margin-top: 18pt; margin-bottom: 6pt; }
+  h2 { font-family: 'Times New Roman', serif; font-size: 12pt; font-weight: bold; margin-top: 12pt; margin-bottom: 4pt; }
+  p { margin: 6pt 0; line-height: 1.2; }
+  table { border-collapse: collapse; width: 100%; margin: 12pt 0; }
+  th { background-color: #1F4E79; color: white; padding: 6pt 8pt; font-weight: bold; border: 1px solid #1F4E79; }
+  td { padding: 5pt 8pt; border: 1px solid #CCCCCC; vertical-align: top; }
+  tr:nth-child(even) td { background-color: #EAF0F7; }
+  .header-block { margin-bottom: 12pt; }
+  .cover-title { font-size: 16pt; font-weight: bold; margin: 12pt 0 6pt 0; }
+  .disclaimer { font-size: 10pt; color: #595959; margin-top: 12pt; }
+  div.header { color: #1F4E79; font-size: 10pt; border-bottom: 1px solid #1F4E79; padding-bottom: 3pt; margin-bottom: 6pt; }
+  ul { margin: 6pt 0 6pt 18pt; }
+  li { margin: 3pt 0; }
+  .placeholder { color: #999999; font-style: italic; }
+</style>
+<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml>
+</head>
+<body>
+${body}
+</body></html>`;
+}
+
+function coverpageHTML(data, volTitle) {
+  const DISCLAIMER1 = `This submittal includes data that shall not be disclosed outside the Government and shall not be duplicated, used, or disclosed—in whole or in part—for any purpose other than to evaluate this submittal.`;
+  const DISCLAIMER2 = `This submittal contains trade secrets and commercial information that either are specifically exempted from disclosure by statute or are privileged or confidential within the meaning of the exemption set forth in 5 USC 552 (b)(3) and (4) of the Freedom of Information Act.`;
+  return `
+<table style="margin-bottom:12pt">
+  <tr>
+    <td colspan="2" style="border:none;background:none;padding:0 0 12pt 0">
+      <div style="background:#1F4E79;color:white;padding:8pt 12pt;font-size:9pt;text-align:right">SOUTH RIVER FEDERAL SOLUTIONS | NAVIGATE WITH CONFIDENCE</div>
+    </td>
+  </tr>
+</table>
+<p style="color:#595959;font-size:11pt">Solicitation # ${data.solicitation_number || '[SOLICITATION NUMBER]'}</p>
+<p class="cover-title">${data.requirement_title || '[REQUIREMENT TITLE]'} | ${volTitle}</p>
+<p>${data.submission_date || '[DATE]'}</p>
+<br/>
+<table><tr>
+  <th style="width:50%;background:#1F4E79">Provided to:</th>
+  <th style="width:50%;background:#1F4E79">Provided by:</th>
+</tr><tr>
+  <td>
+    <strong>${data.agency_name || '[AGENCY]'}</strong><br/>
+    ${data.agency_address || '[ADDRESS]'}<br/>
+    ${data.agency_poc || '[POC]'}<br/>
+    ${data.agency_poc_email || '[EMAIL]'}<br/>
+    ${data.agency_poc_phone || '[PHONE]'}
+  </td>
+  <td>
+    South River Federal Solutions LLC<br/>
+    Matthew Tarjick, Chief Executive Officer<br/>
+    (410) 463-2644<br/>
+    matthew.tarjick@srfed.com<br/><br/>
+    3168 Braverton Street, Suite 400<br/>
+    Edgewater, MD 21037<br/><br/>
+    SAM UEI: N5RZPM2JPJ21 | CAGE: 8BMQ1
+  </td>
+</tr></table>
+<p class="disclaimer">${DISCLAIMER1}</p>
+<p class="disclaimer">${DISCLAIMER2}</p>
+<br style="page-break-after:always"/>`;
+}
+
+function buildVol1HTML(d) {
+  const v = d.volume1 || {};
+  return coverpageHTML(d, 'Volume 1 – Technical') + `
+<h1>Technical Approach</h1>
+<h2>Understanding of the Requirement</h2>
+<p>${v.understanding_of_requirement || '<span class="placeholder">[Understanding of requirement — tailored to RFP]</span>'}</p>
+<h2>Technical Approach</h2>
+<p>${v.technical_approach || '<span class="placeholder">[Technical approach narrative]</span>'}</p>
+<h2>Integrated Execution Methodology</h2>
+<p>${v.integrated_methodology || 'SRFed executes this requirement using a structured, repeatable methodology that ensures consistency across all task areas while maintaining the flexibility to support evolving requirements.'}</p>
+<h2>Quality Assurance and Control</h2>
+<p>SRFed implements a multi-level quality assurance process ensuring all deliverables meet contractual requirements. Quality is embedded throughout execution rather than applied as a final step.</p>
+<h2>Risk Identification and Mitigation</h2>
+<p>SRFed proactively identifies and mitigates risks through ongoing analysis of schedule, financial performance, and stakeholder coordination.</p>
+<h2>Transition-In Plan</h2>
+<p>SRFed ensures a seamless transition within 30 days through structured milestones: Days 1–5 (staffing confirmation and onboarding); Days 6–15 (system access and initial task execution); Days 16–30 (full operational capability).</p>
+<br style="page-break-after:always"/>
+<h1>Management Approach</h1>
+<h2>Organizational Structure and Philosophy</h2>
+<p>SRFed's management approach centers on a single Program Manager accountable for all performance, supported by functional leads aligned to each task area. This structure ensures coordination, visibility, and accountability across all concurrent efforts.</p>
+<h2>Communication and Stakeholder Engagement</h2>
+<p>SRFed establishes a structured, multi-tiered communication approach including executive engagement, program coordination, and daily operational communication to ensure alignment and rapid response to Government needs.</p>
+<h2>Risk Management Framework</h2>
+<p>SRFed maintains a living risk register, continuously reviewed, with documented mitigation strategies for all identified risks across schedule, financial, and stakeholder dimensions.</p>
+<br style="page-break-after:always"/>
+<h1>Personnel Approach</h1>
+<h2>Staffing Plan</h2>
+<p>${v.staffing_plan || '<span class="placeholder">[Staffing plan tailored to this requirement\'s LCATs]</span>'}</p>
+<h2>Key Personnel</h2>
+<p>${v.key_personnel_intro || '<span class="placeholder">[Key personnel introduction]</span>'}</p>`;
+}
+
+function buildVol2HTML(d) {
+  const v = d.volume2 || {};
+  const refs = v.references || [];
+  let html = coverpageHTML(d, 'Volume 2 – Past Performance');
+
+  const defaultRefs = refs.length > 0 ? refs : [
+    { program_name: 'BOMES Hub and Spoke', contract_number: 'HT001423F0097', pm_name: 'Jason Myers', pm_phone: '360-773-7241', pm_email: 'jason.e.myers26.ctr@health.mil', co_name: 'LCDR Keith Laffman', co_phone: '240-401-3361', co_email: 'Keith.m.laffman.mil@health.mil', cor_name: 'Daniel Dang', cor_phone: '202-999-9184', cor_email: 'daniel.dang1.civ@health.mil', contract_type: 'Cost Plus Fixed Fee (CPFF)', period_of_performance: '05/12/2023 – 05/14/2026', total_value: '$4,605,147.60 (Prime) / $1,356,522.33 (SRFed)', prime_or_sub: 'Subcontractor – supporting IT Data Consulting LLC', overview: null, scope: null, relevance: null, similarity: null },
+    { program_name: 'Military Health Systems Financial Operations Support', contract_number: 'HT001119C0022', pm_name: 'Matthew Tarjick', pm_phone: '410-463-2644', pm_email: 'matthew.tarjick@srfed.com', co_name: 'Jessica Heinke', co_phone: '703-681-1131', co_email: 'Jessica.K.Heinke.civ@health.mil', cor_name: 'Micah Meyers', cor_phone: '202-903-5876', cor_email: 'micah.l.meyers.civ@health.mil', contract_type: 'Firm Fixed Price', period_of_performance: '09/11/2019 – 09/10/2024', total_value: '$16,963,062.42 (Prime) / $1,310,674.64 (SRFed)', prime_or_sub: 'Subcontractor – supporting Advancia Technologies, LLC', overview: null, scope: null, relevance: null, similarity: null },
+    { program_name: 'GFEBS Global Technical Support', contract_number: 'HT001120C0017', pm_name: 'John Lee', pm_phone: '703-681-7515', pm_email: 'john.w.lee14.mil@health.mil', co_name: 'Jessica Heinke', co_phone: '703-681-1131', co_email: 'Jessica.K.Heinke.civ@health.mil', cor_name: 'Tom Sydes', cor_phone: '703-915-5880', cor_email: 'Thomas.a.sydes.ctr@health.mil', contract_type: 'Firm Fixed Price', period_of_performance: '08/16/2020 – 08/15/2024', total_value: '$76,609,581.34 (Prime) / $493,445.12 (SRFed)', prime_or_sub: 'Subcontractor – supporting Advancia Technologies, LLC', overview: null, scope: null, relevance: null, similarity: null },
+  ];
+
+  defaultRefs.forEach((ref, i) => {
+    html += `
+<h1>${ref.program_name || `Past Performance Reference ${i+1}`}</h1>
+<table>
+  <tr><td style="background:#EAF0F7;font-weight:bold;width:35%">Company Name:</td><td>South River Federal Solutions LLC</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">CAGE Code:</td><td>8BMQ1</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Program Name:</td><td>${ref.program_name || '[Program Name]'}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Contract Number:</td><td>${ref.contract_number || '[Contract Number]'}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Program Manager:</td><td>${ref.pm_name || '[PM]'} | ${ref.pm_phone || ''} | ${ref.pm_email || ''}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Contracting Officer:</td><td>${ref.co_name || '[CO]'} | ${ref.co_phone || ''} | ${ref.co_email || ''}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">COR:</td><td>${ref.cor_name || '[COR]'} | ${ref.cor_phone || ''} | ${ref.cor_email || ''}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Contract Type:</td><td>${ref.contract_type || '[Type]'}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Period of Performance:</td><td>${ref.period_of_performance || '[PoP]'}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Total Value:</td><td>${ref.total_value || '[Value]'}</td></tr>
+  <tr><td style="background:#EAF0F7;font-weight:bold">Prime/Subcontractor:</td><td>${ref.prime_or_sub || '[Prime/Sub]'}</td></tr>
+</table>
+<h2>Overview</h2><p>${ref.overview || '<span class="placeholder">[Overview — tailored to show relevance to this solicitation]</span>'}</p>
+<h2>Scope &amp; Relevance</h2><p>${ref.scope || '<span class="placeholder">[Scope and relevance description]</span>'}</p>
+<h2>Relevance to Solicitation</h2><p>${ref.relevance || '<span class="placeholder">[Relevance mapped to this solicitation\'s task areas]</span>'}</p>
+<h2>Similarity in Scope, Magnitude, and Complexity</h2><p>${ref.similarity || '<span class="placeholder">[Similarity factors]</span>'}</p>
+${i < defaultRefs.length - 1 ? '<br style="page-break-after:always"/>' : ''}`;
+  });
+  return html;
+}
+
+function buildVol3HTML(d) {
+  const v = d.volume3 || {};
+  return coverpageHTML(d, 'Volume 3 – Price') + `
+<h1>1. Introduction and Pricing Philosophy</h1>
+<p>South River Federal Solutions LLC (SRFed) is committed to delivering a pricing strategy that balances cost competitiveness with operational reliability, workforce retention, and long-term value for ${d.agency_name || 'the Government'}.</p>
+<p>${v.pricing_philosophy || 'Our philosophy centers on a "Fair and Reasonable for Long-Term Collective Success" approach. We aligned qualifications to mission-specific needs and structured rates using multiple references, including the Economic Research Institute, common salary benchmarks, previous SRFed contractual pricing data, and deep industry knowledge.'}</p>
+<h1>2. Labor Categories and Basis of Estimate</h1>
+<p>${v.boe_narrative || 'SRFed developed its Basis of Estimate (BOE) by aligning government-recognized labor categories with the specific objectives and deliverables outlined in the Performance Work Statement (PWS). <span class="placeholder">[Complete BOE narrative here with specific LCATs and hour allocations from this solicitation.]</span>'}</p>
+<br/>
+<table>
+  <tr><th>Labor Category</th><th>Base Labor Rate</th><th>Fully Burdened Rate</th><th>Annual Hours</th></tr>
+  <tr><td class="placeholder">[LCAT 1]</td><td class="placeholder">$[X.XX]</td><td class="placeholder">$[X.XX]</td><td>1,920</td></tr>
+  <tr><td class="placeholder">[LCAT 2]</td><td class="placeholder">$[X.XX]</td><td class="placeholder">$[X.XX]</td><td>1,920</td></tr>
+  <tr><td class="placeholder">[LCAT 3]</td><td class="placeholder">$[X.XX]</td><td class="placeholder">$[X.XX]</td><td>1,920</td></tr>
+  <tr><td><em>Add rows from your pricing Excel as needed</em></td><td></td><td></td><td></td></tr>
+</table>
+<h1>3. Pricing Reasonableness and Risk Mitigation</h1>
+<p>${v.wrap_rate_narrative || 'Pricing was determined based on industry norms, geographic labor rates, SRFed\'s GSA MAS schedule (47QRAA25D006B), and SRFed\'s internal wrap rate calculations. Base rates were escalated using SRFed\'s standard fringe, overhead, G&A, and profit allocations.'}</p>
+<ul>
+  <li><strong>Fringe Benefits</strong> – including PTO, 401(k) matching, medical/dental/vision coverage, and performance-based incentives.</li>
+  <li><strong>Overhead and G&A</strong> – ensuring organizational infrastructure and compliance support.</li>
+  <li><strong>Profit</strong> – applied conservatively to remain cost-competitive.</li>
+</ul>
+<p>${v.total_price_narrative || '<span class="placeholder">[INSERT TOTAL PRICE SUMMARY. Copy base year total, option year totals, and grand total from your pricing Excel. Reference the Section B tab.]</span>'}</p>
+<h1>4. Compliance Statement</h1>
+<p>All CLINs are fully priced in accordance with solicitation requirements. All contractor-furnished tools, licenses, and labor costs are incorporated. There will be no uncompensated overtime. SRFed does not intend to subcontract any work.</p>
+<p>SRFed maintains a DCAA-compliant accounting system (audited by DCAA Central Maryland Branch Office and DCMA Mid-Atlantic). SRFed's GSA MAS Contract Number is 47QRAA25D006B.</p>
+<p>${v.compliance_additional || '<span class="placeholder">[Add any solicitation-specific compliance acknowledgements here.]</span>'}</p>`;
+}
+
+function buildVol4HTML(d) {
+  const v = d.volume4 || {};
+  return coverpageHTML(d, 'Volume 4 – Contract Documentation') + `
+<h1>Cover Letter</h1>
+<p>South River Federal Solutions LLC (SRFed) is pleased to submit this proposal in response to Solicitation ${d.solicitation_number || '[SOL NUM]'} for ${d.requirement_title || '[REQUIREMENT]'} in support of ${d.agency_name || '[AGENCY]'}.</p>
+<p>SRFed is a Service-Disabled Veteran-Owned Small Business (SDVOSB) with demonstrated experience supporting Department of Defense (DoD) financial management, program management, and data analytics efforts.</p>
+<p>${v.cover_letter_additional || 'SRFed acknowledges all amendments to the solicitation and confirms that this proposal is valid for acceptance in accordance with solicitation requirements. We understand that award may be made based on initial proposals and have therefore submitted our best technical and cost solution.'}</p>
+<p>Respectfully submitted,<br/><br/>South River Federal Solutions LLC</p>
+<br style="page-break-after:always"/>
+<h1>Solicitation Fill-Ins</h1>
+<p>SRFed has completed all required solicitation representations, certifications, and fill-ins in accordance with Section K and all applicable clauses.</p>
+<ul>
+  <li>Acknowledgement of Amendments: Completed</li>
+  <li>Representations and Certifications: Completed in SAM.gov</li>
+  <li>Section B Pricing Inputs: Submitted via the required Excel document</li>
+  ${(v.additional_fill_ins || []).map(item => `<li>${item}</li>`).join('')}
+</ul>
+<br style="page-break-after:always"/>
+<h1>Organizational Conflict of Interest (OCI) Mitigation Plan</h1>
+<p>SRFed has conducted a thorough review of the requirements and has identified no known Organizational Conflicts of Interest (OCI) that would impair its ability to perform this contract objectively. To ensure continued compliance, SRFed implements:</p>
+<ul>
+  <li><strong>Organizational Firewalls:</strong> Segregation of personnel and data between contracts</li>
+  <li><strong>Access Controls:</strong> Role-based access ensuring personnel only access data necessary for performance</li>
+  <li><strong>Employee Training:</strong> Annual ethics and OCI awareness training</li>
+  <li><strong>Disclosure Procedures:</strong> Immediate notification to the Contracting Officer of any potential OCI</li>
+  <li><strong>Non-Disclosure Agreements:</strong> Enforced across all employees and subcontractors</li>
+</ul>
+<br style="page-break-after:always"/>
+<h1>Plan for Obtaining Personnel Clearances</h1>
+<p>All proposed key personnel currently hold at least an Interim SECRET clearance or higher, enabling SRFed to begin performance immediately upon award. SRFed maintains an Active SECRET Facility Clearance (FCL) under DCSA cognizance.</p>
+<p>${v.clearance_plan_additional || 'For personnel requiring clearance upgrades, SRFed submits clearance packages within 24–48 hours of onboarding through our Facility Security Officer (FSO), who coordinates directly with DCSA to ensure timely adjudication.'}</p>
+<h1>Facility Clearance Documentation</h1>
+<p>SRFed maintains an Active SECRET FCL. UEI: N5RZPM2JPJ21 | CAGE: 8BMQ1 | DUNS: 117067287 | Address: 3168 Braverton St, Suite 400, Edgewater, MD 21037 | Phone: (410) 774-6645</p>
+<h1>Government Furnished Property (GFP)</h1>
+<p>${v.gfp || 'SRFed will manage all Government Furnished Property in accordance with applicable DoN policies and established property accountability requirements, ensuring full lifecycle management from receipt through disposition.'}</p>
+<h1>Cybersecurity Maturity Model Certification (CMMC)</h1>
+<p>${v.cmmc || 'SRFed is currently CMMC Level 1 self-attested and is actively advancing toward CMMC Level 2 certification in partnership with USXCyber, implementing all NIST SP 800-171 security controls. UEI: N5RZPM2JPJ21 | CAGE: 8BMQ1.'}</p>`;
+}
+
+// ─── RENDER DOWNLOAD BUTTONS ──────────────────────────────────────────────────
+function renderDownloads(docs) {
+  const card = document.getElementById('downloadCard');
+  const list = document.getElementById('downloadList');
+  card.style.display = 'block';
+  list.innerHTML = '';
+
+  const volIcons = { '1': '📝', '2': '🏆', '3': '💰', '4': '📋' };
+  const volDescs = {
+    '1': 'Technical Approach, Management, Personnel & Resumes',
+    '2': 'Past Performance References',
+    '3': 'Pricing Narrative (add your numbers from Excel)',
+    '4': 'Cover Letter, OCI, Clearances, CMMC',
+  };
+
+  Object.entries(docs).forEach(([vol, doc]) => {
+    const item = document.createElement('div');
+    item.className = 'download-item';
+    item.innerHTML = `
+      <div class="download-left">
+        <div class="download-icon">${volIcons[vol] || '📄'}</div>
+        <div>
+          <div class="download-name">${doc.label}</div>
+          <div class="download-desc">${volDescs[vol] || ''}</div>
+        </div>
+      </div>
+      <a href="${doc.url}" download="${doc.filename}" class="btn btn-secondary btn-sm">⬇ Download</a>`;
+    list.appendChild(item);
+  });
+}
+</script>
+</body>
+</html>
