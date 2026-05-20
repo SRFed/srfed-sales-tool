@@ -930,11 +930,7 @@ function setStepLocked(cardId, locked) {
 }
 
 function updateStepLocks() {
-  // Step 1 is always unlocked
-  // Step 2 & 3 unlock when signed in with correct domain
-  // Step 4 unlocks when RFP files are present
-  // Steps 5 & 6 unlock when analysis is complete
-  const signedIn = !!msAccount && msAccount.username.toLowerCase().endsWith('@' + CLIENT_CONFIG.authorizedDomain);
+  const signedIn = !!msAccount;  // any sign-in unlocks Steps 2 & 3
   const hasRFP   = rfpFiles.length > 0;
   const analyzed = analysisComplete;
 
