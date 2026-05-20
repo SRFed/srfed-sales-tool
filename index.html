@@ -5,7 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SRFed Proposal Generator</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+<script>
+// Load docx.js dynamically with fallback CDNs
+(function() {
+  var cdns = [
+    'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js',
+    'https://unpkg.com/docx@8.5.0/build/index.js',
+  ];
+  var idx = 0;
+  function tryNext() {
+    if (idx >= cdns.length) {
+      window._docxLoadFailed = true;
+      console.error('docx.js failed to load from all CDNs');
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = cdns[idx++];
+    s.onerror = function() { tryNext(); };
+    document.head.appendChild(s);
+  }
+  tryNext();
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js"></script>
 <style>
   :root {
@@ -267,12 +288,12 @@
     transition: width 0.4s ease;
   }
   .progress-fill.pulsing {
-    animation: progressPulse 1.8s ease-in-out infinite;
+    animation: progressPulse 1.6s ease-in-out infinite;
   }
   @keyframes progressPulse {
-    0%   { box-shadow: 0 0 4px 1px rgba(5,118,255,0.3); opacity: 1; }
-    50%  { box-shadow: 0 0 14px 4px rgba(5,118,255,0.7); opacity: 0.85; }
-    100% { box-shadow: 0 0 4px 1px rgba(5,118,255,0.3); opacity: 1; }
+    0%   { opacity: 1;    background: var(--mid-blue); }
+    50%  { opacity: 0.55; background: var(--sky-blue); }
+    100% { opacity: 1;    background: var(--mid-blue); }
   }
   .progress-steps { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
   .progress-step { font-size: 13px; display: flex; align-items: center; gap: 8px; color: var(--muted); }
@@ -375,6 +396,7 @@
     max-height: 600px;
     overflow-y: auto;
     padding-right: 4px;
+    overscroll-behavior: contain;
   }
 
   /* ── CLARIFYING QUESTIONS ── */
@@ -518,7 +540,7 @@
     <div class="card step-locked" id="step2Card">
       <div class="card-header"><span class="icon">🔑</span> Step 2: Enter API Key</div>
       <div class="card-body">
-        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 1 to unlock</span></div>
+        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Steps 1 &amp; 2 to unlock</span></div>
         <div id="step2Locked" style="text-align:center;padding:20px 0;color:var(--muted)">
           <div style="font-size:32px;margin-bottom:8px">🔑</div>
           <div style="font-size:13px">Sign in with Microsoft first to unlock this step.</div>
@@ -588,7 +610,7 @@
   <div class="card step-locked" id="step4Card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📁</span> Step 4: Drop Documents</div>
     <div class="card-body">
-      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 1 to unlock</span></div>
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Steps 1 &amp; 2 to unlock</span></div>
       <div class="two-col" style="gap:20px">
 
         <!-- Left: RFP / PWS documents -->
