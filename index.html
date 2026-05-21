@@ -162,6 +162,14 @@ _loadDocx([
     font-size: 13px;
   }
   .file-item .file-icon { font-size: 18px; flex-shrink: 0; }
+  .badge-no-token {
+    font-size: 11px; font-weight: 600;
+    background: #f0fdf4; border: 1px solid #86efac;
+    color: #166534; border-radius: 10px; padding: 1px 8px;
+    white-space: nowrap;
+  }
+  .file-item.template-file { background: #fefce8; border-color: #fde047; }
+  .file-item.template-file .file-tokens { background: #fefce8; border-color: #fde047; color: #92400e; }
   .file-item .file-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-item .file-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .file-item .file-size { color: var(--muted); font-size: 12px; }
@@ -596,6 +604,14 @@ _loadDocx([
           <div class="form-group">
             <label>Boilerplate / Capabilities Folder URL</label>
             <input type="text" id="spBoilerplate" placeholder="https://yourcompany.sharepoint.com/.../Boilerplate"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label style="display:flex;align-items:center;gap:6px">
+              Proposal Templates Folder URL
+              <span class="badge-no-token" title="Templates are used for formatting only — never sent to AI">⚡ 0 tokens</span>
+            </label>
+            <input type="text" id="spTemplates" placeholder="https://yourcompany.sharepoint.com/.../Proposal Templates"/>
+            <div class="tip" style="margin-top:4px">Templates (.docx) are fetched for formatting only — never sent to AI, zero token cost.</div>
           </div>
           <p class="tip" style="margin-top:10px;margin-bottom:14px">Leave any folder blank to skip it. Step 3 is optional — company data from your profile will be used if skipped.</p>
           <button class="btn btn-primary" id="spLoadBtn" onclick="loadSharePointFiles()" style="width:100%">
@@ -1144,7 +1160,8 @@ function buildAcceptedAssumptionsContext() {
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let rfpFiles     = [];   // RFP / PWS / solicitation docs
 let companyFiles = [];   // company / past performance docs (dropped)
-let spFiles      = [];   // files fetched from SharePoint (treated same as companyFiles for token/generation)
+let spFiles          = [];   // files fetched from SharePoint content folders
+let spTemplateFiles  = [];   // proposal template .docx files — never sent to API
 let generatedDocs = {};
 let assumptions        = [];   // [{id, category, label, value, status, correction}]
 let clarifyingQuestions = [];  // [{id, category, label, question, answer}]
@@ -1223,13 +1240,52 @@ async function downloadSpFile(item, token) {
   return new File([blob], item.name, { type: blob.type || 'application/octet-stream', lastModified: Date.now() });
 }
 
-async function loadSharePointFiles() {
-  const ppUrl   = document.getElementById('spPP').value.trim();
-  const resUrl  = document.getElementById('spResumes').value.trim();
-  const bpUrl   = document.getElementById('spBoilerplate').value.trim();
-  const urls    = [ppUrl, resUrl, bpUrl].filter(u => u);
+// Auto-detect which proposal volume a template file corresponds to by filename
+function detectTemplateVolume(filename) {
+  const n = filename.toLowerCase();
+  if (n.match(/vol.*1|volume.*1|tech|technical|pwrpt|management/))         return 'Vol I — Technical';
+  if (n.match(/vol.*2|volume.*2|past.*perf|pp|performance/))               return 'Vol II — Past Performance';
+  if (n.match(/vol.*3|volume.*3|price|pric|cost|pricing|narrative/))       return 'Vol III — Price Narrative';
+  if (n.match(/vol.*4|volume.*4|contract|doc|cover|admin|section[_\s]*k/)) return 'Vol IV — Contract Docs';
+  return null; // unknown — will be matched by order
+}
 
-  if (urls.length === 0) {
+// Match loaded templates to volumes: by detectTemplateVolume, else by file order
+function matchTemplatesToVolumes(templates) {
+  const map = {};
+  const unmatched = [];
+
+  for (const f of templates) {
+    const vol = detectTemplateVolume(f.name);
+    if (vol) {
+      const key = vol.includes('I —') && !vol.includes('II') && !vol.includes('III') && !vol.includes('IV') ? '1'
+                : vol.includes('II —') && !vol.includes('III') ? '2'
+                : vol.includes('III') ? '3' : '4';
+      if (!map[key]) map[key] = f;
+    } else {
+      unmatched.push(f);
+    }
+  }
+
+  // Assign unmatched files to unfilled volume slots in order
+  const order = ['1','2','3','4'];
+  let ui = 0;
+  for (const vol of order) {
+    if (!map[vol] && ui < unmatched.length) {
+      map[vol] = unmatched[ui++];
+    }
+  }
+  return map;
+}
+
+async function loadSharePointFiles() {
+  const ppUrl       = document.getElementById('spPP').value.trim();
+  const resUrl      = document.getElementById('spResumes').value.trim();
+  const bpUrl       = document.getElementById('spBoilerplate').value.trim();
+  const tmplUrl     = document.getElementById('spTemplates').value.trim();
+  const contentUrls = [ppUrl, resUrl, bpUrl].filter(u => u);
+
+  if (contentUrls.length === 0 && !tmplUrl) {
     showStatus('warn', 'No folders specified', 'Enter at least one SharePoint folder URL in Step 3.');
     return;
   }
@@ -1238,42 +1294,59 @@ async function loadSharePointFiles() {
   btn.disabled = true;
   document.getElementById('spLoadIcon').innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px"></div>';
   document.getElementById('spLoadText').textContent = 'Loading...';
-  showStatus('info', 'Loading SharePoint files...', `Connecting to ${urls.length} folder(s).`, true);
+  showStatus('info', 'Loading SharePoint files...', `Connecting to folder(s)...`, true);
 
   try {
     const token = await getSpAccessToken();
-    const loadedFiles = [];
+    const loadedContent   = [];  // company content files — count toward tokens
+    const loadedTemplates = [];  // proposal templates — zero tokens
     const errors = [];
 
-    for (const url of urls) {
+    // Fetch content folders (PP, Resumes, Boilerplate)
+    for (const url of contentUrls) {
       try {
-        showStatus('info', 'Loading SharePoint files...', `Reading: ${url.substring(0, 60)}...`, true);
+        showStatus('info', 'Loading SharePoint files...', `Reading: ${url.substring(0,60)}...`, true);
         const items = await fetchSpFolderFiles(url, token);
-        // Filter to supported types
         const supported = items.filter(f =>
-          f.name.match(/\.(pdf|docx?|xlsx?)$/i) &&
-          f.size < 50 * 1024 * 1024  // skip files over 50MB
+          f.name.match(/\.(pdf|docx?|xlsx?)$/i) && f.size < 50 * 1024 * 1024
         );
         for (const item of supported) {
           const file = await downloadSpFile(item, token);
-          loadedFiles.push(file);
+          loadedContent.push(file);
         }
-      } catch(e) {
-        errors.push(`${url.substring(0,40)}: ${e.message}`);
-      }
+      } catch(e) { errors.push(`${url.substring(0,40)}: ${e.message}`); }
     }
 
-    // Store in spFiles and merge into companyFiles for processing
-    spFiles = loadedFiles;
-    // Remove any previously loaded SP files from companyFiles, add new ones
-    companyFiles = [...companyFiles.filter(f => !f._fromSP), ...loadedFiles.map(f => Object.assign(f, {_fromSP: true}))];
+    // Fetch proposal templates folder — .docx files only
+    if (tmplUrl) {
+      try {
+        showStatus('info', 'Loading proposal templates...', `Reading templates folder...`, true);
+        const items = await fetchSpFolderFiles(tmplUrl, token);
+        const docxItems = items.filter(f => f.name.match(/\.docx$/i) && f.size < 50 * 1024 * 1024);
+        for (const item of docxItems) {
+          const file = await downloadSpFile(item, token);
+          file._isTemplate = true;
+          loadedTemplates.push(file);
+        }
+      } catch(e) { errors.push(`Templates folder: ${e.message}`); }
+    }
 
-    // Render SP file list in Step 3
+    // Merge content files into companyFiles (for token counting + API sending)
+    spFiles = loadedContent;
+    companyFiles = [...companyFiles.filter(f => !f._fromSP),
+                    ...loadedContent.map(f => Object.assign(f, {_fromSP: true}))];
+
+    // Store templates separately — never sent to API
+    spTemplateFiles = loadedTemplates;
+
+    // Render file list in Step 3
     const listEl = document.getElementById('spFileList');
-    if (loadedFiles.length > 0) {
-      listEl.innerHTML = `<div style="margin-top:8px">
-        <div class="section-label" style="margin-top:0">📂 ${loadedFiles.length} file(s) loaded from SharePoint</div>
-        ${loadedFiles.map(f => {
+    let html = '';
+
+    if (loadedContent.length > 0) {
+      html += `<div style="margin-top:10px">
+        <div class="section-label" style="margin-top:0">📂 Company Documents (${loadedContent.length} file${loadedContent.length>1?'s':''})</div>
+        ${loadedContent.map(f => {
           const icon = f.name.endsWith('.pdf') ? '📄' : f.name.match(/\.docx?$/) ? '📝' : '📊';
           const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
           const tok  = estimateTokens(f);
@@ -1285,16 +1358,43 @@ async function loadSharePointFiles() {
           </div>`;
         }).join('')}
       </div>`;
-      if (errors.length > 0) {
-        listEl.innerHTML += `<div style="margin-top:8px;font-size:12px;color:var(--warn)">⚠️ Some folders had errors: ${errors.join('; ')}</div>`;
-      }
-    } else {
-      listEl.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-top:8px">No supported files found in the specified folders.${errors.length > 0 ? ' Errors: ' + errors.join('; ') : ''}</div>`;
     }
 
-    updateTokenMeter(); // reflect SP files in token count
-    showStatus('success', 'SharePoint files loaded',
-      `${loadedFiles.length} file(s) loaded from SharePoint and added to your document bundle.`);
+    if (loadedTemplates.length > 0) {
+      html += `<div style="margin-top:12px">
+        <div class="section-label" style="margin-top:0;display:flex;align-items:center;gap:8px">
+          📋 Proposal Templates (${loadedTemplates.length} file${loadedTemplates.length>1?'s':''})
+          <span class="badge-no-token">⚡ 0 tokens — formatting only</span>
+        </div>
+        ${loadedTemplates.map(f => {
+          const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+          const vol = detectTemplateVolume(f.name);
+          return `<div class="file-item template-file">
+            <span class="file-icon">📋</span>
+            <span class="file-name">${escHtml(f.name)}</span>
+            <span class="file-meta">
+              <span class="file-size">${size}</span>
+              <span class="badge-no-token">⚡ 0 tokens</span>
+              ${vol ? `<span class="file-tokens" style="background:#fef9c3;border-color:#fde047;color:#78350f">${vol}</span>` : ''}
+            </span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if (loadedContent.length === 0 && loadedTemplates.length === 0) {
+      html = `<div style="font-size:13px;color:var(--muted);margin-top:8px">No files found in the specified folders.${errors.length > 0 ? ' Errors: ' + errors.join('; ') : ''}</div>`;
+    }
+    if (errors.length > 0) {
+      html += `<div style="margin-top:8px;font-size:12px;color:var(--warn)">⚠️ Some folders had errors: ${errors.join('; ')}</div>`;
+    }
+    listEl.innerHTML = html;
+
+    updateTokenMeter();
+    const parts = [];
+    if (loadedContent.length)   parts.push(`${loadedContent.length} company document${loadedContent.length>1?'s':''}`);
+    if (loadedTemplates.length) parts.push(`${loadedTemplates.length} proposal template${loadedTemplates.length>1?'s':''} (0 tokens)`);
+    showStatus('success', 'SharePoint loaded', parts.join(' · ') + ' ready.');
 
   } catch(e) {
     showStatus('error', 'SharePoint load failed', e.message);
@@ -1853,7 +1953,7 @@ async function runGeneration() {
 
     const volDefs = {
       '1': { label: 'Volume I — Technical',
-        prompt: `Write Volume I (Technical Approach). Address EACH PWS task area specifically and by name. Return ONLY JSON:\n{"understanding_of_requirement":"2-3 paragraph prose showing deep understanding of THIS specific requirement and agency mission","technical_approach":"4-5 paragraph prose addressing EACH PWS task area by name with specific methodology tailored to this requirement","integrated_methodology":"2 paragraph narrative on overall execution approach","staffing_plan":"narrative describing staffing approach for this specific requirement","key_personnel_intro":"paragraph introducing key personnel and their direct relevance to this requirement","sample_tasks":[]}`
+        prompt: `Write Volume I (Technical Approach). Address EACH PWS task area specifically and by name. Return ONLY JSON:\n{"understanding_of_requirement":"2-3 paragraph prose showing deep understanding of THIS specific requirement","technical_approach":"4-5 paragraph prose addressing EACH PWS task area by name with specific methodology tailored to this requirement","integrated_methodology":"2 paragraph narrative on overall execution approach","management_approach":"3-4 paragraph management approach narrative covering organizational structure, oversight, and performance management","staffing_plan":"narrative describing staffing approach for this specific requirement","key_personnel_intro":"paragraph introducing key personnel and their direct relevance to this requirement","sample_tasks":[]}`
       },
       '2': { label: 'Volume II — Past Performance',
         prompt: `Write Volume II (Past Performance). Use the most relevant past performance references from the briefing. For each reference, write narrative that explicitly maps to THIS solicitation's evaluation factors and task areas. Return ONLY JSON:\n{"references":[{"program_name":"","contract_number":"","pm_name":"","pm_phone":"","pm_email":"","co_name":"","co_phone":"","co_email":"","cor_name":"","cor_phone":"","cor_email":"","contract_type":"","period_of_performance":"","total_value":"","prime_or_sub":"","overview":"2 paragraph prose","scope":"prose paragraph plus bullet points","relevance":"prose explicitly mapping to THIS solicitation task areas and evaluation factors","similarity":"bullet points of similarity factors"}]}`
@@ -1911,47 +2011,101 @@ async function runGeneration() {
   }
 }
 
-// ─── REAL .DOCX GENERATION (docx.js) ─────────────────────────────────────────
 
-// Wait up to 20 seconds for docx.js to finish loading
-function waitForDocx() {
-  return new Promise((resolve, reject) => {
-    if (typeof docx !== 'undefined') { resolve(); return; }
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (typeof docx !== 'undefined') {
-        clearInterval(interval);
-        resolve();
-      } else if (window._docxLoadFailed || attempts > 40) {
-        clearInterval(interval);
-        reject(new Error(
-          'Word document library failed to load from CDN.\n\n' +
-          'Most likely cause: an ad blocker or browser extension is blocking external scripts.\n\n' +
-          'Fix: disable your ad blocker for srfed.github.io, then do a hard refresh (Ctrl+Shift+R) and try again.'
-        ));
-      }
-    }, 500);
-  });
-}
+// ─── DOCUMENT GENERATION — JSZip Template Surgery ────────────────────────────
+// Fetches .docx templates from SharePoint, injects Claude's generated text
+// via XML find/replace, preserves all formatting, images, and styles exactly.
+// Templates are NEVER sent to Claude — zero token cost.
 
 async function generateDocsClientSide(proposalData, volumes) {
   const docs   = {};
   const errors = [];
   const prefix = proposalData.output_prefix || (CLIENT_CONFIG.companyShortName + '_Proposal');
 
-  // Wait for docx.js to load (it loads asynchronously from CDN)
+  const volLabels = {
+    '1': 'Volume I \u2013 Technical',
+    '2': 'Volume II \u2013 Past Performance',
+    '3': 'Volume III \u2013 Price Narrative',
+    '4': 'Volume IV \u2013 Contract Documentation',
+  };
+  const volTitles = {
+    '1': 'Technical',
+    '2': 'Past_Performance',
+    '3': 'Price_Narrative',
+    '4': 'Contract_Documentation',
+  };
+
+  // Check if we have JSZip available
+  if (typeof JSZip === 'undefined') {
+    throw new Error('JSZip library failed to load. Please disable any ad blocker for srfed.github.io, do a hard refresh (Ctrl+Shift+R), and try again.');
+  }
+
+  // Try template-based generation first
+  if (spTemplateFiles && spTemplateFiles.length > 0) {
+    const templateMap = matchTemplatesToVolumes(spTemplateFiles);
+    showStatus('info', 'Building documents from templates...', 'Injecting content into your SRFed proposal templates.', true);
+
+    for (const vol of volumes) {
+      const label    = volLabels[vol];
+      const template = templateMap[vol];
+
+      if (!template) {
+        errors.push(`${label}: no template found in SharePoint folder`);
+        continue;
+      }
+
+      try {
+        showStatus('info', `Building ${label}...`, `Injecting content into template: ${template.name}`, true);
+
+        const zip       = await JSZip.loadAsync(await template.arrayBuffer());
+        const docXml    = await zip.file('word/document.xml').async('string');
+        const newXml    = injectContentIntoXml(docXml, proposalData, vol);
+        zip.file('word/document.xml', newXml);
+
+        // Also update core properties (title, author)
+        const coreFile = zip.file('docProps/core.xml');
+        if (coreFile) {
+          let coreXml = await coreFile.async('string');
+          coreXml = coreXml
+            .replace(/<dc:title>[^<]*<\/dc:title>/, `<dc:title>${escXml(proposalData.requirement_title || label)}</dc:title>`)
+            .replace(/<dc:creator>[^<]*<\/dc:creator>/, `<dc:creator>${escXml(CLIENT_CONFIG.companyFullName)}</dc:creator>`);
+          zip.file('docProps/core.xml', coreXml);
+        }
+
+        const buffer   = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+        const blob     = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        const url      = URL.createObjectURL(blob);
+        docs[vol]      = { label, filename: `${prefix}_Volume_${vol}_${volTitles[vol]}.docx`, url };
+
+      } catch(e) {
+        console.error(`Template error for ${label}:`, e);
+        errors.push(`${label}: ${e.message}`);
+      }
+    }
+
+    if (Object.keys(docs).length > 0) {
+      if (errors.length > 0) {
+        showStatus('warn', 'Some volumes used fallback', errors.join(' | '));
+      }
+      return docs;
+    }
+    // If all templates failed, fall through to docx.js
+    showStatus('warn', 'Template generation failed', 'Falling back to standard generation. ' + errors.join('; '));
+    errors.length = 0;
+  }
+
+  // Fallback: docx.js generation (requires CDN)
   try {
     await waitForDocx();
   } catch(e) {
-    throw e;
+    throw new Error(e.message + '\n\nAlternatively, add your proposal templates to the SharePoint Templates folder in Step 3 — this bypasses the CDN requirement entirely.');
   }
 
   const volConfigs = {
-    '1': { title: 'Technical',              label: 'Volume I \u2013 Technical',              builder: buildDocxVol1 },
-    '2': { title: 'Past_Performance',       label: 'Volume II \u2013 Past Performance',       builder: buildDocxVol2 },
-    '3': { title: 'Price_Narrative',        label: 'Volume III \u2013 Price Narrative',       builder: buildDocxVol3 },
-    '4': { title: 'Contract_Documentation', label: 'Volume IV \u2013 Contract Documentation', builder: buildDocxVol4 },
+    '1': { title: volTitles['1'], label: volLabels['1'], builder: buildDocxVol1 },
+    '2': { title: volTitles['2'], label: volLabels['2'], builder: buildDocxVol2 },
+    '3': { title: volTitles['3'], label: volLabels['3'], builder: buildDocxVol3 },
+    '4': { title: volTitles['4'], label: volLabels['4'], builder: buildDocxVol4 },
   };
 
   for (const vol of volumes) {
@@ -1959,9 +2113,9 @@ async function generateDocsClientSide(proposalData, volumes) {
     try {
       showStatus('info', `Building ${cfg.label}...`, 'Assembling Word document.', true);
       const buffer = await cfg.builder(proposalData);
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      const url = URL.createObjectURL(blob);
-      docs[vol] = { label: cfg.label, filename: `${prefix}_Volume_${vol}_${cfg.title}.docx`, url };
+      const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url    = URL.createObjectURL(blob);
+      docs[vol]    = { label: cfg.label, filename: `${prefix}_Volume_${vol}_${cfg.title}.docx`, url };
     } catch(e) {
       console.error(`${cfg.label} build failed:`, e);
       errors.push(`${cfg.label}: ${e.message}`);
@@ -1969,550 +2123,142 @@ async function generateDocsClientSide(proposalData, volumes) {
   }
 
   if (Object.keys(docs).length === 0) {
-    throw new Error('All Word documents failed to build.\n' + errors.join('\n'));
+    throw new Error('All Word documents failed to build.\n\nAdd your SRFed proposal templates to the SharePoint Templates folder in Step 3 — this gives you perfect formatting without needing any CDN.\n\nErrors: ' + errors.join('; '));
   }
-
-  if (errors.length > 0) {
-    showStatus('warn', 'Some volumes failed to build', errors.join(' | '));
-  }
-
+  if (errors.length > 0) showStatus('warn', 'Some volumes failed', errors.join(' | '));
   return docs;
 }
 
-// ─── DOCX HELPERS ─────────────────────────────────────────────────────────────
-function d() { return docx; } // shorthand
-
-const NAVY   = '005FD5';   // Primary Blue
-const BLUE   = '0576FF';   // Light Blue (secondary)
-const BLUEGRAY = '485872'; // Blue-Gray
-const LTBLUE = '66C6F6';   // Light Sky Blue
-const PALE   = 'EAF4FD';
-const WHITE  = 'FFFFFF';
-const GRAY   = 'F2F4F8';
-
-const PAGE_W  = 12240; // 8.5in
-const PAGE_H  = 15840; // 11in
-const MARGIN  = 1080;  // 0.75in
-const CONT_W  = PAGE_W - MARGIN * 2; // content width in DXA
-
-function pageProps() {
-  return { page: { size: { width: PAGE_W, height: PAGE_H }, margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } } };
+// ─── XML INJECTION — insert Claude's content into template XML ────────────────
+function escXml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 }
 
-function makeDoc(sections) {
-  const { Document, Paragraph, TextRun, AlignmentType, LevelFormat, HeadingLevel } = docx;
-  return new Document({
-    styles: {
-      default: { document: { run: { font: 'Calibri', size: 22, color: '1A1A2E' } } },
-      paragraphStyles: [
-        {
-          id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-          run:  { size: 28, bold: true, font: 'Calibri', color: NAVY },
-          paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: 0,
-            border: { bottom: { style: docx.BorderStyle.SINGLE, size: 8, color: NAVY, space: 4 } } }
-        },
-        {
-          id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-          run:  { size: 24, bold: true, font: 'Calibri', color: BLUEGRAY },
-          paragraph: { spacing: { before: 180, after: 60 }, outlineLevel: 1 }
-        },
-        {
-          id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-          run:  { size: 22, bold: true, font: 'Calibri', color: '404040' },
-          paragraph: { spacing: { before: 120, after: 40 }, outlineLevel: 2 }
-        },
-        {
-          id: 'NormalBody', name: 'Normal Body', basedOn: 'Normal', next: 'NormalBody',
-          run: { font: 'Calibri', size: 22 },
-          paragraph: { spacing: { after: 120, line: 276, lineRule: 'auto' } }
-        },
-      ]
-    },
-    numbering: {
-      config: [
-        { reference: 'bullets', levels: [{ level: 0, format: LevelFormat.BULLET, text: '\u2022', alignment: AlignmentType.LEFT,
-            style: { paragraph: { indent: { left: 720, hanging: 360 } }, run: { font: 'Symbol' } } }] },
-      ]
-    },
-    sections,
-  });
+function xmlParagraph(text) {
+  // Split on newlines, create a <w:p> for each line
+  return (text || '').split('\n').filter(l => l.trim()).map(line =>
+    `<w:p><w:r><w:t xml:space="preserve">${escXml(line)}</w:t></w:r></w:p>`
+  ).join('');
 }
 
-function h1(text) {
-  const { Paragraph, TextRun, HeadingLevel } = docx;
-  return new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text, font: 'Calibri', bold: true, color: NAVY, size: 28 })] });
+function xmlBullets(items) {
+  if (!items || !items.length) return '';
+  return items.map(item =>
+    `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>` +
+    `<w:r><w:t xml:space="preserve">${escXml(String(item))}</w:t></w:r></w:p>`
+  ).join('');
 }
 
-function h2(text) {
-  const { Paragraph, TextRun, HeadingLevel } = docx;
-  return new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text, font: 'Calibri', bold: true, color: BLUEGRAY, size: 24 })] });
-}
-
-function h3(text) {
-  const { Paragraph, TextRun, HeadingLevel } = docx;
-  return new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text, font: 'Calibri', bold: true, color: '404040', size: 22 })] });
-}
-
-function para(text, opts = {}) {
-  const { Paragraph, TextRun } = docx;
-  if (!text) return new Paragraph({ children: [] });
-  // Split on newlines
-  const lines = text.split('\n');
-  const runs = [];
-  lines.forEach((line, i) => {
-    runs.push(new TextRun({ text: line, font: 'Calibri', size: 22, ...opts }));
-    if (i < lines.length - 1) runs.push(new TextRun({ break: 1 }));
-  });
-  return new Paragraph({ style: 'NormalBody', children: runs });
-}
-
-function bullet(text) {
-  const { Paragraph, TextRun } = docx;
-  return new Paragraph({
-    numbering: { reference: 'bullets', level: 0 },
-    children: [new TextRun({ text, font: 'Calibri', size: 22 })]
-  });
-}
-
-function spacer(lines = 1) {
-  const { Paragraph } = docx;
-  return Array.from({ length: lines }, () => new Paragraph({ children: [] }));
-}
-
-function pageBreak() {
-  const { Paragraph, PageBreak } = docx;
-  return new Paragraph({ children: [new PageBreak()] });
-}
-
-function boldLabel(label, value) {
-  const { Paragraph, TextRun } = docx;
-  return new Paragraph({ style: 'NormalBody', children: [
-    new TextRun({ text: label + ': ', bold: true, font: 'Calibri', size: 22 }),
-    new TextRun({ text: value || '', font: 'Calibri', size: 22 }),
-  ]});
-}
-
-// Cover page table — two columns: Gov't | SRFed
-function coverTable(data, volTitle) {
-  const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, ShadingType, BorderStyle, VerticalAlign } = docx;
-  const border = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
-  const borders = { top: border, bottom: border, left: border, right: border };
-  const hdrShade = { fill: NAVY, type: ShadingType.CLEAR };
-  const cellPad = { top: 120, bottom: 120, left: 160, right: 160 };
-
-  function hdrCell(text, w) {
-    return new TableCell({
-      borders, shading: hdrShade, width: { size: w, type: WidthType.DXA }, margins: cellPad,
-      children: [new Paragraph({ children: [new TextRun({ text, bold: true, color: WHITE, font: 'Calibri', size: 20 })] })]
-    });
+// Replace text placeholders in the document XML, preserving all formatting
+function replaceXmlText(xml, placeholder, replacement) {
+  // Word often splits runs — we need to handle both simple and split-run cases
+  // First try simple direct replacement
+  const escaped = escXml(placeholder);
+  if (xml.includes(escaped)) {
+    return xml.split(escaped).join(escXml(replacement));
   }
-  function bodyCell(lines, w) {
-    return new TableCell({
-      borders, width: { size: w, type: WidthType.DXA }, margins: cellPad, verticalAlign: VerticalAlign.TOP,
-      children: lines.map(l => new Paragraph({ children: [new TextRun({ text: l || '', font: 'Calibri', size: 20 })] }))
-    });
+  // Also try unescaped
+  if (xml.includes(placeholder)) {
+    return xml.split(placeholder).join(escXml(replacement));
+  }
+  return xml;
+}
+
+function injectContentIntoXml(xml, data, vol) {
+  // Replace common metadata placeholders first
+  const meta = [
+    ['{{SOLICITATION_NUMBER}}',  data.solicitation_number   || ''],
+    ['{{REQUIREMENT_TITLE}}',    data.requirement_title     || ''],
+    ['{{AGENCY_NAME}}',          data.agency_name           || ''],
+    ['{{AGENCY_ADDRESS}}',       data.agency_address        || ''],
+    ['{{AGENCY_ADDRESS_LINE1}}', (data.agency_address||'').split(/\n|,/)[0].trim() || data.agency_address || ''],
+    ['{{AGENCY_ADDRESS_LINE2}}', (data.agency_address||'').split(/\n/).slice(1).join(', ').trim() || ''],
+    ['{{AGENCY_POC}}',           data.agency_poc            || ''],
+    ['{{AGENCY_POC_EMAIL}}',     data.agency_poc_email      || ''],
+    ['{{AGENCY_POC_PHONE}}',     data.agency_poc_phone      || ''],
+    ['{{SUBMISSION_DATE}}',      data.submission_date       || ''],
+    ['{{COMPANY_NAME}}',         CLIENT_CONFIG.companyFullName],
+    ['{{COMPANY_SHORT}}',        CLIENT_CONFIG.companyShortName],
+    ['{{CAGE}}',                 CLIENT_CONFIG.cage         || ''],
+    ['{{UEI}}',                  CLIENT_CONFIG.uei          || ''],
+    ['{{CEO_NAME}}',             CLIENT_CONFIG.ceoName      || ''],
+    ['{{CEO_TITLE}}',            CLIENT_CONFIG.ceoTitle     || ''],
+    ['{{CEO_EMAIL}}',            CLIENT_CONFIG.ceoEmail     || ''],
+    ['{{CEO_PHONE}}',            CLIENT_CONFIG.ceoPhone     || ''],
+    ['{{ADDRESS_LINE1}}',        (CLIENT_CONFIG.address||'').split(',')[0].trim()],
+    ['{{ADDRESS_LINE2}}',        (CLIENT_CONFIG.address||'').split(',').slice(1).join(',').trim()],
+  ];
+  for (const [ph, val] of meta) {
+    xml = replaceXmlText(xml, ph, val);
   }
 
-  const half = Math.floor(CONT_W / 2);
-  const govLines = [
-    data.agency_name || '[AGENCY]',
-    data.agency_address || '[ADDRESS]',
-    '',
-    'Attn: ' + (data.agency_poc || '[POC]'),
-    data.agency_poc_email || '',
-    data.agency_poc_phone || '',
-  ];
-  const srfLines = [
-    CLIENT_CONFIG.companyFullName,
-    CLIENT_CONFIG.ceoName + ', ' + CLIENT_CONFIG.ceoTitle,
-    CLIENT_CONFIG.ceoPhone,
-    CLIENT_CONFIG.ceoEmail,
-    '',
-    CLIENT_CONFIG.address,
-    '',
-    'SAM UEI: ' + CLIENT_CONFIG.uei + ' | CAGE: ' + CLIENT_CONFIG.cage,
-  ];
+  const v = data[`volume${vol}`] || {};
 
-  return new Table({
-    width: { size: CONT_W, type: WidthType.DXA },
-    columnWidths: [half, CONT_W - half],
-    rows: [
-      new TableRow({ children: [ hdrCell('Provided to:', half), hdrCell('Provided by:', CONT_W - half) ] }),
-      new TableRow({ children: [ bodyCell(govLines, half), bodyCell(srfLines, CONT_W - half) ] }),
-    ]
-  });
-}
-
-// Navy banner bar (top of cover page)
-function navyBanner(text) {
-  const { Paragraph, TextRun, ShadingType } = docx;
-  return new Paragraph({
-    shading: { fill: NAVY, type: ShadingType.CLEAR },
-    children: [new TextRun({ text, bold: true, color: WHITE, font: 'Calibri', size: 18, allCaps: true })]
-  });
-}
-
-function coverPageChildren(data, volTitle) {
-  const { Paragraph, TextRun, AlignmentType } = docx;
-  const DISC1 = 'This submittal includes data that shall not be disclosed outside the Government and shall not be duplicated, used, or disclosed—in whole or in part—for any purpose other than to evaluate this submittal.';
-  const DISC2 = 'This submittal contains trade secrets and commercial information that are either specifically exempted from disclosure by statute or are privileged or confidential within the meaning of the exemption set forth in 5 USC 552(b)(3) and (4) of the Freedom of Information Act.';
-  return [
-    navyBanner(CLIENT_CONFIG.companyFullName + '  |  ' + CLIENT_CONFIG.companyTagline),
-    ...spacer(2),
-    new Paragraph({ children: [new TextRun({ text: 'Solicitation No: ' + (data.solicitation_number || '[SOLICITATION NUMBER]'), font: 'Calibri', size: 22, color: '595959' })] }),
-    new Paragraph({ children: [new TextRun({ text: (data.requirement_title || '[REQUIREMENT TITLE]') + '  |  ' + volTitle, bold: true, font: 'Calibri', size: 32, color: NAVY })] }),
-    new Paragraph({ children: [new TextRun({ text: data.submission_date || '[DATE]', font: 'Calibri', size: 22 })] }),
-    ...spacer(2),
-    coverTable(data, volTitle),
-    ...spacer(2),
-    para(DISC1, { size: 18, color: '595959', italics: true }),
-    para(DISC2, { size: 18, color: '595959', italics: true }),
-    pageBreak(),
-  ];
-}
-
-// Section header (used as running header in footer text)
-function makeHeader(data, volTitle) {
-  const { Header, Paragraph, TextRun, AlignmentType, TabStopType, TabStopPosition } = docx;
-  return new Header({
-    children: [
-      new Paragraph({
-        tabStops: [{ type: TabStopType.RIGHT, position: CONT_W }],
-        border: { bottom: { style: docx.BorderStyle.SINGLE, size: 6, color: NAVY, space: 4 } },
-        children: [
-          new TextRun({ text: CLIENT_CONFIG.companyFullName + '  |  ' + (data.solicitation_number || ''), font: 'Calibri', size: 18, color: NAVY }),
-          new TextRun({ text: '\t' + volTitle, font: 'Calibri', size: 18, color: BLUEGRAY }),
-        ]
-      })
-    ]
-  });
-}
-
-function makeFooter(data) {
-  const { Footer, Paragraph, TextRun, TabStopType, PageNumber, NumberFormat } = docx;
-  return new Footer({
-    children: [
-      new Paragraph({
-        tabStops: [{ type: TabStopType.RIGHT, position: CONT_W }],
-        border: { top: { style: docx.BorderStyle.SINGLE, size: 4, color: LTBLUE, space: 4 } },
-        children: [
-          new TextRun({ text: 'Proprietary & Source Selection Sensitive', font: 'Calibri', size: 16, color: '888888' }),
-          new TextRun({ text: '\tPage ', font: 'Calibri', size: 16, color: '888888' }),
-          new TextRun({ children: [PageNumber.CURRENT], font: 'Calibri', size: 16, color: '888888' }),
-          new TextRun({ text: ' of ', font: 'Calibri', size: 16, color: '888888' }),
-          new TextRun({ children: [PageNumber.TOTAL_PAGES], font: 'Calibri', size: 16, color: '888888' }),
-        ]
-      })
-    ]
-  });
-}
-
-// Past performance info table
-function ppRefTable(ref) {
-  const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, ShadingType, BorderStyle } = docx;
-  const border = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
-  const borders = { top: border, bottom: border, left: border, right: border };
-  const cellPad = { top: 80, bottom: 80, left: 120, right: 120 };
-  const lblW = Math.floor(CONT_W * 0.36);
-  const valW = CONT_W - lblW;
-
-  function row(label, value) {
-    return new TableRow({ children: [
-      new TableCell({ borders, shading: { fill: PALE, type: ShadingType.CLEAR }, width: { size: lblW, type: WidthType.DXA }, margins: cellPad,
-        children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, font: 'Calibri', size: 20 })] })] }),
-      new TableCell({ borders, width: { size: valW, type: WidthType.DXA }, margins: cellPad,
-        children: [new Paragraph({ children: [new TextRun({ text: value || '', font: 'Calibri', size: 20 })] })] }),
-    ]});
+  if (vol === '1') {
+    xml = replaceXmlText(xml, '{{UNDERSTANDING}}',        v.understanding_of_requirement || '');
+    xml = replaceXmlText(xml, '{{TECHNICAL_APPROACH}}',   v.technical_approach           || '');
+    xml = replaceXmlText(xml, '{{METHODOLOGY}}',          v.integrated_methodology       || '');
+    xml = replaceXmlText(xml, '{{MANAGEMENT_APPROACH}}',  v.management_approach || v.integrated_methodology || '');
+    xml = replaceXmlText(xml, '{{STAFFING_PLAN}}',        v.staffing_plan                || '');
+    xml = replaceXmlText(xml, '{{KEY_PERSONNEL_INTRO}}',  v.key_personnel_intro          || '');
+    const personnelRows = CLIENT_CONFIG.keyPersonnel.map(p =>
+      `<w:tr><w:tc><w:p><w:r><w:t>${escXml(p.name)}</w:t></w:r></w:p></w:tc>` +
+      `<w:tc><w:p><w:r><w:t>${escXml(p.title)}</w:t></w:r></w:p></w:tc>` +
+      `<w:tc><w:p><w:r><w:t>${escXml(p.background)}</w:t></w:r></w:p></w:tc></w:tr>`
+    ).join('');
+    xml = replaceXmlText(xml, '{{PERSONNEL_ROWS}}', personnelRows);
   }
 
-  return new Table({
-    width: { size: CONT_W, type: WidthType.DXA },
-    columnWidths: [lblW, valW],
-    rows: [
-      row('Company Name', CLIENT_CONFIG.companyFullName),
-      row('CAGE Code', CLIENT_CONFIG.cage),
-      row('Program Name', ref.program_name),
-      row('Contract Number', ref.contract_number),
-      row('Program Manager', `${ref.pm_name || ''}  |  ${ref.pm_phone || ''}  |  ${ref.pm_email || ''}`),
-      row('Contracting Officer', `${ref.co_name || ''}  |  ${ref.co_phone || ''}  |  ${ref.co_email || ''}`),
-      row('COR', `${ref.cor_name || ''}  |  ${ref.cor_phone || ''}  |  ${ref.cor_email || ''}`),
-      row('Contract Type', ref.contract_type),
-      row('Period of Performance', ref.period_of_performance),
-      row('Total Contract Value', ref.total_value),
-      row('Prime / Subcontractor', ref.prime_or_sub),
-    ]
-  });
-}
-
-// LCAT table for Vol III
-function lcatTable(lcats) {
-  const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, ShadingType, BorderStyle } = docx;
-  const border = { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' };
-  const borders = { top: border, bottom: border, left: border, right: border };
-  const cellPad = { top: 80, bottom: 80, left: 120, right: 120 };
-  const cols = [Math.floor(CONT_W*0.4), Math.floor(CONT_W*0.2), Math.floor(CONT_W*0.2), Math.floor(CONT_W*0.2)];
-
-  function hdrCell(text, w) {
-    return new TableCell({ borders, shading: { fill: NAVY, type: ShadingType.CLEAR }, width: { size: w, type: WidthType.DXA }, margins: cellPad,
-      children: [new Paragraph({ children: [new TextRun({ text, bold: true, color: WHITE, font: 'Calibri', size: 20 })] })] });
-  }
-  function dataCell(text, w) {
-    return new TableCell({ borders, width: { size: w, type: WidthType.DXA }, margins: cellPad,
-      children: [new Paragraph({ children: [new TextRun({ text: text || '', font: 'Calibri', size: 20 })] })] });
+  if (vol === '2') {
+    const refs = v.references || [];
+    const refBlocks = refs.map((r, i) => [
+      [`{{REF${i+1}_PROGRAM}}`,     r.program_name           || ''],
+      [`{{REF${i+1}_CONTRACT}}`,    r.contract_number        || ''],
+      [`{{REF${i+1}_PM_NAME}}`,     r.pm_name                || ''],
+      [`{{REF${i+1}_PM_PHONE}}`,    r.pm_phone               || ''],
+      [`{{REF${i+1}_PM_EMAIL}}`,    r.pm_email               || ''],
+      [`{{REF${i+1}_CO_NAME}}`,     r.co_name                || ''],
+      [`{{REF${i+1}_CO_PHONE}}`,    r.co_phone               || ''],
+      [`{{REF${i+1}_CO_EMAIL}}`,    r.co_email               || ''],
+      [`{{REF${i+1}_COR_NAME}}`,    r.cor_name               || ''],
+      [`{{REF${i+1}_COR_PHONE}}`,   r.cor_phone              || ''],
+      [`{{REF${i+1}_COR_EMAIL}}`,   r.cor_email              || ''],
+      [`{{REF${i+1}_TYPE}}`,        r.contract_type          || ''],
+      [`{{REF${i+1}_PERIOD}}`,      r.period_of_performance  || ''],
+      [`{{REF${i+1}_VALUE}}`,       r.total_value            || ''],
+      [`{{REF${i+1}_PRIME_SUB}}`,   r.prime_or_sub           || ''],
+      [`{{REF${i+1}_OVERVIEW}}`,    r.overview               || ''],
+      [`{{REF${i+1}_SCOPE}}`,       r.scope                  || ''],
+      [`{{REF${i+1}_RELEVANCE}}`,   r.relevance              || ''],
+      [`{{REF${i+1}_SIMILARITY}}`,  r.similarity             || ''],
+    ]).flat();
+    for (const [ph, val] of refBlocks) xml = replaceXmlText(xml, ph, val);
   }
 
-  const rows = [
-    new TableRow({ children: [ hdrCell('Labor Category', cols[0]), hdrCell('Base Rate', cols[1]), hdrCell('Fully Burdened Rate', cols[2]), hdrCell('Est. Annual Hours', cols[3]) ] }),
-  ];
-  (lcats && lcats.length > 0 ? lcats : [
-    { name: '[LCAT 1 — from your pricing Excel]', base: '$[X.XX]', burdened: '$[X.XX]', hours: '1,920' },
-    { name: '[LCAT 2]', base: '$[X.XX]', burdened: '$[X.XX]', hours: '1,920' },
-    { name: '[LCAT 3]', base: '$[X.XX]', burdened: '$[X.XX]', hours: '1,920' },
-  ]).forEach(lcat => {
-    rows.push(new TableRow({ children: [
-      dataCell(lcat.name, cols[0]), dataCell(lcat.base || '$[X.XX]', cols[1]),
-      dataCell(lcat.burdened || '$[X.XX]', cols[2]), dataCell(lcat.hours || '1,920', cols[3]),
-    ]}));
-  });
-
-  return new Table({ width: { size: CONT_W, type: WidthType.DXA }, columnWidths: cols, rows });
-}
-
-// ─── VOLUME BUILDERS ──────────────────────────────────────────────────────────
-
-async function buildDocxVol1(data) {
-  const v = data.volume1 || {};
-  const volTitle = 'Volume I \u2013 Technical';
-
-  const children = [
-    ...coverPageChildren(data, volTitle),
-    h1('Technical Approach'),
-    h2('1.1  Understanding of the Requirement'),
-    para(v.understanding_of_requirement || '[Understanding of requirement — tailored to this RFP.]'),
-    ...spacer(),
-    h2('1.2  Technical Approach'),
-    para(v.technical_approach || '[Technical approach narrative — tailored to PWS task areas.]'),
-    ...spacer(),
-    h2('1.3  Integrated Execution Methodology'),
-    para(v.integrated_methodology || 'SRFed executes this requirement using a structured, repeatable methodology that ensures consistency across all task areas while maintaining the flexibility to support evolving mission requirements. Our approach is anchored in transparent communication, rigorous data management, and a culture of continuous improvement — ensuring the Government receives maximum value throughout the period of performance.'),
-    ...spacer(),
-    h2('1.4  Quality Assurance and Control'),
-    para('SRFed implements a multi-level quality assurance process ensuring all deliverables meet contractual requirements. Quality is embedded throughout execution — in our planning, data practices, deliverable preparation, and stakeholder engagements — rather than applied as a final review step.'),
-    ...spacer(),
-    h2('1.5  Risk Identification and Mitigation'),
-    para('SRFed proactively identifies and mitigates performance risk through a living risk register, maintained by the Program Manager and reviewed at every status meeting. Risk factors are categorized by schedule, financial, personnel, and stakeholder dimensions, with documented mitigation strategies and contingency plans for each identified risk.'),
-    ...spacer(),
-    h2('1.6  Transition-In Plan'),
-    para('SRFed ensures full operational capability within 30 days of award through a structured transition plan:'),
-    bullet('Days 1\u20135: Finalize staffing, initiate clearance processing for any new hires, establish Government communication cadence'),
-    bullet('Days 6\u201315: Complete system access onboarding, shadow incumbent processes, begin initial task execution'),
-    bullet('Days 16\u201330: Achieve full operational capability; deliver initial status report to COR'),
-    pageBreak(),
-    h1('Management Approach'),
-    h2('2.1  Organizational Structure and Philosophy'),
-    para('SRFed\'s management approach centers on a single Program Manager accountable for all contract performance, supported by functional leads aligned to each major task area. This flat, accountable structure ensures rapid decision-making, clear communication, and full Government visibility into program status at all times.'),
-    ...spacer(),
-    h2('2.2  Communication and Stakeholder Engagement'),
-    para('SRFed establishes a structured, multi-tiered communication framework calibrated to the Government\'s needs — from executive touchpoints with senior leadership to daily operational coordination with COR and task leads. All meetings are documented with action items, owners, and due dates.'),
-    ...spacer(),
-    h2('2.3  Risk Management Framework'),
-    para('SRFed maintains a living risk register, updated and reviewed at every status meeting, with documented mitigation strategies for all identified risks. Our risk management culture ensures that emerging issues are surfaced early and resolved proactively — protecting schedule, budget, and mission outcomes.'),
-    pageBreak(),
-    h1('Personnel Approach'),
-    h2('3.1  Staffing Plan'),
-    para(v.staffing_plan || '[Staffing plan — tailored to this requirement\'s labor categories and task areas.]'),
-    ...spacer(),
-    h2('3.2  Key Personnel'),
-    para(v.key_personnel_intro || '[Key personnel introduction — tailored to this solicitation\'s key personnel requirements.]'),
-    ...spacer(),
-    h2('3.3  Personnel Retention and Continuity'),
-    para('SRFed maintains exceptional personnel retention through competitive compensation anchored to market benchmarks, a collaborative team culture, and meaningful work supporting DoD missions. In the unlikely event of personnel transition, SRFed activates a succession plan within 24 hours, ensuring zero interruption to Government operations.'),
-  ];
-
-  if (v.sample_tasks && v.sample_tasks.length > 0) {
-    children.push(pageBreak(), h1('Sample Tasks'));
-    v.sample_tasks.forEach((task, i) => {
-      children.push(h2(`Sample Task ${i+1}`), para(task));
-    });
+  if (vol === '3') {
+    xml = replaceXmlText(xml, '{{PRICING_PHILOSOPHY}}',    v.pricing_philosophy    || '');
+    xml = replaceXmlText(xml, '{{BOE_NARRATIVE}}',         v.boe_narrative         || '');
+    xml = replaceXmlText(xml, '{{WRAP_RATE}}',             v.wrap_rate_narrative   || '');
+    xml = replaceXmlText(xml, '{{TOTAL_PRICE}}',           v.total_price_narrative || '');
+    xml = replaceXmlText(xml, '{{COMPLIANCE}}',            v.compliance_additional || '');
   }
 
-  const doc = makeDoc([{
-    properties: pageProps(),
-    headers: { default: makeHeader(data, volTitle) },
-    footers: { default: makeFooter(data) },
-    children,
-  }]);
-  return await docx.Packer.toBuffer(doc);
+  if (vol === '4') {
+    xml = replaceXmlText(xml, '{{COVER_LETTER}}',    v.cover_letter_additional     || '');
+    xml = replaceXmlText(xml, '{{FILL_INS}}',        (v.additional_fill_ins||[]).join('\n'));
+    xml = replaceXmlText(xml, '{{OCI_PLAN}}',        v.oci_plan || 'SRFed has conducted a thorough review and identified no known Organizational Conflicts of Interest (OCI) related to this requirement.');
+    xml = replaceXmlText(xml, '{{CLEARANCE_PLAN}}',  v.clearance_plan_additional   || '');
+    xml = replaceXmlText(xml, '{{FACILITY_CLEARANCE}}', `${CLIENT_CONFIG.companyFullName} maintains an Active SECRET Facility Clearance (FCL). UEI: ${CLIENT_CONFIG.uei} | CAGE: ${CLIENT_CONFIG.cage}`);
+    xml = replaceXmlText(xml, '{{GFP}}',             v.gfp                         || '');
+    xml = replaceXmlText(xml, '{{CMMC}}',            v.cmmc                        || '');
+  }
+
+  return xml;
 }
 
-async function buildDocxVol2(data) {
-  const v = data.volume2 || {};
-  const volTitle = 'Volume II \u2013 Past Performance';
-
-  // Build default refs from CLIENT_CONFIG so they update per client
-  const defaultRefs = CLIENT_CONFIG.pastPerformance.map(p => ({
-    program_name:         p.programName,
-    contract_number:      p.contractNumber,
-    pm_name:  p.pm.name,  pm_phone:  p.pm.phone,  pm_email:  p.pm.email,
-    co_name:  p.co.name,  co_phone:  p.co.phone,  co_email:  p.co.email,
-    cor_name: p.cor.name, cor_phone: p.cor.phone, cor_email: p.cor.email,
-    contract_type:        p.contractType,
-    period_of_performance: p.period,
-    total_value:          p.value,
-    prime_or_sub:         p.customer,
-    overview: null, scope: null, relevance: null, similarity: null,
-  }));
-
-  const refs = (v.references && v.references.length > 0) ? v.references : defaultRefs;
-
-  const children = [...coverPageChildren(data, volTitle)];
-
-  refs.forEach((ref, i) => {
-    if (i > 0) children.push(pageBreak());
-    children.push(
-      h1(`Past Performance Reference ${i+1}:  ${ref.program_name || ''}`),
-      ...spacer(),
-      ppRefTable(ref),
-      ...spacer(),
-      h2('Overview'),
-      para(ref.overview || '[Overview of work performed and organizational context.]'),
-      ...spacer(),
-      h2('Scope and Responsibilities'),
-      para(ref.scope || '[Description of SRFed\u2019s specific scope, deliverables, and responsibilities on this contract.]'),
-      ...spacer(),
-      h2('Relevance to This Solicitation'),
-      para(ref.relevance || '[Narrative explaining how this contract\u2019s scope, environment, and challenges map directly to the current requirement\u2019s task areas.]'),
-      ...spacer(),
-      h2('Similarity in Scope, Magnitude, and Complexity'),
-      para(ref.similarity || '[Bullet-level similarity factors: comparable contract value, similar customer set, matching labor categories, aligned mission environment.]'),
-    );
-  });
-
-  const doc = makeDoc([{
-    properties: pageProps(),
-    headers: { default: makeHeader(data, volTitle) },
-    footers: { default: makeFooter(data) },
-    children,
-  }]);
-  return await docx.Packer.toBuffer(doc);
-}
-
-async function buildDocxVol3(data) {
-  const v = data.volume3 || {};
-  const volTitle = 'Volume III \u2013 Price Narrative';
-  const agency = data.agency_name || 'the Government';
-
-  const children = [
-    ...coverPageChildren(data, volTitle),
-    h1('1.  Introduction and Pricing Philosophy'),
-    para(`${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName}) is committed to delivering a pricing strategy that balances cost competitiveness with operational reliability, workforce retention, and long-term value for ${agency}.`),
-    ...spacer(),
-    para(v.pricing_philosophy || 'Our philosophy centers on a \u201cFair and Reasonable for Long-Term Collective Success\u201d approach. We aligned qualifications to mission-specific needs and structured rates using multiple references, including the Economic Research Institute, common salary benchmarks, previous SRFed contractual pricing data, and deep industry knowledge. Every dollar in our proposal reflects genuine investment in mission capability, not administrative overhead.'),
-    ...spacer(),
-    h1('2.  Labor Categories and Basis of Estimate'),
-    para(v.boe_narrative || 'SRFed developed its Basis of Estimate (BOE) by aligning government-recognized labor categories with the specific objectives and deliverables outlined in the Performance Work Statement. Each LCAT was mapped to the relevant task areas, with estimated hours derived from historical performance data and SRFed\u2019s direct experience supporting analogous DoD programs.'),
-    ...spacer(),
-    para('[Complete BOE narrative here with specific LCATs and hour allocations from this solicitation. Transfer your LCAT structure from your pricing Excel.]', { color: '999999', italics: true }),
-    ...spacer(),
-    lcatTable(v.labor_categories),
-    ...spacer(),
-    h1('3.  Pricing Reasonableness and Risk Mitigation'),
-    para(v.wrap_rate_narrative || `Pricing was determined based on industry norms, geographic labor rates, ${CLIENT_CONFIG.companyShortName}'s GSA MAS schedule (${CLIENT_CONFIG.gsaMas || 'see GSA schedule'}), and internal wrap rate calculations. Base rates were escalated using standard fringe, overhead, G&A, and profit allocations.`),
-    ...spacer(),
-    bullet('Fringe Benefits \u2013 including PTO, 401(k) matching, medical/dental/vision coverage, and performance-based incentives'),
-    bullet('Overhead and G&A \u2013 ensuring organizational infrastructure and compliance support'),
-    bullet('Profit \u2013 applied conservatively to remain cost-competitive while sustaining organizational investment'),
-    ...spacer(),
-    para(v.total_price_narrative || '[INSERT TOTAL PRICE SUMMARY. Copy base year total, option year totals, and grand total from your pricing Excel. Reference the Section B tab.]', { color: '999999', italics: true }),
-    ...spacer(),
-    h1('4.  Compliance Statement'),
-    para('All CLINs are fully priced in accordance with solicitation requirements. All contractor-furnished tools, licenses, and labor costs are incorporated. There will be no uncompensated overtime. SRFed does not intend to subcontract any work.'),
-    ...spacer(),
-    para(`${CLIENT_CONFIG.companyShortName} maintains a ${CLIENT_CONFIG.dcaa}${CLIENT_CONFIG.gsaMas ? ' GSA MAS Contract Number: ' + CLIENT_CONFIG.gsaMas + '.' : ''}`),
-
-    ...spacer(),
-    para(v.compliance_additional || '[Add any solicitation-specific compliance acknowledgements here.]', { color: '999999', italics: true }),
-  ];
-
-  const doc = makeDoc([{
-    properties: pageProps(),
-    headers: { default: makeHeader(data, volTitle) },
-    footers: { default: makeFooter(data) },
-    children,
-  }]);
-  return await docx.Packer.toBuffer(doc);
-}
-
-async function buildDocxVol4(data) {
-  const v = data.volume4 || {};
-  const volTitle = 'Volume IV \u2013 Contract Documentation';
-  const solNum = data.solicitation_number || '[SOLICITATION NUMBER]';
-  const agency = data.agency_name || '[AGENCY]';
-  const reqTitle = data.requirement_title || '[REQUIREMENT]';
-
-  const fillIns = Array.isArray(v.additional_fill_ins) && v.additional_fill_ins.length > 0
-    ? v.additional_fill_ins
-    : ['Acknowledgement of Amendments: Completed', 'Representations and Certifications: Completed in SAM.gov', 'Section B Pricing Inputs: Submitted via required Excel document'];
-
-  const children = [
-    ...coverPageChildren(data, volTitle),
-    h1('Cover Letter'),
-    para(`${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName}) is pleased to submit this proposal in response to Solicitation ${solNum} for ${reqTitle} in support of ${agency}.`),
-    ...spacer(),
-    para(`${CLIENT_CONFIG.companyShortName} is a ${CLIENT_CONFIG.businessType} with demonstrated experience supporting Department of Defense efforts. Our team brings the discipline, clearances, and mission-proven track record to deliver results from Day 1.`),
-    ...spacer(),
-    para(v.cover_letter_additional || 'SRFed acknowledges all amendments to the solicitation and confirms that this proposal is valid for acceptance in accordance with solicitation requirements. We understand that award may be made based on initial proposals and have therefore submitted our best technical and cost solution.'),
-    ...spacer(),
-    para('Respectfully submitted,'),
-    ...spacer(2),
-    para(CLIENT_CONFIG.ceoName + ', ' + CLIENT_CONFIG.ceoTitle),
-    para(CLIENT_CONFIG.companyFullName),
-    para(CLIENT_CONFIG.ceoEmail + '  |  ' + CLIENT_CONFIG.ceoPhone),
-    pageBreak(),
-    h1('Solicitation Fill-Ins'),
-    para('SRFed has completed all required solicitation representations, certifications, and fill-ins in accordance with Section K and all applicable clauses.'),
-    ...spacer(),
-    ...fillIns.map(item => bullet(item)),
-    pageBreak(),
-    h1('Organizational Conflict of Interest (OCI) Mitigation Plan'),
-    para('SRFed has conducted a thorough review of the requirements and has identified no known Organizational Conflicts of Interest (OCI) that would impair its ability to perform this contract objectively. To ensure continued compliance, SRFed implements:'),
-    ...spacer(),
-    bullet('Organizational Firewalls: Segregation of personnel and data between contracts'),
-    bullet('Access Controls: Role-based access ensuring personnel only access data necessary for performance'),
-    bullet('Employee Training: Annual ethics and OCI awareness training for all staff'),
-    bullet('Disclosure Procedures: Immediate notification to the Contracting Officer of any potential OCI'),
-    bullet('Non-Disclosure Agreements: Enforced across all employees and subcontractors'),
-    pageBreak(),
-    h1('Plan for Obtaining Personnel Clearances'),
-    para('All proposed key personnel currently hold at least an Interim SECRET clearance or higher, enabling SRFed to begin performance immediately upon award. SRFed maintains an Active SECRET Facility Clearance (FCL) under DCSA cognizance.'),
-    ...spacer(),
-    para(v.clearance_plan_additional || 'For personnel requiring clearance upgrades, SRFed submits clearance packages within 24\u201348 hours of onboarding through our Facility Security Officer (FSO), who coordinates directly with DCSA to ensure timely adjudication. SRFed\u2019s FSO has successfully processed multiple clearance upgrades with no interruption to contract performance.'),
-    ...spacer(),
-    h1('Facility Clearance Documentation'),
-    boldLabel('Company', CLIENT_CONFIG.companyFullName),
-    boldLabel('UEI', CLIENT_CONFIG.uei),
-    boldLabel('CAGE', CLIENT_CONFIG.cage),
-    boldLabel('FCL Level', 'SECRET (Active)'),
-    boldLabel('Address', CLIENT_CONFIG.address),
-    boldLabel('Phone', '(410) 774-6645'),
-    ...spacer(),
-    h1('Government Furnished Property (GFP)'),
-    para(v.gfp || 'SRFed will manage all Government Furnished Property in accordance with applicable DoD/DoN policies and established property accountability requirements, ensuring full lifecycle management from receipt through disposition. SRFed\u2019s Equipment Management Specialist, Mark Agustin, brings 10+ years of logistics and property management experience supporting Army National Guard operations.'),
-    ...spacer(),
-    h1('Cybersecurity Maturity Model Certification (CMMC)'),
-    para(v.cmmc || `${CLIENT_CONFIG.companyShortName}: ${CLIENT_CONFIG.cmmc} UEI: ${CLIENT_CONFIG.uei} | CAGE: ${CLIENT_CONFIG.cage}.`),
-  ];
-
-  const doc = makeDoc([{
-    properties: pageProps(),
-    headers: { default: makeHeader(data, volTitle) },
-    footers: { default: makeFooter(data) },
-    children,
-  }]);
-  return await docx.Packer.toBuffer(doc);
-}
-
-// ─── RENDER DOWNLOAD BUTTONS ──────────────────────────────────────────────────
 function renderDownloads(docs) {
   const card = document.getElementById('downloadCard');
   const list = document.getElementById('downloadList');
