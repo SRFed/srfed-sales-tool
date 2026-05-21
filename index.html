@@ -159,7 +159,31 @@
   .file-item .file-remove { cursor: pointer; color: var(--muted); font-size: 16px; flex-shrink: 0; }
   .file-item .file-remove:hover { color: var(--error); }
 
-  /* ── TOKEN METER ── */
+  /* ── SHALLS SECTION ── */
+  .shalls-section {
+    margin-top: 20px; border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+  }
+  .shalls-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  .shalls-header:hover { background: #f1f5f9; }
+  .shalls-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .shalls-count { font-size: 12px; color: var(--muted); }
+  .shalls-body {
+    max-height: 320px; overflow-y: auto;
+    padding: 12px 14px; background: white;
+    overscroll-behavior-y: contain;
+  }
+  .shall-item {
+    font-size: 12px; color: var(--text); padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9; line-height: 1.5;
+    cursor: text; user-select: text;
+  }
+  .shall-item:last-child { border-bottom: none; }
+  .shall-keyword { font-weight: 700; color: var(--blue); }
   .token-meter {
     margin-top: 16px;
     padding: 14px 16px;
@@ -576,22 +600,28 @@
             <div style="font-size:12px;color:var(--success)" id="spAccountLine">Connected to Microsoft 365</div>
           </div>
           <div class="form-group">
-            <label>Past Performance Folder URL</label>
-            <input type="text" id="spPP" placeholder="https://yourcompany.sharepoint.com/.../Past Performance"/>
-          </div>
-          <div class="form-group">
-            <label>Resumes Folder URL</label>
-            <input type="text" id="spResumes" placeholder="https://yourcompany.sharepoint.com/.../Resumes"/>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
             <label style="display:flex;align-items:center;gap:6px">
               Proposal Templates Folder URL
               <span class="badge-no-token" title="Templates are used for formatting only — never sent to AI">⚡ 0 tokens</span>
             </label>
             <input type="text" id="spTemplates" placeholder="https://yourcompany.sharepoint.com/.../Proposal Templates"/>
-            <div class="tip" style="margin-top:4px">Templates (.docx) are fetched for formatting only — never sent to AI, zero token cost.</div>
+            <div class="tip" style="margin-top:4px">Formatting shells only — never sent to AI, zero token cost.</div>
           </div>
-          <p class="tip" style="margin-top:10px;margin-bottom:14px">Leave any folder blank to skip. Resumes and past performance documents are sent to the AI as source documents for writing proposals.</p>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:6px">
+              Past Performance Folder URL
+              <span style="font-size:11px;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:10px;padding:1px 8px">counts toward tokens</span>
+            </label>
+            <input type="text" id="spPP" placeholder="https://yourcompany.sharepoint.com/.../Past Performance"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label style="display:flex;align-items:center;gap:6px">
+              Resumes Folder URL
+              <span style="font-size:11px;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:10px;padding:1px 8px">counts toward tokens</span>
+            </label>
+            <input type="text" id="spResumes" placeholder="https://yourcompany.sharepoint.com/.../Resumes"/>
+          </div>
+          <p class="tip" style="margin-top:10px;margin-bottom:14px">Past performance and resume documents are sent to the AI as source documents — they count toward token usage. Templates are formatting only.</p>
           <button class="btn btn-primary" id="spLoadBtn" onclick="loadSharePointFiles()" style="width:100%">
             <span id="spLoadIcon">🔗</span> <span id="spLoadText">Load Files from SharePoint</span>
           </button>
@@ -650,6 +680,16 @@
           <div class="token-bar-fill" id="tokenBarFill" style="width:0%"></div>
         </div>
         <div class="token-meter-sub" id="tokenMeterSub">Add documents above to see estimated usage.</div>
+      </div>
+
+      <!-- Shalls / Requirements Extractor — populated after Analyze is run -->
+      <div class="shalls-section" id="shallsSection" style="display:none;margin-top:16px">
+        <div class="shalls-header" onclick="toggleShalls()">
+          <span class="shalls-title">📋 Extracted Requirements (shall / must / should)</span>
+          <span class="shalls-count" id="shallsCount">0 requirements</span>
+          <span id="shallsToggleIcon" style="font-size:12px;color:var(--muted)">▼</span>
+        </div>
+        <div class="shalls-body" id="shallsBody" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -1228,11 +1268,23 @@ async function downloadSpFile(item, token) {
 // Auto-detect which proposal volume a template file corresponds to by filename
 function detectTemplateVolume(filename) {
   const n = filename.toLowerCase();
-  if (n.match(/vol.*1|volume.*1|tech|technical|pwrpt|management/))         return 'Vol I — Technical';
-  if (n.match(/vol.*2|volume.*2|past.*perf|pp|performance/))               return 'Vol II — Past Performance';
-  if (n.match(/vol.*3|volume.*3|price|pric|cost|pricing|narrative/))       return 'Vol III — Price Narrative';
-  if (n.match(/vol.*4|volume.*4|contract|doc|cover|admin|section[_\s]*k/)) return 'Vol IV — Contract Docs';
-  return null; // unknown — will be matched by order
+  // Check most specific (longest roman numeral) first to avoid false matches
+  // e.g. "vol_iv" contains "i" so must check IV before I
+  if (n.includes('vol_iv') || n.includes('vol-iv') || n.includes('volume_iv') ||
+      n.includes('vol_4')  || n.includes('vol-4')  || n.includes('volume_4')  ||
+      n.includes('vol4')   || n.includes('contract') || n.includes('_iv_'))   return '4';
+  if (n.includes('vol_iii') || n.includes('vol-iii') || n.includes('volume_iii') ||
+      n.includes('vol_3')   || n.includes('vol-3')   || n.includes('volume_3')   ||
+      n.includes('vol3')    || n.includes('price')   || n.includes('cost')    ||
+      n.includes('narrative') || n.includes('_iii_'))                         return '3';
+  if (n.includes('vol_ii') || n.includes('vol-ii') || n.includes('volume_ii') ||
+      n.includes('vol_2')  || n.includes('vol-2')  || n.includes('volume_2')  ||
+      n.includes('vol2')   || n.includes('past')   || n.includes('perf')    ||
+      n.includes('_ii_'))                                                      return '2';
+  if (n.includes('vol_i')  || n.includes('vol-i')  || n.includes('volume_i')  ||
+      n.includes('vol_1')  || n.includes('vol-1')  || n.includes('volume_1')  ||
+      n.includes('vol1')   || n.includes('technical') || n.includes('_i_'))   return '1';
+  return null;
 }
 
 // Match loaded templates to volumes by filename
@@ -1325,23 +1377,6 @@ async function loadSharePointFiles() {
     const listEl = document.getElementById('spFileList');
     let html = '';
 
-    if (loadedContent.length > 0) {
-      html += `<div style="margin-top:10px">
-        <div class="section-label" style="margin-top:0">📂 Company Documents (${loadedContent.length} file${loadedContent.length>1?'s':''})</div>
-        ${loadedContent.map(f => {
-          const icon = f.name.endsWith('.pdf') ? '📄' : f.name.match(/\.docx?$/) ? '📝' : '📊';
-          const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
-          const tok  = estimateTokens(f);
-          const tokLabel = tok >= 1000 ? `~${Math.round(tok/1000)}k tokens` : `~${tok} tokens`;
-          return `<div class="file-item" style="background:#f0f9ff;border-color:#bae6fd">
-            <span class="file-icon">${icon}</span>
-            <span class="file-name">${escHtml(f.name)}</span>
-            <span class="file-meta"><span class="file-size">${size}</span><span class="file-tokens">${tokLabel}</span></span>
-          </div>`;
-        }).join('')}
-      </div>`;
-    }
-
     if (loadedTemplates.length > 0) {
       html += `<div style="margin-top:12px">
         <div class="section-label" style="margin-top:0;display:flex;align-items:center;gap:8px">
@@ -1359,6 +1394,23 @@ async function loadSharePointFiles() {
               <span class="badge-no-token">⚡ 0 tokens</span>
               ${vol ? `<span class="file-tokens" style="background:#fef9c3;border-color:#fde047;color:#78350f">${vol}</span>` : ''}
             </span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if (loadedContent.length > 0) {
+      html += `<div style="margin-top:10px">
+        <div class="section-label" style="margin-top:0">📂 Company Documents (${loadedContent.length} file${loadedContent.length>1?'s':''})</div>
+        ${loadedContent.map(f => {
+          const icon = f.name.endsWith('.pdf') ? '📄' : f.name.match(/\.docx?$/) ? '📝' : '📊';
+          const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+          const tok  = estimateTokens(f);
+          const tokLabel = tok >= 1000 ? `~${Math.round(tok/1000)}k tokens` : `~${tok} tokens`;
+          return `<div class="file-item" style="background:#f0f9ff;border-color:#bae6fd">
+            <span class="file-icon">${icon}</span>
+            <span class="file-name">${escHtml(f.name)}</span>
+            <span class="file-meta"><span class="file-size">${size}</span><span class="file-tokens">${tokLabel}</span></span>
           </div>`;
         }).join('')}
       </div>`;
@@ -1467,6 +1519,7 @@ function addFilesToArray(newFiles, arr, listId) {
   newFiles.forEach(f => { if (!arr.find(x => x.name === f.name)) arr.push(f); });
   renderFileListById(arr, listId);
   updateStepLocks();
+  if (arr === rfpFiles) extractAndDisplayShalls();
   // Reset analysis if files change
   if (analysisComplete) {
     analysisComplete = false;
@@ -1481,6 +1534,7 @@ function removeFileFromArray(name, arr, listId) {
   if (idx > -1) arr.splice(idx, 1);
   renderFileListById(arr, listId);
   updateStepLocks();
+  if (arr === rfpFiles) extractAndDisplayShalls();
 }
 
 function renderFileListById(arr, listId) {
@@ -1693,7 +1747,15 @@ async function runAnalysis() {
       if (getMimeType(file) === 'application/pdf')
         msgContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } });
       else
-        msgContent.push({ type: 'text', text: `[Document: ${file.name}]` });
+        msgContent.push({ type: 'text', text: `[RFP Document: ${file.name}]` });
+    }
+    // Also include company documents so Claude can surface company-side assumptions
+    for (const file of companyFiles.slice(0, 5)) {
+      const b64 = await fileToBase64(file);
+      if (getMimeType(file) === 'application/pdf')
+        msgContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } });
+      else
+        msgContent.push({ type: 'text', text: `[Company Document: ${file.name}]` });
     }
 
     msgContent.push({ type: 'text', text:
@@ -1824,6 +1886,73 @@ function renderClarifyingQuestions(panelId, items) {
         oninput="updateClarifyAnswer('${q.id}', this.value)"/>
       <div class="clarify-hint">Leave blank to proceed without it.</div>
     </div>`).join('');
+}
+
+function toggleShalls() {
+  const body = document.getElementById('shallsBody');
+  const icon = document.getElementById('shallsToggleIcon');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '▼' : '▲';
+}
+
+async function extractAndDisplayShalls() {
+  if (rfpFiles.length === 0) return;
+  const section = document.getElementById('shallsSection');
+  const body    = document.getElementById('shallsBody');
+  const count   = document.getElementById('shallsCount');
+  if (!section || !body) return;
+
+  // Extract text from all RFP files client-side using available text
+  // We'll use the already-loaded file content — read as text if possible
+  const sentences = [];
+  const keywords  = /\b(shall|must|should|will|required|require)\b/gi;
+
+  for (const file of rfpFiles) {
+    try {
+      // Read file as text — works for text-based files; PDFs will be binary
+      const text = await file.text();
+      // Split on sentence boundaries
+      const parts = text.split(/(?<=[.!?])\s+|[\r\n]+/);
+      for (const part of parts) {
+        const clean = part.replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (clean.length > 20 && keywords.test(clean)) {
+          keywords.lastIndex = 0;
+          sentences.push({ text: clean, file: file.name });
+        }
+        keywords.lastIndex = 0;
+      }
+    } catch(e) { /* binary file — skip */ }
+  }
+
+  if (sentences.length === 0) {
+    // PDFs can't be read as text client-side — note that shalls were extracted by Claude during analysis
+    section.style.display = 'block';
+    body.style.display = 'block';
+    document.getElementById('shallsToggleIcon').textContent = '▲';
+    body.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0">Requirements are embedded in PDF documents. They will be automatically addressed in the generated proposal. Run Analyze to surface key assumptions.</div>';
+    count.textContent = 'PDF documents';
+    return;
+  }
+
+  section.style.display = 'block';
+  count.textContent = `${sentences.length} requirement${sentences.length !== 1 ? 's' : ''} found`;
+
+  body.innerHTML = sentences.map(s => {
+    const highlighted = s.text.replace(
+      /\b(shall|must|should|will|required|require)\b/gi,
+      '<span class="shall-keyword">$1</span>'
+    );
+    return `<div class="shall-item">${highlighted}</div>`;
+  }).join('');
+}
+
+// Call extractShalls whenever RFP files change
+function onRfpFilesChanged() {
+  updateTokenMeter();
+  updateStepLocks();
+  extractAndDisplayShalls();
 }
 
 function updateClarifyAnswer(id, value) {
