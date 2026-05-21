@@ -5,24 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SRFed Proposal Generator</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
-<script>
-// Load docx.js with automatic fallback
-window._docxLoaded = false;
-function _loadDocx(urls, idx) {
-  if (idx >= urls.length) { window._docxLoadFailed = true; return; }
-  var s = document.createElement('script');
-  s.crossOrigin = 'anonymous';
-  s.src = urls[idx];
-  s.onload  = function() { window._docxLoaded = true; };
-  s.onerror = function() { _loadDocx(urls, idx + 1); };
-  document.head.appendChild(s);
-}
-_loadDocx([
-  'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js',
-  'https://unpkg.com/docx@8.5.0/build/index.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/index.js'
-], 0);
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js" crossorigin="anonymous"></script>
 <style>
   :root {
@@ -520,7 +502,7 @@ _loadDocx([
 
     <!-- Step 1: Sign in with Microsoft -->
     <div class="card">
-      <div class="card-header"><span class="icon">🔐</span> Step 1: Sign In with Microsoft</div>
+      <div class="card-header"><span class="icon"><svg width="16" height="16" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg></span> Step 1: Sign In with Microsoft</div>
       <div class="card-body">
         <div id="step1SignedOut" style="text-align:center;padding:16px 0">
           <div style="font-size:40px;margin-bottom:12px">🔒</div>
@@ -549,7 +531,7 @@ _loadDocx([
     <div class="card step-locked" id="step2Card">
       <div class="card-header"><span class="icon">🔑</span> Step 2: Enter API Key</div>
       <div class="card-body">
-        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Steps 1 &amp; 2 to unlock</span></div>
+        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 1 to unlock</span></div>
         <div id="step2Locked" style="text-align:center;padding:20px 0;color:var(--muted)">
           <div style="font-size:32px;margin-bottom:8px">🔑</div>
           <div style="font-size:13px">Sign in with Microsoft first to unlock this step.</div>
@@ -583,7 +565,7 @@ _loadDocx([
     <div class="card step-locked" id="step3Card">
       <div class="card-header"><span class="icon">🔗</span> Step 3: Connect SharePoint</div>
       <div class="card-body">
-        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Steps 1 &amp; 2 to unlock</span></div>
+        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete steps 1 &amp; 2 to unlock</span></div>
         <div id="spSignedOut" style="text-align:center;padding:20px 0;color:var(--muted)">
           <div style="font-size:32px;margin-bottom:8px">🔗</div>
           <div style="font-size:13px">Complete Steps 1 and 2 to unlock SharePoint connection.</div>
@@ -601,10 +583,6 @@ _loadDocx([
             <label>Resumes Folder URL</label>
             <input type="text" id="spResumes" placeholder="https://yourcompany.sharepoint.com/.../Resumes"/>
           </div>
-          <div class="form-group">
-            <label>Boilerplate / Capabilities Folder URL</label>
-            <input type="text" id="spBoilerplate" placeholder="https://yourcompany.sharepoint.com/.../Boilerplate"/>
-          </div>
           <div class="form-group" style="margin-bottom:0">
             <label style="display:flex;align-items:center;gap:6px">
               Proposal Templates Folder URL
@@ -613,7 +591,7 @@ _loadDocx([
             <input type="text" id="spTemplates" placeholder="https://yourcompany.sharepoint.com/.../Proposal Templates"/>
             <div class="tip" style="margin-top:4px">Templates (.docx) are fetched for formatting only — never sent to AI, zero token cost.</div>
           </div>
-          <p class="tip" style="margin-top:10px;margin-bottom:14px">Leave any folder blank to skip it. Step 3 is optional — company data from your profile will be used if skipped.</p>
+          <p class="tip" style="margin-top:10px;margin-bottom:14px">Leave any folder blank to skip. Resumes and past performance documents are sent to the AI as source documents for writing proposals.</p>
           <button class="btn btn-primary" id="spLoadBtn" onclick="loadSharePointFiles()" style="width:100%">
             <span id="spLoadIcon">🔗</span> <span id="spLoadText">Load Files from SharePoint</span>
           </button>
@@ -631,7 +609,7 @@ _loadDocx([
   <div class="card step-locked" id="step4Card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📁</span> Step 4: Drop Documents</div>
     <div class="card-body">
-      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Steps 1 &amp; 2 to unlock</span></div>
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete steps 1 &amp; 2 to unlock</span></div>
       <div class="two-col" style="gap:20px">
 
         <!-- Left: RFP / PWS documents -->
@@ -648,18 +626,18 @@ _loadDocx([
 
         <!-- Right: Company / past performance documents -->
         <div>
-          <div class="section-label">🏢 Company Documents <span style="font-weight:400;color:var(--muted)">(optional if SharePoint connected)</span></div>
+          <div class="section-label">🏢 Additional Company Documents <span style="font-weight:400;color:var(--muted)">(supplements SharePoint — optional)</span></div>
           <div class="drop-zone" id="dropZoneCompany">
             <input type="file" id="fileInputCompany" multiple accept=".pdf,.docx,.doc,.xlsx,.xls"/>
             <div class="dz-icon">🏢</div>
             <div class="dz-title">Drop Company Files Here</div>
-            <div class="dz-sub">Past performance write-ups, resumes, capability statements</div>
+            <div class="dz-sub">Any additional company docs not in SharePoint</div>
           </div>
           <div class="file-list" id="fileListCompany"></div>
         </div>
 
       </div>
-      <p class="tip" style="margin-top:16px">💡 RFP documents are required. Company documents supplement your profile data — drop them here or connect SharePoint in Step 2.</p>
+      <p class="tip" style="margin-top:16px">💡 RFP documents are required. Additional company documents are optional — resumes and past performance should be connected via SharePoint in Step 3.</p>
       <div id="fileSizeWarning" style="display:none;margin-top:12px;padding:12px 14px;background:var(--error-bg);border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:var(--error);line-height:1.5"></div>
 
       <!-- Token meter — shown once any file is uploaded -->
@@ -680,7 +658,7 @@ _loadDocx([
   <div class="card step-locked" id="step5Card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">🔍</span> Step 5: Analyze &amp; Confirm Assumptions</div>
     <div class="card-body">
-      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Drop RFP documents in Step 4 to unlock</span></div>
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Drop RFP documents in step 4 to unlock</span></div>
       <p style="font-size:14px;color:var(--muted);margin-bottom:18px">Documents will be analyzed and key assumptions surfaced for your review. Accept, reject, or correct each one before writing begins. Rejected assumptions will be excluded from the proposal.</p>
       <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()" disabled>
         <span id="analyzeBtnIcon">🔍</span>
@@ -713,6 +691,9 @@ _loadDocx([
           <div>
             <div class="section-label">🏢 Company &amp; Past Performance</div>
             <div class="assumption-scroll-panel">
+              <div id="companyAssumptionsEmpty" style="display:none;font-size:13px;color:var(--muted);padding:8px 0">
+                Connect SharePoint in Step 3 to surface company-side assumptions from your resumes and past performance documents.
+              </div>
               <div class="assumption-panel" id="companyAssumptions"></div>
               <div class="clarify-section" id="companyClarifySection" style="display:none">
                 <div class="clarify-section-label">❓ Clarifying Questions</div>
@@ -740,7 +721,7 @@ _loadDocx([
     <div class="card step-locked" id="step6Card">
       <div class="card-header"><span class="icon">📝</span> Step 6: Additional Notes</div>
       <div class="card-body">
-        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 5 to unlock</span></div>
+        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
         <div class="form-group" style="margin-bottom:0">
           <textarea id="additionalNotes" style="min-height:140px" placeholder="Optional: teaming partners, specific focus areas, past performance to emphasize, unique qualifications, or any other context to consider when writing the proposal..."></textarea>
         </div>
@@ -752,7 +733,7 @@ _loadDocx([
     <div class="card step-locked" id="step7Card">
       <div class="card-header"><span class="icon">🚀</span> Step 7: Select Volumes &amp; Generate</div>
       <div class="card-body">
-        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 5 to unlock</span></div>
+        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
         <div class="volumes-grid" style="margin-bottom:16px">
           <label class="vol-check checked" id="volCheck1"><input type="checkbox" id="vol1" checked/> Vol I – Technical</label>
           <label class="vol-check checked" id="volCheck2"><input type="checkbox" id="vol2" checked/> Vol II – Past Performance</label>
@@ -821,8 +802,9 @@ const CLIENT_CONFIG = {
   ceoEmail:   'matthew.tarjick@srfed.com',
   ceoPhone:   '(410) 463-2644',
 
-  // ── Key Personnel ─────────────────────────────────────────────────────────
-  // Add or remove entries as needed. Used in the Claude prompt.
+  // ── Key Personnel (fallback) ──────────────────────────────────────────────
+  // Used when SharePoint resumes are not connected. When resumes ARE loaded
+  // from SharePoint, Claude reads those documents directly — more accurate.
   keyPersonnel: [
     { name: 'Matthew Tarjick', title: 'CEO',                       background: 'LTC US Army (ret.), 20+ years DoD/healthcare finance experience' },
     { name: 'Paul Scace',      title: 'COO',                       background: 'Senior Financial Analyst, PMP, MBA Kellogg, West Point' },
@@ -831,7 +813,8 @@ const CLIENT_CONFIG = {
     { name: 'Kyra Ennis',      title: 'Agreements Manager',        background: 'MHA candidate Seton Hall, Interim SECRET' },
   ],
 
-  // ── Capabilities & Systems ────────────────────────────────────────────────
+  // ── Capabilities & Systems (fallback) ────────────────────────────────────
+  // Used when no capability statement documents are loaded from SharePoint.
   capabilities: [
     'Program Management', 'Financial Management', 'Data Analytics',
     'Earned Value Management', 'Administrative Support', 'Property Management',
@@ -856,7 +839,9 @@ const CLIENT_CONFIG = {
     '"data-driven decision-making"',
   ],
 
-  // ── Past Performance ──────────────────────────────────────────────────────
+  // ── Past Performance (fallback) ───────────────────────────────────────────
+  // Used when SharePoint PP folder is not connected. When PP documents ARE
+  // loaded from SharePoint, Claude reads those directly — more accurate.
   pastPerformance: [
     {
       programName:    'BOMES Hub and Spoke',
@@ -1250,30 +1235,28 @@ function detectTemplateVolume(filename) {
   return null; // unknown — will be matched by order
 }
 
-// Match loaded templates to volumes: by detectTemplateVolume, else by file order
+// Match loaded templates to volumes by filename
 function matchTemplatesToVolumes(templates) {
   const map = {};
   const unmatched = [];
 
   for (const f of templates) {
-    const vol = detectTemplateVolume(f.name);
-    if (vol) {
-      const key = vol.includes('I —') && !vol.includes('II') && !vol.includes('III') && !vol.includes('IV') ? '1'
-                : vol.includes('II —') && !vol.includes('III') ? '2'
-                : vol.includes('III') ? '3' : '4';
-      if (!map[key]) map[key] = f;
-    } else {
-      unmatched.push(f);
-    }
+    const n = f.name.toLowerCase();
+    // Direct filename pattern matching — unambiguous
+    let key = null;
+    if      (n.match(/vol[_\s-]*i[_\s-]|vol[_\s-]*1[_\s-]|volume[_\s-]*1[_\s-]|technical/)) key = '1';
+    else if (n.match(/vol[_\s-]*ii[_\s-]|vol[_\s-]*2[_\s-]|volume[_\s-]*2[_\s-]|past.*perf|performance/)) key = '2';
+    else if (n.match(/vol[_\s-]*iii[_\s-]|vol[_\s-]*3[_\s-]|volume[_\s-]*3[_\s-]|price|cost|narrative/)) key = '3';
+    else if (n.match(/vol[_\s-]*iv[_\s-]|vol[_\s-]*4[_\s-]|volume[_\s-]*4[_\s-]|contract|doc/)) key = '4';
+
+    if (key && !map[key]) map[key] = f;
+    else unmatched.push(f);
   }
 
-  // Assign unmatched files to unfilled volume slots in order
-  const order = ['1','2','3','4'];
+  // Assign unmatched files to unfilled slots in order
   let ui = 0;
-  for (const vol of order) {
-    if (!map[vol] && ui < unmatched.length) {
-      map[vol] = unmatched[ui++];
-    }
+  for (const v of ['1','2','3','4']) {
+    if (!map[v] && ui < unmatched.length) map[v] = unmatched[ui++];
   }
   return map;
 }
@@ -1281,9 +1264,8 @@ function matchTemplatesToVolumes(templates) {
 async function loadSharePointFiles() {
   const ppUrl       = document.getElementById('spPP').value.trim();
   const resUrl      = document.getElementById('spResumes').value.trim();
-  const bpUrl       = document.getElementById('spBoilerplate').value.trim();
   const tmplUrl     = document.getElementById('spTemplates').value.trim();
-  const contentUrls = [ppUrl, resUrl, bpUrl].filter(u => u);
+  const contentUrls = [ppUrl, resUrl].filter(u => u);
 
   if (contentUrls.length === 0 && !tmplUrl) {
     showStatus('warn', 'No folders specified', 'Enter at least one SharePoint folder URL in Step 3.');
@@ -1716,13 +1698,13 @@ async function runAnalysis() {
 
     msgContent.push({ type: 'text', text:
       `Analyze this government RFP/solicitation for ${CLIENT_CONFIG.companyShortName}.\n` +
-      `Return JSON with:\n` +
-      `"confirmed": up to 10 items present in the documents but worth human verification before proposal writing — things that are present but could be misread, have multiple interpretations, or are easy to overlook. Focus on: submission deadline/timezone, place of performance, FTE estimates, contract value, page limits per volume, required clearance level, evaluation factor weights, set-aside type, incumbent contractor, unusual or atypical requirements.\n` +
-      `"clarify": up to 5 items genuinely missing or unclear that the proposal team should try to answer if possible.\n\n` +
-      `Each confirmed item: {"id":"rfp_N","category":"rfp","label":"short label","value":"extracted value"}\n` +
-      `Each clarify item: {"id":"q_N","category":"rfp","label":"short label","question":"specific question for the proposal manager"}\n\n` +
+      `Return JSON with four arrays:\n\n` +
+      `"confirmed": up to 10 RFP items present but worth human verification (submission deadline/timezone, place of performance, FTE estimates, contract value, page limits, clearance level, evaluation factor weights, set-aside type, incumbent, unusual requirements). Each: {"id":"rfp_N","category":"rfp","label":"short label","value":"extracted value"}\n\n` +
+      `"clarify": up to 5 RFP items genuinely missing or unclear. Each: {"id":"q_N","category":"rfp","label":"short label","question":"specific question"}\n\n` +
+      `"company_confirmed": up to 8 items from the company documents provided (if any) that are worth confirming — e.g. which past performance references appear most relevant to this requirement, which personnel appear qualified for key roles, any certifications or clearances mentioned. Each: {"id":"co_N","category":"company","label":"short label","value":"extracted value"}\n\n` +
+      `"company_clarify": up to 3 questions about company documents — e.g. missing contact info for a reference, unclear period of performance. Each: {"id":"cq_N","category":"company","label":"short label","question":"specific question"}\n\n` +
       `Do NOT include things that are completely obvious and unambiguous.\n` +
-      `Return ONLY JSON, no markdown: {"confirmed":[...],"clarify":[...]}`
+      `Return ONLY JSON: {"confirmed":[...],"clarify":[...],"company_confirmed":[...],"company_clarify":[]}`
     });
 
     setProgress(40, []);
@@ -1739,55 +1721,84 @@ async function runAnalysis() {
     const data = await resp.json();
     let raw = data.content.map(c => c.text||'').join('').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
-    let parsed = { confirmed: [], clarify: [] };
+    let parsed = { confirmed: [], clarify: [], company_confirmed: [], company_clarify: [] };
     try { parsed = JSON.parse(raw); } catch(e) { console.warn('Analysis parse failed:', e.message); }
 
     setProgress(80, []);
 
-    // Company assumptions from CLIENT_CONFIG
-    const companyConfirmed = [
-      ...CLIENT_CONFIG.pastPerformance.map((p, i) => ({
-        id: `co_pp_${i}`, category: 'company', type: 'confirm',
-        label: `Include Past Performance: ${p.programName}`,
-        value: `${p.contractNumber} | ${p.customer} | ${p.period} | ${p.value}`,
-        status: 'pending', correction: ''
-      })),
-      ...CLIENT_CONFIG.keyPersonnel.slice(0, 3).map((p, i) => ({
-        id: `co_person_${i}`, category: 'company', type: 'confirm',
-        label: `Propose as Key Personnel: ${p.name}`,
-        value: `${p.title} — ${p.background}`,
-        status: 'pending', correction: ''
-      })),
-    ].slice(0, 10);
+    // Company-side assumptions: prefer what Claude found in SP documents.
+    // Fall back to CLIENT_CONFIG cards only if no company docs were loaded.
+    const hasSpDocs = companyFiles.some(f => f._fromSP);
+    const claudeCompany = (parsed.company_confirmed || []).slice(0, 10)
+      .map(a => ({ ...a, type: 'confirm', status: 'pending', correction: '' }));
 
-    assumptions = [
-      ...(parsed.confirmed || []).slice(0, 10).map(a => ({ ...a, type: 'confirm', status: 'pending', correction: '' })),
-      ...companyConfirmed,
-    ];
-    clarifyingQuestions = (parsed.clarify || []).slice(0, 5).map(q => ({ ...q, type: 'clarify', answer: '' }));
+    let fallbackCompany = [];
+    if (!hasSpDocs && claudeCompany.length === 0) {
+      // No SP docs and Claude found nothing — show fallback cards from CLIENT_CONFIG
+      fallbackCompany = [
+        ...(CLIENT_CONFIG.pastPerformance || []).map((p, i) => ({
+          id: `co_pp_${i}`, category: 'company', type: 'confirm',
+          label: `Include Past Performance: ${p.programName}`,
+          value: `${p.contractNumber} | ${p.customer} | ${p.period} | ${p.value}`,
+          status: 'pending', correction: ''
+        })),
+        ...(CLIENT_CONFIG.keyPersonnel || []).slice(0, 3).map((p, i) => ({
+          id: `co_person_${i}`, category: 'company', type: 'confirm',
+          label: `Propose as Key Personnel: ${p.name}`,
+          value: `${p.title} — ${p.background}`,
+          status: 'pending', correction: ''
+        })),
+      ].slice(0, 10);
+    }
+
+    const companyConfirmed = claudeCompany.length > 0 ? claudeCompany : fallbackCompany;
+    const companyClar = (parsed.company_clarify || []).slice(0, 5)
+      .map(q => ({ ...q, type: 'clarify', answer: '' }));
+
+    const rfpItems   = (parsed.confirmed || []).slice(0, 10)
+      .map(a => ({ ...a, type: 'confirm', status: 'pending', correction: '' }));
+    const rfpClarify = (parsed.clarify || []).slice(0, 5)
+      .map(q => ({ ...q, type: 'clarify', answer: '' }));
+
+    assumptions         = [...rfpItems, ...companyConfirmed];
+    clarifyingQuestions = [...rfpClarify, ...companyClar];
 
     setProgress(100, []);
     document.getElementById('analysisResults').style.display = 'block';
 
     const rfpConfirmed = assumptions.filter(a => a.category === 'rfp');
+
     const rfpEmpty = document.getElementById('rfpAssumptionsEmpty');
     if (rfpConfirmed.length === 0) { rfpEmpty.style.display = 'block'; }
     else { rfpEmpty.style.display = 'none'; renderAssumptions('rfpAssumptions', rfpConfirmed); }
 
     const rfpCS = document.getElementById('rfpClarifySection');
-    if (clarifyingQuestions.length > 0) {
+    if (rfpClarify.length > 0) {
       rfpCS.style.display = 'block';
-      renderClarifyingQuestions('rfpClarify', clarifyingQuestions);
+      renderClarifyingQuestions('rfpClarify', rfpClarify);
     } else {
       rfpCS.style.display = 'none';
     }
 
-    renderAssumptions('companyAssumptions', companyConfirmed);
+    const coEmpty = document.getElementById('companyAssumptionsEmpty');
+    if (companyConfirmed.length === 0 && companyClar.length === 0) {
+      if (coEmpty) coEmpty.style.display = 'block';
+    } else {
+      if (coEmpty) coEmpty.style.display = 'none';
+      if (companyConfirmed.length > 0) renderAssumptions('companyAssumptions', companyConfirmed);
+      const coCS = document.getElementById('companyClarifySection');
+      if (companyClar.length > 0 && coCS) {
+        coCS.style.display = 'block';
+        renderClarifyingQuestions('companyClarify', companyClar);
+      }
+    }
+
     updateAssumptionSummary();
     showStatus('success', 'Analysis complete',
-      `Found ${rfpConfirmed.length} items to confirm` +
+      `Found ${rfpConfirmed.length} RFP items` +
+      (companyConfirmed.length > 0 ? `, ${companyConfirmed.length} company items` : '') +
       (clarifyingQuestions.length > 0 ? ` and ${clarifyingQuestions.length} clarifying questions.` : '.') +
-      ' Review below, then proceed to Step 5.');
+      ' Review below, then proceed to Step 6.');
 
   } catch(e) {
     showStatus('error', 'Analysis failed', e.message);
@@ -1866,20 +1877,38 @@ async function runGeneration() {
   setProgress(5, allSteps);
 
   try {
-    const ppBlock = CLIENT_CONFIG.pastPerformance.map((p, i) =>
-      `${i+1}. ${p.programName} (${p.contractNumber}) | ${p.customer} | ${p.period} | ${p.value} | ${p.contractType} | ${p.work}`
-    ).join('\n');
-    const personnelBlock = CLIENT_CONFIG.keyPersonnel.map(p => `- ${p.name}, ${p.title}: ${p.background}`).join('\n');
     const assumptionsCtx = assumptions.length > 0 ? buildAcceptedAssumptionsContext() : '';
     const clarifyCtx     = buildClarifyingContext();
+
+    // Use SharePoint documents as primary source. Fall back to CLIENT_CONFIG
+    // arrays only if no company documents were loaded from SharePoint.
+    const hasSpDocs = companyFiles.some(f => f._fromSP);
+    const fallbackPersonnel = !hasSpDocs && CLIENT_CONFIG.keyPersonnel ?
+      `\nKEY PERSONNEL (fallback — use SharePoint resumes for full detail):\n` +
+      CLIENT_CONFIG.keyPersonnel.map(p => `- ${p.name}, ${p.title}: ${p.background}`).join('\n') : '';
+    const fallbackPP = !hasSpDocs && CLIENT_CONFIG.pastPerformance ?
+      `\nPAST PERFORMANCE (fallback — use SharePoint PP documents for full detail):\n` +
+      CLIENT_CONFIG.pastPerformance.map((p,i) =>
+        `${i+1}. ${p.programName} (${p.contractNumber}) | ${p.customer} | ${p.period} | ${p.value} | ${p.contractType}\n   ${p.work}`
+      ).join('\n') : '';
+    const fallbackCaps = !hasSpDocs && CLIENT_CONFIG.capabilities ?
+      `\nCAPABILITIES (fallback): ${CLIENT_CONFIG.capabilities.join(', ')}\nSYSTEMS: ${CLIENT_CONFIG.systemsExpertise.join(', ')}` : '';
+    const styleCtx = CLIENT_CONFIG.writingStyle ?
+      `\nWRITING STYLE: ${CLIENT_CONFIG.writingStyle.join(' | ')}\nPhrases: ${(CLIENT_CONFIG.signaturePhrases||[]).join(', ')}` : '';
+
     const companyCtx =
-      `COMPANY: ${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName}), ${CLIENT_CONFIG.businessType}\n` +
-      `Address: ${CLIENT_CONFIG.address} | CAGE: ${CLIENT_CONFIG.cage} | UEI: ${CLIENT_CONFIG.uei}` +
+      `COMPANY IDENTITY:\n` +
+      `Name: ${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName})\n` +
+      `Type: ${CLIENT_CONFIG.businessType}\n` +
+      `Address: ${CLIENT_CONFIG.address}\n` +
+      `CAGE: ${CLIENT_CONFIG.cage} | UEI: ${CLIENT_CONFIG.uei}` +
       (CLIENT_CONFIG.gsaMas ? ` | GSA MAS: ${CLIENT_CONFIG.gsaMas}` : '') + `\n` +
-      `Clearances: ${CLIENT_CONFIG.clearances}\nPersonnel:\n${personnelBlock}\n` +
-      `Capabilities: ${CLIENT_CONFIG.capabilities.join(', ')}\nSystems: ${CLIENT_CONFIG.systemsExpertise.join(', ')}\n` +
-      `Past Performance:\n${ppBlock}\nStyle: ${CLIENT_CONFIG.writingStyle.join(' | ')}\n` +
-      `Phrases: ${CLIENT_CONFIG.signaturePhrases.join(', ')}\nNotes: ${notes || 'None'}\n` +
+      `Clearances: ${CLIENT_CONFIG.clearances}\n` +
+      `CMMC: ${CLIENT_CONFIG.cmmc || 'N/A'}\n` +
+      `DCAA: ${CLIENT_CONFIG.dcaa || 'N/A'}\n` +
+      `CEO: ${CLIENT_CONFIG.ceoName} | ${CLIENT_CONFIG.ceoTitle} | ${CLIENT_CONFIG.ceoPhone} | ${CLIENT_CONFIG.ceoEmail}\n` +
+      fallbackPersonnel + fallbackPP + fallbackCaps + styleCtx + `\n` +
+      `\nNOTES FROM PROPOSAL MANAGER: ${notes || 'None'}\n` +
       assumptionsCtx + clarifyCtx;
 
     // ── CALL 1: Send all documents → extract briefing ─────────────────────────
@@ -2057,12 +2086,22 @@ async function generateDocsClientSide(proposalData, volumes) {
       try {
         showStatus('info', `Building ${label}...`, `Injecting content into template: ${template.name}`, true);
 
-        const zip       = await JSZip.loadAsync(await template.arrayBuffer());
-        const docXml    = await zip.file('word/document.xml').async('string');
-        const newXml    = injectContentIntoXml(docXml, proposalData, vol);
-        zip.file('word/document.xml', newXml);
+        const zip    = await JSZip.loadAsync(await template.arrayBuffer());
 
-        // Also update core properties (title, author)
+        // Inject into document body
+        const docXml = await zip.file('word/document.xml').async('string');
+        zip.file('word/document.xml', injectContentIntoXml(docXml, proposalData, vol));
+
+        // Also inject metadata into headers and footers
+        const zipFiles = Object.keys(zip.files);
+        for (const fname of zipFiles) {
+          if (fname.match(/word\/(header|footer)\d*\.xml$/)) {
+            const hXml = await zip.file(fname).async('string');
+            zip.file(fname, injectMetaOnly(hXml, proposalData));
+          }
+        }
+
+        // Update core properties
         const coreFile = zip.file('docProps/core.xml');
         if (coreFile) {
           let coreXml = await coreFile.async('string');
@@ -2072,10 +2111,9 @@ async function generateDocsClientSide(proposalData, volumes) {
           zip.file('docProps/core.xml', coreXml);
         }
 
-        const buffer   = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
-        const blob     = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-        const url      = URL.createObjectURL(blob);
-        docs[vol]      = { label, filename: `${prefix}_Volume_${vol}_${volTitles[vol]}.docx`, url };
+        const buffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+        const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        docs[vol]    = { label, filename: `${prefix}_Volume_${vol}_${volTitles[vol]}.docx`, url: URL.createObjectURL(blob) };
 
       } catch(e) {
         console.error(`Template error for ${label}:`, e);
@@ -2089,44 +2127,27 @@ async function generateDocsClientSide(proposalData, volumes) {
       }
       return docs;
     }
-    // If all templates failed, fall through to docx.js
-    showStatus('warn', 'Template generation failed', 'Falling back to standard generation. ' + errors.join('; '));
-    errors.length = 0;
+    // All templates failed — tell user what to do
+    throw new Error(
+      'Proposal templates are required to generate Word documents.\n\n' +
+      'Please:\n' +
+      '1. Upload your 4 template .docx files to a SharePoint folder\n' +
+      '2. Paste that folder URL into the "Proposal Templates Folder URL" field in Step 3\n' +
+      '3. Click "Load Files from SharePoint"\n' +
+      '4. Then click Generate again\n\n' +
+      (errors.length > 0 ? 'Template errors: ' + errors.join('; ') : '')
+    );
   }
 
-  // Fallback: docx.js generation (requires CDN)
-  try {
-    await waitForDocx();
-  } catch(e) {
-    throw new Error(e.message + '\n\nAlternatively, add your proposal templates to the SharePoint Templates folder in Step 3 — this bypasses the CDN requirement entirely.');
-  }
-
-  const volConfigs = {
-    '1': { title: volTitles['1'], label: volLabels['1'], builder: buildDocxVol1 },
-    '2': { title: volTitles['2'], label: volLabels['2'], builder: buildDocxVol2 },
-    '3': { title: volTitles['3'], label: volLabels['3'], builder: buildDocxVol3 },
-    '4': { title: volTitles['4'], label: volLabels['4'], builder: buildDocxVol4 },
-  };
-
-  for (const vol of volumes) {
-    const cfg = volConfigs[vol];
-    try {
-      showStatus('info', `Building ${cfg.label}...`, 'Assembling Word document.', true);
-      const buffer = await cfg.builder(proposalData);
-      const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      const url    = URL.createObjectURL(blob);
-      docs[vol]    = { label: cfg.label, filename: `${prefix}_Volume_${vol}_${cfg.title}.docx`, url };
-    } catch(e) {
-      console.error(`${cfg.label} build failed:`, e);
-      errors.push(`${cfg.label}: ${e.message}`);
-    }
-  }
-
-  if (Object.keys(docs).length === 0) {
-    throw new Error('All Word documents failed to build.\n\nAdd your SRFed proposal templates to the SharePoint Templates folder in Step 3 — this gives you perfect formatting without needing any CDN.\n\nErrors: ' + errors.join('; '));
-  }
-  if (errors.length > 0) showStatus('warn', 'Some volumes failed', errors.join(' | '));
-  return docs;
+  // No templates loaded at all
+  throw new Error(
+    'No proposal templates found. To generate formatted Word documents:\n\n' +
+    '1. Upload your 4 SRFed template .docx files to a SharePoint folder\n' +
+    '2. Paste that folder URL into the "Proposal Templates Folder URL" field in Step 3\n' +
+    '3. Click "Load Files from SharePoint"\n' +
+    '4. Then click Generate\n\n' +
+    'Your template files are available in the project outputs as Vol_I_Template.docx through Vol_IV_Template.docx.'
+  );
 }
 
 // ─── XML INJECTION — insert Claude's content into template XML ────────────────
@@ -2137,32 +2158,61 @@ function escXml(s) {
     .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 }
 
-function xmlParagraph(text) {
-  // Split on newlines, create a <w:p> for each line
-  return (text || '').split('\n').filter(l => l.trim()).map(line =>
-    `<w:p><w:r><w:t xml:space="preserve">${escXml(line)}</w:t></w:r></w:p>`
-  ).join('');
-}
-
-function xmlBullets(items) {
-  if (!items || !items.length) return '';
-  return items.map(item =>
-    `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>` +
-    `<w:r><w:t xml:space="preserve">${escXml(String(item))}</w:t></w:r></w:p>`
-  ).join('');
-}
 
 // Replace text placeholders in the document XML, preserving all formatting
+function escRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function textToWordXml(text, inheritRunProps) {
+  // Convert plain text into proper Word XML paragraphs
+  if (!text) return '';
+  const rpr = inheritRunProps || '';
+  return text.split('\n').filter(l => l.trim()).map(line =>
+    `<w:p><w:r>${rpr}<w:t xml:space="preserve">${escXml(line)}</w:t></w:r></w:p>`
+  ).join('');
+}
+
 function replaceXmlText(xml, placeholder, replacement) {
-  // Word often splits runs — we need to handle both simple and split-run cases
-  // First try simple direct replacement
-  const escaped = escXml(placeholder);
-  if (xml.includes(escaped)) {
-    return xml.split(escaped).join(escXml(replacement));
+  if (!replacement && replacement !== 0) return xml;
+  const repl = String(replacement);
+
+  // Find the paragraph containing the placeholder and replace the whole <w:p>
+  // with properly formatted Word XML paragraphs (handles multi-paragraph content)
+  const esc = escXml(placeholder);
+
+  // Extract any run properties from the placeholder paragraph for style inheritance
+  const paraMatch = xml.match(new RegExp(
+    '<w:p[ >](?:(?!</w:p>).)*' + esc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:(?!</w:p>).)*</w:p>',
+    's'
+  ));
+
+  if (paraMatch) {
+    const rprMatch = paraMatch[0].match(/<w:rPr>.*?<\/w:rPr>/s);
+    const rpr = rprMatch ? rprMatch[0] : '';
+    const wordXml = textToWordXml(repl, rpr);
+    return xml.replace(paraMatch[0], wordXml || `<w:p><w:r><w:t></w:t></w:r></w:p>`);
   }
-  // Also try unescaped
-  if (xml.includes(placeholder)) {
-    return xml.split(placeholder).join(escXml(replacement));
+
+  // Fallback: simple inline replacement
+  if (xml.includes(esc))         return xml.split(esc).join(escXml(repl));
+  if (xml.includes(placeholder)) return xml.split(placeholder).join(escXml(repl));
+  return xml;
+}
+
+// Inject only metadata placeholders — used for headers and footers
+function injectMetaOnly(xml, data) {
+  const meta = [
+    ['{{SOLICITATION_NUMBER}}',  data.solicitation_number   || ''],
+    ['{{REQUIREMENT_TITLE}}',    data.requirement_title     || ''],
+    ['{{SUBMISSION_DATE}}',      data.submission_date       || ''],
+    ['{{COMPANY_NAME}}',         CLIENT_CONFIG.companyFullName],
+    ['{{COMPANY_SHORT}}',        CLIENT_CONFIG.companyShortName],
+  ];
+  for (const [ph, val] of meta) {
+    // Simple string replace for headers/footers — they use plain text runs
+    xml = xml.split(ph).join(escXml(val));
+    xml = xml.split(escXml(ph)).join(escXml(val));
   }
   return xml;
 }
@@ -2204,12 +2254,8 @@ function injectContentIntoXml(xml, data, vol) {
     xml = replaceXmlText(xml, '{{MANAGEMENT_APPROACH}}',  v.management_approach || v.integrated_methodology || '');
     xml = replaceXmlText(xml, '{{STAFFING_PLAN}}',        v.staffing_plan                || '');
     xml = replaceXmlText(xml, '{{KEY_PERSONNEL_INTRO}}',  v.key_personnel_intro          || '');
-    const personnelRows = CLIENT_CONFIG.keyPersonnel.map(p =>
-      `<w:tr><w:tc><w:p><w:r><w:t>${escXml(p.name)}</w:t></w:r></w:p></w:tc>` +
-      `<w:tc><w:p><w:r><w:t>${escXml(p.title)}</w:t></w:r></w:p></w:tc>` +
-      `<w:tc><w:p><w:r><w:t>${escXml(p.background)}</w:t></w:r></w:p></w:tc></w:tr>`
-    ).join('');
-    xml = replaceXmlText(xml, '{{PERSONNEL_ROWS}}', personnelRows);
+    // Personnel rows come from Claude's reading of actual resume documents
+    xml = replaceXmlText(xml, '{{PERSONNEL_ROWS}}',       v.personnel_rows               || '');
   }
 
   if (vol === '2') {
