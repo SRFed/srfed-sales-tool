@@ -754,7 +754,7 @@
           ⚠️ Please review all assumptions above before continuing. <span id="pendingCount"></span> still pending.
         </div>
         <div id="reviewComplete" style="margin-top:20px;padding:12px 16px;background:var(--success-bg);border:1px solid #86efac;border-radius:8px;font-size:13px;color:var(--success);display:none">
-          ✅ All assumptions reviewed. You may proceed to Step 5.
+          ✅ All assumptions reviewed. You may proceed to Step 6.
         </div>
       </div>
     </div>
@@ -812,9 +812,10 @@
   <div class="log-box" id="logBox" style="display:none !important"></div>
 
   <!-- ── Step 8: Compliance Check ─────────────────────────────────────────── -->
-  <div class="card" id="step8Card" style="margin-bottom:24px">
+  <div class="card step-locked" id="step8Card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">✅</span> Step 8: Compliance Check</div>
     <div class="card-body">
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
         Drop your generated Word documents here, then click <strong>Run Compliance Check</strong> to verify that every "shall," "must," and "should" requirement from your RFP has been addressed in your proposal volumes.
       </p>
@@ -1577,6 +1578,7 @@ function updateStepLocks() {
   setStepLocked('step5Card', !hasRFP);
   setStepLocked('step6Card', !analyzed);
   setStepLocked('step7Card', !analyzed);
+  setStepLocked('step8Card', !analyzed);
 
   const s2locked   = document.getElementById('step2Locked');
   const s2unlocked = document.getElementById('step2Unlocked');
@@ -1680,39 +1682,42 @@ function renderFileListById(arr, listId) {
 }
 
 function updateTokenMeter() {
-  const allFiles = [...rfpFiles, ...companyFiles]; // companyFiles already includes spFiles
-  const meter    = document.getElementById('tokenMeter');
+  const meter = document.getElementById('tokenMeter');
   if (!meter) return;
 
-  if (allFiles.length === 0) {
-    meter.style.display = 'none';
-    return;
-  }
+  // Always recompute from current state of both arrays
+  const allRFP     = rfpFiles     || [];
+  const allCompany = companyFiles || [];
+  const allFiles   = [...allRFP, ...allCompany];
+
+  if (allFiles.length === 0) { meter.style.display = 'none'; return; }
 
   meter.style.display = 'block';
-  const total    = allFiles.reduce((s, f) => s + estimateTokens(f), 0);
-  const MAX      = 380000;
-  const pct      = Math.min((total / MAX) * 100, 100);
-  const totalK   = total >= 1000 ? `~${Math.round(total/1000)}k` : `~${total}`;
-  const maxK     = `${Math.round(MAX/1000)}k`;
 
-  // Color thresholds: green <60%, yellow 60-85%, red >85%
-  const level    = pct >= 85 ? 'danger' : pct >= 60 ? 'warn' : 'safe';
-  const labels   = { safe: '✅ Well within limits', warn: '⚠️ Getting large — consider trimming', danger: '🔴 Very large bundle — trim if generation fails' };
+  const total  = allFiles.reduce((s, f) => s + estimateTokens(f), 0);
+  const rfpTok = allRFP.reduce((s, f) => s + estimateTokens(f), 0);
+  const coTok  = allCompany.reduce((s, f) => s + estimateTokens(f), 0);
+  const spCount = allCompany.filter(f => f._fromSP).length;
 
-  const rfpTok = rfpFiles.reduce((s,f)=>s+estimateTokens(f),0);
-  const coTok  = companyFiles.reduce((s,f)=>s+estimateTokens(f),0);
-  const spFiles_count = companyFiles.filter(f=>f._fromSP).length;
+  const MAX    = 380000;
+  const pct    = Math.min((total / MAX) * 100, 100);
+  const totalK = `~${Math.round(total / 1000)}k`;
+  const maxK   = `${Math.round(MAX / 1000)}k`;
+  const level  = pct >= 85 ? 'danger' : pct >= 60 ? 'warn' : 'safe';
+  const labels = { safe: '✅ Well within limits', warn: '⚠️ Getting large — consider trimming', danger: '🔴 Very large — trim if generation fails' };
 
-  document.getElementById('tokenMeterCount').textContent  = `${totalK} / ${maxK} tokens`;
-  document.getElementById('tokenMeterCount').className    = `token-meter-count ${level}`;
-  const fill = document.getElementById('tokenBarFill');
-  fill.style.width = pct + '%';
-  fill.className   = `token-bar-fill ${level === 'safe' ? '' : level}`;
-  let sub = labels[level];
-  sub += ` · ${rfpFiles.length} RFP file${rfpFiles.length !== 1 ? 's' : ''} (~${Math.round(rfpTok/1000)}k tokens)`;
-  if (coTok > 0) sub += ` · ${companyFiles.length} company file${companyFiles.length !== 1 ? 's' : ''} (~${Math.round(coTok/1000)}k tokens${spFiles_count > 0 ? `, ${spFiles_count} from SharePoint` : ''})`;
-  document.getElementById('tokenMeterSub').textContent = sub;
+  const countEl = document.getElementById('tokenMeterCount');
+  const fillEl  = document.getElementById('tokenBarFill');
+  const subEl   = document.getElementById('tokenMeterSub');
+
+  if (countEl) { countEl.textContent = `${totalK} / ${maxK} tokens`; countEl.className = `token-meter-count ${level}`; }
+  if (fillEl)  { fillEl.style.width = pct + '%'; fillEl.className = `token-bar-fill${level !== 'safe' ? ' ' + level : ''}`; }
+  if (subEl) {
+    let sub = labels[level];
+    sub += ` · ${allRFP.length} RFP (~${Math.round(rfpTok/1000)}k tokens)`;
+    if (coTok > 0) sub += ` · ${allCompany.length} company (~${Math.round(coTok/1000)}k tokens${spCount > 0 ? `, ${spCount} from SharePoint` : ''})`;
+    subEl.textContent = sub;
+  }
 }
 
 // Init both drop zones on load
@@ -2431,37 +2436,39 @@ async function runGeneration() {
       `\nNOTES FROM PROPOSAL MANAGER: ${notes || 'None'}\n` +
       assumptionsCtx + clarifyCtx;
 
-    // ── CALL 1: Send documents → extract briefing ────────────────────────────
-    // Cap total to prevent request body from being too large (browser fetch limit ~20MB)
-    // Prioritize RFP files, then add company files up to token budget
-    const TOKEN_BUDGET = 200000;
+    // ── CALL 1: RFP documents only → extract briefing ─────────────────────────
+    // CRITICAL: Only send RFP files here. Company docs (87k+ tokens) would make
+    // the request body 20-40MB and cause fetch timeouts. Company docs are sent
+    // separately only when writing Vol II (past performance).
+    const RFP_BUDGET = 250000; // generous budget — RFP files only
     const docContent = [];
     let tokensSent = 0;
 
     for (const file of rfpFiles.slice(0, 10)) {
       const est = estimateTokens(file);
-      if (tokensSent + est > TOKEN_BUDGET) break;
+      if (tokensSent + est > RFP_BUDGET) {
+        showStatus('warn', 'Large RFP bundle',
+          `Skipping "${file.name}" (${Math.round(est/1000)}k tokens) to stay within limits. Include only essential RFP sections.`);
+        continue;
+      }
       const block = await fileToContentBlock(file);
-      if (block) docContent.push(block);
-      else docContent.push({ type: 'text', text: `[Unsupported file: ${file.name}]\n` });
-      tokensSent += est;
+      if (block) { docContent.push(block); tokensSent += est; }
     }
 
-    // Sort company files by size (smallest first) to fit more within budget
+    showStatus('info', 'Reading RFP documents...',
+      `Processing ${docContent.length} RFP file${docContent.length>1?'s':''} (~${Math.round(tokensSent/1000)}k tokens). Company documents will be used when writing Vol II.`, true);
+
+    // Pre-build company doc content blocks for use in Vol II writing call
+    const COMPANY_BUDGET = 150000;
+    const companyDocContent = [];
+    let companyTokensSent = 0;
     const sortedCompany = [...companyFiles].sort((a,b) => a.size - b.size);
-    for (const file of sortedCompany.slice(0, 8)) {
+    for (const file of sortedCompany.slice(0, 10)) {
       const est = estimateTokens(file);
-      if (tokensSent + est > TOKEN_BUDGET) continue; // skip oversized, try next
-      const coBlock = await fileToContentBlock(file);
-      if (coBlock) docContent.push(coBlock);
-      else docContent.push({ type: 'text', text: `[Unsupported file: ${file.name}]\n` });
-      tokensSent += est;
+      if (companyTokensSent + est > COMPANY_BUDGET) continue;
+      const block = await fileToContentBlock(file);
+      if (block) { companyDocContent.push(block); companyTokensSent += est; }
     }
-
-    const skippedFiles = rfpFiles.length + companyFiles.length - docContent.length;
-    showStatus('info', 'Reading documents...',
-      `Sending ${docContent.length} file${docContent.length>1?'s':''} (~${Math.round(tokensSent/1000)}k tokens) to AI.` +
-      (skippedFiles > 0 ? ` ${skippedFiles} file(s) skipped to stay within limits.` : ''), true);
 
     docContent.push({ type: 'text', text:
       `You are an expert government proposal writer for ${CLIENT_CONFIG.companyFullName}.\n\n` +
@@ -2475,7 +2482,7 @@ async function runGeneration() {
     showStatus('info', 'Reading documents...', 'Extracting all requirements and metadata from your RFP bundle.', true);
 
     const briefController = new AbortController();
-    const briefTimeout = setTimeout(() => briefController.abort(), 180000); // 3 min for briefing
+    const briefTimeout = setTimeout(() => briefController.abort(), 300000); // 5 min for briefing
     let briefResp;
     try {
       briefResp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -2621,20 +2628,48 @@ async function runGeneration() {
         volData = { ...sec1, ...sec2, ...sec3 };
 
       } else if (vol === '2') {
-        showStatus('info', 'Writing Volume II — Past Performance...', `Volume ${volsDone} of ${totalVols}`, true);
+        showStatus('info', 'Writing Volume II — Past Performance...', `Volume ${volsDone} of ${totalVols} (reading company documents…)`, true);
         setProgress(pct, allSteps);
 
-        volData = await writeSection(
+        // Vol II gets company documents directly for accurate contact info and narratives
+        const vol2Content = [...companyDocContent];
+        vol2Content.push({ type: 'text', text: briefingText });
+        vol2Content.push({ type: 'text', text:
           `You are writing the PAST PERFORMANCE volume of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
-          `Use the past performance references from the briefing. For EACH reference write detailed, specific narrative that explicitly maps to this solicitation.\n\n` +
+          `Read the attached company documents (past performance write-ups, capability statements) carefully. ` +
+          `Extract accurate contact names, phone numbers, emails, contract numbers, values, and periods of performance from those documents — do NOT invent or approximate these fields.\n\n` +
+          `Write detailed narratives for each reference that explicitly map to THIS solicitation's requirements.\n\n` +
           `Return ONLY JSON:\n{"references": [` +
-          `{"program_name":"full program name","contract_number":"exact contract number","pm_name":"","pm_phone":"","pm_email":"","co_name":"","co_phone":"","co_email":"","cor_name":"","cor_phone":"","cor_email":"","contract_type":"","period_of_performance":"","total_value":"","prime_or_sub":"Prime or Subcontractor",` +
-          `"overview":"MINIMUM 3 paragraphs. Describe what was performed, the scope of work, the operational environment, and the outcomes achieved. Be specific and factual.",` +
-          `"scope":"MINIMUM 2 paragraphs plus 5-8 specific bullet points listing key tasks, deliverables, and measurable results.",` +
-          `"relevance":"MINIMUM 2 paragraphs explicitly mapping this reference to THIS solicitation's PWS task areas, evaluation factors, and agency mission. Use specific language from the current RFP.",` +
-          `"similarity":"5-8 bullet points listing specific similarity factors: size, scope, complexity, agency type, contract type, and technical domain."}]}`,
-          8000
-        );
+          `{"program_name":"exact name from documents","contract_number":"exact number from documents","pm_name":"exact from docs","pm_phone":"exact from docs","pm_email":"exact from docs","co_name":"exact from docs","co_phone":"exact from docs","co_email":"exact from docs","cor_name":"exact from docs","cor_phone":"exact from docs","cor_email":"exact from docs","contract_type":"","period_of_performance":"exact dates from docs","total_value":"exact value from docs","prime_or_sub":"Prime or Subcontractor",` +
+          `"overview":"MINIMUM 3 paragraphs. Describe what was performed, scope, operational environment, and outcomes achieved.",` +
+          `"relevance":"MINIMUM 2 paragraphs explicitly mapping to THIS solicitation PWS task areas and evaluation factors.",` +
+          `"similarity":"5-8 specific bullet points: size/scope/complexity/agency type/contract type/technical domain similarities."}]}`
+        });
+
+        // Make this call directly (not via writeSection which only uses briefingText)
+        const vol2Controller = new AbortController();
+        const vol2Timeout = setTimeout(() => vol2Controller.abort(), 180000);
+        try {
+          const vol2Resp = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST', signal: vol2Controller.signal,
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 8000,
+              messages: [{ role: 'user', content: vol2Content }] })
+          });
+          clearTimeout(vol2Timeout);
+          if (!vol2Resp.ok) throw new Error(`Vol II API error ${vol2Resp.status}`);
+          const v2d = await vol2Resp.json();
+          let v2r = v2d.content.map(c=>c.text||'').join('').trim()
+            .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
+          if (!v2r.endsWith('}')) { const lb=v2r.lastIndexOf('}'); if(lb>0){v2r=v2r.substring(0,lb+1); const ob=(v2r.match(/\[/g)||[]).length-(v2r.match(/\]/g)||[]).length; for(let j=0;j<ob;j++) v2r+=']'; v2r+='}'; } }
+          try { volData = JSON.parse(v2r); }
+          catch(e) { const m=v2r.match(/\{[\s\S]+\}/); volData = m ? JSON.parse(m[0]) : {}; }
+        } catch(e) {
+          clearTimeout(vol2Timeout);
+          if (e.name === 'AbortError') throw new Error('Vol II writing timed out. Company document bundle may be too large.');
+          throw e;
+        }
 
       } else if (vol === '3') {
         showStatus('info', 'Writing Volume III — Price Narrative...', `Volume ${volsDone} of ${totalVols}`, true);
