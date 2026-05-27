@@ -364,13 +364,12 @@
 
   /* ── STEP LOCK ── */
   .step-locked { position: relative; pointer-events: none; }
-  /* Grey overlay covers only the body area — starts below the header */
-  .step-locked .card-body { position: relative; }
-  .step-locked .card-body::after {
+  /* Grey overlay covers the ENTIRE card including header */
+  .step-locked::after {
     content: '';
     position: absolute; inset: 0;
-    background: rgba(235,240,248,0.82);
-    border-radius: 0 0 10px 10px;
+    background: rgba(235,240,248,0.75);
+    border-radius: 12px;
     pointer-events: all;
     z-index: 10;
   }
@@ -488,6 +487,55 @@
     padding-bottom: 4px; border-bottom: 1px solid var(--border);
   }
 
+  /* ── TABS ── */
+  .tab-nav {
+    display: flex; gap: 4px; align-items: center;
+    margin: 0 auto; flex: 1; justify-content: center;
+  }
+  .tab-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.8);
+    padding: 6px 16px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.22); color: white; }
+  .tab-btn.active { background: white; color: var(--blue); border-color: white; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+  /* ── SETTINGS UI ── */
+  .settings-section { margin-bottom: 28px; }
+  .settings-section h3 { font-size: 14px; font-weight: 700; color: var(--blue); margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .settings-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .settings-field input, .settings-field textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; }
+  .settings-field textarea { min-height: 70px; resize: vertical; }
+  /* ── BID/NO-BID ── */
+  .bna-score { font-size: 64px; font-weight: 900; text-align: center; line-height: 1; }
+  .bna-verdict { font-size: 20px; font-weight: 700; text-align: center; margin-top: 6px; }
+  .bna-factor { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); }
+  .bna-factor-score { font-size: 22px; font-weight: 900; min-width: 36px; text-align: center; }
+  /* ── CALENDAR ── */
+  .cal-item { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .cal-item:last-child { border-bottom:none; }
+  .cal-date { font-size:13px; font-weight:700; color:var(--blue); min-width:110px; }
+  .cal-label { font-size:13px; color:var(--text); }
+  .cal-urgent { color:var(--error); }
+  /* ── CHECKLIST ── */
+  .check-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #f1f5f9; cursor:pointer; }
+  .check-item:last-child { border-bottom:none; }
+  .check-item input[type=checkbox] { margin-top:2px; width:16px; height:16px; accent-color:var(--blue); flex-shrink:0; }
+  .check-item label { font-size:13px; color:var(--text); cursor:pointer; flex:1; }
+  .check-item.done label { text-decoration:line-through; color:var(--muted); }
+  /* ── PP RELEVANCE ── */
+  .pp-item { padding:10px 12px; border-radius:8px; border:1px solid var(--border); margin-bottom:8px; background:white; }
+  .pp-relevance-bar { height:6px; border-radius:3px; background:var(--success); margin-top:6px; transition:width 0.4s; }
+  /* ── OUTLINE PREVIEW ── */
+  .outline-section { padding:10px 0; border-bottom:1px solid #f1f5f9; }
+  .outline-section:last-child { border-bottom:none; }
+  .outline-heading { font-size:13px; font-weight:700; color:var(--blue); }
+  .outline-length { font-size:12px; color:var(--muted); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -495,9 +543,16 @@
 <header class="app-header">
   <div class="header-left">
     <img class="logo-img" id="appLogo" src="" alt="Logo"/>
-    <div class="logo-text">SRFed Proposal Generator</div>
+    <div class="logo-text" id="appTitle">SRFed Proposal Generator</div>
   </div>
-  <div id="msSignedInArea" style="display:none;margin-left:auto">
+  <!-- Tab navigation -->
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
+    <button class="tab-btn" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
+    <button class="tab-btn" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
+    <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
+  </nav>
+  <div id="msSignedInArea" style="display:none;margin-left:16px">
     <div class="ms-signed-in">
       <div class="ms-avatar" id="msAvatar">?</div>
       <div>
@@ -511,7 +566,8 @@
 
 <div class="container">
 
-  <!-- STATUS BAR -->
+<!-- ══════════════════════════ PROPOSAL TAB ══════════════════════════════ -->
+<div class="tab-pane active" id="pane-proposal">
   <div id="statusBar" class="status-bar info" style="display:none">
     <div class="status-icon" id="statusIcon">ℹ️</div>
     <div class="status-text">
@@ -629,6 +685,10 @@
             <span id="spLoadIcon">🔗</span> <span id="spLoadText">Load Files from SharePoint</span>
           </button>
           <div id="spFileList" style="margin-top:12px"></div>
+          <div id="ppRelevancePanel" style="display:none;margin-top:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">📊 Past Performance Relevance to This RFP</div>
+            <div id="ppRelevanceList"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -639,6 +699,42 @@
   </div>
 
   <!-- ── ROW 3: Step 4 (two drop zones) ──────────────────────────────────── -->
+
+  <!-- ── Teaming Partner (optional) ───────────────────────────────────────── -->
+  <div class="card step-locked" id="teamingCard" style="margin-bottom:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="icon">🤝</span> Teaming Partner <span style="font-size:12px;font-weight:400;opacity:0.8">(optional)</span></span>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="teamingEnabled" onchange="toggleTeaming()" style="width:16px;height:16px"/> Enable
+      </label>
+    </div>
+    <div class="card-body">
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete steps 1 &amp; 2 to unlock</span></div>
+      <div id="teamingBody" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:4px">Our Role</label>
+            <select id="teamingRole" onchange="updateTeamLabel()" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="prime">Prime Contractor (Team SRFed leads)</option>
+              <option value="sub">Subcontractor (we support the prime)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:4px">Partner Company Name</label>
+            <input type="text" id="teamingPartnerName" oninput="updateTeamLabel()" placeholder="e.g. Accenture Federal Services" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+          </div>
+        </div>
+        <div id="teamLabelDisplay" style="padding:8px 14px;background:var(--pale);border:1px solid var(--light-blue);border-radius:6px;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px">
+          Team designation will appear here
+        </div>
+        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:4px">Partner Capabilities / Role Description</label>
+        <textarea id="teamingCapabilities" style="width:100%;min-height:80px;resize:vertical;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Partner brings cybersecurity expertise and CMMC Level 3 compliance support. They will perform PWS 4.3 network security tasks."></textarea>
+        <p class="tip" style="margin-top:8px">💡 The team designation and partner capabilities will be woven into the technical and management volumes.</p>
+      </div>
+      <div id="teamingDisabled" style="font-size:13px;color:var(--muted)">Check "Enable" above to add a teaming partner to this proposal.</div>
+    </div>
+  </div>
+
   <div class="card step-locked" id="step4Card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📁</span> Step 4: Drop Documents</div>
     <div class="card-body">
@@ -822,7 +918,20 @@
         <div id="generateGateLocked" style="text-align:center;padding:12px;background:var(--warn-bg);border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:var(--warn)">
           🔒 Sign in with your company Microsoft account in Step 1 to enable generation.
         </div>
-        <button class="btn btn-primary btn-block" id="runBtn" onclick="runGeneration()" style="display:none">
+        <div id="outlinePreviewPanel" style="display:none;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:700">📋 Pink Team Outline Preview</span>
+            <button onclick="document.getElementById('outlinePreviewPanel').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px">×</button>
+          </div>
+          <div id="outlineContent" style="padding:14px;max-height:300px;overflow-y:auto;overscroll-behavior-y:contain"></div>
+          <div style="padding:10px 14px;background:#f8fafc;border-top:1px solid var(--border);display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="proceedToGenerate()" style="flex:1">✅ Approve Outline &amp; Generate</button>
+            <button onclick="document.getElementById('outlinePreviewPanel').style.display='none'" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:13px">Revise in Step 6</button>
+          </div>
+        </div>
+        <button class="btn" id="previewOutlineBtn" onclick="runOutlinePreview()" style="width:100%;margin-bottom:8px;background:white;border:1px solid var(--blue);color:var(--blue);font-weight:600">
+          📋 Preview Outline First (Pink Team)
+        </button>
           <span id="runBtnIcon">✨</span>
           <span id="runBtnText">Generate Proposal Documents</span>
         </button>
@@ -842,6 +951,27 @@
     </div>
   </div>
   <div class="log-box" id="logBox" style="display:none !important"></div>
+
+  <!-- ── Proposal Calendar ──────────────────────────────────────────────── -->
+  <div class="card" id="calendarCard" style="display:none;margin-bottom:24px">
+    <div class="card-header"><span class="icon">📅</span> Proposal Calendar</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Key dates extracted from your RFP. Add to your calendar to stay on track.</p>
+      <div id="calendarList"></div>
+    </div>
+  </div>
+
+  <!-- ── Submission Checklist ───────────────────────────────────────────── -->
+  <div class="card" id="checklistCard" style="display:none;margin-bottom:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="icon">☑️</span> Submission Checklist</span>
+      <button onclick="copyChecklist()" style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Verify every item below before submitting. Items are extracted from your Section L instructions.</p>
+      <div id="checklistItems"></div>
+    </div>
+  </div>
 
   <!-- ── Step 8: Compliance Check ─────────────────────────────────────────── -->
   <div class="card step-locked" id="step8Card" style="margin-bottom:24px">
@@ -897,7 +1027,151 @@
     </div>
   </div>
 
+</div><!-- end tab-pane proposal -->
+
+<!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
+<div class="tab-pane" id="pane-bidnobid">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">📄</span> Drop RFP Documents for Bid/No-Bid Analysis</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Upload the solicitation documents. Claude will score this opportunity across 7 factors and give you a clear bid/no-bid recommendation before you invest in proposal writing.</p>
+      <div class="drop-zone" id="dropZoneBNA" style="margin-bottom:12px">
+        <input type="file" id="fileInputBNA" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
+        <div class="dz-icon">📋</div>
+        <div class="dz-title">Drop Solicitation Documents Here</div>
+        <div class="dz-sub">RFP, PWS, SOW, amendment — PDF or Word</div>
+      </div>
+      <div class="file-list" id="fileListBNA" style="margin-bottom:12px"></div>
+      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45">
+        🎯 Analyze Opportunity
+      </button>
+    </div>
+  </div>
+
+  <div id="bnaResults" style="display:none">
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-header"><span class="icon">🎯</span> Bid/No-Bid Recommendation</div>
+      <div class="card-body">
+        <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+          <div style="text-align:center;min-width:120px">
+            <div class="bna-score" id="bnaScore">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">out of 10</div>
+          </div>
+          <div style="flex:1">
+            <div class="bna-verdict" id="bnaVerdict">—</div>
+            <div style="font-size:14px;color:var(--text);margin-top:8px" id="bnaSummary">—</div>
+          </div>
+        </div>
+        <div id="bnaFactors"></div>
+        <div style="margin-top:20px;padding:14px;background:var(--pale);border:1px solid var(--light-blue);border-radius:8px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">📋 Key Risks &amp; Considerations</div>
+          <div id="bnaRisks" style="font-size:13px;color:var(--text)"></div>
+        </div>
+        <div style="margin-top:16px;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--success)">✅ If You Bid: Recommended Win Strategy</div>
+          <div id="bnaWinStrategy" style="font-size:13px;color:var(--text)"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button onclick="copyBnaResults()" style="padding:6px 14px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy Report</button>
+          <button onclick="switchTab('proposal')" style="padding:6px 14px;font-size:12px;font-weight:600;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer">→ Go to Proposal Writing</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- ══════════════════════════ SECTION EDITOR TAB ════════════════════════ -->
+<div class="tab-pane" id="pane-editor">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">✏️</span> Section Editor</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Paste any proposal section here to rewrite, strengthen, or re-focus it against specific requirements. No need to regenerate the entire volume.</p>
+      <div class="form-group">
+        <label>Section Label</label>
+        <input type="text" id="editorSectionLabel" placeholder="e.g. Technical Approach — PWS 4.1 Program Management"/>
+      </div>
+      <div class="form-group">
+        <label>Current Section Text (paste from your Word doc)</label>
+        <textarea id="editorOriginalText" style="min-height:200px;resize:vertical" placeholder="Paste the section you want to improve..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Revision Instructions</label>
+        <textarea id="editorInstructions" style="min-height:80px;resize:vertical" placeholder="e.g. Strengthen the compliance statements. Add more specific reference to PWS 4.1. Address the key personnel resume requirement. Make it more specific to DLA's mission."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Relevant Requirements (optional — paste specific shalls/musts this section must address)</label>
+        <textarea id="editorRequirements" style="min-height:80px;resize:vertical" placeholder="Paste specific requirements this section needs to address..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="runSectionEdit()" id="editorRunBtn">✏️ Rewrite Section</button>
+      <div id="editorResults" style="display:none;margin-top:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700;font-size:14px">Revised Section</div>
+          <button onclick="copyEditorResult()" style="padding:4px 12px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
+        </div>
+        <div id="editorResultText" style="padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:500px;overflow-y:auto;overscroll-behavior-y:contain"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ SETTINGS TAB ══════════════════════════════ -->
+<div class="tab-pane" id="pane-settings">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">⚙️</span> Company Settings</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">These settings configure the tool for your company. Changes take effect immediately and are saved in your browser.</p>
+
+      <div class="settings-section">
+        <h3>🏢 Company Identity</h3>
+        <div class="settings-grid">
+          <div class="settings-field"><label>Company Full Name</label><input type="text" id="s_companyFullName" placeholder="South River Federal Solutions LLC"/></div>
+          <div class="settings-field"><label>Short Name / Abbreviation</label><input type="text" id="s_companyShortName" placeholder="SRFed"/></div>
+          <div class="settings-field"><label>Business Type</label><input type="text" id="s_businessType" placeholder="SDVOSB, 8(a), Small Business, etc."/></div>
+          <div class="settings-field"><label>GSA MAS Contract #</label><input type="text" id="s_gsaMas" placeholder="47QRAA25D006B"/></div>
+          <div class="settings-field"><label>CAGE Code</label><input type="text" id="s_cage" placeholder="8BMQ1"/></div>
+          <div class="settings-field"><label>UEI</label><input type="text" id="s_uei" placeholder="N5RZPM2JPJ21"/></div>
+          <div class="settings-field" style="grid-column:1/-1"><label>Address</label><input type="text" id="s_address" placeholder="3168 Braverton Street, Suite 400, Edgewater, MD 21037"/></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>👤 CEO / Primary Contact</h3>
+        <div class="settings-grid">
+          <div class="settings-field"><label>CEO Name</label><input type="text" id="s_ceoName" placeholder="Matthew Tarjick"/></div>
+          <div class="settings-field"><label>CEO Title</label><input type="text" id="s_ceoTitle" placeholder="Chief Executive Officer"/></div>
+          <div class="settings-field"><label>CEO Email</label><input type="text" id="s_ceoEmail" placeholder="matthew.tarjick@srfed.com"/></div>
+          <div class="settings-field"><label>CEO Phone</label><input type="text" id="s_ceoPhone" placeholder="(410) 463-2644"/></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔐 Certifications & Clearances</h3>
+        <div class="settings-grid">
+          <div class="settings-field"><label>Clearances</label><input type="text" id="s_clearances" placeholder="Active SECRET FCL, personnel up to TS/SCI"/></div>
+          <div class="settings-field"><label>CMMC Level</label><input type="text" id="s_cmmc" placeholder="CMMC Level 2 Compliant"/></div>
+          <div class="settings-field"><label>DCAA Status</label><input type="text" id="s_dcaa" placeholder="DCAA-approved accounting system"/></div>
+          <div class="settings-field"><label>App Title</label><input type="text" id="s_appTitle" placeholder="SRFed Proposal Generator"/></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🎨 Branding</h3>
+        <div class="settings-grid">
+          <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5"/></div>
+          <div class="settings-field"><label>Logo URL or leave blank</label><input type="text" id="s_logoUrl" placeholder="https://... or leave blank to use default"/></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+        <button onclick="resetSettings()" style="padding:8px 16px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--muted)">↺ Reset to Defaults</button>
+      </div>
+      <div id="settingsSavedMsg" style="display:none;margin-top:10px;padding:8px 14px;background:var(--success-bg);border:1px solid #86efac;border-radius:6px;font-size:13px;color:var(--success)">✅ Settings saved successfully.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .container -->
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLIENT CONFIGURATION — edit this block only when onboarding a new client
@@ -1156,7 +1430,347 @@ function initScrollContainment() {
   }, { passive: false });
 }
 
-window.addEventListener('load', () => { applyClientConfig(); initMsal(); initScrollContainment(); });
+// ═══════════════════════════════════════════════════════════════════════════
+// TEAMING PARTNER
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleTeaming() {
+  const enabled = document.getElementById('teamingEnabled')?.checked;
+  const body    = document.getElementById('teamingBody');
+  const dis     = document.getElementById('teamingDisabled');
+  if (body) body.style.display    = enabled ? 'block' : 'none';
+  if (dis)  dis.style.display     = enabled ? 'none'  : 'block';
+  if (enabled) updateTeamLabel();
+}
+
+function updateTeamLabel() {
+  const role    = document.getElementById('teamingRole')?.value;
+  const partner = document.getElementById('teamingPartnerName')?.value.trim();
+  const label   = document.getElementById('teamLabelDisplay');
+  if (!label) return;
+  const shortName = CLIENT_CONFIG.companyShortName || 'SRFed';
+  if (role === 'prime') {
+    label.textContent = `Team ${shortName}${partner ? ' (with ' + partner + ')' : ''}`;
+  } else {
+    label.textContent = partner ? `Team ${partner} (${shortName} as subcontractor)` : `Team [Partner] — enter partner name above`;
+  }
+}
+
+function getTeamingContext() {
+  const enabled = document.getElementById('teamingEnabled')?.checked;
+  if (!enabled) return '';
+  const role    = document.getElementById('teamingRole')?.value || 'prime';
+  const partner = document.getElementById('teamingPartnerName')?.value.trim() || '';
+  const caps    = document.getElementById('teamingCapabilities')?.value.trim() || '';
+  const label   = document.getElementById('teamLabelDisplay')?.textContent || '';
+  return `\n\nTEAMING ARRANGEMENT:\n` +
+    `Team Designation: ${label}\n` +
+    `${CLIENT_CONFIG.companyShortName} Role: ${role === 'prime' ? 'Prime Contractor' : 'Subcontractor'}\n` +
+    (partner ? `Teaming Partner: ${partner}\n` : '') +
+    (caps ? `Partner Capabilities: ${caps}\n` : '') +
+    `Instruction: Reference "${label}" consistently throughout the proposal. ` +
+    (role === 'prime'
+      ? `${CLIENT_CONFIG.companyShortName} leads all deliverables. ${partner ? partner + ' provides specialized support.' : ''}`
+      : `${partner} is the prime. ${CLIENT_CONFIG.companyShortName} provides specific capabilities as described above.`);
+}
+
+// Hook teaming context into companyCtx during generation — called from runGeneration
+function buildCompanyCtxWithTeaming(base) {
+  return base + getTeamingContext();
+}
+
+// Teaming card lock is handled via setStepLocked directly after updateStepLocks
+// We add teamingCard to the existing updateStepLocks by patching the bottom of it
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROPOSAL OUTLINE PREVIEW (Pink Team)
+// ═══════════════════════════════════════════════════════════════════════════
+async function runOutlinePreview() {
+  const btn = document.getElementById('previewOutlineBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span> Building outline…';
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key.');
+
+    // Build a compact version of what we know so far
+    const shallsBody = document.getElementById('shallsBody');
+    const shallsSample = Array.from(shallsBody?.querySelectorAll('.shall-item') || [])
+      .slice(0, 20).map(el => el.textContent.trim()).join('\n');
+    const winThemes = ['winTheme1','winTheme2','winTheme3']
+      .map(id => document.getElementById(id)?.value.trim()).filter(Boolean);
+    const notes = document.getElementById('additionalNotes')?.value.trim() || '';
+
+    // Get confirmed assumptions
+    const assumptionCtx = typeof buildAcceptedAssumptionsContext === 'function'
+      ? buildAcceptedAssumptionsContext() : '';
+
+    const genVols = ['0','1','2','3','4'].filter(n => {
+      const el = document.getElementById(`vol${n}`);
+      return el && el.checked;
+    });
+    const volNames = {'0':'Executive Summary','1':'Technical Approach','2':'Past Performance','3':'Price Narrative','4':'Contract Documentation'};
+
+    const prompt =
+      `You are a government proposal manager. Based on the information below, generate a detailed proposal outline.\n\n` +
+      `VOLUMES TO WRITE: ${genVols.map(v => volNames[v]).join(', ')}\n\n` +
+      (assumptionCtx ? `CONFIRMED RFP DATA:\n${assumptionCtx}\n\n` : '') +
+      (winThemes.length ? `WIN THEMES: ${winThemes.join(' | ')}\n\n` : '') +
+      (shallsSample ? `SAMPLE REQUIREMENTS:\n${shallsSample}\n\n` : '') +
+      (notes ? `PROPOSAL MANAGER NOTES: ${notes}\n\n` : '') +
+      `For each volume, list: (1) proposed section headings, (2) estimated page count per section, (3) key points to hit.\n\n` +
+      `Return ONLY JSON:\n{"volumes":[{"vol":"1","title":"Technical Approach","total_pages":"15-20","sections":[{"heading":"1.1 Understanding of the Requirement","pages":"3-4","key_points":["..."]},...]},...]}\n` +
+      `Be specific and realistic based on the requirements above.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 3000,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+    });
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const d = await resp.json();
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
+    const result = JSON.parse(raw);
+
+    // Render outline
+    const panel   = document.getElementById('outlinePreviewPanel');
+    const content = document.getElementById('outlineContent');
+    content.innerHTML = (result.volumes || []).map(vol => `
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--light-blue)">
+          Volume ${vol.vol} — ${escHtml(vol.title)} <span style="font-weight:400;color:var(--muted)">(~${vol.total_pages} pages)</span>
+        </div>
+        ${(vol.sections||[]).map(s => `
+          <div class="outline-section">
+            <div class="outline-heading">${escHtml(s.heading)} <span style="font-weight:400;color:var(--muted);font-size:12px">${s.pages} pp</span></div>
+            <ul style="margin:4px 0 0 16px;padding:0">
+              ${(s.key_points||[]).map(p => `<li style="font-size:12px;color:var(--muted);margin-bottom:2px">${escHtml(p)}</li>`).join('')}
+            </ul>
+          </div>`).join('')}
+      </div>`).join('');
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e) {
+    alert(`Outline preview failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📋 Preview Outline First (Pink Team)';
+  }
+}
+
+function proceedToGenerate() {
+  document.getElementById('outlinePreviewPanel').style.display = 'none';
+  document.getElementById('runBtn')?.click();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAST PERFORMANCE RELEVANCE SCORING
+// ═══════════════════════════════════════════════════════════════════════════
+async function scorePastPerformanceRelevance() {
+  if (companyFiles.filter(f => f._fromSP).length === 0) return;
+  if (rfpFiles.length === 0) return; // need RFP context
+
+  // Only run if we have shalls or assumptions to compare against
+  const shallsBody = document.getElementById('shallsBody');
+  const shalls = Array.from(shallsBody?.querySelectorAll('.shall-item') || [])
+    .slice(0, 15).map(el => el.textContent.trim()).join('\n');
+  if (!shalls) return;
+
+  const panel = document.getElementById('ppRelevancePanel');
+  const list  = document.getElementById('ppRelevanceList');
+  if (!panel || !list) return;
+
+  panel.style.display = 'block';
+  list.innerHTML = '<div style="font-size:12px;color:var(--muted)">Scoring relevance…</div>';
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) return;
+
+    const spFiles = companyFiles.filter(f => f._fromSP);
+    const fileNames = spFiles.map(f => f.name);
+
+    const prompt =
+      `You are a government proposal manager. Score each past performance reference's relevance to this RFP.\n\n` +
+      `SOLICITATION REQUIREMENTS (sample):\n${shalls}\n\n` +
+      `PAST PERFORMANCE FILES AVAILABLE:\n${fileNames.map((n,i)=>`${i+1}. ${n}`).join('\n')}\n\n` +
+      `For each file, score its relevance to this solicitation from 0-100 and give a one-sentence reason.\n\n` +
+      `Return ONLY JSON:\n{"scores":[{"filename":"exact filename","score":85,"reason":"short reason why relevant or not"}]}`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1500,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+    });
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    const d = await resp.json();
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
+    const result = JSON.parse(raw);
+
+    const sorted = (result.scores || []).sort((a,b) => b.score - a.score);
+    list.innerHTML = sorted.map((s, i) => {
+      const color = s.score >= 70 ? 'var(--success)' : s.score >= 40 ? '#b45309' : 'var(--error)';
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+      return `<div class="pp-item">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:13px;font-weight:600">${medal} ${escHtml(s.filename)}</div>
+          <div style="font-size:16px;font-weight:900;color:${color}">${s.score}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${escHtml(s.reason)}</div>
+        <div class="pp-relevance-bar" style="width:${s.score}%;background:${color}"></div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--muted)">Could not score relevance: ${e.message}</div>`;
+  }
+}
+
+// PP relevance is triggered from analysis completion (see runAnalysis function)
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROPOSAL CALENDAR
+// ═══════════════════════════════════════════════════════════════════════════
+function renderProposalCalendar(briefing) {
+  const card = document.getElementById('calendarCard');
+  const list = document.getElementById('calendarList');
+  if (!card || !list) return;
+
+  const events = [];
+  const now = new Date();
+
+  // Extract dates from briefing
+  if (briefing.submission_date) events.push({ label: '🚨 Proposal Due', date: briefing.submission_date, urgent: true });
+  if (briefing.qa_deadline) events.push({ label: '❓ Q&A Deadline', date: briefing.qa_deadline });
+  if (briefing.solicitation_release) events.push({ label: '📋 Solicitation Released', date: briefing.solicitation_release });
+
+  // Also extract dates from confirmed assumptions
+  assumptions.filter(a => a.category === 'rfp' && a.value &&
+    /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b|\d{1,2}\/\d{1,2}\/\d{2,4}/i.test(a.value)
+  ).forEach(a => events.push({ label: `📌 ${a.label}`, date: a.value }));
+
+  if (events.length === 0) {
+    // Try to extract from submission_date in briefing
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  list.innerHTML = events.map(ev => {
+    const urgentClass = ev.urgent ? 'cal-urgent' : '';
+    return `<div class="cal-item">
+      <div class="cal-date ${urgentClass}">${escHtml(ev.date)}</div>
+      <div class="cal-label">${ev.label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBMISSION CHECKLIST
+// ═══════════════════════════════════════════════════════════════════════════
+async function buildSubmissionChecklist(briefing) {
+  const card = document.getElementById('checklistCard');
+  const itemsEl = document.getElementById('checklistItems');
+  if (!card || !itemsEl) return;
+
+  // Base items always present
+  const baseItems = [
+    'Volumes are within page limits specified in Section L',
+    'Cover page includes solicitation number, company name, CAGE, UEI, and submission date',
+    'All required volumes are included and properly named',
+    'Business card / letterhead does not imply Government affiliation',
+    'Key personnel resumes included and within page limits',
+    'Company is registered and active in SAM.gov',
+    'Pricing / Schedule B Excel is completed with all required fields',
+    'All certifications and representations are signed and dated',
+  ];
+
+  // Add Section L specific items from briefing
+  const sectionLItems = (briefing.section_l_instructions || []).slice(0, 10);
+  const allItems = [...baseItems, ...sectionLItems.filter(i => !baseItems.includes(i))];
+
+  card.style.display = 'block';
+  itemsEl.innerHTML = allItems.map((item, i) => `
+    <div class="check-item" id="checkItem${i}" onclick="toggleCheckItem(${i})">
+      <input type="checkbox" id="chk${i}" onclick="event.stopPropagation();toggleCheckItem(${i})"/>
+      <label for="chk${i}">${escHtml(item)}</label>
+    </div>`).join('');
+}
+
+function toggleCheckItem(i) {
+  const item = document.getElementById(`checkItem${i}`);
+  const chk  = document.getElementById(`chk${i}`);
+  if (!item || !chk) return;
+  chk.checked = !chk.checked;
+  item.classList.toggle('done', chk.checked);
+}
+
+function copyChecklist() {
+  const items = document.querySelectorAll('#checklistItems .check-item');
+  let text = 'SUBMISSION CHECKLIST\n\n';
+  items.forEach(item => {
+    const chk   = item.querySelector('input[type=checkbox]');
+    const label = item.querySelector('label');
+    text += `[${chk?.checked ? 'X' : ' '}] ${label?.textContent.trim()}\n`;
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="copyChecklist()"]');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy', 2000); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// YELLOW/RED ANNOTATION IN WORD DOCS
+// ═══════════════════════════════════════════════════════════════════════════
+function annotateDocXml(xml) {
+  // 1. Highlight unresolved placeholders in yellow
+  // Pattern: {{PLACEHOLDER}} or [PLACEHOLDER] or [INSERT ...] still in document
+  const yellowTargets = [
+    /\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD|TBE|N\/A|UNKNOWN)[^\]]{0,40}\]/gi,
+    /\{\{[A-Z_]+\}\}/g,
+    /\[BASE YEAR TOTAL\]|\[GRAND TOTAL\]/gi,
+  ];
+
+  // Apply yellow highlight to runs containing these patterns
+  // We work at the run level — find <w:t>...</w:t> that match and wrap the run
+  xml = xml.replace(/<w:r>((?:(?!<\/w:r>)[\s\S])*?)<w:t([^>]*)>([^<]*(?:\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD)[^\]]{0,40}\]|{{[A-Z_]+}})[^<]*)<\/w:t>((?:(?!<\/w:r>)[\s\S])*?)<\/w:r>/gi,
+    (match, before, tAttr, tContent, after) => {
+      // Inject yellow highlight into rPr
+      const rprMatch = match.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
+      const existingRpr = rprMatch ? rprMatch[1] : '';
+      const hasHighlight = existingRpr.includes('<w:highlight');
+      const newRpr = hasHighlight ? existingRpr : existingRpr + '<w:highlight w:val="yellow"/>';
+      if (rprMatch) {
+        return match.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/, `<w:rPr>${newRpr}</w:rPr>`);
+      } else {
+        return `<w:r><w:rPr>${newRpr}</w:rPr>${before}<w:t${tAttr}>${tContent}</w:t>${after}</w:r>`;
+      }
+    }
+  );
+
+  return xml;
+}
+
+// Hook annotation into generateDocsClientSide — called after injection, before packaging
+function postProcessDocXml(xml) {
+  return annotateDocXml(xml);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HOOK CALENDAR + CHECKLIST INTO GENERATION COMPLETION
+// ═══════════════════════════════════════════════════════════════════════════
+// These are called from within runGeneration after briefing is parsed
+function onBriefingExtracted(briefing) {
+  renderProposalCalendar(briefing);
+  buildSubmissionChecklist(briefing);
+}
 
 // ─── API KEY MANAGEMENT ───────────────────────────────────────────────────────
 function saveApiKey(value) {
@@ -1631,6 +2245,7 @@ function updateStepLocks() {
 
   setStepLocked('step2Card', !signedIn);
   setStepLocked('step3Card', !signedIn || !hasApiKey);
+  setStepLocked('teamingCard', !signedIn || !hasApiKey);
   setStepLocked('step4Card', !signedIn || !hasApiKey);
   setStepLocked('step5Card', !hasRFP);
   setStepLocked('step6Card', !analyzed);
@@ -1697,8 +2312,9 @@ function addFilesToArray(newFiles, arr, listId) {
   updateTokenMeter();
   if (arr === rfpFiles) extractAndDisplayShalls();
   if (arr === complianceFiles) updateComplianceBtn();
+  if (typeof bnaFiles !== 'undefined' && arr === bnaFiles) updateBnaBtn();
   // Only reset analysis if the RFP or company source files change — NOT compliance check files
-  if (analysisComplete && added > 0 && arr !== complianceFiles) {
+  if (analysisComplete && added > 0 && arr !== complianceFiles && (typeof bnaFiles === 'undefined' || arr !== bnaFiles)) {
     analysisComplete = false;
     assumptions = [];
     document.getElementById('analysisResults').style.display = 'none';
@@ -1713,6 +2329,7 @@ function removeFileFromArray(name, arr, listId) {
   updateStepLocks();
   if (arr === rfpFiles) extractAndDisplayShalls();
   if (arr === complianceFiles) updateComplianceBtn();
+  if (typeof bnaFiles !== 'undefined' && arr === bnaFiles) updateBnaBtn();
 }
 
 function renderFileListById(arr, listId) {
@@ -1779,15 +2396,10 @@ function updateTokenMeter() {
 }
 
 // Init both drop zones on load
-window.addEventListener('DOMContentLoaded', () => {
-  initDropZone('dropZoneRFP',        'fileInputRFP',        rfpFiles,        'fileListRFP');
-  initDropZone('dropZoneCompany',    'fileInputCompany',    companyFiles,    'fileListCompany');
-  initDropZone('dropZoneCompliance', 'fileInputCompliance', complianceFiles, 'fileListCompliance');
-  updateStepLocks();
-});
+// Drop zones initialized in DOMContentLoaded below
 
 // Checkbox state
-['1','2','3','4'].forEach(n => {
+['0','1','2','3','4'].forEach(n => {
   const cb = document.getElementById(`vol${n}`);
   if (cb) cb.addEventListener('change', () => {
     document.getElementById(`volCheck${n}`).classList.toggle('checked', cb.checked);
@@ -1862,6 +2474,8 @@ function updateAssumptionSummary() {
     analysisComplete = true;
   }
   updateStepLocks();
+  // Trigger PP relevance scoring in background after analysis completes
+  setTimeout(() => { if (typeof scorePastPerformanceRelevance === 'function') scorePastPerformanceRelevance(); }, 2000);
 }
 
 // ─── TOKEN PRE-FLIGHT CHECK ───────────────────────────────────────────────────
@@ -2680,7 +3294,8 @@ async function runGeneration() {
       `CEO: ${CLIENT_CONFIG.ceoName} | ${CLIENT_CONFIG.ceoTitle} | ${CLIENT_CONFIG.ceoPhone} | ${CLIENT_CONFIG.ceoEmail}\n` +
       fallbackPersonnel + fallbackPP + fallbackCaps + styleCtx + `\n` +
       `\nNOTES FROM PROPOSAL MANAGER: ${notes || 'None'}\n` +
-      assumptionsCtx + clarifyCtx;
+      assumptionsCtx + clarifyCtx +
+      (typeof getTeamingContext === 'function' ? getTeamingContext() : '');
 
     // ── CALL 1: RFP documents only → extract briefing ─────────────────────────
     // CRITICAL: Only send RFP files here. Company docs (87k+ tokens) would make
@@ -2771,6 +3386,9 @@ async function runGeneration() {
     cachedBriefing = briefing;
     allSteps[0].status = 'done'; allSteps[1].status = 'done'; allSteps[2].status = 'active';
     setProgress(35, allSteps);
+
+    // Render calendar and checklist from briefing data
+    if (typeof onBriefingExtracted === 'function') onBriefingExtracted(briefing);
 
     // ── CALLS 2-5: Write each volume from briefing only (no raw docs re-sent) ─
     const proposalData = {
@@ -3128,7 +3746,8 @@ async function generateDocsClientSide(proposalData, volumes) {
 
         // Inject into document body
         const docXml = await zip.file('word/document.xml').async('string');
-        zip.file('word/document.xml', injectContentIntoXml(docXml, proposalData, vol));
+        const injectedXml = injectContentIntoXml(docXml, proposalData, vol);
+        zip.file('word/document.xml', typeof postProcessDocXml === 'function' ? postProcessDocXml(injectedXml) : injectedXml);
 
         // Also inject metadata into headers and footers
         const zipFiles = Object.keys(zip.files);
@@ -3431,6 +4050,349 @@ function renderDownloads(docs) {
 
   card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const pane = document.getElementById(`pane-${name}`);
+  const btn  = document.getElementById(`tab-${name}`);
+  if (pane) pane.classList.add('active');
+  if (btn)  btn.classList.add('active');
+  sessionStorage.setItem('srfed_active_tab', name);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SESSION SAVE / RESTORE
+// ═══════════════════════════════════════════════════════════════════════════
+function saveSession() {
+  try {
+    const data = {
+      rfpFileNames:    rfpFiles.map(f => f.name),
+      winThemes:       ['winTheme1','winTheme2','winTheme3'].map(id => document.getElementById(id)?.value || ''),
+      discriminators:  ['discrim1','discrim2','discrim3','discrim4','discrim5'].map(id => document.getElementById(id)?.value || ''),
+      notes:           document.getElementById('additionalNotes')?.value || '',
+      assumptions:     JSON.stringify(assumptions),
+      analysisComplete: analysisComplete,
+      spPP:            document.getElementById('spPP')?.value || '',
+      spResumes:       document.getElementById('spResumes')?.value || '',
+      spTemplates:     document.getElementById('spTemplates')?.value || '',
+    };
+    localStorage.setItem('srfed_session', JSON.stringify(data));
+  } catch(e) { console.warn('Session save failed:', e); }
+}
+
+function restoreSession() {
+  try {
+    const saved = localStorage.getItem('srfed_session');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    // Restore SharePoint URLs
+    if (data.spPP)        { const el = document.getElementById('spPP');        if (el) el.value = data.spPP; }
+    if (data.spResumes)   { const el = document.getElementById('spResumes');   if (el) el.value = data.spResumes; }
+    if (data.spTemplates) { const el = document.getElementById('spTemplates'); if (el) el.value = data.spTemplates; }
+    // Restore win strategy
+    if (data.winThemes) {
+      ['winTheme1','winTheme2','winTheme3'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el && data.winThemes[i]) el.value = data.winThemes[i];
+      });
+    }
+    if (data.discriminators) {
+      ['discrim1','discrim2','discrim3','discrim4','discrim5'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el && data.discriminators[i]) el.value = data.discriminators[i];
+      });
+    }
+    if (data.notes) {
+      const el = document.getElementById('additionalNotes');
+      if (el) el.value = data.notes;
+    }
+    if (data.rfpFileNames && data.rfpFileNames.length > 0) {
+      showStatus('info', 'Session restored',
+        `Previous session loaded. SharePoint URLs and win strategy restored. Re-upload your RFP files (${data.rfpFileNames.join(', ')}) to continue.`);
+    }
+  } catch(e) { console.warn('Session restore failed:', e); }
+}
+
+// Auto-save session every 30 seconds and on key fields
+setInterval(saveSession, 30000);
+['winTheme1','winTheme2','winTheme3','discrim1','discrim2','discrim3','discrim4','discrim5','additionalNotes'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', saveSession);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BID / NO-BID ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════
+let bnaFiles = [];
+
+window.addEventListener('DOMContentLoaded', () => {
+  initDropZone('dropZoneRFP',        'fileInputRFP',        rfpFiles,        'fileListRFP');
+  initDropZone('dropZoneCompany',    'fileInputCompany',    companyFiles,    'fileListCompany');
+  initDropZone('dropZoneCompliance', 'fileInputCompliance', complianceFiles, 'fileListCompliance');
+  initDropZone('dropZoneBNA',        'fileInputBNA',        bnaFiles,        'fileListBNA');
+  updateStepLocks();
+  restoreSession();
+  const savedTab = sessionStorage.getItem('srfed_active_tab');
+  if (savedTab) switchTab(savedTab);
+});
+
+function updateBnaBtn() {
+  const btn = document.getElementById('bnaRunBtn');
+  if (btn) { btn.disabled = bnaFiles.length === 0; btn.style.opacity = bnaFiles.length > 0 ? '1' : '0.45'; }
+}
+
+// BNA button update is handled via the patched addFilesToArray below
+
+async function runBidNoBid() {
+  if (bnaFiles.length === 0) return;
+  const btn = document.getElementById('bnaRunBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Analyzing opportunity…';
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key. Enter your key in the Proposal tab Step 2.');
+    const content = [];
+    for (const file of bnaFiles.slice(0, 8)) {
+      const block = await fileToContentBlock(file);
+      if (block) content.push(block);
+    }
+    content.push({ type: 'text', text:
+      `You are a government business development expert. Analyze this solicitation and give a bid/no-bid recommendation for ${CLIENT_CONFIG.companyFullName}, a ${CLIENT_CONFIG.businessType}.\n\n` +
+      `Company profile:\n- ${CLIENT_CONFIG.businessType}\n- Clearances: ${CLIENT_CONFIG.clearances}\n- GSA MAS: ${CLIENT_CONFIG.gsaMas || 'N/A'}\n- CMMC: ${CLIENT_CONFIG.cmmc || 'N/A'}\n\n` +
+      `Score the opportunity on each factor from 1-10. Return ONLY JSON:\n` +
+      `{"overall_score":7,"verdict":"BID","summary":"one sentence recommendation",` +
+      `"factors":[` +
+      `{"name":"Mission Alignment","score":8,"rationale":"brief explanation"},` +
+      `{"name":"Past Performance Match","score":7,"rationale":"..."},` +
+      `{"name":"Competition Level","score":6,"rationale":"..."},` +
+      `{"name":"Incumbent Risk","score":5,"rationale":"..."},` +
+      `{"name":"Technical Capability Fit","score":9,"rationale":"..."},` +
+      `{"name":"Size / Value Fit","score":7,"rationale":"..."},` +
+      `{"name":"Set-Aside / Eligibility","score":10,"rationale":"..."}],` +
+      `"risks":["risk 1","risk 2","risk 3"],` +
+      `"win_strategy":["discriminator 1","discriminator 2","discriminator 3"],` +
+      `"recommendation":"2-3 sentences on why to bid or not bid"}`
+    });
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 2000,
+        messages: [{ role: 'user', content }] })
+    });
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const d = await resp.json();
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
+    const result = JSON.parse(raw);
+
+    // Render results
+    const scoreColor = result.overall_score >= 7 ? 'var(--success)' : result.overall_score >= 5 ? '#b45309' : 'var(--error)';
+    document.getElementById('bnaScore').textContent = result.overall_score;
+    document.getElementById('bnaScore').style.color = scoreColor;
+    const verdictEl = document.getElementById('bnaVerdict');
+    verdictEl.textContent = result.verdict === 'BID' ? '✅ BID' : result.verdict === 'NO BID' ? '❌ NO BID' : '⚠️ CONDITIONAL BID';
+    verdictEl.style.color = result.verdict === 'BID' ? 'var(--success)' : result.verdict === 'NO BID' ? 'var(--error)' : '#b45309';
+    document.getElementById('bnaSummary').textContent = result.recommendation || result.summary;
+
+    const factorsEl = document.getElementById('bnaFactors');
+    factorsEl.innerHTML = (result.factors || []).map(f => {
+      const fc = f.score >= 7 ? 'var(--success)' : f.score >= 5 ? '#b45309' : 'var(--error)';
+      const barW = (f.score / 10 * 100).toFixed(0);
+      return `<div class="bna-factor">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px;margin-bottom:3px">${escHtml(f.name)}</div>
+          <div style="font-size:12px;color:var(--muted)">${escHtml(f.rationale)}</div>
+          <div style="height:4px;background:#e2e8f0;border-radius:2px;margin-top:6px">
+            <div style="height:4px;width:${barW}%;background:${fc};border-radius:2px;transition:width 0.4s"></div>
+          </div>
+        </div>
+        <div class="bna-factor-score" style="color:${fc};margin-left:16px">${f.score}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('bnaRisks').innerHTML = (result.risks || []).map(r => `<div style="margin-bottom:6px">⚠️ ${escHtml(r)}</div>`).join('');
+    document.getElementById('bnaWinStrategy').innerHTML = (result.win_strategy || []).map(w => `<div style="margin-bottom:6px">→ ${escHtml(w)}</div>`).join('');
+
+    document.getElementById('bnaResults').style.display = 'block';
+    document.getElementById('bnaResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window._lastBnaResult = result;
+  } catch(e) {
+    alert(`Bid/No-Bid analysis failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🎯 Analyze Opportunity';
+    updateBnaBtn();
+  }
+}
+
+function copyBnaResults() {
+  const result = window._lastBnaResult;
+  if (!result) return;
+  let text = `BID/NO-BID ANALYSIS — ${CLIENT_CONFIG.companyShortName}\n`;
+  text += `Score: ${result.overall_score}/10  |  Verdict: ${result.verdict}\n\n`;
+  text += `${result.recommendation || result.summary}\n\n`;
+  text += `FACTOR SCORES:\n`;
+  (result.factors||[]).forEach(f => { text += `  ${f.name}: ${f.score}/10 — ${f.rationale}\n`; });
+  text += `\nRISKS:\n${(result.risks||[]).map(r=>`  • ${r}`).join('\n')}\n`;
+  text += `\nWIN STRATEGY IF BIDDING:\n${(result.win_strategy||[]).map(w=>`  • ${w}`).join('\n')}\n`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="copyBnaResults()"]');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy Report', 2000); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION EDITOR
+// ═══════════════════════════════════════════════════════════════════════════
+async function runSectionEdit() {
+  const original = document.getElementById('editorOriginalText')?.value.trim();
+  const label    = document.getElementById('editorSectionLabel')?.value.trim();
+  const instruct = document.getElementById('editorInstructions')?.value.trim();
+  const reqs     = document.getElementById('editorRequirements')?.value.trim();
+
+  if (!original) { alert('Paste the section text you want to rewrite.'); return; }
+
+  const btn = document.getElementById('editorRunBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Rewriting…';
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key. Enter your key in the Proposal tab Step 2.');
+
+    const prompt =
+      `You are an expert government proposal writer. Rewrite the following proposal section.\n\n` +
+      `Section: ${label || 'Proposal section'}\n\n` +
+      `REVISION INSTRUCTIONS: ${instruct || 'Strengthen the language, improve compliance, make it more specific and compelling.'}\n\n` +
+      (reqs ? `REQUIREMENTS TO ADDRESS:\n${reqs}\n\n` : '') +
+      `ORIGINAL TEXT:\n${original}\n\n` +
+      `Write the revised section as flowing, professional proposal prose. Maintain appropriate length. ` +
+      `Do not add headers or meta-commentary — output only the revised text.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+    });
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const d = await resp.json();
+    const revised = d.content.map(c=>c.text||'').join('').trim();
+
+    document.getElementById('editorResultText').textContent = revised;
+    document.getElementById('editorResults').style.display = 'block';
+    document.getElementById('editorResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e) {
+    alert(`Section edit failed: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✏️ Rewrite Section';
+  }
+}
+
+function copyEditorResult() {
+  const text = document.getElementById('editorResultText')?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="copyEditorResult()"]');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy', 2000); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETTINGS — Load, Save, Reset
+// ═══════════════════════════════════════════════════════════════════════════
+const SETTINGS_KEY = 'srfed_client_config';
+
+function loadSettingsIntoUI() {
+  const saved = localStorage.getItem(SETTINGS_KEY);
+  const cfg   = saved ? { ...CLIENT_CONFIG, ...JSON.parse(saved) } : CLIENT_CONFIG;
+  const fields = {
+    s_companyFullName: cfg.companyFullName,
+    s_companyShortName: cfg.companyShortName,
+    s_businessType: cfg.businessType,
+    s_gsaMas: cfg.gsaMas,
+    s_cage: cfg.cage,
+    s_uei: cfg.uei,
+    s_address: cfg.address,
+    s_ceoName: cfg.ceoName,
+    s_ceoTitle: cfg.ceoTitle,
+    s_ceoEmail: cfg.ceoEmail,
+    s_ceoPhone: cfg.ceoPhone,
+    s_clearances: cfg.clearances,
+    s_cmmc: cfg.cmmc,
+    s_dcaa: cfg.dcaa,
+    s_appTitle: cfg.appTitle,
+    s_primaryColor: cfg.primaryColor,
+  };
+  Object.entries(fields).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  });
+}
+
+function saveSettings() {
+  const overrides = {
+    companyFullName:  document.getElementById('s_companyFullName')?.value.trim(),
+    companyShortName: document.getElementById('s_companyShortName')?.value.trim(),
+    businessType:     document.getElementById('s_businessType')?.value.trim(),
+    gsaMas:           document.getElementById('s_gsaMas')?.value.trim(),
+    cage:             document.getElementById('s_cage')?.value.trim(),
+    uei:              document.getElementById('s_uei')?.value.trim(),
+    address:          document.getElementById('s_address')?.value.trim(),
+    ceoName:          document.getElementById('s_ceoName')?.value.trim(),
+    ceoTitle:         document.getElementById('s_ceoTitle')?.value.trim(),
+    ceoEmail:         document.getElementById('s_ceoEmail')?.value.trim(),
+    ceoPhone:         document.getElementById('s_ceoPhone')?.value.trim(),
+    clearances:       document.getElementById('s_clearances')?.value.trim(),
+    cmmc:             document.getElementById('s_cmmc')?.value.trim(),
+    dcaa:             document.getElementById('s_dcaa')?.value.trim(),
+    appTitle:         document.getElementById('s_appTitle')?.value.trim(),
+    primaryColor:     document.getElementById('s_primaryColor')?.value.trim(),
+  };
+  // Remove empty values
+  Object.keys(overrides).forEach(k => { if (!overrides[k]) delete overrides[k]; });
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(overrides));
+
+  // Apply immediately to CLIENT_CONFIG
+  Object.assign(CLIENT_CONFIG, overrides);
+  applyClientConfig();
+
+  const msg = document.getElementById('settingsSavedMsg');
+  if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
+}
+
+function resetSettings() {
+  if (!confirm('Reset all settings to built-in defaults?')) return;
+  localStorage.removeItem(SETTINGS_KEY);
+  loadSettingsIntoUI();
+  applyClientConfig();
+}
+
+function applySettingsOverrides() {
+  const saved = localStorage.getItem(SETTINGS_KEY);
+  if (!saved) return;
+  try {
+    Object.assign(CLIENT_CONFIG, JSON.parse(saved));
+  } catch(e) { console.warn('Settings load failed:', e); }
+}
+
+// Apply saved settings and load UI on page load
+window.addEventListener('load', () => {
+  applySettingsOverrides();
+  applyClientConfig();
+  loadSettingsIntoUI();
+  initMsal();
+  initScrollContainment();
+});
 </script>
 </body>
 </html>
