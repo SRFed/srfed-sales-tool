@@ -45,13 +45,16 @@
     padding: 0 32px;
     display: flex;
     align-items: center;
-    height: 72px;
+    height: 80px;
     gap: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 200;
   }
   .app-header .logo-img { height: 44px; width: auto; max-width: 120px; flex-shrink: 0; image-rendering: -webkit-optimize-contrast; }
-  .app-header .logo-text { font-size: 24px; font-weight: 700; letter-spacing: .3px; }
-  .header-left { display: flex; align-items: center; gap: 14px; }
+  .app-header .logo-text { font-size: 22px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
+  .header-left { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 
   /* ── MS LOGIN PILL ── */
   .ms-login-btn {
@@ -363,15 +366,15 @@
   .tip { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
   /* ── STEP LOCK ── */
-  .step-locked { position: relative; pointer-events: none; }
-  /* Grey overlay covers the ENTIRE card including header */
+  .step-locked { position: relative; pointer-events: none; overflow: hidden; }
+  /* Overlay covers entire card including header — sits above everything */
   .step-locked::after {
     content: '';
     position: absolute; inset: 0;
-    background: rgba(235,240,248,0.75);
-    border-radius: 12px;
+    background: rgba(226,232,243,0.80);
+    border-radius: 10px;
     pointer-events: all;
-    z-index: 10;
+    z-index: 20;
   }
   /* Lock message — hidden by default, only shown when card is locked */
   .lock-msg { display: none; }
@@ -489,19 +492,22 @@
 
   /* ── TABS ── */
   .tab-nav {
-    display: flex; gap: 4px; align-items: center;
+    display: flex; gap: 6px; align-items: center;
     margin: 0 auto; flex: 1; justify-content: center;
   }
   .tab-btn {
     background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.8);
-    padding: 6px 16px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.85);
+    padding: 10px 0; border-radius: 8px;
     font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s; letter-spacing: 0.2px;
+    min-width: 148px; width: 148px; text-align: center;
+    font-family: inherit;
+    white-space: nowrap;
   }
   .tab-btn:hover { background: rgba(255,255,255,0.22); color: white; }
-  .tab-btn.active { background: white; color: var(--blue); border-color: white; }
+  .tab-btn.active { background: white; color: var(--blue); border-color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
   /* ── SETTINGS UI ── */
@@ -547,9 +553,9 @@
   </div>
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
-    <button class="tab-btn active" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
+    <button class="tab-btn active" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
   <div id="msSignedInArea" style="display:none;margin-left:16px">
@@ -985,7 +991,7 @@
         <input type="file" id="fileInputCompliance" multiple accept=".docx,.doc,.pdf,.txt"/>
         <div class="dz-icon">📄</div>
         <div class="dz-title">Drop Generated Proposal Documents Here</div>
-        <div class="dz-sub">Vol I, II, III, IV — Word or PDF</div>
+        <div class="dz-sub">Word or PDF</div>
       </div>
       <div class="file-list" id="fileListCompliance" style="margin-bottom:12px"></div>
       <button class="btn btn-primary" id="complianceRunBtn" onclick="runComplianceCheck()"
@@ -1037,12 +1043,31 @@
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Upload the solicitation documents. Claude will score this opportunity across 7 factors and give you a clear bid/no-bid recommendation before you invest in proposal writing.</p>
       <div class="drop-zone" id="dropZoneBNA" style="margin-bottom:12px">
         <input type="file" id="fileInputBNA" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
-        <div class="dz-icon">📋</div>
+        <div class="dz-icon">📂</div>
         <div class="dz-title">Drop Solicitation Documents Here</div>
         <div class="dz-sub">RFP, PWS, SOW, amendment — PDF or Word</div>
       </div>
-      <div class="file-list" id="fileListBNA" style="margin-bottom:12px"></div>
-      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45">
+      <div class="file-list" id="fileListBNA" style="margin-bottom:16px"></div>
+
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700;color:var(--blue)">📁 Company Documents <span style="font-weight:400;color:var(--muted);font-size:12px">(optional but recommended for accurate scoring)</span></div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted)">
+            <input type="checkbox" id="bnaLoadSP" onchange="toggleBnaSP()" style="width:14px;height:14px"/> Load from SharePoint
+          </label>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Drop your capability statement, past performance write-ups, or resumes. Without these, scoring is based only on your company profile settings — not your actual experience.</p>
+        <div class="drop-zone" id="dropZoneBNADocs" style="min-height:80px;margin-bottom:8px">
+          <input type="file" id="fileInputBNADocs" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
+          <div class="dz-icon">🏢</div>
+          <div class="dz-title">Drop Capability Statement &amp; Past Performance Here</div>
+          <div class="dz-sub">Optional — improves scoring accuracy</div>
+        </div>
+        <div class="file-list" id="fileListBNADocs" style="margin-bottom:12px"></div>
+        <div id="bnaSPStatus" style="display:none;font-size:12px;color:var(--muted)"></div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:8px">
         🎯 Analyze Opportunity
       </button>
     </div>
@@ -1052,7 +1077,7 @@
     <div class="card" style="margin-bottom:24px">
       <div class="card-header"><span class="icon">🎯</span> Bid/No-Bid Recommendation</div>
       <div class="card-body">
-        <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+        <div style="display:flex;gap:24px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
           <div style="text-align:center;min-width:120px">
             <div class="bna-score" id="bnaScore">—</div>
             <div style="font-size:12px;color:var(--muted);margin-top:4px">out of 10</div>
@@ -1062,6 +1087,7 @@
             <div style="font-size:14px;color:var(--text);margin-top:8px" id="bnaSummary">—</div>
           </div>
         </div>
+        <div id="bnaDataConfidence" style="display:none;padding:8px 12px;border:1px solid;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:16px"></div>
         <div id="bnaFactors"></div>
         <div style="margin-top:20px;padding:14px;background:var(--pale);border:1px solid var(--light-blue);border-radius:8px">
           <div style="font-weight:700;font-size:13px;margin-bottom:8px">📋 Key Risks &amp; Considerations</div>
@@ -1519,22 +1545,27 @@ async function runOutlinePreview() {
       (winThemes.length ? `WIN THEMES: ${winThemes.join(' | ')}\n\n` : '') +
       (shallsSample ? `SAMPLE REQUIREMENTS:\n${shallsSample}\n\n` : '') +
       (notes ? `PROPOSAL MANAGER NOTES: ${notes}\n\n` : '') +
-      `For each volume, list: (1) proposed section headings, (2) estimated page count per section, (3) key points to hit.\n\n` +
-      `Return ONLY JSON:\n{"volumes":[{"vol":"1","title":"Technical Approach","total_pages":"15-20","sections":[{"heading":"1.1 Understanding of the Requirement","pages":"3-4","key_points":["..."]},...]},...]}\n` +
-      `Be specific and realistic based on the requirements above.`;
+      `For each volume, list: proposed section headings, estimated page count, and 3 key points each.\n\n` +
+      `Return ONLY compact JSON (no whitespace):\n{"volumes":[{"vol":"1","title":"Technical Approach","total_pages":"15-20","sections":[{"heading":"1.1 Understanding","pages":"3-4","key_points":["point1","point2","point3"]}]}]}\n` +
+      `Limit to max 5 sections per volume. Keep key_points under 10 words each. Be concise.`;
+
+    showStatus('info', 'Building outline…', 'Claude is reviewing your requirements and win strategy to create a structured outline. This takes about 30 seconds.', true);
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 3000,
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
         messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
     const d = await resp.json();
     let raw = d.content.map(c=>c.text||'').join('').trim()
       .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
-    const result = JSON.parse(raw);
+    if (!raw.endsWith('}')) { const lb=raw.lastIndexOf('}'); if(lb>0){raw=raw.substring(0,lb+1);const op=(raw.match(/\[/g)||[]).length-(raw.match(/\]/g)||[]).length;for(let i=0;i<op;i++) raw+=']';raw+='}';} }
+    let result;
+    try { result = JSON.parse(raw); }
+    catch(e) { const m=raw.match(/\{[\s\S]+\}/); if(m){try{result=JSON.parse(m[0]);}catch(_){}}  if(!result) throw new Error('Outline parse failed — try again. Detail: '+e.message); }
 
     // Render outline
     const panel   = document.getElementById('outlinePreviewPanel');
@@ -2312,7 +2343,7 @@ function addFilesToArray(newFiles, arr, listId) {
   updateTokenMeter();
   if (arr === rfpFiles) extractAndDisplayShalls();
   if (arr === complianceFiles) updateComplianceBtn();
-  if (typeof bnaFiles !== 'undefined' && arr === bnaFiles) updateBnaBtn();
+  if (typeof bnaFiles !== 'undefined' && (arr === bnaFiles || (typeof bnaCompanyFiles !== 'undefined' && arr === bnaCompanyFiles))) updateBnaBtn();
   // Only reset analysis if the RFP or company source files change — NOT compliance check files
   if (analysisComplete && added > 0 && arr !== complianceFiles && (typeof bnaFiles === 'undefined' || arr !== bnaFiles)) {
     analysisComplete = false;
@@ -2329,7 +2360,7 @@ function removeFileFromArray(name, arr, listId) {
   updateStepLocks();
   if (arr === rfpFiles) extractAndDisplayShalls();
   if (arr === complianceFiles) updateComplianceBtn();
-  if (typeof bnaFiles !== 'undefined' && arr === bnaFiles) updateBnaBtn();
+  if (typeof bnaFiles !== 'undefined' && (arr === bnaFiles || (typeof bnaCompanyFiles !== 'undefined' && arr === bnaCompanyFiles))) updateBnaBtn();
 }
 
 function renderFileListById(arr, listId) {
@@ -3823,7 +3854,9 @@ function escRegex(s) {
 
 function textToWordParas(text, rprXml) {
   if (!text) return '';
-  const rpr = rprXml || '<w:rPr><w:color w:val="000000"/></w:rPr>';
+  // Default: Times New Roman 12pt, black — standard government proposal font
+  const defaultRpr = '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:color w:val="000000"/></w:rPr>';
+  const rpr = rprXml || defaultRpr;
   return text.split('\n')
     .filter(l => l.trim())
     .map(line => `<w:p><w:r>${rpr}<w:t xml:space="preserve">${escXml(line)}</w:t></w:r></w:p>`)
@@ -4128,12 +4161,14 @@ setInterval(saveSession, 30000);
 // BID / NO-BID ANALYSIS
 // ═══════════════════════════════════════════════════════════════════════════
 let bnaFiles = [];
+let bnaCompanyFiles = [];
 
 window.addEventListener('DOMContentLoaded', () => {
   initDropZone('dropZoneRFP',        'fileInputRFP',        rfpFiles,        'fileListRFP');
   initDropZone('dropZoneCompany',    'fileInputCompany',    companyFiles,    'fileListCompany');
   initDropZone('dropZoneCompliance', 'fileInputCompliance', complianceFiles, 'fileListCompliance');
   initDropZone('dropZoneBNA',        'fileInputBNA',        bnaFiles,        'fileListBNA');
+  initDropZone('dropZoneBNADocs',    'fileInputBNADocs',    bnaCompanyFiles, 'fileListBNADocs');
   updateStepLocks();
   restoreSession();
   const savedTab = sessionStorage.getItem('srfed_active_tab');
@@ -4147,6 +4182,36 @@ function updateBnaBtn() {
 
 // BNA button update is handled via the patched addFilesToArray below
 
+async function toggleBnaSP() {
+  const enabled = document.getElementById('bnaLoadSP')?.checked;
+  const status  = document.getElementById('bnaSPStatus');
+  if (!enabled || !msAccount) return;
+
+  const token = await getSpToken();
+  const ppUrl     = document.getElementById('spPP')?.value.trim();
+  const resumeUrl = document.getElementById('spResumes')?.value.trim();
+
+  if (!ppUrl && !resumeUrl) {
+    if (status) { status.style.display = 'block'; status.textContent = 'No SharePoint folders configured — enter URLs in the Proposal tab Step 3 first.'; }
+    return;
+  }
+
+  if (status) { status.style.display = 'block'; status.textContent = 'Loading from SharePoint…'; }
+  try {
+    for (const url of [ppUrl, resumeUrl].filter(Boolean)) {
+      const items = await fetchSpFolderFiles(url, token);
+      for (const item of items.filter(f => f.name.match(/\.(pdf|docx?)$/i))) {
+        const file = await downloadSpFile(item, token);
+        if (!bnaCompanyFiles.find(f => f.name === file.name)) bnaCompanyFiles.push(file);
+      }
+    }
+    renderFileListById(bnaCompanyFiles, 'fileListBNADocs');
+    if (status) status.textContent = `Loaded ${bnaCompanyFiles.length} company file(s) from SharePoint.`;
+  } catch(e) {
+    if (status) status.textContent = `SharePoint load failed: ${e.message}`;
+  }
+}
+
 async function runBidNoBid() {
   if (bnaFiles.length === 0) return;
   const btn = document.getElementById('bnaRunBtn');
@@ -4156,16 +4221,44 @@ async function runBidNoBid() {
   try {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error('No API key. Enter your key in the Proposal tab Step 2.');
+
     const content = [];
+
+    // Add RFP documents
     for (const file of bnaFiles.slice(0, 8)) {
       const block = await fileToContentBlock(file);
       if (block) content.push(block);
     }
+
+    // Add company documents if provided — this is what makes scoring accurate
+    const hasCompanyDocs = bnaCompanyFiles.length > 0;
+    for (const file of bnaCompanyFiles.slice(0, 6)) {
+      const block = await fileToContentBlock(file);
+      if (block) content.push(block);
+    }
+
+    const companyProfile =
+      `Company: ${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName})\n` +
+      `Type: ${CLIENT_CONFIG.businessType}\n` +
+      `Clearances: ${CLIENT_CONFIG.clearances}\n` +
+      `CMMC: ${CLIENT_CONFIG.cmmc || 'not specified'}\n` +
+      `GSA MAS: ${CLIENT_CONFIG.gsaMas || 'none'}\n` +
+      `DCAA: ${CLIENT_CONFIG.dcaa || 'not specified'}`;
+
     content.push({ type: 'text', text:
-      `You are a government business development expert. Analyze this solicitation and give a bid/no-bid recommendation for ${CLIENT_CONFIG.companyFullName}, a ${CLIENT_CONFIG.businessType}.\n\n` +
-      `Company profile:\n- ${CLIENT_CONFIG.businessType}\n- Clearances: ${CLIENT_CONFIG.clearances}\n- GSA MAS: ${CLIENT_CONFIG.gsaMas || 'N/A'}\n- CMMC: ${CLIENT_CONFIG.cmmc || 'N/A'}\n\n` +
+      `You are a government business development expert. Analyze this solicitation for a bid/no-bid decision.\n\n` +
+      `COMPANY PROFILE:\n${companyProfile}\n\n` +
+      (hasCompanyDocs
+        ? `COMPANY DOCUMENTS PROVIDED: Past performance write-ups and/or capability statements are attached above. ` +
+          `Use them directly to score Past Performance Match and Technical Capability Fit. ` +
+          `Reference specific contracts, dollar values, and work descriptions from those documents.\n\n`
+        : `NOTE: No company capability documents were provided. ` +
+          `Past Performance Match and Technical Capability Fit scores will be based only on the company profile above, ` +
+          `which does not include actual past performance history. ` +
+          `These scores should be treated as estimates — upload capability statement and PP write-ups for accurate scoring.\n\n`) +
       `Score the opportunity on each factor from 1-10. Return ONLY JSON:\n` +
       `{"overall_score":7,"verdict":"BID","summary":"one sentence recommendation",` +
+      `"data_confidence":"${hasCompanyDocs ? 'HIGH — scored from actual company documents' : 'LOW — no company documents provided, PP/capability scores are estimates'}",` +
       `"factors":[` +
       `{"name":"Mission Alignment","score":8,"rationale":"brief explanation"},` +
       `{"name":"Past Performance Match","score":7,"rationale":"..."},` +
@@ -4200,6 +4293,16 @@ async function runBidNoBid() {
     verdictEl.textContent = result.verdict === 'BID' ? '✅ BID' : result.verdict === 'NO BID' ? '❌ NO BID' : '⚠️ CONDITIONAL BID';
     verdictEl.style.color = result.verdict === 'BID' ? 'var(--success)' : result.verdict === 'NO BID' ? 'var(--error)' : '#b45309';
     document.getElementById('bnaSummary').textContent = result.recommendation || result.summary;
+
+    // Show data confidence warning if low
+    const confEl = document.getElementById('bnaDataConfidence');
+    if (confEl) {
+      confEl.style.display = 'block';
+      confEl.textContent = result.data_confidence || '';
+      confEl.style.background = hasCompanyDocs ? '#f0fdf4' : '#fefce8';
+      confEl.style.borderColor = hasCompanyDocs ? '#86efac' : '#fde047';
+      confEl.style.color = hasCompanyDocs ? 'var(--success)' : '#92400e';
+    }
 
     const factorsEl = document.getElementById('bnaFactors');
     factorsEl.innerHTML = (result.factors || []).map(f => {
