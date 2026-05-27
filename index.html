@@ -4253,10 +4253,10 @@ async function runBidNoBid() {
           `Use them directly to score Past Performance Match and Technical Capability Fit. ` +
           `Reference specific contracts, dollar values, and work descriptions from those documents.\n\n`
         : `NOTE: No company capability documents were provided. ` +
-          `Past Performance Match and Technical Capability Fit scores will be based only on the company profile above, ` +
-          `which does not include actual past performance history. ` +
-          `These scores should be treated as estimates — upload capability statement and PP write-ups for accurate scoring.\n\n`) +
-      `Score the opportunity on each factor from 1-10. Return ONLY JSON:\n` +
+          `Past Performance Match and Technical Capability Fit scores will be based only on the company profile above. ` +
+          `These scores should be treated as estimates.\n\n`) +
+      `Score the opportunity on each factor from 1-10.\n\n` +
+      `CRITICAL INSTRUCTION: Respond with ONLY a raw JSON object. No markdown. No headers. No explanation. No backticks. Start your response with { and end with }.\n\n` +
       `{"overall_score":7,"verdict":"BID","summary":"one sentence recommendation",` +
       `"data_confidence":"${hasCompanyDocs ? 'HIGH — scored from actual company documents' : 'LOW — no company documents provided, PP/capability scores are estimates'}",` +
       `"factors":[` +
@@ -4281,9 +4281,29 @@ async function runBidNoBid() {
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
     const d = await resp.json();
-    let raw = d.content.map(c=>c.text||'').join('').trim()
-      .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
-    const result = JSON.parse(raw);
+    let raw = d.content.map(c=>c.text||'').join('').trim();
+
+    // Strip any markdown formatting
+    raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
+    // Strip markdown headers/lines that precede the JSON
+    raw = raw.replace(/^#+\s+[^\n]*\n/gm, '').trim();
+    // Extract the JSON object
+    const jsonMatch = raw.match(/\{[\s\S]+\}/);
+    if (!jsonMatch) throw new Error('No valid JSON found in response. Try again.');
+    // Repair truncation
+    let jsonStr = jsonMatch[0];
+    if (!jsonStr.endsWith('}')) {
+      const lb = jsonStr.lastIndexOf('}');
+      if (lb > 0) {
+        jsonStr = jsonStr.substring(0, lb + 1);
+        const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
+        for (let i = 0; i < opens; i++) jsonStr += ']';
+        jsonStr += '}';
+      }
+    }
+    let result;
+    try { result = JSON.parse(jsonStr); }
+    catch(e) { throw new Error(`Could not parse analysis response: ${e.message}. Try again.`); }
 
     // Render results
     const scoreColor = result.overall_score >= 7 ? 'var(--success)' : result.overall_score >= 5 ? '#b45309' : 'var(--error)';
