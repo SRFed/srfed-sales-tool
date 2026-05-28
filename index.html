@@ -602,6 +602,10 @@
       <div class="status-title" id="statusTitle"></div>
       <div id="statusMsg"></div>
       <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span id="progressPct" style="font-size:12px;font-weight:700;color:var(--blue)">0%</span>
+          <span id="progressEta" style="font-size:12px;color:var(--muted)"></span>
+        </div>
         <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
         <div class="progress-steps" id="progressSteps"></div>
       </div>
@@ -809,18 +813,6 @@
         <div class="token-meter-sub" id="tokenMeterSub">Add documents above to see estimated usage.</div>
       </div>
 
-      <!-- Shalls / Requirements Extractor — populated after Analyze is run -->
-      <div class="shalls-section" id="shallsSection" style="display:none;margin-top:16px">
-        <div class="shalls-header" onclick="toggleShalls()" style="gap:8px">
-          <span class="shalls-title">📋 Extracted Requirements (shall / must / should)</span>
-          <span class="shalls-count" id="shallsCount">0 requirements</span>
-          <button id="shallsCopyBtn" onclick="event.stopPropagation();copyShallsToClipboard()" 
-            style="display:none;padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)"
-            title="Copy all requirements to clipboard">⎘ Copy all</button>
-          <span id="shallsToggleIcon" style="font-size:12px;color:var(--muted)">▼</span>
-        </div>
-        <div class="shalls-body" id="shallsBody" style="display:none"></div>
-      </div>
     </div>
   </div>
 
@@ -880,6 +872,19 @@
         <div id="reviewComplete" style="margin-top:20px;padding:12px 16px;background:var(--success-bg);border:1px solid #86efac;border-radius:8px;font-size:13px;color:var(--success);display:none">
           ✅ All assumptions reviewed. You may proceed to Step 6.
         </div>
+
+        <!-- Shalls / Requirements Extractor — populated after analysis -->
+        <div class="shalls-section" id="shallsSection" style="display:none;margin-top:16px">
+          <div class="shalls-header" onclick="toggleShalls()" style="gap:8px">
+            <span class="shalls-title">📋 Extracted Requirements (shall / must / should)</span>
+            <span class="shalls-count" id="shallsCount">0 requirements</span>
+            <button id="shallsCopyBtn" onclick="event.stopPropagation();copyShallsToClipboard()"
+              style="display:none;padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)"
+              title="Copy all requirements to clipboard">⎘ Copy all</button>
+            <span id="shallsToggleIcon" style="font-size:12px;color:var(--muted)">▼</span>
+          </div>
+          <div class="shalls-body" id="shallsBody" style="display:none"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -936,7 +941,7 @@
       <div class="card-body">
         <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
         <div class="volumes-grid" style="margin-bottom:16px">
-          <label class="vol-check" id="volCheck0"><input type="checkbox" id="vol0"/> Vol 0 – Executive Summary</label>
+          <label class="vol-check checked" id="volCheck0"><input type="checkbox" id="vol0" checked/> Vol 0 – Executive Summary</label>
           <label class="vol-check checked" id="volCheck1"><input type="checkbox" id="vol1" checked/> Vol I – Technical</label>
           <label class="vol-check checked" id="volCheck2"><input type="checkbox" id="vol2" checked/> Vol II – Past Performance</label>
           <label class="vol-check checked" id="volCheck3"><input type="checkbox" id="vol3" checked/> Vol III – Price Narrative</label>
@@ -960,10 +965,11 @@
         <button class="btn" id="previewOutlineBtn" onclick="runOutlinePreview()" style="width:100%;margin-bottom:8px;background:white;border:1px solid var(--blue);color:var(--blue);font-weight:600">
           📋 Preview Outline First (Pink Team)
         </button>
+        <button class="btn btn-primary btn-block" id="runBtn" onclick="runGeneration()" style="display:none">
           <span id="runBtnIcon">✨</span>
           <span id="runBtnText">Generate Proposal Documents</span>
         </button>
-          <p class="tip" style="margin-top:10px;text-align:center">Typically 5–10 minutes depending on document size and number of volumes. Keep this tab open.</p>
+        <p class="tip" style="margin-top:10px;text-align:center">Typically 5–10 minutes depending on document size and number of volumes. Keep this tab open.</p>
       </div>
     </div>
 
@@ -1186,8 +1192,8 @@
         <p style="font-size:12px;color:var(--muted);margin-bottom:12px">These factors require internal knowledge only you have. Set each 0–10 using the anchors as guides. Score updates as you adjust.</p>
         <div id="bnaFactorsTier2" style="margin-bottom:20px"></div>
 
-        <!-- Score breakdown -->
-        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px">
+        <!-- Score breakdown — hidden until user confirms Tier 2 -->
+        <div id="bnaScoreBreakdown" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px">
           <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📐 Weighted Score Breakdown</div>
           <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
             <div style="text-align:center;flex:1;min-width:100px">
@@ -1208,7 +1214,7 @@
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
             <div id="bnaScoreBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.4s,background 0.4s"></div>
           </div>
-        </div>
+        </div><!-- end bnaScoreBreakdown -->
 
         <!-- Risks and strategy -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -1656,7 +1662,7 @@ async function runOutlinePreview() {
   const btn = document.getElementById('previewOutlineBtn');
   if (!btn) return;
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span> Building outline…';
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> Building outline…';
 
   try {
     const apiKey = getApiKey();
@@ -1738,7 +1744,14 @@ async function runOutlinePreview() {
 
 function proceedToGenerate() {
   document.getElementById('outlinePreviewPanel').style.display = 'none';
-  document.getElementById('runBtn')?.click();
+  // Scroll to top so user sees the status bar showing generation progress
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Small delay to let scroll start before generation begins
+  setTimeout(() => {
+    const runBtn = document.getElementById('runBtn');
+    if (runBtn) runBtn.click();
+    else runGeneration();
+  }, 300);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2005,13 +2018,37 @@ function showStatus(type, title, msg, showProgress = false) {
   }
 }
 
+let _genStartTime = null;
+
 function setProgress(pct, steps) {
+  // Track start time for ETA calculation
+  if (pct > 0 && pct < 100 && !_genStartTime) _genStartTime = Date.now();
+  if (pct === 0 || pct >= 100) _genStartTime = pct === 0 ? null : _genStartTime;
+
   const fill = document.getElementById('progressFill');
   if (fill) fill.style.width = pct + '%';
+
+  // Update percentage + ETA display
+  const pctEl = document.getElementById('progressPct');
+  const etaEl = document.getElementById('progressEta');
+  if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  if (etaEl && _genStartTime && pct > 5 && pct < 100) {
+    const elapsed   = (Date.now() - _genStartTime) / 1000;
+    const totalEst  = elapsed / (pct / 100);
+    const remaining = Math.max(0, totalEst - elapsed);
+    const mins = Math.floor(remaining / 60);
+    const secs = Math.round(remaining % 60);
+    etaEl.textContent = mins > 0
+      ? `~${mins}m ${secs}s remaining`
+      : `~${secs}s remaining`;
+  } else if (etaEl) {
+    etaEl.textContent = pct >= 100 ? 'Complete' : '';
+  }
+
   if (steps && steps.length > 0) {
     const stepsEl = document.getElementById('progressSteps');
     if (stepsEl) stepsEl.innerHTML = steps.map(s =>
-      `<div class="progress-step ${s.status}"><span class="step-icon">${s.status === 'done' ? '✅' : s.status === 'active' ? '⏳' : '○'}</span>${s.text}</div>`
+      `<div class="progress-step ${s.status}"><span class="step-icon">${s.status === 'done' ? '✅' : s.status === 'active' ? '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span>' : '○'}</span>${s.text}</div>`
     ).join('');
   }
 }
@@ -3422,6 +3459,7 @@ async function runGeneration() {
     showStatus('warn', 'Large document bundle detected', preflight.message);
   }
 
+  _genStartTime = null; // reset ETA timer
   setRunning(true);
   document.getElementById('downloadCard').style.display = 'none';
 
@@ -4746,10 +4784,11 @@ async function runBidNoBid() {
   }
 }
 function confirmBnaScore() {
-  // Show verdict banner and score breakdown with current Tier 2 values
   updateBnaLiveScore();
-  const verdictBanner = document.getElementById('bnaVerdictBanner');
-  if (verdictBanner) verdictBanner.style.display = 'flex';
+  const verdictBanner   = document.getElementById('bnaVerdictBanner');
+  const scoreBreakdown  = document.getElementById('bnaScoreBreakdown');
+  if (verdictBanner)  verdictBanner.style.display  = 'flex';
+  if (scoreBreakdown) scoreBreakdown.style.display  = 'block';
   // Replace confirm button with "Recalculate" option
   const confirmRow = document.getElementById('bnaConfirmRow');
   if (confirmRow) {
@@ -4791,12 +4830,14 @@ async function extractOpportunityIntel(docContent, apiKey) {
   const btn = document.getElementById('bnaIntelBtn');
 
   const prompt = `You are analyzing a US Government solicitation document for South River Federal Solutions (SRFed), an SDVOSB.\n\n` +
-    `Extract the following fields. For each field:\n` +
-    `- If directly stated: set "inferred": false\n` +
-    `- If you can reasonably infer: set "inferred": true and prefix value with "[Inferred] "\n` +
-    `- If unavailable: use "Not stated in documents"\n\n` +
-    `CRITICAL: Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n\n` +
-    `{"customer_agency":"","requirement_name":"","id_number":"","stage":"Sources Sought/RFI/RFP/RFQ/Task Order","next_due_date":"","opportunity_url":"","description":"2-3 sentence description","fte_count":"","contract_years":"e.g. 1 base + 4 options","place_of_performance":"","work_setting":"In-person/Remote/Hybrid","period_of_performance":"base year start/end","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"FFP/T&M/CPFF/etc","certifications_required":[],"sca_positions":[],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `CRITICAL RULES:\n` +
+    `1. Use VERBATIM text from the document for all fields — do not paraphrase, expand, or infer the title or ID. Copy them exactly.\n` +
+    `2. For customer_agency: list BOTH the specific office (verbatim from document) AND its parent department/service branch with standard abbreviation. Format: "SPECIFIC OFFICE NAME — PARENT DEPARTMENT (ABBREV)". Examples: "Naval Surface Warfare Center Dahlgren Division (NSWCDD) — Department of the Navy (DON)", "Defense Logistics Agency J7 (DLA J7) — Department of Defense (DoD)", "Walter Reed National Military Medical Center — Department of the Army (DA)", "Defense Health Agency (DHA) — Department of Defense (DoD)". Common abbreviations: Army=DA, Navy=DON, Air Force=DAF, Marines=USMC, Space Force=USSF, Defense agencies=DoD, VA=VA, DHS=DHS, DOS=DoS, DOJ=DOJ.\n` +
+    `3. For requirement_name: copy the EXACT title from the solicitation cover page — do not reword or expand it.\n` +
+    `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated.\n` +
+    `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n\n` +
+    `Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n\n` +
+    `{"customer_agency":"EXACT office — Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"sca_positions":[],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
