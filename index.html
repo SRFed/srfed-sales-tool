@@ -542,6 +542,12 @@
   .outline-section:last-child { border-bottom:none; }
   .outline-heading { font-size:13px; font-weight:700; color:var(--blue); }
   .outline-length { font-size:12px; color:var(--muted); margin-top:2px; }
+  /* Hide spinner arrows on weight inputs */
+  #weightsTier1 input[type=number]::-webkit-inner-spin-button,
+  #weightsTier1 input[type=number]::-webkit-outer-spin-button,
+  #weightsTier2 input[type=number]::-webkit-inner-spin-button,
+  #weightsTier2 input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  #weightsTier1 input[type=number], #weightsTier2 input[type=number] { -moz-appearance:textfield; }
 </style>
 </head>
 <body>
@@ -4292,12 +4298,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (savedTab) switchTab(savedTab);
 });
 
-function updateBnaBtn() {
-  const btn = document.getElementById('bnaRunBtn');
-  if (btn) { btn.disabled = bnaFiles.length === 0; btn.style.opacity = bnaFiles.length > 0 ? '1' : '0.45'; }
-}
-
-// BNA button update is handled via the patched addFilesToArray below
+// BNA button update — defined below after weight system is initialized
 
 async function loadBnaSPFiles() {
   const ppUrl      = document.getElementById('bnaSPPastPerf')?.value.trim();
@@ -4320,7 +4321,7 @@ async function loadBnaSPFiles() {
   if (status) { status.style.display = 'block'; status.style.color = 'var(--muted)'; status.textContent = 'Connecting to SharePoint…'; }
 
   try {
-    const token = await getSpToken();
+    const token = await getSpAccessToken();
     let loaded = 0;
     for (const url of [ppUrl, resumeUrl].filter(Boolean)) {
       if (status) status.textContent = `Loading: ${url.substring(0, 55)}…`;
@@ -4554,8 +4555,7 @@ function calcBnaScore() {
   return { t1: parseFloat(t1Display.toFixed(1)), t2: parseFloat(t2Display.toFixed(1)), total: parseFloat(((t1 + t2) * 10).toFixed(1)) };
 }
 
-// Also update updateBnaBtn to respect weight validity
-const _origUpdateBnaBtn = updateBnaBtn;
+// updateBnaBtn — checks both files and weight validity
 function updateBnaBtn() {
   const btn = document.getElementById('bnaRunBtn');
   if (!btn) return;
