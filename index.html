@@ -958,14 +958,20 @@
           </div>
           <div id="outlineContent" style="padding:14px;max-height:300px;overflow-y:auto;overscroll-behavior-y:contain"></div>
           <div style="padding:10px 14px;background:#f8fafc;border-top:1px solid var(--border);display:flex;gap:8px">
-            <button class="btn btn-primary" onclick="proceedToGenerate()" style="flex:1">✅ Approve Outline &amp; Generate</button>
-            <button onclick="document.getElementById('outlinePreviewPanel').style.display='none'" style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:13px">Revise in Step 6</button>
+            <button class="btn btn-primary" onclick="proceedToGenerate()" style="flex:1;font-size:14px">
+              ✅ Approve &amp; Generate Proposal
+            </button>
+            <button onclick="document.getElementById('outlinePreviewPanel').style.display='none';document.getElementById('previewOutlineBtn').style.display='';document.getElementById('outlineDivider').style.display='';document.getElementById('runBtn').style.display='flex';" 
+              style="padding:8px 14px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:13px;white-space:nowrap">
+              ✏️ Revise in Step 6
+            </button>
           </div>
         </div>
         <button class="btn" id="previewOutlineBtn" onclick="runOutlinePreview()" style="width:100%;margin-bottom:8px;background:white;border:1px solid var(--blue);color:var(--blue);font-weight:600">
-          📋 Preview Outline First (Pink Team)
+          📋 Preview Outline First (optional Pink Team review)
         </button>
-        <button class="btn btn-primary btn-block" id="runBtn" onclick="runGeneration()" style="display:none">
+        <div id="outlineDivider" style="text-align:center;font-size:12px;color:var(--muted);margin:4px 0">— or skip outline and generate directly —</div>
+        <button class="btn btn-primary btn-block" id="runBtn" onclick="runGeneration()" style="display:flex">
           <span id="runBtnIcon">✨</span>
           <span id="runBtnText">Generate Proposal Documents</span>
         </button>
@@ -1734,6 +1740,13 @@ async function runOutlinePreview() {
 
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Hide the outline button and generate button while panel is showing — single clear CTA
+    const previewBtn = document.getElementById('previewOutlineBtn');
+    const divider    = document.getElementById('outlineDivider');
+    const genBtn     = document.getElementById('runBtn');
+    if (previewBtn) previewBtn.style.display = 'none';
+    if (divider)    divider.style.display    = 'none';
+    if (genBtn)     genBtn.style.display     = 'none';
   } catch(e) {
     alert(`Outline preview failed: ${e.message}`);
   } finally {
@@ -2019,36 +2032,54 @@ function showStatus(type, title, msg, showProgress = false) {
 }
 
 let _genStartTime = null;
+let _etaInterval  = null;
+let _currentPct   = 0;
+
+function _updateEtaDisplay() {
+  const etaEl = document.getElementById('progressEta');
+  const pctEl = document.getElementById('progressPct');
+  if (!etaEl || !_genStartTime || _currentPct <= 0 || _currentPct >= 100) return;
+
+  const elapsed = (Date.now() - _genStartTime) / 1000;
+  // Only show ETA after at least 5 seconds — early estimates are too noisy
+  if (elapsed < 5) { if (etaEl) etaEl.textContent = 'Estimating…'; return; }
+
+  const totalEst  = elapsed / (_currentPct / 100);
+  const remaining = Math.max(5, totalEst - elapsed); // floor at 5s to avoid "0s" flicker
+  const mins = Math.floor(remaining / 60);
+  const secs = Math.round(remaining % 60);
+  if (etaEl) etaEl.textContent = mins > 0 ? `~${mins}m ${secs}s remaining` : `~${secs}s remaining`;
+}
+
+function _startEtaTimer() {
+  _clearEtaTimer();
+  _genStartTime = Date.now();
+  _etaInterval  = setInterval(_updateEtaDisplay, 1000);
+}
+
+function _clearEtaTimer() {
+  if (_etaInterval) { clearInterval(_etaInterval); _etaInterval = null; }
+}
 
 function setProgress(pct, steps) {
-  // Track start time for ETA calculation
-  if (pct > 0 && pct < 100 && !_genStartTime) _genStartTime = Date.now();
-  if (pct === 0 || pct >= 100) _genStartTime = pct === 0 ? null : _genStartTime;
+  _currentPct = pct;
+  if (pct > 0 && pct < 100 && !_genStartTime) _startEtaTimer();
+  if (pct >= 100 || pct === 0) { _clearEtaTimer(); _genStartTime = null; }
 
-  const fill = document.getElementById('progressFill');
-  if (fill) fill.style.width = pct + '%';
-
-  // Update percentage + ETA display
+  const fill  = document.getElementById('progressFill');
   const pctEl = document.getElementById('progressPct');
   const etaEl = document.getElementById('progressEta');
+  if (fill)  fill.style.width = pct + '%';
   if (pctEl) pctEl.textContent = Math.round(pct) + '%';
-  if (etaEl && _genStartTime && pct > 5 && pct < 100) {
-    const elapsed   = (Date.now() - _genStartTime) / 1000;
-    const totalEst  = elapsed / (pct / 100);
-    const remaining = Math.max(0, totalEst - elapsed);
-    const mins = Math.floor(remaining / 60);
-    const secs = Math.round(remaining % 60);
-    etaEl.textContent = mins > 0
-      ? `~${mins}m ${secs}s remaining`
-      : `~${secs}s remaining`;
-  } else if (etaEl) {
-    etaEl.textContent = pct >= 100 ? 'Complete' : '';
-  }
+  if (pct >= 100 && etaEl) etaEl.textContent = 'Complete';
+  if (pct === 0  && etaEl) etaEl.textContent = '';
 
   if (steps && steps.length > 0) {
     const stepsEl = document.getElementById('progressSteps');
     if (stepsEl) stepsEl.innerHTML = steps.map(s =>
-      `<div class="progress-step ${s.status}"><span class="step-icon">${s.status === 'done' ? '✅' : s.status === 'active' ? '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span>' : '○'}</span>${s.text}</div>`
+      `<div class="progress-step ${s.status}">` +
+      `<span class="step-icon">${s.status === 'done' ? '✅' : s.status === 'active' ? '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span>' : '○'}</span>` +
+      `${s.text}</div>`
     ).join('');
   }
 }
@@ -2887,7 +2918,7 @@ async function runAnalysis() {
     assumptions         = [...rfpItems, ...companyConfirmed];
     clarifyingQuestions = [...rfpClarify, ...companyClar];
 
-    setProgress(100, []);
+    setProgress(95, []);
     document.getElementById('analysisResults').style.display = 'block';
 
     const rfpConfirmed = assumptions.filter(a => a.category === 'rfp');
@@ -3459,7 +3490,7 @@ async function runGeneration() {
     showStatus('warn', 'Large document bundle detected', preflight.message);
   }
 
-  _genStartTime = null; // reset ETA timer
+  _genStartTime = null; _clearEtaTimer(); // reset ETA timer
   setRunning(true);
   document.getElementById('downloadCard').style.display = 'none';
 
@@ -3512,23 +3543,40 @@ async function runGeneration() {
     // CRITICAL: Only send RFP files here. Company docs (87k+ tokens) would make
     // the request body 20-40MB and cause fetch timeouts. Company docs are sent
     // separately only when writing Vol II (past performance).
-    const RFP_BUDGET = 250000; // generous budget — RFP files only
+    // CRITICAL: "Failed to fetch" means the request body was too large for the browser.
+    // Base64-encoded PDFs balloon in size: 1MB PDF → ~1.33MB base64 → ~1.33MB in JSON string.
+    // With 4 RFP files at 237KB/365KB/18KB/90KB = ~710KB total → ~950KB base64.
+    // BUT our estimator uses 150 tokens/KB which overestimates — actual safe limit is ~120k tokens.
+    const RFP_BUDGET = 120000; // conservative — prevents "Failed to fetch" body-too-large errors
     const docContent = [];
     let tokensSent = 0;
+    let totalBytes = 0;
+    const BODY_LIMIT = 15 * 1024 * 1024; // 15MB body limit — browser drops larger requests silently
 
     for (const file of rfpFiles.slice(0, 10)) {
       const est = estimateTokens(file);
-      if (tokensSent + est > RFP_BUDGET) {
-        showStatus('warn', 'Large RFP bundle',
-          `Skipping "${file.name}" (${Math.round(est/1000)}k tokens) to stay within limits. Include only essential RFP sections.`);
+      // Also check raw file size contribution to body
+      const projectedBodySize = totalBytes + (file.size * 1.4); // base64 inflation
+      if (tokensSent + est > RFP_BUDGET || projectedBodySize > BODY_LIMIT) {
+        showStatus('warn', 'Skipping large file',
+          `Skipping "${file.name}" (${Math.round(file.size/1024)}KB) — bundle would exceed safe limits. ` +
+          `Include only the core PWS/SOW and main RFP document.`);
         continue;
       }
       const block = await fileToContentBlock(file);
-      if (block) { docContent.push(block); tokensSent += est; }
+      if (block) {
+        docContent.push(block);
+        tokensSent += est;
+        totalBytes += file.size * 1.4;
+      }
+    }
+
+    if (docContent.length === 0) {
+      throw new Error('No RFP documents could be included — files may be too large. Try dropping only the main PWS/SOW PDF (under 500KB ideally) and run again.');
     }
 
     showStatus('info', 'Reading RFP documents...',
-      `Processing ${docContent.length} RFP file${docContent.length>1?'s':''} (~${Math.round(tokensSent/1000)}k tokens). Company documents will be used when writing Vol II.`, true);
+      `Processing ${docContent.length} file${docContent.length>1?'s':''} (~${Math.round(tokensSent/1000)}k tokens, ~${Math.round(totalBytes/1024/1024*10)/10}MB). Company documents used when writing Vol II.`, true);
 
     // Pre-build company doc content blocks for use in Vol II writing call
     const COMPANY_BUDGET = 150000;
@@ -3580,8 +3628,10 @@ async function runGeneration() {
     } catch(e) {
       clearTimeout(briefTimeout);
       if (e.name === 'AbortError')
-        throw new Error('Document reading timed out after 3 minutes. Your document bundle may be too large — try removing the largest files and running again.');
-      throw new Error(`Failed to connect to API: ${e.message}. Check your internet connection and try again.`);
+        throw new Error('Document reading timed out after 5 minutes. Your RFP bundle may still be too large — try keeping only the main PWS/SOW document (ideally under 500KB) and run again.');
+      if (e.message === 'Failed to fetch')
+        throw new Error('Failed to fetch — the request was too large for your browser to send. Remove larger files from Step 4 and try again. Keep only the core PWS/SOW and primary RFP document.');
+      throw new Error(`Network error: ${e.message}. Check your internet connection and try again.`);
     }
 
     if (!briefResp.ok) throw new Error(`Document reading failed (${briefResp.status}): ${await briefResp.text()}`);
