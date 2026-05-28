@@ -1038,10 +1038,13 @@
 <!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
 <div class="tab-pane" id="pane-bidnobid">
   <div class="card" style="margin-bottom:24px">
-    <div class="card-header"><span class="icon">📄</span> Drop RFP Documents for Bid/No-Bid Analysis</div>
+    <div class="card-header"><span class="icon">📄</span> Bid/No-Bid Analysis — Document Input</div>
     <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Upload the solicitation documents. Claude will score this opportunity across 7 factors and give you a clear bid/no-bid recommendation before you invest in proposal writing.</p>
-      <div class="drop-zone" id="dropZoneBNA" style="margin-bottom:12px">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Upload the solicitation and optionally your company documents. Use the drop zones, SharePoint links, or both. Company documents significantly improve scoring accuracy.</p>
+
+      <!-- RFP Documents -->
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">📂 Solicitation Documents</div>
+      <div class="drop-zone" id="dropZoneBNA" style="margin-bottom:8px">
         <input type="file" id="fileInputBNA" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
         <div class="dz-icon">📂</div>
         <div class="dz-title">Drop Solicitation Documents Here</div>
@@ -1049,14 +1052,11 @@
       </div>
       <div class="file-list" id="fileListBNA" style="margin-bottom:16px"></div>
 
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:13px;font-weight:700;color:var(--blue)">📁 Company Documents <span style="font-weight:400;color:var(--muted);font-size:12px">(optional but recommended for accurate scoring)</span></div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted)">
-            <input type="checkbox" id="bnaLoadSP" onchange="toggleBnaSP()" style="width:14px;height:14px"/> Load from SharePoint
-          </label>
-        </div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Drop your capability statement, past performance write-ups, or resumes. Without these, scoring is based only on your company profile settings — not your actual experience.</p>
+      <!-- Company Documents -->
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">🏢 Company Documents <span style="font-weight:400;color:var(--muted)">(optional — improves PP and capability scoring)</span></div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Drop files directly, enter SharePoint folder URLs, or both. Without company documents, Past Performance and Technical Capability scores are estimates only.</p>
+
         <div class="drop-zone" id="dropZoneBNADocs" style="min-height:80px;margin-bottom:8px">
           <input type="file" id="fileInputBNADocs" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
           <div class="dz-icon">🏢</div>
@@ -1064,42 +1064,158 @@
           <div class="dz-sub">Optional — improves scoring accuracy</div>
         </div>
         <div class="file-list" id="fileListBNADocs" style="margin-bottom:12px"></div>
-        <div id="bnaSPStatus" style="display:none;font-size:12px;color:var(--muted)"></div>
+
+        <!-- SharePoint URL inputs — self-contained, independent of Proposal tab -->
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">🔗 Or load from SharePoint</div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Past Performance Folder URL</label>
+              <input type="text" id="bnaSPPastPerf" placeholder="https://yourcompany.sharepoint.com/..." style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px">
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Resumes / Capability Folder URL</label>
+              <input type="text" id="bnaSPResumes" placeholder="https://yourcompany.sharepoint.com/..." style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>
+            </div>
+          </div>
+          <button onclick="loadBnaSPFiles()" id="bnaSPLoadBtn" style="padding:7px 16px;font-size:12px;font-weight:600;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer">
+            🔗 Load from SharePoint
+          </button>
+        <div id="bnaSPStatus" style="display:none;font-size:12px;margin-top:8px"></div>
+        </div>
       </div>
 
-      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:8px">
+      <!-- Weight Editor — inside doc card, before Analyze -->
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <div onclick="toggleWeightEditor()"
+          style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0">
+          <div style="font-size:12px;font-weight:700;color:var(--blue)">⚖️ Customize Scoring Weights</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="weightTotalBadge"
+              style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#f0fdf4;border:1px solid #86efac;color:var(--success)">
+              100% ✓
+            </span>
+            <span id="weightEditorToggle" style="font-size:12px;color:var(--muted)">▼ expand</span>
+          </div>
+        </div>
+        <div id="weightEditorBody" style="display:none;margin-top:12px">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Adjust how much each factor contributes to the final score. All weights must total exactly 100%.</p>
+          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">🤖 Tier 1 — Auto-Scored (Claude reads documents)</div>
+          <div id="weightsTier1" style="margin-bottom:16px"></div>
+          <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">✍️ Tier 2 — Your Assessment</div>
+          <div id="weightsTier2" style="margin-bottom:12px"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:2px solid" id="weightTotalRow">
+            <span style="font-size:13px;font-weight:700">Total Weight</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:18px;font-weight:900" id="weightTotalDisplay">100%</span>
+              <button onclick="resetWeights()" style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--muted)">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="bnaWeightError" style="display:none;margin-top:10px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;font-size:12px;font-weight:600;color:var(--error)"></div>
+
+      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:12px">
         🎯 Analyze Opportunity
       </button>
     </div>
   </div>
 
+
   <div id="bnaResults" style="display:none">
+    <!-- ── Hybrid Scoring Matrix ─────────────────────────────────────────── -->
     <div class="card" style="margin-bottom:24px">
-      <div class="card-header"><span class="icon">🎯</span> Bid/No-Bid Recommendation</div>
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span><span class="icon">🎯</span> Bid/No-Bid Decision Matrix</span>
+        <div style="display:flex;gap:8px">
+          <button onclick="copyBnaResults()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:rgba(255,255,255,0.15);cursor:pointer;color:white">⎘ Copy</button>
+          <button onclick="switchTab('proposal')" style="padding:4px 10px;font-size:11px;font-weight:600;background:white;color:var(--blue);border:none;border-radius:6px;cursor:pointer">→ Proposal</button>
+        </div>
+      </div>
       <div class="card-body">
-        <div style="display:flex;gap:24px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-          <div style="text-align:center;min-width:120px">
-            <div class="bna-score" id="bnaScore">—</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px">out of 10</div>
+
+        <!-- Verdict banner -->
+        <div id="bnaVerdictBanner" style="border-radius:8px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:20px">
+          <div style="text-align:center;min-width:90px">
+            <div id="bnaScore" style="font-size:56px;font-weight:900;line-height:1">—</div>
+            <div style="font-size:11px;color:inherit;opacity:0.75;margin-top:2px">/ 10.0 weighted</div>
           </div>
           <div style="flex:1">
-            <div class="bna-verdict" id="bnaVerdict">—</div>
-            <div style="font-size:14px;color:var(--text);margin-top:8px" id="bnaSummary">—</div>
+            <div id="bnaVerdict" style="font-size:22px;font-weight:800;margin-bottom:4px">—</div>
+            <div id="bnaSummary" style="font-size:13px;opacity:0.9;line-height:1.5">—</div>
           </div>
         </div>
+
         <div id="bnaDataConfidence" style="display:none;padding:8px 12px;border:1px solid;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:16px"></div>
-        <div id="bnaFactors"></div>
-        <div style="margin-top:20px;padding:14px;background:var(--pale);border:1px solid var(--light-blue);border-radius:8px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:8px">📋 Key Risks &amp; Considerations</div>
-          <div id="bnaRisks" style="font-size:13px;color:var(--text)"></div>
+
+        <!-- Tier 1: Claude-scored factors -->
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">
+          🤖 Tier 1 — Auto-Scored from Documents
         </div>
-        <div style="margin-top:16px;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--success)">✅ If You Bid: Recommended Win Strategy</div>
-          <div id="bnaWinStrategy" style="font-size:13px;color:var(--text)"></div>
+        <div id="bnaFactorsTier1" style="margin-bottom:20px"></div>
+
+        <!-- Tier 2: Human-scored factors -->
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">
+          ✍️ Tier 2 — Your Assessment (adjusts score live)
         </div>
-        <div style="margin-top:12px;display:flex;gap:8px">
-          <button onclick="copyBnaResults()" style="padding:6px 14px;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy Report</button>
-          <button onclick="switchTab('proposal')" style="padding:6px 14px;font-size:12px;font-weight:600;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer">→ Go to Proposal Writing</button>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px">These factors require internal knowledge only you have. Set each 0–10 using the anchors as guides. Score updates as you adjust.</p>
+        <div id="bnaFactorsTier2" style="margin-bottom:20px"></div>
+
+        <!-- Score breakdown -->
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📐 Weighted Score Breakdown</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+            <div style="text-align:center;flex:1;min-width:100px">
+              <div id="tier1SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
+              <div style="font-size:11px;color:var(--muted)">Auto-scored (50%)</div>
+            </div>
+            <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">+</div>
+            <div style="text-align:center;flex:1;min-width:100px">
+              <div id="tier2SubScore" style="font-size:24px;font-weight:800;color:#7c3aed">—</div>
+              <div style="font-size:11px;color:var(--muted)">Your input (50%)</div>
+            </div>
+            <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">=</div>
+            <div style="text-align:center;flex:1;min-width:100px">
+              <div id="totalWeightedScore" style="font-size:28px;font-weight:900;color:var(--text)">—</div>
+              <div style="font-size:11px;color:var(--muted)">Total (threshold: 7.5)</div>
+            </div>
+          </div>
+          <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+            <div id="bnaScoreBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.4s,background 0.4s"></div>
+          </div>
+        </div>
+
+        <!-- Risks and strategy -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div style="padding:12px 14px;background:var(--pale);border:1px solid var(--light-blue);border-radius:8px">
+            <div style="font-weight:700;font-size:12px;margin-bottom:8px">📋 Key Risks</div>
+            <div id="bnaRisks" style="font-size:12px;color:var(--text);line-height:1.6"></div>
+          </div>
+          <div style="padding:12px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px">
+            <div style="font-weight:700;font-size:12px;margin-bottom:8px;color:var(--success)">✅ Win Strategy if Bidding</div>
+            <div id="bnaWinStrategy" style="font-size:12px;color:var(--text);line-height:1.6"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Opportunity Intelligence Card -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span><span class="icon">📊</span> Opportunity Intelligence</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;font-weight:600;padding:3px 8px;background:#fef9c3;border:1px solid #fde047;border-radius:10px;color:#92400e">🔶 Amber = Inferred</span>
+          <button onclick="copyOpportunityIntel()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
+        </div>
+      </div>
+      <div class="card-body" id="bnaIntelBody">
+        <div style="font-size:13px;color:var(--muted);text-align:center;padding:20px">
+          <span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>
+          Extracting opportunity details…
         </div>
       </div>
     </div>
@@ -4169,6 +4285,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDropZone('dropZoneCompliance', 'fileInputCompliance', complianceFiles, 'fileListCompliance');
   initDropZone('dropZoneBNA',        'fileInputBNA',        bnaFiles,        'fileListBNA');
   initDropZone('dropZoneBNADocs',    'fileInputBNADocs',    bnaCompanyFiles, 'fileListBNADocs');
+  initBnaWeights();
   updateStepLocks();
   restoreSession();
   const savedTab = sessionStorage.getItem('srfed_active_tab');
@@ -4182,34 +4299,270 @@ function updateBnaBtn() {
 
 // BNA button update is handled via the patched addFilesToArray below
 
-async function toggleBnaSP() {
-  const enabled = document.getElementById('bnaLoadSP')?.checked;
-  const status  = document.getElementById('bnaSPStatus');
-  if (!enabled || !msAccount) return;
-
-  const token = await getSpToken();
-  const ppUrl     = document.getElementById('spPP')?.value.trim();
-  const resumeUrl = document.getElementById('spResumes')?.value.trim();
+async function loadBnaSPFiles() {
+  const ppUrl      = document.getElementById('bnaSPPastPerf')?.value.trim();
+  const resumeUrl  = document.getElementById('bnaSPResumes')?.value.trim();
+  const status     = document.getElementById('bnaSPStatus');
+  const btn        = document.getElementById('bnaSPLoadBtn');
 
   if (!ppUrl && !resumeUrl) {
-    if (status) { status.style.display = 'block'; status.textContent = 'No SharePoint folders configured — enter URLs in the Proposal tab Step 3 first.'; }
+    if (status) { status.style.display = 'block'; status.style.color = 'var(--error)'; status.textContent = 'Enter at least one SharePoint folder URL above.'; }
     return;
   }
 
-  if (status) { status.style.display = 'block'; status.textContent = 'Loading from SharePoint…'; }
+  if (!msAccount) {
+    if (status) { status.style.display = 'block'; status.style.color = 'var(--error)'; status.textContent = 'Sign in with Microsoft first (go to the Proposal tab Step 1).'; }
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading…';
+  if (status) { status.style.display = 'block'; status.style.color = 'var(--muted)'; status.textContent = 'Connecting to SharePoint…'; }
+
   try {
+    const token = await getSpToken();
+    let loaded = 0;
     for (const url of [ppUrl, resumeUrl].filter(Boolean)) {
+      if (status) status.textContent = `Loading: ${url.substring(0, 55)}…`;
       const items = await fetchSpFolderFiles(url, token);
-      for (const item of items.filter(f => f.name.match(/\.(pdf|docx?)$/i))) {
+      const supported = items.filter(f => f.name.match(/\.(pdf|docx?)$/i) && f.size < 50 * 1024 * 1024);
+      for (const item of supported) {
         const file = await downloadSpFile(item, token);
-        if (!bnaCompanyFiles.find(f => f.name === file.name)) bnaCompanyFiles.push(file);
+        if (!bnaCompanyFiles.find(f => f.name === file.name)) {
+          bnaCompanyFiles.push(file);
+          loaded++;
+        }
       }
     }
     renderFileListById(bnaCompanyFiles, 'fileListBNADocs');
-    if (status) status.textContent = `Loaded ${bnaCompanyFiles.length} company file(s) from SharePoint.`;
+    if (status) {
+      status.style.color = 'var(--success)';
+      status.textContent = `✅ Loaded ${loaded} file${loaded !== 1 ? 's' : ''} from SharePoint.`;
+    }
+    updateBnaBtn();
   } catch(e) {
-    if (status) status.textContent = `SharePoint load failed: ${e.message}`;
+    if (status) { status.style.color = 'var(--error)'; status.textContent = `Failed: ${e.message}`; }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔗 Load from SharePoint';
   }
+}
+
+// ── HYBRID BID/NO-BID MATRIX ──────────────────────────────────────────────────
+const BNA_TIER1 = [
+  { key:'technical_capability', label:'Background, Experience & Technical Capability', weight:0.10,
+    neg:'Weak experience or not qualified', mid:'Average in-house or importable capability', pos:'Strong in-house, technically superior' },
+  { key:'competition',          label:'Competition & Market Position',                weight:0.10,
+    neg:'Unknown/wired competition',       mid:'Open market; know how to compete',     pos:'Sole source or customer prefers us' },
+  { key:'past_performance',     label:'Past Performance Match',                      weight:0.10,
+    neg:'No relevant past performance',    mid:'Some relevant experience',             pos:'Strong directly relevant references' },
+  { key:'eligibility',          label:'Set-Aside / Eligibility',                    weight:0.10,
+    neg:'Not eligible or disadvantaged',   mid:'Eligible but no preference',           pos:'Preferred or sole-source eligible' },
+  { key:'strategic_value',      label:"Program's Strategic Advantage",              weight:0.05,
+    neg:'Low strategic value',             mid:'Average strategic value',              pos:'High value / growth platform' },
+  { key:'scope_clarity',        label:'Ability to Respond (Scope Clarity)',         weight:0.05,
+    neg:"Don't understand the problem",    mid:'Understand and can respond',           pos:'Can meet and exceed every requirement' },
+];
+const BNA_TIER2 = [
+  { key:'customer_rapport', label:'Customer Knowledge & Rapport',          weight:0.15,
+    neg:'Unknown; no relationship',        mid:'Known but not cultivated',             pos:'Good relationship; know real needs' },
+  { key:'team_personnel',   label:'Proposed Team, Partners & Personnel',   weight:0.15,
+    neg:'Second-best or diluting scope',   mid:'Best available, no scope impact',      pos:'Best team, available, ready' },
+  { key:'price_strategy',   label:'Price Strategy',                        weight:0.10,
+    neg:'Must guess or cut corners',       mid:'Reasonable; good idea of price to win',pos:'Honest, credible, know price to win' },
+  { key:'resources',        label:'Resources Available (Proposal & Exec)', weight:0.05,
+    neg:'Not available',                   mid:'Available with effort',                pos:'Readily available or not needed' },
+  { key:'market_intel',     label:'Market Intelligence',                   weight:0.05,
+    neg:'Surprised by RFP; no background', mid:'Generally current on market',          pos:'Inside track; well-prepared workup' },
+];
+const BNA_THRESHOLD = 7.5;
+let bna_tier1_scores = {};
+let bna_tier2_scores = {};
+
+function calcBnaScore() {
+  let t1 = 0, t2 = 0;
+  BNA_TIER1.forEach(f => { t1 += (bna_tier1_scores[f.key] || 0) * f.weight; });
+  BNA_TIER2.forEach(f => { t2 += (bna_tier2_scores[f.key] != null ? bna_tier2_scores[f.key] : 5) * f.weight; });
+  return { t1: t1 * 2, t2: t2 * 2, total: t1 + t2 };
+}
+
+function updateBnaLiveScore() {
+  const { t1, t2, total } = calcBnaScore();
+  const isBid = total >= BNA_THRESHOLD;
+  const color  = total >= 8 ? 'var(--success)' : total >= 6.5 ? '#b45309' : 'var(--error)';
+  const scoreEl   = document.getElementById('bnaScore');
+  const verdictEl = document.getElementById('bnaVerdict');
+  const t1El      = document.getElementById('tier1SubScore');
+  const t2El      = document.getElementById('tier2SubScore');
+  const totalEl   = document.getElementById('totalWeightedScore');
+  const barEl     = document.getElementById('bnaScoreBar');
+  const bannerEl  = document.getElementById('bnaVerdictBanner');
+  if (scoreEl)   { scoreEl.textContent = total.toFixed(1); scoreEl.style.color = color; }
+  if (t1El)      t1El.textContent = t1.toFixed(1);
+  if (t2El)      t2El.textContent = t2.toFixed(1);
+  if (totalEl)   { totalEl.textContent = total.toFixed(1); totalEl.style.color = color; }
+  if (barEl)     { barEl.style.width = (total/10*100)+'%'; barEl.style.background = color; }
+  if (verdictEl) {
+    verdictEl.textContent = isBid ? '✅ BID' : total >= 6.5 ? '⚠️ CONDITIONAL — Needs Review' : '❌ NO BID';
+    verdictEl.style.color = color;
+  }
+  if (bannerEl) {
+    bannerEl.style.background = isBid ? '#f0fdf4' : total >= 6.5 ? '#fefce8' : '#fef2f2';
+    bannerEl.style.border = `1px solid ${isBid ? '#86efac' : total >= 6.5 ? '#fde047' : '#fca5a5'}`;
+  }
+}
+
+function renderTier2Inputs() {
+  const container = document.getElementById('bnaFactorsTier2');
+  if (!container) return;
+  BNA_TIER2.forEach(f => { bna_tier2_scores[f.key] = 5; });
+  container.innerHTML = BNA_TIER2.map(f => `
+    <div style="margin-bottom:12px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:white">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700">${escHtml(f.label)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--muted)">Weight: ${bna_weights[f.key] || Math.round(f.weight*100)}%</span>
+          <span id="tier2val_${f.key}" style="font-size:20px;font-weight:900;min-width:28px;text-align:right;color:#7c3aed">5</span>
+        </div>
+      </div>
+      <input type="range" min="0" max="10" value="5" step="1"
+        style="width:100%;accent-color:#7c3aed;margin-bottom:6px"
+        oninput="bna_tier2_scores['${f.key}']=+this.value;document.getElementById('tier2val_${f.key}').textContent=this.value;updateBnaLiveScore()"/>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">
+        <span style="max-width:30%;line-height:1.3">0–3: ${escHtml(f.neg)}</span>
+        <span style="max-width:35%;text-align:center;line-height:1.3">4–6: ${escHtml(f.mid)}</span>
+        <span style="max-width:30%;text-align:right;line-height:1.3">7–10: ${escHtml(f.pos)}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ── WEIGHT EDITOR ─────────────────────────────────────────────────────────────
+// Live editable weights — start from BNA_TIER1/TIER2 defaults
+let bna_weights = {};
+
+function initBnaWeights() {
+  [...BNA_TIER1, ...BNA_TIER2].forEach(f => {
+    bna_weights[f.key] = Math.round(f.weight * 100);
+  });
+}
+
+function getWeightTotal() {
+  return Object.values(bna_weights).reduce((s, v) => s + v, 0);
+}
+
+function renderWeightEditor() {
+  const render = (factors, containerId) => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = factors.map(f => `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9">
+        <div style="flex:1;font-size:13px;color:var(--text)">${escHtml(f.label)}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" min="0" max="100" step="1"
+            value="${bna_weights[f.key]}"
+            id="weight_${f.key}"
+            style="width:58px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;text-align:center"
+            oninput="onWeightChange('${f.key}', this.value)"/>
+          <span style="font-size:13px;color:var(--muted)">%</span>
+        </div>
+      </div>`).join('');
+  };
+  render(BNA_TIER1, 'weightsTier1');
+  render(BNA_TIER2, 'weightsTier2');
+  updateWeightDisplay();
+}
+
+function onWeightChange(key, rawVal) {
+  const val = Math.max(0, Math.min(100, parseInt(rawVal) || 0));
+  bna_weights[key] = val;
+  updateWeightDisplay();
+}
+
+function updateWeightDisplay() {
+  const total = getWeightTotal();
+  const ok    = total === 100;
+  const color = ok ? 'var(--success)' : 'var(--error)';
+
+  const totalDisplay = document.getElementById('weightTotalDisplay');
+  const totalRow     = document.getElementById('weightTotalRow');
+  const badge        = document.getElementById('weightTotalBadge');
+  const runBtn       = document.getElementById('bnaRunBtn');
+  const errEl        = document.getElementById('bnaWeightError');
+
+  if (totalDisplay) { totalDisplay.textContent = total + '%'; totalDisplay.style.color = color; }
+  if (totalRow)     { totalRow.style.borderColor = color; totalRow.style.background = ok ? '#f0fdf4' : '#fef2f2'; }
+  if (badge) {
+    badge.textContent = ok ? '100% ✓' : `${total}% ✗`;
+    badge.style.background   = ok ? '#f0fdf4' : '#fef2f2';
+    badge.style.borderColor  = ok ? '#86efac' : '#fca5a5';
+    badge.style.color        = ok ? 'var(--success)' : 'var(--error)';
+  }
+  if (errEl) {
+    if (!ok) {
+      errEl.style.display = 'block';
+      const diff = total - 100;
+      errEl.textContent = `Weights total ${total}% — ${diff > 0 ? 'reduce by ' + diff + '%' : 'add ' + Math.abs(diff) + '%'} before analyzing.`;
+    } else {
+      errEl.style.display = 'none';
+    }
+  }
+  // Only update run button disabled state from weights perspective when files also present
+  if (runBtn && bnaFiles.length > 0) {
+    runBtn.disabled = !ok;
+    runBtn.style.opacity = ok ? '1' : '0.45';
+  }
+}
+
+function resetWeights() {
+  [...BNA_TIER1, ...BNA_TIER2].forEach(f => {
+    bna_weights[f.key] = Math.round(f.weight * 100);
+    const el = document.getElementById(`weight_${f.key}`);
+    if (el) el.value = bna_weights[f.key];
+  });
+  updateWeightDisplay();
+}
+
+function toggleWeightEditor() {
+  const body   = document.getElementById('weightEditorBody');
+  const toggle = document.getElementById('weightEditorToggle');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (toggle) toggle.textContent = open ? '▼ expand' : '▲ collapse';
+  if (!open) renderWeightEditor(); // render on first open
+}
+
+function getEffectiveWeights() {
+  // Return normalized weights (in case of floating point, ensure sum = 1.0)
+  const total = getWeightTotal();
+  const weights = {};
+  Object.entries(bna_weights).forEach(([k, v]) => { weights[k] = v / total; });
+  return weights;
+}
+
+// Override calcBnaScore to use editable weights
+function calcBnaScore() {
+  const w = getEffectiveWeights();
+  let t1 = 0, t2 = 0;
+  BNA_TIER1.forEach(f => { t1 += (bna_tier1_scores[f.key] || 0) * (w[f.key] || f.weight); });
+  BNA_TIER2.forEach(f => { t2 += (bna_tier2_scores[f.key] != null ? bna_tier2_scores[f.key] : 5) * (w[f.key] || f.weight); });
+  const tier1TotalWeight = BNA_TIER1.reduce((s,f) => s + (w[f.key] || f.weight), 0);
+  const tier2TotalWeight = BNA_TIER2.reduce((s,f) => s + (w[f.key] || f.weight), 0);
+  // Scale sub-scores to 0-10 relative to each tier's share
+  const t1Display = tier1TotalWeight > 0 ? (t1 / tier1TotalWeight) * 10 : 0;
+  const t2Display = tier2TotalWeight > 0 ? (t2 / tier2TotalWeight) * 10 : 0;
+  return { t1: parseFloat(t1Display.toFixed(1)), t2: parseFloat(t2Display.toFixed(1)), total: parseFloat(((t1 + t2) * 10).toFixed(1)) };
+}
+
+// Also update updateBnaBtn to respect weight validity
+const _origUpdateBnaBtn = updateBnaBtn;
+function updateBnaBtn() {
+  const btn = document.getElementById('bnaRunBtn');
+  if (!btn) return;
+  const hasFiles  = bnaFiles.length > 0;
+  const weightsOk = getWeightTotal() === 100;
+  btn.disabled    = !hasFiles || !weightsOk;
+  btn.style.opacity = (hasFiles && weightsOk) ? '1' : '0.45';
 }
 
 async function runBidNoBid() {
@@ -4223,14 +4576,10 @@ async function runBidNoBid() {
     if (!apiKey) throw new Error('No API key. Enter your key in the Proposal tab Step 2.');
 
     const content = [];
-
-    // Add RFP documents
     for (const file of bnaFiles.slice(0, 8)) {
       const block = await fileToContentBlock(file);
       if (block) content.push(block);
     }
-
-    // Add company documents if provided — this is what makes scoring accurate
     const hasCompanyDocs = bnaCompanyFiles.length > 0;
     for (const file of bnaCompanyFiles.slice(0, 6)) {
       const block = await fileToContentBlock(file);
@@ -4246,30 +4595,24 @@ async function runBidNoBid() {
       `DCAA: ${CLIENT_CONFIG.dcaa || 'not specified'}`;
 
     content.push({ type: 'text', text:
-      `You are a government business development expert. Analyze this solicitation for a bid/no-bid decision.\n\n` +
+      `You are a government BD expert scoring a bid/no-bid opportunity for ${CLIENT_CONFIG.companyFullName}.\n\n` +
       `COMPANY PROFILE:\n${companyProfile}\n\n` +
       (hasCompanyDocs
-        ? `COMPANY DOCUMENTS PROVIDED: Past performance write-ups and/or capability statements are attached above. ` +
-          `Use them directly to score Past Performance Match and Technical Capability Fit. ` +
-          `Reference specific contracts, dollar values, and work descriptions from those documents.\n\n`
-        : `NOTE: No company capability documents were provided. ` +
-          `Past Performance Match and Technical Capability Fit scores will be based only on the company profile above. ` +
-          `These scores should be treated as estimates.\n\n`) +
-      `Score the opportunity on each factor from 1-10.\n\n` +
-      `CRITICAL INSTRUCTION: Respond with ONLY a raw JSON object. No markdown. No headers. No explanation. No backticks. Start your response with { and end with }.\n\n` +
-      `{"overall_score":7,"verdict":"BID","summary":"one sentence recommendation",` +
-      `"data_confidence":"${hasCompanyDocs ? 'HIGH — scored from actual company documents' : 'LOW — no company documents provided, PP/capability scores are estimates'}",` +
-      `"factors":[` +
-      `{"name":"Mission Alignment","score":8,"rationale":"brief explanation"},` +
-      `{"name":"Past Performance Match","score":7,"rationale":"..."},` +
-      `{"name":"Competition Level","score":6,"rationale":"..."},` +
-      `{"name":"Incumbent Risk","score":5,"rationale":"..."},` +
-      `{"name":"Technical Capability Fit","score":9,"rationale":"..."},` +
-      `{"name":"Size / Value Fit","score":7,"rationale":"..."},` +
-      `{"name":"Set-Aside / Eligibility","score":10,"rationale":"..."}],` +
-      `"risks":["risk 1","risk 2","risk 3"],` +
-      `"win_strategy":["discriminator 1","discriminator 2","discriminator 3"],` +
-      `"recommendation":"2-3 sentences on why to bid or not bid"}`
+        ? `COMPANY DOCUMENTS PROVIDED: Score using actual content from attached documents.\n\n`
+        : `NO COMPANY DOCUMENTS: Base technical/PP scores on company profile only.\n\n`) +
+      `Score ONLY these 6 factors from 0-10 based on the solicitation documents.\n` +
+      `CRITICAL: Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n\n` +
+      `{"data_confidence":"${hasCompanyDocs ? 'HIGH' : 'LOW — no company docs'}",` +
+      `"factors":{` +
+      `"technical_capability":{"score":7,"rationale":"brief reason"},` +
+      `"competition":{"score":6,"rationale":"..."},` +
+      `"past_performance":{"score":7,"rationale":"..."},` +
+      `"eligibility":{"score":9,"rationale":"..."},` +
+      `"strategic_value":{"score":6,"rationale":"..."},` +
+      `"scope_clarity":{"score":8,"rationale":"..."}},` +
+      `"risks":["risk1","risk2","risk3"],` +
+      `"win_strategy":["strategy1","strategy2","strategy3"],` +
+      `"summary":"one sentence overall assessment"}`
     });
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -4281,71 +4624,68 @@ async function runBidNoBid() {
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
     const d = await resp.json();
-    let raw = d.content.map(c=>c.text||'').join('').trim();
-
-    // Strip any markdown formatting
-    raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
-    // Strip markdown headers/lines that precede the JSON
-    raw = raw.replace(/^#+\s+[^\n]*\n/gm, '').trim();
-    // Extract the JSON object
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
+      .replace(/^#+\s+[^\n]*\n/gm, '').trim();
     const jsonMatch = raw.match(/\{[\s\S]+\}/);
-    if (!jsonMatch) throw new Error('No valid JSON found in response. Try again.');
-    // Repair truncation
+    if (!jsonMatch) throw new Error('No valid JSON in response. Try again.');
     let jsonStr = jsonMatch[0];
-    if (!jsonStr.endsWith('}')) {
-      const lb = jsonStr.lastIndexOf('}');
-      if (lb > 0) {
-        jsonStr = jsonStr.substring(0, lb + 1);
-        const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
-        for (let i = 0; i < opens; i++) jsonStr += ']';
-        jsonStr += '}';
-      }
-    }
+    if (!jsonStr.endsWith('}')) { const lb=jsonStr.lastIndexOf('}'); if(lb>0){jsonStr=jsonStr.substring(0,lb+1);const op=(jsonStr.match(/\[/g)||[]).length-(jsonStr.match(/\]/g)||[]).length;for(let i=0;i<op;i++) jsonStr+=']';jsonStr+='}';} }
     let result;
     try { result = JSON.parse(jsonStr); }
-    catch(e) { throw new Error(`Could not parse analysis response: ${e.message}. Try again.`); }
+    catch(e) { throw new Error(`Could not parse response: ${e.message}. Try again.`); }
 
-    // Render results
-    const scoreColor = result.overall_score >= 7 ? 'var(--success)' : result.overall_score >= 5 ? '#b45309' : 'var(--error)';
-    document.getElementById('bnaScore').textContent = result.overall_score;
-    document.getElementById('bnaScore').style.color = scoreColor;
-    const verdictEl = document.getElementById('bnaVerdict');
-    verdictEl.textContent = result.verdict === 'BID' ? '✅ BID' : result.verdict === 'NO BID' ? '❌ NO BID' : '⚠️ CONDITIONAL BID';
-    verdictEl.style.color = result.verdict === 'BID' ? 'var(--success)' : result.verdict === 'NO BID' ? 'var(--error)' : '#b45309';
-    document.getElementById('bnaSummary').textContent = result.recommendation || result.summary;
+    // Store tier 1 scores
+    bna_tier1_scores = {};
+    const factors = result.factors || {};
+    BNA_TIER1.forEach(f => { bna_tier1_scores[f.key] = (factors[f.key] && factors[f.key].score != null) ? factors[f.key].score : 5; });
 
-    // Show data confidence warning if low
+    // Render Tier 1 factor bars
+    const t1El = document.getElementById('bnaFactorsTier1');
+    if (t1El) {
+      t1El.innerHTML = BNA_TIER1.map(f => {
+        const s = bna_tier1_scores[f.key];
+        const fc = s >= 7 ? 'var(--success)' : s >= 4 ? '#b45309' : 'var(--error)';
+        const rationale = (factors[f.key] && factors[f.key].rationale) || '';
+        return `<div style="margin-bottom:10px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:white">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:700">${escHtml(f.label)}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;color:var(--muted)">Weight: ${bna_weights[f.key] || Math.round(f.weight*100)}%</span>
+              <span style="font-size:20px;font-weight:900;color:${fc}">${s}</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:5px">${escHtml(rationale)}</div>
+          <div style="height:5px;background:#e2e8f0;border-radius:3px">
+            <div style="height:5px;width:${s*10}%;background:${fc};border-radius:3px;transition:width 0.4s"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    renderTier2Inputs();
+
     const confEl = document.getElementById('bnaDataConfidence');
     if (confEl) {
       confEl.style.display = 'block';
-      confEl.textContent = result.data_confidence || '';
+      confEl.textContent = hasCompanyDocs
+        ? '✅ HIGH confidence — Tier 1 scored from actual company documents'
+        : '⚠️ LOW confidence for Tier 1 PP/capability — no company documents provided.';
       confEl.style.background = hasCompanyDocs ? '#f0fdf4' : '#fefce8';
       confEl.style.borderColor = hasCompanyDocs ? '#86efac' : '#fde047';
       confEl.style.color = hasCompanyDocs ? 'var(--success)' : '#92400e';
     }
 
-    const factorsEl = document.getElementById('bnaFactors');
-    factorsEl.innerHTML = (result.factors || []).map(f => {
-      const fc = f.score >= 7 ? 'var(--success)' : f.score >= 5 ? '#b45309' : 'var(--error)';
-      const barW = (f.score / 10 * 100).toFixed(0);
-      return `<div class="bna-factor">
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:13px;margin-bottom:3px">${escHtml(f.name)}</div>
-          <div style="font-size:12px;color:var(--muted)">${escHtml(f.rationale)}</div>
-          <div style="height:4px;background:#e2e8f0;border-radius:2px;margin-top:6px">
-            <div style="height:4px;width:${barW}%;background:${fc};border-radius:2px;transition:width 0.4s"></div>
-          </div>
-        </div>
-        <div class="bna-factor-score" style="color:${fc};margin-left:16px">${f.score}</div>
-      </div>`;
-    }).join('');
+    document.getElementById('bnaSummary').textContent = result.summary || '';
+    document.getElementById('bnaRisks').innerHTML = (result.risks||[]).map(r=>`<div style="margin-bottom:5px">⚠️ ${escHtml(r)}</div>`).join('');
+    document.getElementById('bnaWinStrategy').innerHTML = (result.win_strategy||[]).map(w=>`<div style="margin-bottom:5px">→ ${escHtml(w)}</div>`).join('');
 
-    document.getElementById('bnaRisks').innerHTML = (result.risks || []).map(r => `<div style="margin-bottom:6px">⚠️ ${escHtml(r)}</div>`).join('');
-    document.getElementById('bnaWinStrategy').innerHTML = (result.win_strategy || []).map(w => `<div style="margin-bottom:6px">→ ${escHtml(w)}</div>`).join('');
-
+    updateBnaLiveScore();
     document.getElementById('bnaResults').style.display = 'block';
     document.getElementById('bnaResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
     window._lastBnaResult = result;
+
+    extractOpportunityIntel(content.slice(0, -1), apiKey);
   } catch(e) {
     alert(`Bid/No-Bid analysis failed: ${e.message}`);
   } finally {
@@ -4354,7 +4694,6 @@ async function runBidNoBid() {
     updateBnaBtn();
   }
 }
-
 function copyBnaResults() {
   const result = window._lastBnaResult;
   if (!result) return;
