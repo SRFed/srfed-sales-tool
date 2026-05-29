@@ -1066,6 +1066,24 @@
 
 <!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
 <div class="tab-pane" id="pane-bidnobid">
+
+  <!-- BNA status/progress bar — shown during analysis -->
+  <div id="bnaStatusBar" class="status-bar info" style="display:none">
+    <div class="status-icon" id="bnaStatusIcon">ℹ️</div>
+    <div class="status-text">
+      <div class="status-title" id="bnaStatusTitle"></div>
+      <div id="bnaStatusMsg"></div>
+      <div class="progress-wrap" id="bnaProgressWrap" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span id="bnaProgressPct" style="font-size:12px;font-weight:700;color:var(--blue)">0%</span>
+          <span id="bnaProgressEta" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="bnaProgressFill" style="width:0%"></div></div>
+        <div class="progress-steps" id="bnaProgressSteps"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📄</span> Bid/No-Bid Analysis — Document Input</div>
     <div class="card-body">
@@ -4819,11 +4837,68 @@ function updateBnaBtn() {
   btn.style.opacity = (hasFiles && weightsOk) ? '1' : '0.45';
 }
 
+// ── BNA STATUS BAR ────────────────────────────────────────────────────────────
+function showBnaStatus(type, title, msg, showProgress = false) {
+  const icons = { info: 'ℹ️', success: '✅', warn: '⚠️', error: '❌' };
+  const bar = document.getElementById('bnaStatusBar');
+  if (!bar) return;
+  bar.className = `status-bar ${type}`;
+  bar.style.display = 'flex';
+  document.getElementById('bnaStatusIcon').textContent = icons[type] || 'ℹ️';
+  document.getElementById('bnaStatusTitle').textContent = title;
+  document.getElementById('bnaStatusMsg').textContent = msg;
+  const pw = document.getElementById('bnaProgressWrap');
+  if (pw) pw.style.display = showProgress ? 'block' : 'none';
+  const fill = document.getElementById('bnaProgressFill');
+  if (fill) fill.classList.toggle('pulsing', type === 'info' && showProgress);
+  bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setBnaProgress(pct, etaText) {
+  const fill  = document.getElementById('bnaProgressFill');
+  const pctEl = document.getElementById('bnaProgressPct');
+  const etaEl = document.getElementById('bnaProgressEta');
+  if (fill)  fill.style.width = Math.min(pct, 100) + '%';
+  if (pctEl) pctEl.textContent = Math.round(Math.min(pct, 100)) + '%';
+  if (etaEl && etaText !== undefined) etaEl.textContent = etaText;
+}
+
+let _bnaEtaInterval = null;
+let _bnaStart = null;
+let _bnaTotalSecs = null;
+let _bnaPct = 0;
+
+function startBnaEta(totalSecs) {
+  if (_bnaEtaInterval) clearInterval(_bnaEtaInterval);
+  _bnaStart = Date.now();
+  _bnaTotalSecs = totalSecs;
+  _bnaPct = 5;
+  setBnaProgress(5, `~${totalSecs}s remaining`);
+  _bnaEtaInterval = setInterval(() => {
+    const elapsed = (Date.now() - _bnaStart) / 1000;
+    const remaining = Math.max(0, _bnaTotalSecs - elapsed);
+    // Nudge progress smoothly
+    const softCeil = Math.min(90, 5 + (elapsed / _bnaTotalSecs) * 85);
+    _bnaPct = Math.min(softCeil, _bnaPct + 0.5);
+    const etaTxt = remaining > 0
+      ? (remaining > 60 ? `~${Math.floor(remaining/60)}m ${Math.round(remaining%60)}s remaining` : `~${Math.round(remaining)}s remaining`)
+      : 'Almost done…';
+    setBnaProgress(_bnaPct, etaTxt);
+  }, 800);
+}
+
+function stopBnaEta() {
+  if (_bnaEtaInterval) { clearInterval(_bnaEtaInterval); _bnaEtaInterval = null; }
+}
+
 async function runBidNoBid() {
   if (bnaFiles.length === 0) return;
   const btn = document.getElementById('bnaRunBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Analyzing opportunity…';
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Analyzing…';
+
+  showBnaStatus('info', 'Analyzing opportunity…', 'Reading solicitation documents and scoring against your company profile. Takes ~45 seconds.', true);
+  startBnaEta(50);
 
   try {
     const apiKey = getApiKey();
@@ -4855,19 +4930,23 @@ async function runBidNoBid() {
         ? `COMPANY DOCUMENTS PROVIDED: Score using actual content from attached documents.\n\n`
         : `NO COMPANY DOCUMENTS: Base technical/PP scores on company profile only.\n\n`) +
       `Score ONLY these 6 factors from 0-10 based on the solicitation documents.\n` +
-      `CRITICAL: Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
-      `IMPORTANT: In all "rationale" values, use only plain text. Do NOT use quotes, apostrophes, backslashes, or any special characters inside the rationale strings — rephrase to avoid them.\n\n` +
+      `CRITICAL FORMATTING RULES:\n` +
+      `- Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
+      `- In ALL string values, use only plain ASCII. NO smart quotes, NO apostrophes, NO backslashes.\n` +
+      `- Rationale strings must be plain prose with NO embedded quotes of any kind.\n` +
+      `- risks and win_strategy must be arrays of plain strings.\n\n` +
+      `Return this exact structure with real scores and rationales — NOT the placeholder values shown:\n` +
       `{"data_confidence":"${hasCompanyDocs ? 'HIGH' : 'LOW'}",` +
       `"factors":{` +
-      `"technical_capability":{"score":7,"rationale":"plain text only no quotes"},` +
-      `"competition":{"score":6,"rationale":"plain text only"},` +
-      `"past_performance":{"score":7,"rationale":"plain text only"},` +
-      `"eligibility":{"score":9,"rationale":"plain text only"},` +
-      `"strategic_value":{"score":6,"rationale":"plain text only"},` +
-      `"scope_clarity":{"score":8,"rationale":"plain text only"}},` +
-      `"risks":["risk one","risk two","risk three"],` +
-      `"win_strategy":["strategy one","strategy two","strategy three"],` +
-      `"summary":"plain text summary"}`
+      `"technical_capability":{"score":0,"rationale":"your assessment here"},` +
+      `"competition":{"score":0,"rationale":"your assessment here"},` +
+      `"past_performance":{"score":0,"rationale":"your assessment here"},` +
+      `"eligibility":{"score":0,"rationale":"your assessment here"},` +
+      `"strategic_value":{"score":0,"rationale":"your assessment here"},` +
+      `"scope_clarity":{"score":0,"rationale":"your assessment here"}},` +
+      `"risks":["specific risk 1","specific risk 2","specific risk 3"],` +
+      `"win_strategy":["specific strategy 1","specific strategy 2","specific strategy 3"],` +
+      `"summary":"2-3 sentence overall assessment and recommendation"}`
     });
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -4877,38 +4956,85 @@ async function runBidNoBid() {
       body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 2000,
         messages: [{ role: 'user', content }] })
     });
-    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text().catch(()=>'')}`);
     const d = await resp.json();
     let raw = d.content.map(c=>c.text||'').join('').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
       .replace(/^#+\s+[^\n]*\n/gm, '').trim();
+
+    // Extract the outermost JSON object
     const jsonMatch = raw.match(/\{[\s\S]+\}/);
-    if (!jsonMatch) throw new Error('No valid JSON in response. Try again.');
+    if (!jsonMatch) throw new Error('No JSON object found in response. Raw: ' + raw.substring(0, 200));
     let jsonStr = jsonMatch[0];
-    // Sanitize: fix unescaped special chars inside string values
-    // Replace unescaped double quotes inside values (common Claude error)
-    jsonStr = jsonStr.replace(/:(\s*)"([^"]*)"([^,}\]]*)"([^"]*)"(\s*[,}\]])/g, ':"$2$3$4"$5');
-    // Remove any control characters
-    jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' ');
-    if (!jsonStr.endsWith('}')) { const lb=jsonStr.lastIndexOf('}'); if(lb>0){jsonStr=jsonStr.substring(0,lb+1);const op=(jsonStr.match(/\[/g)||[]).length-(jsonStr.match(/\]/g)||[]).length;for(let i=0;i<op;i++) jsonStr+=']';jsonStr+='}';} }
+
+    // Aggressive sanitization before parse
+    // 1. Remove control characters
+    jsonStr = jsonStr.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
+    // 2. Fix Windows line endings
+    jsonStr = jsonStr.replace(/\r\n/g, ' ').replace(/\r/g, ' ');
+    // 3. Try parse — if it fails, do targeted repair
     let result;
-    try { result = JSON.parse(jsonStr); }
-    catch(e) {
-      // Last resort: try to extract each field individually
-      const extractStr = (key) => { const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*?)"`)); return m ? m[1] : null; };
-      const extractNum = (key) => { const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*(\\d+)`)); return m ? parseInt(m[1]) : 5; };
-      const factors = {};
-      ['technical_capability','competition','past_performance','eligibility','strategic_value','scope_clarity'].forEach(k => {
-        factors[k] = { score: extractNum(`"${k}"[^}]*"score"`), rationale: 'See full analysis above' };
-      });
-      result = { data_confidence: 'PARSE ERROR — scores estimated', factors, risks: [], win_strategy: [], summary: extractStr('summary') || 'Analysis complete — see factor scores.' };
-      console.warn('JSON parse failed, using fallback:', e.message);
+    try {
+      result = JSON.parse(jsonStr);
+    } catch(firstErr) {
+      // Try to repair: replace newlines within string values with spaces
+      jsonStr = jsonStr.replace(/("(?:[^"\\]|\\.)*")/g, m => m.replace(/\n/g, ' ').replace(/\t/g, ' '));
+      try {
+        result = JSON.parse(jsonStr);
+      } catch(e) {
+        // Last resort: regex-extract each field
+        console.warn('BNA JSON parse failed, extracting fields manually. Error:', e.message);
+        console.warn('Raw JSON (first 500 chars):', jsonStr.substring(0, 500));
+        const extractStr = (key) => {
+          const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*"([^"]*?)"`));
+          return m ? m[1] : null;
+        };
+        const extractNum = (key) => {
+          // Match score inside a factor object: "technical_capability":{"score":7,...}
+          const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*\\{[^}]*?"score"\\s*:\\s*(\\d+(?:\\.\\d+)?)`));
+          if (m) return parseFloat(m[1]);
+          // Fallback: just find "score":N near the key
+          const m2 = jsonStr.match(new RegExp(`"${key}"[^}]{0,50}"score"\\s*:\\s*(\\d+)`));
+          return m2 ? parseInt(m2[1]) : null;
+        };
+        const extractArr = (key) => {
+          const m = jsonStr.match(new RegExp(`"${key}"\\s*:\\s*\\[(.*?)\\]`, 's'));
+          if (!m) return [];
+          return m[1].match(/"([^"]+)"/g)?.map(s => s.replace(/^"|"$/g,'')) || [];
+        };
+        const factors = {};
+        ['technical_capability','competition','past_performance','eligibility','strategic_value','scope_clarity'].forEach(k => {
+          const score = extractNum(k);
+          const ratM = jsonStr.match(new RegExp(`"${k}"\\s*:\\s*\\{[^}]*?"rationale"\\s*:\\s*"([^"]{0,300})"`));
+          factors[k] = {
+            score: score !== null ? score : 5,
+            rationale: ratM ? ratM[1] : 'See full analysis above'
+          };
+        });
+        result = {
+          data_confidence: extractStr('data_confidence') || (hasCompanyDocs ? 'HIGH' : 'LOW'),
+          factors,
+          risks: extractArr('risks'),
+          win_strategy: extractArr('win_strategy'),
+          summary: extractStr('summary') || 'Analysis complete — review factor scores above.'
+        };
+      }
+    }
+
+    // Validate scores are real numbers, not all 5s from a bad parse
+    const factors = result.factors || {};
+    const scores = Object.values(factors).map(f => f?.score).filter(s => s != null);
+    const allSame = scores.length > 1 && scores.every(s => s === scores[0]);
+    if (allSame && scores[0] === 5) {
+      console.warn('All scores are 5 — likely a parse failure. Raw:', raw.substring(0, 300));
     }
 
     // Store tier 1 scores
     bna_tier1_scores = {};
-    const factors = result.factors || {};
-    BNA_TIER1.forEach(f => { bna_tier1_scores[f.key] = (factors[f.key] && factors[f.key].score != null) ? factors[f.key].score : 5; });
+    BNA_TIER1.forEach(f => {
+      const val = factors[f.key];
+      bna_tier1_scores[f.key] = (val && val.score != null) ? Number(val.score) : 5;
+    });
 
     // Render Tier 1 factor bars
     const t1El = document.getElementById('bnaFactorsTier1');
@@ -4925,7 +5051,7 @@ async function runBidNoBid() {
               <span style="font-size:20px;font-weight:900;color:${fc}">${s}</span>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:5px">${escHtml(rationale)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:5px;line-height:1.5">${escHtml(rationale)}</div>
           <div style="height:5px;background:#e2e8f0;border-radius:3px">
             <div style="height:5px;width:${s*10}%;background:${fc};border-radius:3px;transition:width 0.4s"></div>
           </div>
@@ -4947,14 +5073,26 @@ async function runBidNoBid() {
     }
 
     document.getElementById('bnaSummary').textContent = result.summary || '';
-    document.getElementById('bnaRisks').innerHTML = (result.risks||[]).map(r=>`<div style="margin-bottom:5px">⚠️ ${escHtml(r)}</div>`).join('');
-    document.getElementById('bnaWinStrategy').innerHTML = (result.win_strategy||[]).map(w=>`<div style="margin-bottom:5px">→ ${escHtml(w)}</div>`).join('');
+
+    // Risks and win strategy
+    const risksEl = document.getElementById('bnaRisks');
+    const winEl   = document.getElementById('bnaWinStrategy');
+    const risks = result.risks || [];
+    const wins  = result.win_strategy || [];
+    if (risksEl) risksEl.innerHTML = risks.length
+      ? risks.map(r => `<div style="margin-bottom:5px">⚠️ ${escHtml(r)}</div>`).join('')
+      : '<div style="color:var(--muted);font-size:12px">No specific risks identified.</div>';
+    if (winEl) winEl.innerHTML = wins.length
+      ? wins.map(w => `<div style="margin-bottom:5px">→ ${escHtml(w)}</div>`).join('')
+      : '<div style="color:var(--muted);font-size:12px">No win strategy generated.</div>';
 
     // Hide verdict until user confirms Tier 2 entries
     const verdictBanner = document.getElementById('bnaVerdictBanner');
-    const breakdownCard  = document.getElementById('bnaScoreBreakdown');
     if (verdictBanner) verdictBanner.style.display = 'none';
-    // Show a prompt to complete Tier 2 and confirm
+
+    // Add Confirm button below Tier 2 (remove existing one first)
+    const oldConfirm = document.getElementById('bnaConfirmRow');
+    if (oldConfirm) oldConfirm.remove();
     const tier2Section = document.getElementById('bnaFactorsTier2');
     if (tier2Section) {
       const confirmDiv = document.createElement('div');
@@ -4964,15 +5102,21 @@ async function runBidNoBid() {
         '<button onclick="confirmBnaScore()" style="padding:10px 28px;font-size:14px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer">✅ Confirm Entries & Calculate Score</button>';
       tier2Section.parentNode.insertBefore(confirmDiv, tier2Section.nextSibling);
     }
+
     document.getElementById('bnaResults').style.display = 'block';
     document.getElementById('bnaResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    window._lastBnaResult = result;
-
-    // Opportunity Intel is triggered manually — store content for later
+    window._lastBnaResult  = result;
     window._lastBnaContent = content.slice(0, -1);
     window._lastBnaApiKey  = apiKey;
+
+    stopBnaEta();
+    setBnaProgress(100, 'Complete');
+    showBnaStatus('success', 'Analysis complete', `Tier 1 scored. Adjust Tier 2 sliders and confirm to get your final bid/no-bid score.`);
+
   } catch(e) {
-    alert(`Bid/No-Bid analysis failed: ${e.message}`);
+    stopBnaEta();
+    showBnaStatus('error', 'Analysis failed', e.message);
+    console.error('BNA error:', e);
   } finally {
     btn.disabled = false;
     btn.innerHTML = '🎯 Analyze Opportunity';
