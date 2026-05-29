@@ -5048,37 +5048,49 @@ async function runBidNoBid() {
       `DCAA: ${CLIENT_CONFIG.dcaa || 'not specified'}`;
 
     content.push({ type: 'text', text:
-      `You are a government BD expert scoring a bid/no-bid opportunity for ${CLIENT_CONFIG.companyFullName}.\n\n` +
+      `You are a senior government BD analyst conducting a bid/no-bid evaluation for ${CLIENT_CONFIG.companyFullName}.\n\n` +
       `COMPANY PROFILE:\n${companyProfile}\n\n` +
       (hasCompanyDocs
-        ? `COMPANY DOCUMENTS PROVIDED: Score using actual content from attached documents.\n\n`
-        : `NO COMPANY DOCUMENTS: Base technical/PP scores on company profile only.\n\n`) +
-      `Score ONLY these 6 factors from 0-10 based on the solicitation documents.\n` +
-      `CRITICAL FORMATTING RULES:\n` +
-      `- Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
-      `- In ALL string values, use only plain ASCII. NO smart quotes, NO apostrophes, NO backslashes.\n` +
-      `- Rationale strings must be plain prose with NO embedded quotes of any kind.\n` +
-      `- risks and win_strategy must be arrays of plain strings.\n\n` +
-      `Return this exact structure with real scores and rationales — NOT the placeholder values shown:\n` +
+        ? `COMPANY DOCUMENTS: Use the attached past performance and capability documents to score technical capability, past performance, and eligibility. Cite specific evidence in your rationales.\n\n`
+        : `NOTE: No company documents provided. Use the company profile above for technical/PP scoring; note uncertainty in rationales.\n\n`) +
+      `TASK: Read the solicitation documents carefully and score each of the 6 factors below from 0 to 10. ` +
+      `Be specific and analytical — do not use placeholder language. ` +
+      `Your rationale for each factor must reference specific content from the solicitation (e.g. set-aside type, page limits, NAICS code, scope language, past performance requirements).\n\n` +
+      `SCORING GUIDANCE:\n` +
+      `- technical_capability: Does SRFed have the technical skills, personnel, and experience this SOW requires? Score high if strong direct match, low if significant gaps.\n` +
+      `- competition: How competitive is the landscape? Score high if sole-source eligible or incumbent, low if many large incumbents or unknown competition.\n` +
+      `- past_performance: Do SRFed references match this solicitation in scope, size, and agency type? Score based on actual relevance.\n` +
+      `- eligibility: Is this set-aside type one SRFed qualifies for (SDVOSB, small business, etc.)? Score 10 if perfect match, 0 if ineligible.\n` +
+      `- strategic_value: Does winning this align with SRFed growth goals? Consider contract value, recompete potential, agency relationships.\n` +
+      `- scope_clarity: How well-defined is the scope? Score high if clear requirements, low if vague or underdeveloped PWS.\n\n` +
+      `REQUIRED OUTPUT — respond with ONLY a JSON object. No markdown, no backticks, no preamble. Rules:\n` +
+      `- Every string value must be plain ASCII with no embedded quotes or backslashes\n` +
+      `- risks: provide 3-5 SPECIFIC risks from this solicitation (not generic BD risks)\n` +
+      `- win_strategy: provide 3-5 SPECIFIC strategies tailored to this opportunity\n` +
+      `- summary: 3-4 sentences with your overall bid/no-bid recommendation and key reasoning\n\n` +
       `{"data_confidence":"${hasCompanyDocs ? 'HIGH' : 'LOW'}",` +
       `"factors":{` +
-      `"technical_capability":{"score":0,"rationale":"your assessment here"},` +
-      `"competition":{"score":0,"rationale":"your assessment here"},` +
-      `"past_performance":{"score":0,"rationale":"your assessment here"},` +
-      `"eligibility":{"score":0,"rationale":"your assessment here"},` +
-      `"strategic_value":{"score":0,"rationale":"your assessment here"},` +
-      `"scope_clarity":{"score":0,"rationale":"your assessment here"}},` +
-      `"risks":["specific risk 1","specific risk 2","specific risk 3"],` +
-      `"win_strategy":["specific strategy 1","specific strategy 2","specific strategy 3"],` +
-      `"summary":"2-3 sentence overall assessment and recommendation"}`
+      `"technical_capability":{"score":REPLACE_WITH_SCORE,"rationale":"REPLACE_WITH_SPECIFIC_RATIONALE"},` +
+      `"competition":{"score":REPLACE_WITH_SCORE,"rationale":"REPLACE_WITH_SPECIFIC_RATIONALE"},` +
+      `"past_performance":{"score":REPLACE_WITH_SCORE,"rationale":"REPLACE_WITH_SPECIFIC_RATIONALE"},` +
+      `"eligibility":{"score":REPLACE_WITH_SCORE,"rationale":"REPLACE_WITH_SPECIFIC_RATIONALE"},` +
+      `"strategic_value":{"score":REPLACE_WITH_SCORE,"rationale":"REPLACE_WITH_SPECIFIC_RATIONALE"},` +
+      `"scope_clarity":{"score":REPLACE_WITH_SCORE,"rationale":"REPLACE_WITH_SPECIFIC_RATIONALE"}},` +
+      `"risks":["REPLACE_WITH_SPECIFIC_RISK_1","REPLACE_WITH_SPECIFIC_RISK_2","REPLACE_WITH_SPECIFIC_RISK_3"],` +
+      `"win_strategy":["REPLACE_WITH_SPECIFIC_STRATEGY_1","REPLACE_WITH_SPECIFIC_STRATEGY_2","REPLACE_WITH_SPECIFIC_STRATEGY_3"],` +
+      `"summary":"REPLACE_WITH_SPECIFIC_SUMMARY"}`
     });
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 2000,
-        messages: [{ role: 'user', content }] })
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2500,
+        temperature: 0,   // deterministic — same docs = same scores every time
+        messages: [{ role: 'user', content }]
+      })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text().catch(()=>'')}`);
     const d = await resp.json();
@@ -5153,6 +5165,16 @@ async function runBidNoBid() {
       console.warn('All scores are 5 — likely a parse failure. Raw:', raw.substring(0, 300));
     }
 
+    // Clean up any unreplaced template placeholders in rationales
+    Object.values(factors).forEach(f => {
+      if (f && f.rationale && (f.rationale.includes('REPLACE_WITH') || f.rationale === 'your assessment here')) {
+        f.rationale = '';
+      }
+    });
+    // Clean up placeholder risks/strategies
+    if (result.risks) result.risks = result.risks.filter(r => r && !r.includes('REPLACE_WITH') && !r.includes('specific risk'));
+    if (result.win_strategy) result.win_strategy = result.win_strategy.filter(w => w && !w.includes('REPLACE_WITH') && !w.includes('specific strategy'));
+
     // Store tier 1 scores
     bna_tier1_scores = {};
     BNA_TIER1.forEach(f => {
@@ -5168,14 +5190,17 @@ async function runBidNoBid() {
         const fc = s >= 7 ? 'var(--success)' : s >= 4 ? '#b45309' : 'var(--error)';
         const rationale = (factors[f.key] && factors[f.key].rationale) || '';
         return `<div style="margin-bottom:10px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:white">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${rationale ? '8px' : '4px'}">
             <div style="font-size:13px;font-weight:700">${escHtml(f.label)}</div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:11px;color:var(--muted)">Weight: ${bna_weights[f.key] || Math.round(f.weight*100)}%</span>
               <span style="font-size:20px;font-weight:900;color:${fc}">${s}</span>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:5px;line-height:1.5">${escHtml(rationale)}</div>
+          ${rationale
+            ? `<div style="font-size:12px;color:#374151;margin-bottom:6px;line-height:1.6;background:#f9fafb;padding:7px 10px;border-radius:5px;border-left:3px solid ${fc}">${escHtml(rationale)}</div>`
+            : `<div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-style:italic">Scored from documents — see analysis summary above for context.</div>`
+          }
           <div style="height:5px;background:#e2e8f0;border-radius:3px">
             <div style="height:5px;width:${s*10}%;background:${fc};border-radius:3px;transition:width 0.4s"></div>
           </div>
@@ -5303,9 +5328,12 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `2. For customer_agency: list BOTH the specific office (verbatim from document) AND its parent department/service branch with standard abbreviation. Format: "SPECIFIC OFFICE NAME — PARENT DEPARTMENT (ABBREV)". Examples: "Naval Surface Warfare Center Dahlgren Division (NSWCDD) — Department of the Navy (DON)", "Defense Logistics Agency J7 (DLA J7) — Department of Defense (DoD)", "Walter Reed National Military Medical Center — Department of the Army (DA)", "Defense Health Agency (DHA) — Department of Defense (DoD)". Common abbreviations: Army=DA, Navy=DON, Air Force=DAF, Marines=USMC, Space Force=USSF, Defense agencies=DoD, VA=VA, DHS=DHS, DOS=DoS, DOJ=DOJ.\n` +
     `3. For requirement_name: copy the EXACT title from the solicitation cover page — do not reword or expand it.\n` +
     `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated.\n` +
-    `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n\n` +
+    `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n` +
+    `6. For labor_categories: list EVERY labor category or position title mentioned anywhere in the solicitation (PWS, staffing plan, Section B, wage determinations, attachments). Sort them alphabetically by lcat name.\n` +
+    `7. For is_sca: set to true ONLY if the solicitation explicitly states this position falls under the Service Contract Act or references a Wage Determination for it. Set to false if no SCA language applies.\n` +
+    `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates — only copy exact figures from the document.\n\n` +
     `Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n\n` +
-    `{"customer_agency":"EXACT office — Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"sca_positions":[],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"customer_agency":"EXACT office — Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -5371,7 +5399,7 @@ function renderOpportunityIntel(intel, container) {
     { key:'incumbent',                    label:'Incumbent' },
     { key:'contract_type',               label:'Contract Type' },
     { key:'certifications_required',      label:'Certifications Required' },
-    { key:'sca_positions',                label:'SCA Positions & Rates' },
+    { key:'labor_categories',             label:'Labor Categories (LCATs)' },
     { key:'pursuit_recommendation',       label:'Pursuit Recommendation' },
   ];
 
@@ -5384,19 +5412,88 @@ function renderOpportunityIntel(intel, container) {
     if (Array.isArray(raw)) {
       if (raw.length === 0) {
         displayHtml = '<span style="color:var(--muted);font-style:italic">Not stated in documents</span>';
-      } else if (f.key === 'certifications_required' || f.key === 'sca_positions') {
-        // Render as a bulleted list — items may be strings or objects
-        const items = raw.map(item => {
-          if (typeof item === 'object' && item !== null) {
-            // SCA position object: { position, wage_rate, fringe } or similar
-            const parts = Object.entries(item)
-              .filter(([,v]) => v && v !== 'null' && v !== 'N/A')
-              .map(([k, v]) => `${k.replace(/_/g,' ')}: ${v}`);
-            return parts.join(' · ');
-          }
-          return String(item);
-        }).filter(s => s.trim());
-        displayHtml = `<ul style="margin:0;padding-left:18px;line-height:1.7">${items.map(i => `<li>${escHtml(i)}</li>`).join('')}</ul>`;
+      } else if (f.key === 'labor_categories') {
+        // Normalize keys (handle both old sca_positions and new labor_categories shapes)
+        const rows = raw.map(item => {
+          if (typeof item !== 'object' || item === null) return null;
+          return {
+            lcat:           item.lcat || item.labor_category || item['labor category'] || '',
+            key_personnel:  item.key_personnel,
+            is_sca:         item.is_sca,
+            min_hourly_rate:item.min_hourly_rate || item.wage_rate || '',
+            clearance:      item.clearance || '',
+            experience_yrs: item.experience_yrs || item.experience_years || '',
+            base_year_fte:  item.base_year_fte || item.base_fte || '',
+            notes:          item.notes || item.duties || '',
+          };
+        }).filter(r => r && r.lcat && r.lcat !== 'null' && r.lcat !== 'Exact Labor Category Title');
+
+        // Sort alphabetically by LCAT name
+        rows.sort((a, b) => a.lcat.localeCompare(b.lcat));
+
+        if (rows.length === 0) {
+          displayHtml = '<span style="color:var(--muted);font-style:italic">Not stated in documents</span>';
+        } else {
+          const th = (t, title='') => `<th style="padding:6px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;border-bottom:2px solid var(--border);background:#f8fafc"${title?` title="${title}"`:''}>${t}</th>`;
+          const td = (html, extra='') => `<td style="padding:6px 10px;font-size:12px;vertical-align:top;border-bottom:1px solid #f1f5f9;${extra}">${html}</td>`;
+
+          const scaBadge = (isSca) => {
+            if (isSca === true  || isSca === 'true')  return `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:4px;padding:1px 5px;color:#92400e;white-space:nowrap">SCA</span>`;
+            if (isSca === false || isSca === 'false') return `<span style="font-size:10px;color:var(--muted)">No</span>`;
+            return `<span style="font-size:11px;color:var(--muted)">—</span>`;
+          };
+
+          const rateBadge = (rate, isSca) => {
+            if (!rate || rate === '' || rate === 'null') {
+              // Only show "not in docs" note if this is an SCA position where a rate would be expected
+              return (isSca === true || isSca === 'true')
+                ? `<span style="font-size:11px;color:var(--muted);font-style:italic">Not stated</span>`
+                : `<span style="font-size:11px;color:var(--muted)">N/A</span>`;
+            }
+            return `<span style="font-size:12px;font-weight:700;color:var(--success)">${escHtml(rate)}</span>`;
+          };
+
+          const keyBadge = (kp) => (kp === true || kp === 'true')
+            ? `<span style="font-size:11px;font-weight:700;color:var(--blue)">★ Yes</span>`
+            : `<span style="font-size:11px;color:var(--muted)">—</span>`;
+
+          displayHtml = `<div style="overflow-x:auto;margin:-4px 0">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr>
+                ${th('Labor Category (LCAT)')}
+                ${th('Key Pers.', 'Designated key personnel')}
+                ${th('SCA?', 'Subject to Service Contract Act')}
+                ${th('Min. Hourly Rate', 'Verbatim from solicitation or Wage Determination only')}
+                ${th('Clearance')}
+                ${th('Exp.')}
+                ${th('Base Yr FTE')}
+                ${th('Notes')}
+              </tr></thead>
+              <tbody>
+                ${rows.map((r, i) => `<tr style="background:${i%2===0?'white':'#fafafa'}">
+                  ${td(escHtml(r.lcat), 'font-weight:600')}
+                  ${td(keyBadge(r.key_personnel))}
+                  ${td(scaBadge(r.is_sca))}
+                  ${td(rateBadge(r.min_hourly_rate, r.is_sca))}
+                  ${td(escHtml(r.clearance || '—'))}
+                  ${td(r.experience_yrs ? escHtml(r.experience_yrs) + ' yrs' : '—')}
+                  ${td(r.base_year_fte ? escHtml(r.base_year_fte) + ' FTE' : '—')}
+                  ${td(escHtml(r.notes || '—'))}
+                </tr>`).join('')}
+              </tbody>
+            </table>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">★ Key Personnel · SCA rates shown only when explicitly stated in solicitation documents</div>
+          </div>`;
+        }
+      } else if (f.key === 'certifications_required') {
+        // Render certifications as individual chips/badges, not a wall of text
+        const certs = raw.map(item => typeof item === 'object' ? (item.name || item.certification || JSON.stringify(item)) : String(item))
+          .filter(s => s && s !== 'null' && s.trim());
+        displayHtml = certs.length
+          ? `<div style="display:flex;flex-wrap:wrap;gap:6px;line-height:1">${certs.map(c =>
+              `<span style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:4px 10px;font-size:12px;color:#1e40af;line-height:1.4">${escHtml(c)}</span>`
+            ).join('')}</div>`
+          : '<span style="color:var(--muted);font-style:italic">None specified</span>';
       } else {
         // Generic array: join with bullet separator
         const items = raw.map(item =>
@@ -5418,7 +5515,16 @@ function renderOpportunityIntel(intel, container) {
       displayHtml = valContent + badge;
     }
 
-    const rowBg = f.key === 'pursuit_recommendation' ? 'background:#eff6ff;border-left:3px solid var(--blue);' : 'border-bottom:1px solid #f1f5f9;';
+    const rowBg = f.key === 'pursuit_recommendation' ? 'background:#eff6ff;border-left:3px solid var(--blue);padding:10px 12px;' : 'border-bottom:1px solid #f1f5f9;';
+    const isWide = f.key === 'labor_categories' || f.key === 'certifications_required';
+
+    if (isWide) {
+      // Full-width layout — label on top, content below
+      return `<div style="padding:10px 4px;${f.key !== 'labor_categories' ? 'border-bottom:1px solid #f1f5f9;' : ''}">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">${escHtml(f.label)}:</div>
+        <div style="font-size:13px;line-height:1.5">${displayHtml}</div>
+      </div>`;
+    }
     return `<div style="display:flex;gap:12px;padding:8px 4px;${rowBg}align-items:baseline">
       <div style="min-width:220px;max-width:220px;font-size:12px;font-weight:700;color:var(--text);flex-shrink:0">${escHtml(f.label)}:</div>
       <div style="font-size:13px;flex:1;line-height:1.5">${displayHtml}</div>
