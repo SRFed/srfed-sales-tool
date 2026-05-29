@@ -587,25 +587,35 @@
   </div>
 </header>
 
+<!-- ══ GLOBAL STICKY STATUS / PROGRESS BAR (under header, all tabs) ══════ -->
+<div id="globalStatusBar" style="display:none;position:sticky;top:80px;z-index:150;background:white;border-bottom:2px solid var(--light-blue);box-shadow:0 2px 6px rgba(0,95,213,0.08)">
+  <div style="max-width:1100px;margin:0 auto;padding:10px 24px">
+    <div id="gsbInner" class="status-bar info" style="margin-bottom:0;border-radius:6px">
+      <div class="status-icon" id="gsbIcon">ℹ️</div>
+      <div class="status-text" style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="status-title" id="gsbTitle"></div>
+          <button onclick="document.getElementById('globalStatusBar').style.display='none'" 
+            style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 0 0 12px;line-height:1" title="Dismiss">✕</button>
+        </div>
+        <div id="gsbMsg" style="font-size:13px"></div>
+        <div id="gsbProgressWrap" style="display:none;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span id="gsbPct" style="font-size:12px;font-weight:700;color:var(--blue)">0%</span>
+            <span id="gsbEta" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="gsbFill" style="width:0%"></div></div>
+          <div class="progress-steps" id="gsbSteps" style="margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container">
 
 <!-- ══════════════════════════ PROPOSAL TAB ══════════════════════════════ -->
 <div class="tab-pane active" id="pane-proposal">
-  <div id="statusBar" class="status-bar info" style="display:none">
-    <div class="status-icon" id="statusIcon">ℹ️</div>
-    <div class="status-text">
-      <div class="status-title" id="statusTitle"></div>
-      <div id="statusMsg"></div>
-      <div class="progress-wrap" id="progressWrap" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span id="progressPct" style="font-size:12px;font-weight:700;color:var(--blue)">0%</span>
-          <span id="progressEta" style="font-size:12px;color:var(--muted)"></span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-        <div class="progress-steps" id="progressSteps"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- ── ROW 1: Step 1 | Step 2 ───────────────────────────────────────────── -->
   <div class="two-col" style="margin-bottom:24px">
@@ -1067,23 +1077,6 @@
 <!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
 <div class="tab-pane" id="pane-bidnobid">
 
-  <!-- BNA status/progress bar — shown during analysis -->
-  <div id="bnaStatusBar" class="status-bar info" style="display:none">
-    <div class="status-icon" id="bnaStatusIcon">ℹ️</div>
-    <div class="status-text">
-      <div class="status-title" id="bnaStatusTitle"></div>
-      <div id="bnaStatusMsg"></div>
-      <div class="progress-wrap" id="bnaProgressWrap" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span id="bnaProgressPct" style="font-size:12px;font-weight:700;color:var(--blue)">0%</span>
-          <span id="bnaProgressEta" style="font-size:12px;color:var(--muted)"></span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="bnaProgressFill" style="width:0%"></div></div>
-        <div class="progress-steps" id="bnaProgressSteps"></div>
-      </div>
-    </div>
-  </div>
-
   <div class="card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📄</span> Bid/No-Bid Analysis — Document Input</div>
     <div class="card-body">
@@ -1188,7 +1181,7 @@
         <div id="bnaVerdictBanner" style="border-radius:8px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:20px">
           <div style="text-align:center;min-width:90px">
             <div id="bnaScore" style="font-size:56px;font-weight:900;line-height:1">—</div>
-            <div style="font-size:11px;color:inherit;opacity:0.75;margin-top:2px">/ 10.0 weighted</div>
+            <div style="font-size:11px;color:inherit;opacity:0.75;margin-top:2px">/ 10 weighted</div>
           </div>
           <div style="flex:1">
             <div id="bnaVerdict" style="font-size:22px;font-weight:800;margin-bottom:4px">—</div>
@@ -1227,7 +1220,7 @@
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">=</div>
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="totalWeightedScore" style="font-size:28px;font-weight:900;color:var(--text)">—</div>
-              <div style="font-size:11px;color:var(--muted)">Total (threshold: 7.5)</div>
+              <div style="font-size:11px;color:var(--muted)">Total (out of 10)</div>
             </div>
           </div>
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
@@ -2131,10 +2124,10 @@ function setProgress(pct, steps) {
 function _nudgeProgress() {
   if (!_genStartTime || _currentPct >= 99) return;
 
-  const fill  = document.getElementById('progressFill');
-  const pctEl = document.getElementById('progressPct');
-  const etaEl = document.getElementById('progressEta');
-  if (!fill)  return;
+  const fill  = document.getElementById('gsbFill');
+  const pctEl = document.getElementById('gsbPct');
+  const etaEl = document.getElementById('gsbEta');
+  if (!fill) return;
 
   // Nudge slowly toward (target + some headroom) — never past 99
   const softCeiling = Math.min(_targetPct + 8, 99);
@@ -2675,13 +2668,21 @@ function renderFileListById(arr, listId) {
   const el = document.getElementById(listId);
   if (!el) return;
   if (arr.length === 0) { el.innerHTML = ''; updateTokenMeter(); return; }
+  // Determine the global variable name for this array so the remove button works correctly
+  const arrName = arr === rfpFiles         ? 'rfpFiles'
+                : arr === companyFiles     ? 'companyFiles'
+                : arr === complianceFiles  ? 'complianceFiles'
+                : arr === bnaFiles         ? 'bnaFiles'
+                : arr === bnaCompanyFiles  ? 'bnaCompanyFiles'
+                : null;
+  if (!arrName) { console.warn('renderFileListById: unknown array'); return; }
+  const showTokens = arr !== complianceFiles;
   el.innerHTML = arr.map(f => {
     const icon   = f.name.endsWith('.pdf') ? '📄' : f.name.match(/\.docx?$/) ? '📝' : '📊';
     const size   = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
     const tokEst = estimateTokens(f);
     const tokLabel = tokEst >= 1000 ? `~${Math.round(tokEst/1000)}k tokens` : `~${tokEst} tokens`;
-    const arrName  = arr === rfpFiles ? 'rfpFiles' : arr === complianceFiles ? 'complianceFiles' : 'companyFiles';
-    const showTokens = arr !== complianceFiles; // token estimates not meaningful for Step 8 docs
+    const safeName = f.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `<div class="file-item">
       <span class="file-icon">${icon}</span>
       <span class="file-name">${escHtml(f.name)}</span>
@@ -2689,7 +2690,7 @@ function renderFileListById(arr, listId) {
         <span class="file-size">${size}</span>
         ${showTokens ? `<span class="file-tokens">${tokLabel}</span>` : ''}
       </span>
-      <span class="file-remove" onclick="removeFileFromArray('${f.name.replace(/'/g,"\\'")}', ${arrName}, '${listId}')">✕</span>
+      <span class="file-remove" onclick="removeFileFromArray('${safeName}', ${arrName}, '${listId}')">✕</span>
     </div>`;
   }).join('');
   updateTokenMeter();
@@ -4674,7 +4675,7 @@ function updateBnaLiveScore() {
   if (t1El)      t1El.textContent = t1.toFixed(1);
   if (t2El)      t2El.textContent = t2.toFixed(1);
   if (totalEl)   { totalEl.textContent = total.toFixed(1); totalEl.style.color = color; }
-  if (barEl)     { barEl.style.width = (total/10*100)+'%'; barEl.style.background = color; }
+  if (barEl)     { barEl.style.width = Math.min((total/10)*100, 100)+'%'; barEl.style.background = color; }
   if (verdictEl) {
     verdictEl.textContent = isBid ? '✅ BID' : total >= 6.5 ? '⚠️ CONDITIONAL — Needs Review' : '❌ NO BID';
     verdictEl.style.color = color;
@@ -4816,15 +4817,24 @@ function getEffectiveWeights() {
 // Override calcBnaScore to use editable weights
 function calcBnaScore() {
   const w = getEffectiveWeights();
-  let t1 = 0, t2 = 0;
-  BNA_TIER1.forEach(f => { t1 += (bna_tier1_scores[f.key] || 0) * (w[f.key] || f.weight); });
-  BNA_TIER2.forEach(f => { t2 += (bna_tier2_scores[f.key] != null ? bna_tier2_scores[f.key] : 5) * (w[f.key] || f.weight); });
-  const tier1TotalWeight = BNA_TIER1.reduce((s,f) => s + (w[f.key] || f.weight), 0);
-  const tier2TotalWeight = BNA_TIER2.reduce((s,f) => s + (w[f.key] || f.weight), 0);
-  // Scale sub-scores to 0-10 relative to each tier's share
-  const t1Display = tier1TotalWeight > 0 ? (t1 / tier1TotalWeight) * 10 : 0;
-  const t2Display = tier2TotalWeight > 0 ? (t2 / tier2TotalWeight) * 10 : 0;
-  return { t1: parseFloat(t1Display.toFixed(1)), t2: parseFloat(t2Display.toFixed(1)), total: parseFloat(((t1 + t2) * 10).toFixed(1)) };
+  // t1 and t2 are raw weighted sums (score × weight_fraction)
+  let t1raw = 0, t2raw = 0;
+  BNA_TIER1.forEach(f => { t1raw += (bna_tier1_scores[f.key] || 0) * (w[f.key] || f.weight); });
+  BNA_TIER2.forEach(f => { t2raw += (bna_tier2_scores[f.key] != null ? bna_tier2_scores[f.key] : 5) * (w[f.key] || f.weight); });
+  // total is the combined weighted score on a 0–10 scale
+  const total = t1raw + t2raw;
+  // Sub-scores scaled to 0–10 relative to each tier's weight share (for display)
+  const tier1Weight = BNA_TIER1.reduce((s,f) => s + (w[f.key] || f.weight), 0);
+  const tier2Weight = BNA_TIER2.reduce((s,f) => s + (w[f.key] || f.weight), 0);
+  const t1Display = tier1Weight > 0 ? (t1raw / tier1Weight) * 10 : 0;
+  const t2Display = tier2Weight > 0 ? (t2raw / tier2Weight) * 10 : 0;
+  return {
+    t1:    parseFloat(t1Display.toFixed(1)),
+    t2:    parseFloat(t2Display.toFixed(1)),
+    t1raw: parseFloat(t1raw.toFixed(2)),
+    t2raw: parseFloat(t2raw.toFixed(2)),
+    total: parseFloat(total.toFixed(1))
+  };
 }
 
 // updateBnaBtn — checks both files and weight validity
@@ -4837,30 +4847,23 @@ function updateBnaBtn() {
   btn.style.opacity = (hasFiles && weightsOk) ? '1' : '0.45';
 }
 
-// ── BNA STATUS BAR ────────────────────────────────────────────────────────────
-function showBnaStatus(type, title, msg, showProgress = false) {
-  const icons = { info: 'ℹ️', success: '✅', warn: '⚠️', error: '❌' };
-  const bar = document.getElementById('bnaStatusBar');
-  if (!bar) return;
-  bar.className = `status-bar ${type}`;
-  bar.style.display = 'flex';
-  document.getElementById('bnaStatusIcon').textContent = icons[type] || 'ℹ️';
-  document.getElementById('bnaStatusTitle').textContent = title;
-  document.getElementById('bnaStatusMsg').textContent = msg;
-  const pw = document.getElementById('bnaProgressWrap');
+// ═══════════════════════════════════════════════════════════════════════════
+// GLOBAL STICKY STATUS / PROGRESS BAR
+// All tabs share one bar pinned under the header.
+// ═══════════════════════════════════════════════════════════════════════════
+function _gsb(type, title, msg, showProgress) {
+  const icons = { info:'ℹ️', success:'✅', warn:'⚠️', error:'❌' };
+  const bar   = document.getElementById('globalStatusBar');
+  const inner = document.getElementById('gsbInner');
+  if (!bar || !inner) return;
+  inner.className = `status-bar ${type}`;
+  inner.style.marginBottom = '0';
+  document.getElementById('gsbIcon').textContent  = icons[type] || 'ℹ️';
+  document.getElementById('gsbTitle').textContent = title;
+  document.getElementById('gsbMsg').textContent   = msg;
+  const pw = document.getElementById('gsbProgressWrap');
   if (pw) pw.style.display = showProgress ? 'block' : 'none';
-  const fill = document.getElementById('bnaProgressFill');
-  if (fill) fill.classList.toggle('pulsing', type === 'info' && showProgress);
-  bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function setBnaProgress(pct, etaText) {
-  const fill  = document.getElementById('bnaProgressFill');
-  const pctEl = document.getElementById('bnaProgressPct');
-  const etaEl = document.getElementById('bnaProgressEta');
-  if (fill)  fill.style.width = Math.min(pct, 100) + '%';
-  if (pctEl) pctEl.textContent = Math.round(Math.min(pct, 100)) + '%';
-  if (etaEl && etaText !== undefined) etaEl.textContent = etaText;
+  bar.style.display = 'block';
 }
 
 let _bnaEtaInterval = null;
@@ -4873,11 +4876,11 @@ function startBnaEta(totalSecs) {
   _bnaStart = Date.now();
   _bnaTotalSecs = totalSecs;
   _bnaPct = 5;
+  _ensureBnaProgressVisible();
   setBnaProgress(5, `~${totalSecs}s remaining`);
   _bnaEtaInterval = setInterval(() => {
     const elapsed = (Date.now() - _bnaStart) / 1000;
     const remaining = Math.max(0, _bnaTotalSecs - elapsed);
-    // Nudge progress smoothly
     const softCeil = Math.min(90, 5 + (elapsed / _bnaTotalSecs) * 85);
     _bnaPct = Math.min(softCeil, _bnaPct + 0.5);
     const etaTxt = remaining > 0
@@ -5154,6 +5157,9 @@ async function runOpportunityIntel() {
 
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Extracting…'; }
 
+  showBnaStatus('info', 'Extracting opportunity intelligence…', 'Reading solicitation documents and extracting all 31 fields. Takes ~30 seconds.', true);
+  startBnaEta(35);
+
   // Only send RFP documents (bnaFiles), not company docs — much smaller request
   const rfpContent = [];
   for (const file of bnaFiles.slice(0, 6)) {
@@ -5201,8 +5207,12 @@ async function extractOpportunityIntel(docContent, apiKey) {
     const intel = JSON.parse(jsonStr);
     window._lastBnaIntel = intel;
     renderOpportunityIntel(intel, body);
+    stopBnaEta();
+    showBnaStatus('success', 'Intelligence extracted', '31 fields extracted from the solicitation. Review below.');
   } catch(e) {
     body.innerHTML = `<div style="padding:14px;font-size:13px;color:var(--error)">Could not extract: ${escHtml(e.message)}</div>`;
+    stopBnaEta();
+    showBnaStatus('error', 'Extraction failed', e.message);
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '📊 Extract Opportunity Details'; }
   }
@@ -5246,18 +5256,50 @@ function renderOpportunityIntel(intel, container) {
   container.innerHTML = FIELDS.map(f => {
     let raw = intel[f.key];
     if (raw === undefined || raw === null) raw = 'Not stated in documents';
-    let displayVal = Array.isArray(raw) ? (raw.length ? raw.join(' · ') : 'Not stated') : String(raw);
-    const isInferred = displayVal.startsWith('[Inferred]');
-    displayVal = displayVal.replace(/^\[Inferred\]\s*/, '');
-    const isMissing = displayVal === 'Not stated in documents' || displayVal === 'Not stated';
-    const isUrl = /^https?:\/\//i.test(displayVal);
-    const valStyle = isInferred ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
-    const badge = isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : '';
-    const val = isUrl ? `<a href="${escHtml(displayVal)}" target="_blank" style="color:var(--blue)">${escHtml(displayVal)}</a>` : `<span style="${valStyle}">${escHtml(displayVal)}</span>`;
+
+    // Format the value based on field type and data type
+    let displayHtml;
+    if (Array.isArray(raw)) {
+      if (raw.length === 0) {
+        displayHtml = '<span style="color:var(--muted);font-style:italic">Not stated in documents</span>';
+      } else if (f.key === 'certifications_required' || f.key === 'sca_positions') {
+        // Render as a bulleted list — items may be strings or objects
+        const items = raw.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            // SCA position object: { position, wage_rate, fringe } or similar
+            const parts = Object.entries(item)
+              .filter(([,v]) => v && v !== 'null' && v !== 'N/A')
+              .map(([k, v]) => `${k.replace(/_/g,' ')}: ${v}`);
+            return parts.join(' · ');
+          }
+          return String(item);
+        }).filter(s => s.trim());
+        displayHtml = `<ul style="margin:0;padding-left:18px;line-height:1.7">${items.map(i => `<li>${escHtml(i)}</li>`).join('')}</ul>`;
+      } else {
+        // Generic array: join with bullet separator
+        const items = raw.map(item =>
+          typeof item === 'object' ? JSON.stringify(item) : String(item)
+        ).filter(s => s.trim() && s !== 'null');
+        displayHtml = items.length ? `<ul style="margin:0;padding-left:18px;line-height:1.7">${items.map(i => `<li>${escHtml(i)}</li>`).join('')}</ul>` : '<span style="color:var(--muted);font-style:italic">Not stated</span>';
+      }
+    } else {
+      let displayVal = String(raw);
+      const isInferred = displayVal.startsWith('[Inferred]');
+      displayVal = displayVal.replace(/^\[Inferred\]\s*/, '');
+      const isMissing = displayVal === 'Not stated in documents' || displayVal === 'Not stated' || displayVal === 'null';
+      const isUrl = /^https?:\/\//i.test(displayVal);
+      const valStyle = isInferred ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
+      const badge = isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : '';
+      const valContent = isUrl
+        ? `<a href="${escHtml(displayVal)}" target="_blank" style="color:var(--blue)">${escHtml(displayVal)}</a>`
+        : `<span style="${valStyle}">${escHtml(displayVal)}</span>`;
+      displayHtml = valContent + badge;
+    }
+
     const rowBg = f.key === 'pursuit_recommendation' ? 'background:#eff6ff;border-left:3px solid var(--blue);' : 'border-bottom:1px solid #f1f5f9;';
     return `<div style="display:flex;gap:12px;padding:8px 4px;${rowBg}align-items:baseline">
       <div style="min-width:220px;max-width:220px;font-size:12px;font-weight:700;color:var(--text);flex-shrink:0">${escHtml(f.label)}:</div>
-      <div style="font-size:13px;flex:1;line-height:1.5">${val}${badge}</div>
+      <div style="font-size:13px;flex:1;line-height:1.5">${displayHtml}</div>
     </div>`;
   }).join('');
 }
