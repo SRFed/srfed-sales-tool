@@ -1194,15 +1194,15 @@
       </div>
       <div class="card-body">
 
-        <!-- Verdict banner -->
-        <div id="bnaVerdictBanner" style="border-radius:8px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:20px">
-          <div style="text-align:center;min-width:90px">
+        <!-- Verdict banner — shown immediately after analysis runs -->
+        <div id="bnaVerdictBanner" style="display:none;border-radius:8px;padding:16px 20px;margin-bottom:16px;align-items:flex-start;gap:20px">
+          <div style="text-align:center;min-width:90px;flex-shrink:0">
             <div id="bnaScore" style="font-size:56px;font-weight:900;line-height:1">—</div>
             <div style="font-size:11px;color:inherit;opacity:0.75;margin-top:2px">/ 10 weighted</div>
           </div>
           <div style="flex:1">
-            <div id="bnaVerdict" style="font-size:22px;font-weight:800;margin-bottom:4px">—</div>
-            <div id="bnaSummary" style="font-size:13px;opacity:0.9;line-height:1.5">—</div>
+            <div id="bnaVerdict" style="font-size:20px;font-weight:800;margin-bottom:6px">—</div>
+            <div id="bnaSummary" style="font-size:13px;opacity:0.9;line-height:1.6">—</div>
           </div>
         </div>
 
@@ -1227,22 +1227,25 @@
           <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="tier1SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div id="tier1PctLabel" style="font-size:11px;color:var(--muted)">Auto-scored (50%)</div>
+              <div id="tier1PctLabel" style="font-size:11px;color:var(--muted)">Auto-scored (50% weight)</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
             </div>
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">+</div>
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="tier2SubScore" style="font-size:24px;font-weight:800;color:#7c3aed">—</div>
-              <div id="tier2PctLabel" style="font-size:11px;color:var(--muted)">Your input (50%)</div>
+              <div id="tier2PctLabel" style="font-size:11px;color:var(--muted)">Your input (50% weight)</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
             </div>
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">=</div>
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="totalWeightedScore" style="font-size:28px;font-weight:900;color:var(--text)">—</div>
-              <div style="font-size:11px;color:var(--muted)">Total (out of 10)</div>
+              <div style="font-size:11px;color:var(--muted)">out of 10</div>
             </div>
           </div>
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
             <div id="bnaScoreBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.4s,background 0.4s"></div>
           </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Each tier contributes weighted points that sum to the final score out of 10</div>
         </div><!-- end bnaScoreBreakdown -->
 
         <!-- Risks and strategy -->
@@ -2186,7 +2189,6 @@ function _startEtaTimer(estimatedSeconds) {
 function _clearEtaTimer() {
   if (_etaInterval) { clearInterval(_etaInterval); _etaInterval = null; }
 }
-
 // Call this to give the timer a calibrated estimate so ETA counts down accurately
 function _setEtaEstimate(seconds) {
   _totalEstSecs = seconds;
@@ -4710,14 +4712,14 @@ function updateBnaLiveScore() {
   const tier1Pct = Math.round(BNA_TIER1.reduce((s,f) => s + (w[f.key]||f.weight), 0) * 100);
   const tier2Pct = Math.round(BNA_TIER2.reduce((s,f) => s + (w[f.key]||f.weight), 0) * 100);
   if (t1El) {
-    t1El.textContent = t1.toFixed(1);
+    t1El.textContent = t1raw.toFixed(2);
     const lbl = document.getElementById('tier1PctLabel');
-    if (lbl) lbl.textContent = `Auto-scored (${tier1Pct}%)`;
+    if (lbl) lbl.textContent = `Auto-scored (${tier1Pct}% weight)`;
   }
   if (t2El) {
-    t2El.textContent = t2.toFixed(1);
+    t2El.textContent = t2raw.toFixed(2);
     const lbl = document.getElementById('tier2PctLabel');
-    if (lbl) lbl.textContent = `Your input (${tier2Pct}%)`;
+    if (lbl) lbl.textContent = `Your input (${tier2Pct}% weight)`;
   }
 }
 
@@ -5003,6 +5005,14 @@ function startBnaEta(totalSecs) {
 
 function stopBnaEta() {
   if (_bnaEtaInterval) { clearInterval(_bnaEtaInterval); _bnaEtaInterval = null; }
+  // Animate smoothly to 100%
+  let cur = _bnaPct;
+  const step = () => {
+    cur = Math.min(cur + 5, 100);
+    setBnaProgress(cur, cur >= 100 ? 'Complete' : '');
+    if (cur < 100) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 async function runBidNoBid() {
@@ -5173,7 +5183,12 @@ async function runBidNoBid() {
       }).join('');
     }
 
-    renderTier2Inputs();
+    // Show verdict banner immediately with Tier 1 preliminary score
+    // (Tier 2 defaults to 5 for all factors — user adjusts and confirms)
+    renderTier2Inputs();  // set default tier2 scores first
+    updateBnaLiveScore(); // compute preliminary total
+    const verdictBanner = document.getElementById('bnaVerdictBanner');
+    if (verdictBanner) verdictBanner.style.display = 'flex';
 
     const confEl = document.getElementById('bnaDataConfidence');
     if (confEl) {
@@ -5200,11 +5215,7 @@ async function runBidNoBid() {
       ? wins.map(w => `<div style="margin-bottom:5px">→ ${escHtml(w)}</div>`).join('')
       : '<div style="color:var(--muted);font-size:12px">No win strategy generated.</div>';
 
-    // Hide verdict until user confirms Tier 2 entries
-    const verdictBanner = document.getElementById('bnaVerdictBanner');
-    if (verdictBanner) verdictBanner.style.display = 'none';
-
-    // Add Confirm button below Tier 2 (remove existing one first)
+    // Confirm button below Tier 2 for final score (remove old one first)
     const oldConfirm = document.getElementById('bnaConfirmRow');
     if (oldConfirm) oldConfirm.remove();
     const tier2Section = document.getElementById('bnaFactorsTier2');
@@ -5212,7 +5223,7 @@ async function runBidNoBid() {
       const confirmDiv = document.createElement('div');
       confirmDiv.id = 'bnaConfirmRow';
       confirmDiv.style.cssText = 'padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-top:8px;text-align:center';
-      confirmDiv.innerHTML = '<p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px">👆 Adjust the sliders above for your Tier 2 assessment, then confirm to see your final score.</p>' +
+      confirmDiv.innerHTML = '<p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px">👆 Adjust the sliders above for your Tier 2 assessment, then confirm to lock in your final score.</p>' +
         '<button onclick="confirmBnaScore()" style="padding:10px 28px;font-size:14px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer">✅ Confirm Entries & Calculate Score</button>';
       tier2Section.parentNode.insertBefore(confirmDiv, tier2Section.nextSibling);
     }
