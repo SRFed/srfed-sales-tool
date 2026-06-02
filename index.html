@@ -1204,25 +1204,57 @@
     </div>
     <div class="card-body">
 
-      <!-- Step-by-step setup instructions -->
-      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">📋 How to get your HubSpot token (one-time setup, ~3 minutes)</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button id="hsMethodApi" onclick="setHsMethod('api')"
+          style="flex:1;padding:9px;border:2px solid var(--blue);border-radius:8px;background:#eff6ff;cursor:pointer;font-size:13px;font-weight:700;color:var(--blue)">
+          🔗 Live API ✓ Recommended
+        </button>
+        <button id="hsMethodCsv" onclick="setHsMethod('csv')"
+          style="flex:1;padding:9px;border:2px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)">
+          📁 Upload CSV Export
+        </button>
+      </div>
+
+      <!-- CSV method (backup option) -->
+      <div id="hsCsvMethod" style="display:none;margin-bottom:4px">
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">📋 How to export your HubSpot companies</div>
+          <ol style="font-size:13px;color:var(--text);line-height:1.9;margin:0;padding-left:20px">
+            <li>In HubSpot, go to <strong>CRM → Companies</strong></li>
+            <li>Click <strong>Actions → Export</strong> (top right of the companies list)</li>
+            <li>Choose <strong>CSV</strong> format and click <strong>Export</strong></li>
+            <li>HubSpot will email you the file — download it</li>
+            <li>Drop the CSV file below and click <strong>Load Companies</strong></li>
+          </ol>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">The more properties you include in the export, the better the matching quality. Make sure to include: Name, City, State, NAICS, Certifications, Clearance, Revenue, and Description.</div>
+        </div>
+        <div class="drop-zone" id="dropZoneHsCsv" style="margin-bottom:8px">
+          <input type="file" id="fileInputHsCsv" accept=".csv"/>
+          <div class="dz-icon">📊</div>
+          <div class="dz-title">Drop HubSpot Companies CSV Here</div>
+          <div class="dz-sub">Exported from HubSpot CRM → Companies → Actions → Export</div>
+        </div>
+        <div id="hsCsvStatus" style="display:none;margin-bottom:8px;font-size:13px;padding:8px 12px;border-radius:6px"></div>
+      </div>
+
+      <!-- API method (shown by default) -->
+      <div id="hsApiMethod">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">📋 How to get your HubSpot API key (one-time setup, ~2 minutes)</div>
         <ol style="font-size:13px;color:var(--text);line-height:1.9;margin:0;padding-left:20px">
           <li>In HubSpot, click the <strong>Settings</strong> gear (top right)</li>
-          <li>In the left sidebar, go to <strong>Integrations → Legacy Apps</strong></li>
-          <li>Click <strong>Create a private app</strong></li>
-          <li>Give it any name (e.g. "SRFed Proposal Tool") and click <strong>Next</strong></li>
-          <li>Click the <strong>Auth</strong> tab, then scroll down to the <strong>Scopes</strong> section</li>
-          <li>Click <strong>+ Add new scope</strong> and search for:<br/>
+          <li>In the left sidebar, go to <strong>Integrations → Service Keys</strong></li>
+          <li>Click <strong>Create Service Key</strong></li>
+          <li>Name it anything you want (e.g. "SRFed Proposal Tool")</li>
+          <li>Click <strong>Add Scope</strong> and search for:<br/>
             <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.companies.read</code>
             &nbsp;— add this one scope only
           </li>
-          <li>Click <strong>Create app</strong> at the bottom, then copy the token shown (starts with <code>pat-na1-...</code>)</li>
+          <li>Click <strong>Create</strong></li>
+          <li>Copy your new API key (starts with <code>pat-na1-...</code>)</li>
           <li>Paste it below and click <strong>Connect</strong></li>
         </ol>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6">
-          💡 <strong>Private App</strong> is the right choice — it generates a simple token with no redirect URLs or OAuth setup required.<br/>
-          🔒 The token is stored in your browser session only and is never sent to Anthropic or stored anywhere else. Re-enter it if you close the tab.
+          🔒 The key is stored in your browser session only and is never sent to Anthropic or stored anywhere else. Re-enter it if you close the tab.
         </div>
       </div>
 
@@ -1238,13 +1270,15 @@
         </button>
       </div>
       <div id="hsTokenStatus" style="font-size:12px;color:var(--muted)">Scope needed: <code>crm.objects.companies.read</code></div>
+      </div><!-- end hsApiMethod -->
     </div>
   </div>
 
-  <!-- Step 1: Drop RFP docs -->
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header"><span class="icon">📄</span> Step 1: Drop Solicitation Documents</div>
+  <!-- Step 2: Drop RFP docs — locked until HubSpot connected -->
+  <div class="card step-locked" id="hsRfpCard" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">📄</span> Step 2: Drop Solicitation Documents</div>
     <div class="card-body">
+      <div class="lock-msg" id="hsRfpLockMsg"><span class="lock-icon">🔒</span><span class="lock-text">Connect to HubSpot in Step 1 to unlock</span></div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
       <div class="drop-zone" id="dropZoneHsRfp" style="margin-bottom:8px">
         <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
@@ -1367,7 +1401,7 @@
           <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Adjust how much each factor contributes to the final score. All weights must total exactly 100%.</p>
           <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 Tier 1 — Auto-Scored (Claude reads documents)</div>
           <div id="weightsTier1" style="margin-bottom:16px"></div>
-          <div style="font-size:13px;font-weight:700;color:#7c3aed;margin-bottom:8px">✍️ Tier 2 — Your Assessment</div>
+          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">✍️ Tier 2 — Your Assessment</div>
           <div id="weightsTier2" style="margin-bottom:12px"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:2px solid" id="weightTotalRow">
             <span style="font-size:13px;font-weight:700">Total Weight</span>
@@ -1409,7 +1443,7 @@
         <div id="bnaFactorsTier1" style="margin-bottom:24px"></div>
 
         <!-- Tier 2: Human-scored factors -->
-        <div style="font-size:15px;font-weight:800;color:#7c3aed;margin-bottom:4px;letter-spacing:0.2px">
+        <div style="font-size:15px;font-weight:800;color:var(--blue);margin-bottom:4px;letter-spacing:0.2px">
           ✍️ Tier 2 — Your Assessment (adjusts score live)
         </div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:12px">These factors require internal knowledge only you have. Set each 0-10 using the anchors as guides.</p>
@@ -1438,7 +1472,7 @@
             </div>
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">+</div>
             <div style="text-align:center;flex:1;min-width:100px">
-              <div id="tier2SubScore" style="font-size:24px;font-weight:800;color:#7c3aed">—</div>
+              <div id="tier2SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
               <div id="tier2PctLabel" style="font-size:11px;color:var(--muted)">Your input (50% weight)</div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
             </div>
@@ -2070,16 +2104,8 @@ async function saveHsToken() {
   btn.textContent = 'Connecting…';
 
   try {
-    // Verify token by fetching company properties — also discovers internal names
-    const r = await fetch('https://api.hubapi.com/crm/v3/properties/companies', {
-      headers: { 'Authorization': `Bearer ${val}` }
-    });
-    if (!r.ok) {
-      const et = await r.text().catch(()=>'');
-      if (r.status === 401) throw new Error('Token rejected by HubSpot. Check that you copied the full token and that the scope crm.objects.companies.read is enabled.');
-      throw new Error(`HubSpot returned ${r.status}. Check your token and scopes.`);
-    }
-    const data = await r.json();
+    // Verify token and discover properties via proxy
+    const data = await hsProxyFetch(val, '/crm/v3/properties/companies');
 
     // Build a map of label → internal name for the properties we care about
     const wantLabels = {
@@ -2116,8 +2142,13 @@ async function saveHsToken() {
     document.getElementById('hsTokenStatus').innerHTML =
       `✅ Connected. Discovered ${discoveredCount} matching CRM properties. Ready to query.`;
     document.getElementById('hsTokenStatus').style.color = 'var(--success)';
+    // Unlock Step 2
+    const rfpCard = document.getElementById('hsRfpCard');
+    const rfpLock = document.getElementById('hsRfpLockMsg');
+    if (rfpCard) rfpCard.classList.remove('step-locked');
+    if (rfpLock) rfpLock.style.display = 'none';
     updateHsMatchBtn();
-    showStatus('success', 'HubSpot connected', `Token verified. ${discoveredCount} company properties discovered.`);
+    showStatus('success', 'HubSpot connected', `Token verified. ${discoveredCount} company properties discovered. You can now drop your solicitation documents.`);
   } catch(e) {
     document.getElementById('hsTokenStatus').textContent = '❌ ' + e.message;
     document.getElementById('hsTokenStatus').style.color = 'var(--error)';
@@ -2139,13 +2170,127 @@ function loadHsToken() {
     const status = document.getElementById('hsTokenStatus');
     if (badge) badge.style.display = 'block';
     if (status) { status.textContent = '✅ Token loaded from this session.'; status.style.color = 'var(--success)'; }
+    // Unlock Step 2
+    const rfpCard = document.getElementById('hsRfpCard');
+    const rfpLock = document.getElementById('hsRfpLockMsg');
+    if (rfpCard) rfpCard.classList.remove('step-locked');
+    if (rfpLock) rfpLock.style.display = 'none';
   }
+}
+
+let _hsCsvCompanies = []; // companies loaded from CSV
+
+function setHsMethod(method) {
+  const apiBtn  = document.getElementById('hsMethodApi');
+  const csvBtn  = document.getElementById('hsMethodCsv');
+  const apiDiv  = document.getElementById('hsApiMethod');
+  const csvDiv  = document.getElementById('hsCsvMethod');
+  const active  = 'border:2px solid var(--blue);background:#eff6ff;color:var(--blue)';
+  const inactive= 'border:2px solid var(--border);background:white;color:var(--muted)';
+  if (method === 'api') {
+    if (apiBtn) apiBtn.style.cssText = `flex:1;padding:9px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;${active}`;
+    if (csvBtn) csvBtn.style.cssText = `flex:1;padding:9px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;${inactive}`;
+    if (apiDiv) apiDiv.style.display = 'block';
+    if (csvDiv) csvDiv.style.display = 'none';
+  } else {
+    if (csvBtn) csvBtn.style.cssText = `flex:1;padding:9px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;${active}`;
+    if (apiBtn) apiBtn.style.cssText = `flex:1;padding:9px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;${inactive}`;
+    if (csvDiv) csvDiv.style.display = 'block';
+    if (apiDiv) apiDiv.style.display = 'none';
+  }
+}
+
+function initHsCsvDropZone() {
+  const dz = document.getElementById('dropZoneHsCsv');
+  const fi = document.getElementById('fileInputHsCsv');
+  if (!dz || !fi) return;
+  dz.addEventListener('click', (e) => { if (!e.target.closest('.file-item')) fi.click(); });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadHsCsv(e.dataTransfer.files[0]); });
+  fi.addEventListener('change', () => { if (fi.files[0]) { loadHsCsv(fi.files[0]); fi.value = ''; } });
+}
+
+function loadHsCsv(file) {
+  const status = document.getElementById('hsCsvStatus');
+  status.style.display = 'block';
+  status.style.background = '#f8fafc';
+  status.style.border = '1px solid var(--border)';
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Reading CSV…';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const rows = parseHsCsv(e.target.result);
+      if (rows.length === 0) throw new Error('No data rows found in CSV.');
+      _hsCsvCompanies = rows;
+      _hsToken = 'csv'; // flag that we're in CSV mode
+      // Unlock Step 2
+      const rfpCard = document.getElementById('hsRfpCard');
+      const rfpLock = document.getElementById('hsRfpLockMsg');
+      if (rfpCard) rfpCard.classList.remove('step-locked');
+      if (rfpLock) rfpLock.style.display = 'none';
+      document.getElementById('hsConnectionBadge').style.display = 'block';
+      status.style.background = '#f0fdf4';
+      status.style.border = '1px solid #86efac';
+      status.style.color = 'var(--success)';
+      status.textContent = `✅ Loaded ${rows.length} companies from CSV. Step 2 unlocked.`;
+      showStatus('success', 'Companies loaded', `${rows.length} companies ready for matching.`);
+    } catch(err) {
+      status.style.background = '#fef2f2';
+      status.style.border = '1px solid #fca5a5';
+      status.style.color = 'var(--error)';
+      status.textContent = `❌ ${err.message}`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseHsCsv(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  // Parse header row — handle quoted fields
+  const parseRow = (line) => {
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur.trim());
+    return result;
+  };
+  const headers = parseRow(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g,'_'));
+  return lines.slice(1).map(line => {
+    const vals = parseRow(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+const HS_PROXY = 'https://srfed-hubspot-proxy.paul-scace.workers.dev';
+
+// Call HubSpot via the Cloudflare proxy (avoids browser CORS restriction)
+async function hsProxyFetch(token, path) {
+  const r = await fetch(HS_PROXY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, path })
+  });
+  if (!r.ok) {
+    const et = await r.text().catch(() => '');
+    if (r.status === 401) throw new Error('HubSpot auth failed. Check that your API key has the crm.objects.companies.read scope.');
+    throw new Error(`HubSpot error ${r.status}: ${et.substring(0, 200)}`);
+  }
+  return r.json();
 }
 
 function updateHsMatchBtn() {
   const btn = document.getElementById('hsMatchBtn');
-  if (!btn) return;
-  const ok = !!_hsToken && !!hsExtractedAttrs;
   btn.disabled = !ok;
   btn.style.opacity = ok ? '1' : '0.45';
 }
@@ -2154,7 +2299,10 @@ function initHsDropZone() {
   const dz = document.getElementById('dropZoneHsRfp');
   const fi = document.getElementById('fileInputHsRfp');
   if (!dz || !fi) return;
-  dz.addEventListener('click', () => fi.click());
+  dz.addEventListener('click', (e) => {
+    if (e.target.closest('.file-item') || e.target.closest('.file-remove')) return;
+    fi.click();
+  });
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
   dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); addHsFiles([...e.dataTransfer.files]); });
@@ -2283,68 +2431,71 @@ async function runHsMatch() {
   try {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
-    if (!_hsToken) throw new Error('No HubSpot token. Enter it in the HubSpot Connection section above.');
+    if (!_hsToken) throw new Error('No HubSpot connection. Complete Step 1 above.');
 
-    // Use discovered property names if available, fall back to guesses
-    const pm = window._hsPropertyMap || {};
-    const prop = (key) => pm[key] || key; // returns discovered internal name or fallback
-    const props = [
-      'name', prop('city') || 'city', prop('state') || 'state',
-      prop('agency') || 'agency__primary_',
-      prop('contract_vehicles') || 'contract_vehicles',
-      prop('disadvantaged_business_certifications') || 'disadvantaged_business_certifications',
-      prop('naics_codes') || 'naics_codes',
-      prop('clearance_level') || 'clearance_level',
-      prop('annualrevenue') || 'annualrevenue',
-      prop('description') || 'description',
-      prop('industry') || 'industry',
-      prop('numberofemployees') || 'numberofemployees',
-      'notes_last_contacted', 'domain'
-    ].filter((v,i,a) => a.indexOf(v) === i).join(','); // deduplicate
-    let companies = [], after = null, pages = 0;
-    while (pages < 10) {
-      pages++;
-      const url = `https://api.hubapi.com/crm/v3/objects/companies?limit=100&properties=${props}${after?'&after='+after:''}`;
-      const r = await fetch(url, { headers: { 'Authorization': `Bearer ${_hsToken}` } });
-      if (!r.ok) {
-        const et = await r.text().catch(()=>'');
-        if (r.status===401) throw new Error('HubSpot auth failed. Check token scopes: crm.objects.companies.read');
-        throw new Error(`HubSpot error ${r.status}: ${et.substring(0,150)}`);
-      }
-      const data = await r.json();
-      companies = companies.concat(data.results||[]);
-      if (data.paging?.next?.after) after = data.paging.next.after; else break;
-    }
-    if (companies.length===0) throw new Error('No companies found in HubSpot.');
-
-    setProgress(35, [{ text: `Fetched ${companies.length} companies`, status: 'done' }, { text: 'Fetching notes', status: 'active' }]);
-
-    // Fetch notes for top 20 most-recently-contacted companies
-    const forNotes = [...companies]
-      .filter(c=>c.properties?.notes_last_contacted)
-      .sort((a,b)=>new Date(b.properties.notes_last_contacted)-new Date(a.properties.notes_last_contacted))
-      .slice(0,20);
+    // ── Get companies: CSV mode or live API mode ──────────────────────────────
+    let companies = [];
     const companyNotes = {};
-    await Promise.all(forNotes.map(async (co) => {
-      try {
-        const ar = await fetch(`https://api.hubapi.com/crm/v3/objects/companies/${co.id}/associations/notes?limit=3`,
-          { headers: { 'Authorization': `Bearer ${_hsToken}` } });
-        if (!ar.ok) return;
-        const ad = await ar.json();
-        const noteIds = (ad.results||[]).map(n=>n.id).slice(0,3);
-        const texts = await Promise.all(noteIds.map(async nid => {
-          const nr = await fetch(`https://api.hubapi.com/crm/v3/objects/notes/${nid}?properties=hs_note_body`,
-            { headers: { 'Authorization': `Bearer ${_hsToken}` } });
-          if (!nr.ok) return '';
-          const nd = await nr.json();
-          return nd.properties?.hs_note_body || '';
-        }));
-        const combined = texts.filter(Boolean).join(' | ').substring(0,400);
-        if (combined) companyNotes[co.id] = combined;
-      } catch(_) {}
-    }));
 
-    setProgress(55, [{ text: `Fetched ${companies.length} companies`, status: 'done' }, { text: 'Scoring with AI', status: 'active' }]);
+    if (_hsToken === 'csv') {
+      companies = _hsCsvCompanies.map((row, idx) => {
+        const g = (...keys) => { for (const k of keys) { const v = row[k]; if (v && v !== '') return v; } return ''; };
+        return { id: String(idx), properties: {
+          name:   g('company_name','name','company'),
+          city:   g('city'), state: g('state__region','state','state_region'),
+          'agency__primary_': g('agency','agency__primary_'),
+          contract_vehicles:  g('contract_vehicles','contract_vehicle'),
+          disadvantaged_business_certifications: g('disadvantaged_business_certifications','certifications','small_business_certifications'),
+          naics_codes:   g('naics','naics_codes','naics_code'),
+          clearance_level: g('facility_clearance','clearance_level','clearance'),
+          annualrevenue: g('annual_revenue','annualrevenue'),
+          description:   g('description','about_us'),
+          industry:      g('industry'),
+          numberofemployees: g('number_of_employees','numberofemployees'),
+        }};
+      }).filter(c => c.properties.name);
+    } else {
+      // Live API mode via Cloudflare proxy
+      const pm = window._hsPropertyMap || {};
+      const prop = (key) => pm[key] || key;
+      const props = [
+        'name', prop('city')||'city', prop('state')||'state',
+        prop('agency')||'agency__primary_',
+        prop('contract_vehicles')||'contract_vehicles',
+        prop('disadvantaged_business_certifications')||'disadvantaged_business_certifications',
+        prop('naics_codes')||'naics_codes', prop('clearance_level')||'clearance_level',
+        prop('annualrevenue')||'annualrevenue', prop('description')||'description',
+        prop('industry')||'industry', prop('numberofemployees')||'numberofemployees',
+        'notes_last_contacted','domain'
+      ].filter((v,i,a)=>a.indexOf(v)===i).join(',');
+      let after=null, pages=0;
+      while (pages<10) {
+        pages++;
+        const path = `/crm/v3/objects/companies?limit=100&properties=${props}${after?'&after='+after:''}`;
+        const data = await hsProxyFetch(_hsToken, path);
+        companies = companies.concat(data.results||[]);
+        if (data.paging?.next?.after) after = data.paging.next.after; else break;
+      }
+      if (companies.length===0) throw new Error('No companies found in HubSpot.');
+      // Fetch notes for top 20 most-recently-contacted
+      const forNotes=[...companies].filter(c=>c.properties?.notes_last_contacted)
+        .sort((a,b)=>new Date(b.properties.notes_last_contacted)-new Date(a.properties.notes_last_contacted)).slice(0,20);
+      await Promise.all(forNotes.map(async(co)=>{
+        try{
+          const ad = await hsProxyFetch(_hsToken, `/crm/v3/objects/companies/${co.id}/associations/notes?limit=3`);
+          const noteIds=(ad.results||[]).map(n=>n.id).slice(0,3);
+          const texts=await Promise.all(noteIds.map(async nid=>{
+            const nd = await hsProxyFetch(_hsToken, `/crm/v3/objects/notes/${nid}?properties=hs_note_body`);
+            return nd.properties?.hs_note_body||'';
+          }));
+          const combined=texts.filter(Boolean).join(' | ').substring(0,400);
+          if(combined) companyNotes[co.id]=combined;
+        }catch(_){}
+      }));
+    }
+    if (companies.length===0) throw new Error('No companies loaded. Check your CSV or HubSpot connection.');
+
+    setProgress(55, [{ text: `Loaded ${companies.length} companies`, status: 'done' }, { text: 'Scoring with AI', status: 'active' }]);
 
     // Build compact text summary for each company
     const summaries = companies.map(c => {
@@ -2518,6 +2669,7 @@ function copyHsResults() {
 function initPartnersTab() {
   loadHsToken();
   initHsDropZone();
+  initHsCsvDropZone();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3774,6 +3926,12 @@ function addFilesToArray(newFiles, arr, listId) {
   let added = 0;
   newFiles.forEach(f => {
     if (!arr.find(x => x.name === f.name && x.size === f.size)) { arr.push(f); added++; }
+    // Warn about large PDFs that may hit the 100-page API limit
+    if (f.name.toLowerCase().endsWith('.pdf') && f.size > 350000 &&
+        typeof bnaFiles !== 'undefined' && (arr === bnaFiles || arr === bnaCompanyFiles)) {
+      showStatus('warn', 'Large PDF detected',
+        `"${f.name}" is large and may exceed the 100-page PDF limit. If analysis fails: split the file, or convert to Word (.docx) which has no page limit.`);
+    }
   });
   renderFileListById(arr, listId);
   updateStepLocks();
@@ -5936,11 +6094,11 @@ function renderTier2Inputs() {
         <div style="font-size:13px;font-weight:700">${escHtml(f.label)}</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:11px;color:var(--muted)">Weight: ${bna_weights[f.key] || Math.round(f.weight*100)}%</span>
-          <span id="tier2val_${f.key}" style="font-size:20px;font-weight:900;min-width:28px;text-align:right;color:#7c3aed">5</span>
+          <span id="tier2val_${f.key}" style="font-size:20px;font-weight:900;min-width:28px;text-align:right;color:var(--blue)">5</span>
         </div>
       </div>
       <input type="range" min="0" max="10" value="5" step="1"
-        style="width:100%;accent-color:#7c3aed;margin-bottom:6px"
+        style="width:100%;accent-color:var(--blue);margin-bottom:6px"
         oninput="bna_tier2_scores['${f.key}']=+this.value;document.getElementById('tier2val_${f.key}').textContent=this.value;updateBnaLiveScore()"/>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">
         <span style="max-width:30%;line-height:1.3">0–3: ${escHtml(f.neg)}</span>
