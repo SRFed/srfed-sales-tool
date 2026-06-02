@@ -570,10 +570,10 @@
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
+    <button class="tab-btn" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
     <button class="tab-btn" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn active" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
-    <button class="tab-btn" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
     <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
   <div id="msSignedInArea" style="display:none;margin-left:16px">
@@ -987,13 +987,9 @@
             <button onclick="document.getElementById('outlinePreviewPanel').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px">×</button>
           </div>
           <div id="outlineContent" style="padding:14px;max-height:300px;overflow-y:auto;overscroll-behavior-y:contain"></div>
-          <div style="padding:10px 14px;background:#f8fafc;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
-            <button class="btn btn-primary" onclick="proceedToGenerate()" style="flex:1;font-size:14px">
+          <div style="padding:10px 14px;background:#f8fafc;border-top:1px solid var(--border)">
+            <button class="btn btn-primary" onclick="proceedToGenerate()" style="width:100%;font-size:14px">
               ✅ Approve &amp; Generate Proposal
-            </button>
-            <button onclick="document.getElementById('outlinePreviewPanel').style.display='none';document.getElementById('previewOutlineBtn').style.display='';document.getElementById('outlineDivider').style.display='';document.getElementById('runBtn').style.display='flex';" 
-              style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px;color:var(--muted);white-space:nowrap" title="Go back to Step 6 to revise win strategy">
-              ← Revise strategy
             </button>
           </div>
         </div>
@@ -1213,17 +1209,21 @@
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">📋 How to get your HubSpot token (one-time setup, ~3 minutes)</div>
         <ol style="font-size:13px;color:var(--text);line-height:1.9;margin:0;padding-left:20px">
           <li>In HubSpot, click the <strong>Settings</strong> gear (top right)</li>
-          <li>In the left sidebar, go to <strong>Integrations → Private Apps</strong></li>
+          <li>In the left sidebar, go to <strong>Integrations → Legacy Apps</strong></li>
           <li>Click <strong>Create a private app</strong></li>
-          <li>Give it any name (e.g. "SRFed Proposal Tool")</li>
-          <li>Click the <strong>Scopes</strong> tab — search for and enable:<br/>
-            <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.companies.read</code> &nbsp;
-            <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.notes.read</code>
+          <li>Give it any name (e.g. "SRFed Proposal Tool") and click <strong>Next</strong></li>
+          <li>Click the <strong>Auth</strong> tab, then scroll down to the <strong>Scopes</strong> section</li>
+          <li>Click <strong>+ Add new scope</strong> and search for:<br/>
+            <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.companies.read</code>
+            &nbsp;— add this one scope only
           </li>
-          <li>Click <strong>Create app</strong>, then copy the token shown (starts with <code>pat-na1-...</code>)</li>
+          <li>Click <strong>Create app</strong> at the bottom, then copy the token shown (starts with <code>pat-na1-...</code>)</li>
           <li>Paste it below and click <strong>Connect</strong></li>
         </ol>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">🔒 The token is stored in your browser session only — it is never sent to Anthropic or stored anywhere else. You'll need to re-enter it if you close the browser tab.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6">
+          💡 <strong>Private App</strong> is the right choice — it generates a simple token with no redirect URLs or OAuth setup required.<br/>
+          🔒 The token is stored in your browser session only and is never sent to Anthropic or stored anywhere else. Re-enter it if you close the tab.
+        </div>
       </div>
 
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
@@ -1237,7 +1237,7 @@
           Connect
         </button>
       </div>
-      <div id="hsTokenStatus" style="font-size:12px;color:var(--muted)">Token will be verified when you click Connect.</div>
+      <div id="hsTokenStatus" style="font-size:12px;color:var(--muted)">Scope needed: <code>crm.objects.companies.read</code></div>
     </div>
   </div>
 
@@ -1954,17 +1954,21 @@ async function runOutlinePreview() {
 
     const prompt =
       `You are a government proposal manager. Based on the information below, generate a detailed proposal outline.\n\n` +
-      `VOLUMES TO WRITE: ${genVols.map(v => volNames[v]).join(', ')}\n\n` +
+      `VOLUMES TO WRITE (ONLY these ${genVols.length} volumes — do NOT add any others):\n` +
+      genVols.map(v => `- Volume ${v}: ${volNames[v]}`).join('\n') + '\n\n' +
       (assumptionCtx ? `CONFIRMED RFP DATA:\n${assumptionCtx}\n\n` : '') +
-      (pageLimitCtx ? `CONFIRMED PAGE LIMITS FROM RFP:\n${pageLimitCtx}\n\n` : '') +
+      (pageLimitCtx ? `CONFIRMED PAGE LIMITS FROM RFP (authoritative — use these for section budgets):\n${pageLimitCtx}\n\n` : '') +
       (winThemes.length ? `WIN THEMES: ${winThemes.join(' | ')}\n\n` : '') +
       (shallsSample ? `SAMPLE REQUIREMENTS:\n${shallsSample}\n\n` : '') +
       (notes ? `PROPOSAL MANAGER NOTES: ${notes}\n\n` : '') +
-      `CRITICAL: Page counts per section must reflect the actual RFP page limits above — not generic estimates. ` +
-      `If a volume has a stated page limit, your section page allocations must sum to 90-97% of that limit (leave a small buffer). ` +
-      `If no limit is stated, estimate based on typical government proposals.\n\n` +
-      `For each volume, list: proposed section headings, page allocation per section (must sum to volume total), and 3 key points each.\n\n` +
-      `Return ONLY compact JSON (no whitespace):\n{"volumes":[{"vol":"1","title":"Technical Approach","total_pages":"15-20","sections":[{"heading":"1.1 Understanding","pages":"3-4","key_points":["point1","point2","point3"]}]}]}\n` +
+      `PAGE COUNT RULES:\n` +
+      `- If a volume has a stated page limit, allocate sections so they sum to 90-97% of that limit.\n` +
+      `- If no page limit is stated, estimate based on typical government proposals.\n` +
+      `- Use "N/A" for pages ONLY if a section is purely administrative with no content to write (e.g. cover page, signature block). N/A means the section takes no prose pages.\n` +
+      `- Every section that requires written content must have a numeric page estimate.\n\n` +
+      `CRITICAL: Return ONLY the ${genVols.length} volumes listed above — exactly ${genVols.length}, no more.\n\n` +
+      `Return ONLY compact JSON (no whitespace):\n` +
+      `{"volumes":[{"vol":"1","title":"Technical Approach","total_pages":"15-20","sections":[{"heading":"1.1 Understanding","pages":"3-4","key_points":["point1","point2","point3"]}]}]}\n` +
       `Limit to max 5 sections per volume. Keep key_points under 10 words each. Be concise.`;
 
     showStatus('info', 'Building outline…', 'Claude is reviewing your requirements and win strategy to create a structured outline. This takes about 30 seconds.', true);
@@ -2027,16 +2031,16 @@ async function runOutlinePreview() {
 }
 
 function proceedToGenerate() {
-  // Put the approve button into a spinner/disabled state so user knows it's running
+  // Put the approve button into a spinner/disabled state
   const approveBtn = document.querySelector('#outlinePreviewPanel .btn-primary');
   if (approveBtn) {
     approveBtn.disabled = true;
     approveBtn.innerHTML = '<span class="spinner-dark" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Generating proposal…';
   }
-  // Scroll to top so user can see the global progress bar
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  // Short delay to let scroll start, then begin generation directly
-  setTimeout(() => runGeneration(), 300);
+  // Also show spinner on the Generate button (stays visible in Step 7)
+  setRunning(true);
+  // Start generation immediately — no scroll, user stays where they are
+  runGeneration();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2072,7 +2076,7 @@ async function saveHsToken() {
     });
     if (!r.ok) {
       const et = await r.text().catch(()=>'');
-      if (r.status === 401) throw new Error('Token rejected by HubSpot. Check that you copied the full token and that the scopes include crm.objects.companies.read.');
+      if (r.status === 401) throw new Error('Token rejected by HubSpot. Check that you copied the full token and that the scope crm.objects.companies.read is enabled.');
       throw new Error(`HubSpot returned ${r.status}. Check your token and scopes.`);
     }
     const data = await r.json();
@@ -2597,7 +2601,10 @@ function initCmpDropZones() {
   const dzRfp = document.getElementById('dropZoneCmpRfp');
   const fiRfp = document.getElementById('fileInputCmpRfp');
   if (dzRfp && fiRfp) {
-    dzRfp.addEventListener('click', () => fiRfp.click());
+    dzRfp.addEventListener('click', (e) => {
+      if (e.target.closest('.file-item') || e.target.closest('.file-remove')) return;
+      fiRfp.click();
+    });
     dzRfp.addEventListener('dragover', e => { e.preventDefault(); dzRfp.classList.add('drag-over'); });
     dzRfp.addEventListener('dragleave', () => dzRfp.classList.remove('drag-over'));
     dzRfp.addEventListener('drop', e => {
@@ -2610,7 +2617,11 @@ function initCmpDropZones() {
   const dzDocs = document.getElementById('dropZoneCmpDocs');
   const fiDocs = document.getElementById('fileInputCmpDocs');
   if (dzDocs && fiDocs) {
-    dzDocs.addEventListener('click', () => fiDocs.click());
+    // Only trigger file dialog when clicking the drop zone itself, not its children (file list items)
+    dzDocs.addEventListener('click', (e) => {
+      if (e.target.closest('.file-item') || e.target.closest('.file-remove')) return;
+      fiDocs.click();
+    });
     dzDocs.addEventListener('dragover', e => { e.preventDefault(); dzDocs.classList.add('drag-over'); });
     dzDocs.addEventListener('dragleave', () => dzDocs.classList.remove('drag-over'));
     dzDocs.addEventListener('drop', e => {
@@ -3071,30 +3082,44 @@ function copyChecklist() {
 // YELLOW/RED ANNOTATION IN WORD DOCS
 // ═══════════════════════════════════════════════════════════════════════════
 function annotateDocXml(xml) {
-  // 1. Highlight unresolved placeholders in yellow
-  // Pattern: {{PLACEHOLDER}} or [PLACEHOLDER] or [INSERT ...] still in document
-  const yellowTargets = [
-    /\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD|TBE|N\/A|UNKNOWN)[^\]]{0,40}\]/gi,
-    /\{\{[A-Z_]+\}\}/g,
-    /\[BASE YEAR TOTAL\]|\[GRAND TOTAL\]/gi,
-  ];
+  // Patterns that need yellow highlight — unresolved placeholders or missing data
+  // We match at the <w:t> text node level
+  const needsHighlight = (text) => {
+    // Explicit unfilled placeholders
+    if (/\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD|TBE|N\/A|UNKNOWN|DATE|NAME|NUMBER|PHONE|EMAIL|ADDRESS)[^\]]{0,60}\]/i.test(text)) return true;
+    if (/\{\{[A-Z_]+\}\}/.test(text)) return true;
+    if (/\[BASE YEAR TOTAL\]|\[GRAND TOTAL\]/i.test(text)) return true;
+    // "Not provided" / "Not stated" / "Not available" — reviewer must fill in
+    if (/\bnot\s+(?:provided|stated|available|specified|found|listed)\b/i.test(text)) return true;
+    // Bare "N/A" standing alone (not as part of a larger word)
+    if (/^\s*N\/A\s*$/i.test(text)) return true;
+    // Blank/empty telephone number indicators
+    if (/\bphone[:\s]*$|\btelephone[:\s]*$|\bfax[:\s]*$/i.test(text)) return true;
+    // Unknown or missing government POC info
+    if (/\[(?:POC|COR|KO|Contracting Officer)[^\]]{0,40}\]/i.test(text)) return true;
+    return false;
+  };
 
-  // Apply yellow highlight to runs containing these patterns
-  // We work at the run level — find <w:t>...</w:t> that match and wrap the run
-  xml = xml.replace(/<w:r>((?:(?!<\/w:r>)[\s\S])*?)<w:t([^>]*)>([^<]*(?:\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD)[^\]]{0,40}\]|{{[A-Z_]+}})[^<]*)<\/w:t>((?:(?!<\/w:r>)[\s\S])*?)<\/w:r>/gi,
-    (match, before, tAttr, tContent, after) => {
-      // Inject yellow highlight into rPr
-      const rprMatch = match.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
-      const existingRpr = rprMatch ? rprMatch[1] : '';
-      const hasHighlight = existingRpr.includes('<w:highlight');
-      const newRpr = hasHighlight ? existingRpr : existingRpr + '<w:highlight w:val="yellow"/>';
-      if (rprMatch) {
-        return match.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/, `<w:rPr>${newRpr}</w:rPr>`);
-      } else {
-        return `<w:r><w:rPr>${newRpr}</w:rPr>${before}<w:t${tAttr}>${tContent}</w:t>${after}</w:r>`;
-      }
+  // Walk all <w:t> nodes and apply yellow highlight to the parent <w:r> when matched
+  xml = xml.replace(/<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g, (runMatch) => {
+    // Extract text content from this run
+    const textMatch = runMatch.match(/<w:t[^>]*>([^<]*)<\/w:t>/);
+    if (!textMatch) return runMatch;
+    const textContent = textMatch[1];
+    if (!needsHighlight(textContent)) return runMatch;
+
+    // Inject yellow highlight into rPr
+    const rprMatch = runMatch.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
+    const existingRpr = rprMatch ? rprMatch[1] : '';
+    if (existingRpr.includes('<w:highlight')) return runMatch; // already highlighted
+    const newRpr = existingRpr + '<w:highlight w:val="yellow"/>';
+    if (rprMatch) {
+      return runMatch.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/, `<w:rPr>${newRpr}</w:rPr>`);
+    } else {
+      // No rPr exists — insert one
+      return runMatch.replace('<w:r>', `<w:r><w:rPr>${newRpr}</w:rPr>`);
     }
-  );
+  });
 
   return xml;
 }
@@ -4986,7 +5011,16 @@ async function runGeneration() {
       solicitation_number: briefing.solicitation_number, requirement_title: briefing.requirement_title,
       agency_name: briefing.agency_name, agency_address: briefing.agency_address,
       agency_poc: briefing.agency_poc, agency_poc_email: briefing.agency_poc_email,
-      agency_poc_phone: briefing.agency_poc_phone, submission_date: briefing.submission_date,
+      agency_poc_phone: briefing.agency_poc_phone,
+      // Submission date = one day before RFP due date (gives review buffer)
+      submission_date: (() => {
+        const raw = briefing.submission_date;
+        if (!raw) return '';
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return raw; // can't parse — return as-is
+        d.setDate(d.getDate() - 1);
+        return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      })(),
       output_prefix: (CLIENT_CONFIG.companyShortName + '_Proposal_' +
         (briefing.solicitation_number || 'Draft')).replace(/[^a-zA-Z0-9_]/g, '_'),
     };
