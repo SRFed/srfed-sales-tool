@@ -572,6 +572,8 @@
     <button class="tab-btn" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn active" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
+    <button class="tab-btn" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
+    <button class="tab-btn" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
     <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
   <div id="msSignedInArea" style="display:none;margin-left:16px">
@@ -758,8 +760,9 @@
   <div class="card step-locked" id="teamingCard" style="margin-bottom:24px">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
       <span><span class="icon">🤝</span> Teaming Partner <span style="font-size:12px;font-weight:400;opacity:0.8">(optional)</span></span>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer">
-        <input type="checkbox" id="teamingEnabled" onchange="toggleTeaming()" style="width:16px;height:16px"/> Enable
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:#eff6ff;border:2px solid var(--blue);border-radius:8px;padding:6px 14px">
+        <input type="checkbox" id="teamingEnabled" onchange="toggleTeaming()" style="width:20px;height:20px;cursor:pointer;accent-color:var(--blue)"/>
+        <span style="font-size:14px;font-weight:700;color:var(--blue)">Enable Teaming</span>
       </label>
     </div>
     <div class="card-body">
@@ -911,53 +914,58 @@
     </div>
   </div>
 
-  <!-- ── ROW 4: Step 5 | Step 6 ───────────────────────────────────────────── -->
+  <!-- ── ROW 4: Step 6 full-width ─────────────────────────────────────────── -->
+  <div class="card step-locked" id="step6Card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">🎯</span> Step 6: Win Strategy &amp; Notes</div>
+    <div class="card-body">
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;color:var(--muted)">These are woven into every proposal section.</div>
+        <button id="populateWinBtn" onclick="populateWinStrategy()"
+          style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);border-radius:6px;background:white;cursor:pointer;color:var(--blue);white-space:nowrap"
+          title="Pre-populate based on Step 5 analysis">✨ Suggest from analysis</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">🏆 Win Theme 1 <span style="font-weight:400;color:var(--muted)">— why we win this contract</span></label>
+          <textarea id="winTheme1" style="width:100%;min-height:72px;resize:vertical;overflow-y:auto;margin-bottom:12px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Proven mission-aligned performance at DHA — we have directly supported this exact mission type across three contracts."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">🏆 Win Theme 2</label>
+          <textarea id="winTheme2" style="width:100%;min-height:72px;resize:vertical;overflow-y:auto;margin-bottom:12px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Lean SDVOSB structure = lower overhead, higher-value solution, no bloat."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">🏆 Win Theme 3</label>
+          <textarea id="winTheme3" style="width:100%;min-height:72px;resize:vertical;overflow-y:auto;margin-bottom:12px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Day-one SECRET-cleared personnel ready to perform with zero ramp-up time."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">📝 Additional Notes</label>
+          <textarea id="additionalNotes" style="width:100%;min-height:80px;resize:vertical;overflow-y:auto;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Teaming partners, specific past performance to emphasize, unique qualifications, concerns, or any other context for the proposal team..."></textarea>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 1 <span style="font-weight:400;color:var(--muted)">— what makes us uniquely qualified</span></label>
+          <textarea id="discrim1" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Only SDVOSB in this space with an active SECRET FCL and DCAA-approved accounting system."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 2</label>
+          <textarea id="discrim2" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Proposed Master Black Belt has 20+ years DLA experience — not theoretical, operational."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 3</label>
+          <textarea id="discrim3" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Discriminator 3..."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 4 <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <textarea id="discrim4" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Discriminator 4 (optional)..."></textarea>
+
+          <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 5 <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <textarea id="discrim5" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Discriminator 5 (optional)..."></textarea>
+        </div>
+      </div>
+      <p class="tip" style="margin-top:8px">💡 The more specific these inputs, the stronger the proposal. Win themes appear in every section opening.</p>
+    </div>
+  </div>
+
+  <!-- ── ROW 5: Step 7 (left) + Proposal Calendar (right) ─────────────────── -->
   <div class="two-col" style="margin-bottom:24px">
 
-    <!-- Step 6: Win Strategy & Notes -->
-    <div class="card step-locked" id="step6Card">
-      <div class="card-header"><span class="icon">🎯</span> Step 6: Win Strategy & Notes</div>
-      <div class="card-body">
-        <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
-
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:13px;color:var(--muted)">These are woven into every proposal section.</div>
-          <button id="populateWinBtn" onclick="populateWinStrategy()"
-            style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);border-radius:6px;background:white;cursor:pointer;color:var(--blue);white-space:nowrap"
-            title="Pre-populate based on Step 5 analysis">✨ Suggest from analysis</button>
-        </div>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">🏆 Win Theme 1 <span style="font-weight:400;color:var(--muted)">— why we win this contract</span></label>
-        <textarea id="winTheme1" style="width:100%;min-height:72px;resize:vertical;overflow-y:auto;margin-bottom:12px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Proven mission-aligned performance at DHA — we have directly supported this exact mission type across three contracts."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">🏆 Win Theme 2</label>
-        <textarea id="winTheme2" style="width:100%;min-height:72px;resize:vertical;overflow-y:auto;margin-bottom:12px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Lean SDVOSB structure = lower overhead, higher-value solution, no bloat."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">🏆 Win Theme 3</label>
-        <textarea id="winTheme3" style="width:100%;min-height:72px;resize:vertical;overflow-y:auto;margin-bottom:16px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Day-one SECRET-cleared personnel ready to perform with zero ramp-up time."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 1 <span style="font-weight:400;color:var(--muted)">— what makes us uniquely qualified</span></label>
-        <textarea id="discrim1" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Only SDVOSB in this space with an active SECRET FCL and DCAA-approved accounting system."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 2</label>
-        <textarea id="discrim2" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="e.g. Proposed Master Black Belt has 20+ years DLA experience — not theoretical, operational."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 3</label>
-        <textarea id="discrim3" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Discriminator 3..."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 4 <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-        <textarea id="discrim4" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:10px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Discriminator 4 (optional)..."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">⚡ Discriminator 5 <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-        <textarea id="discrim5" style="width:100%;min-height:60px;resize:vertical;overflow-y:auto;margin-bottom:16px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Discriminator 5 (optional)..."></textarea>
-
-        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">📝 Additional Notes</label>
-        <textarea id="additionalNotes" style="width:100%;min-height:80px;resize:vertical;overflow-y:auto;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" placeholder="Teaming partners, specific past performance to emphasize, unique qualifications, concerns, or any other context for the proposal team..."></textarea>
-        <p class="tip" style="margin-top:8px">💡 The more specific these inputs, the stronger the proposal. Win themes appear in every section opening.</p>
-      </div>
-    </div>
-
-    <!-- Step 6: Select Volumes + Generate -->
+    <!-- Step 7: Select Volumes + Generate -->
     <div class="card step-locked" id="step7Card">
       <div class="card-header"><span class="icon">🚀</span> Step 7: Select Volumes &amp; Generate</div>
       <div class="card-body">
@@ -1001,6 +1009,15 @@
       </div>
     </div>
 
+    <!-- Proposal Calendar (right side, same row as Step 7) -->
+    <div class="card" id="calendarCard" style="display:none">
+      <div class="card-header"><span class="icon">📅</span> Proposal Calendar</div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Key dates extracted from your RFP. Add to your calendar to stay on track.</p>
+        <div id="calendarList"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ── Downloads + Log ──────────────────────────────────────────────────── -->
@@ -1013,27 +1030,6 @@
     </div>
   </div>
   <div class="log-box" id="logBox" style="display:none !important"></div>
-
-  <!-- ── Proposal Calendar ──────────────────────────────────────────────── -->
-  <div class="card" id="calendarCard" style="display:none;margin-bottom:24px">
-    <div class="card-header"><span class="icon">📅</span> Proposal Calendar</div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Key dates extracted from your RFP. Add to your calendar to stay on track.</p>
-      <div id="calendarList"></div>
-    </div>
-  </div>
-
-  <!-- ── Submission Checklist ───────────────────────────────────────────── -->
-  <div class="card" id="checklistCard" style="display:none;margin-bottom:24px">
-    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-      <span><span class="icon">☑️</span> Submission Checklist</span>
-      <button onclick="copyChecklist()" style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
-    </div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Verify every item below before submitting. Items are extracted from your Section L instructions.</p>
-      <div id="checklistItems"></div>
-    </div>
-  </div>
 
   <!-- ── Step 8: Compliance Check ─────────────────────────────────────────── -->
   <div class="card step-locked" id="step8Card" style="margin-bottom:24px">
@@ -1091,6 +1087,216 @@
 
 </div><!-- end tab-pane proposal -->
 
+<!-- ══════════════════════════ COMPLIANCE TAB ════════════════════════════ -->
+<div class="tab-pane" id="pane-compliance">
+
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">✅</span> Standalone Compliance Checker</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Check any proposal against its RFP requirements — no need to run the full generation flow. Choose how to provide requirements, drop your proposal documents, and run the check.</p>
+
+      <!-- ── Step A: Requirements Source ──────────────────────────────── -->
+      <div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:12px">Step 1 — Provide Requirements</div>
+
+      <!-- Mode selector -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <label id="cmpModeBtn0" onclick="setCmpMode('session')"
+          style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:2px solid var(--blue);border-radius:8px;cursor:pointer;background:#eff6ff;font-size:13px;font-weight:700;color:var(--blue)">
+          <input type="radio" name="cmpMode" value="session" checked style="accent-color:var(--blue)"/> From this session
+        </label>
+        <label id="cmpModeBtn1" onclick="setCmpMode('paste')"
+          style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:white;font-size:13px;font-weight:700;color:var(--text)">
+          <input type="radio" name="cmpMode" value="paste" style="accent-color:var(--blue)"/> Paste requirements
+        </label>
+        <label id="cmpModeBtn2" onclick="setCmpMode('extract')"
+          style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:white;font-size:13px;font-weight:700;color:var(--text)">
+          <input type="radio" name="cmpMode" value="extract" style="accent-color:var(--blue)"/> Extract from RFP docs
+        </label>
+      </div>
+
+      <!-- Mode: session -->
+      <div id="cmpModeSession" style="margin-bottom:16px">
+        <div id="cmpSessionStatus" style="padding:10px 14px;border-radius:6px;font-size:13px;background:#f0fdf4;border:1px solid #86efac;color:var(--success)">
+          ✅ Will use requirements extracted during Step 5 of this session.
+        </div>
+        <div id="cmpSessionEmpty" style="display:none;padding:10px 14px;border-radius:6px;font-size:13px;background:#fefce8;border:1px solid #fde047;color:#92400e">
+          ⚠️ No requirements from this session yet. Run Step 5 (Analyze Documents) on the Proposal tab first, or switch to "Paste requirements" or "Extract from RFP docs" mode.
+        </div>
+      </div>
+
+      <!-- Mode: paste -->
+      <div id="cmpModePaste" style="display:none;margin-bottom:16px">
+        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">
+          Paste requirements — one per line, or numbered list. Include any "shall," "must," "should," "will," or "required to" statements.
+        </label>
+        <textarea id="cmpPastedReqs" rows="10"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;resize:vertical"
+          placeholder="1. The Contractor shall provide weekly status reports to the COR.&#10;2. All personnel must hold a minimum SECRET clearance.&#10;3. The Contractor shall respond to urgent requirements within 60 minutes..."></textarea>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px" id="cmpPasteCount">0 requirements detected</div>
+      </div>
+
+      <!-- Mode: extract from RFP -->
+      <div id="cmpModeExtract" style="display:none;margin-bottom:16px">
+        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">📂 RFP / Solicitation Documents</label>
+        <div class="drop-zone" id="dropZoneCmpRfp" style="margin-bottom:8px">
+          <input type="file" id="fileInputCmpRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
+          <div class="dz-icon">📄</div>
+          <div class="dz-title">Drop RFP / PWS / SOW Here</div>
+          <div class="dz-sub">PDF or Word — keep to core sections (PWS, Section L, Section M)</div>
+        </div>
+        <div class="file-list" id="fileListCmpRfp" style="margin-bottom:10px"></div>
+        <button id="cmpExtractBtn" onclick="runCmpExtraction()"
+          style="padding:8px 18px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
+          🔍 Extract Requirements
+        </button>
+        <div id="cmpExtractStatus" style="display:none;margin-top:10px"></div>
+        <!-- Mini extraction progress bar -->
+        <div id="cmpExtractProgress" style="display:none;margin-top:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:600;color:var(--blue)" id="cmpExtractLabel">Extracting…</span>
+            <span style="font-size:11px;color:var(--muted)" id="cmpExtractEta"></span>
+          </div>
+          <div style="height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden">
+            <div id="cmpExtractBar" style="height:100%;width:3%;background:var(--blue);border-radius:2px;transition:width 0.6s"></div>
+          </div>
+        </div>
+        <div id="cmpExtractedReqs" style="display:none;margin-top:12px;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;background:#fafafa;font-size:12px;line-height:1.7"></div>
+      </div>
+
+      <!-- ── Step B: Proposal Documents ─────────────────────────────── -->
+      <div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:12px;margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">Step 2 — Drop Proposal Documents</div>
+      <div class="drop-zone" id="dropZoneCmpDocs" style="margin-bottom:8px">
+        <input type="file" id="fileInputCmpDocs" multiple accept=".pdf,.docx,.doc"/>
+        <div class="dz-icon">📝</div>
+        <div class="dz-title">Drop Proposal Volumes Here</div>
+        <div class="dz-sub">Word or PDF — all volumes you want to check</div>
+      </div>
+      <div class="file-list" id="fileListCmpDocs" style="margin-bottom:16px"></div>
+
+      <!-- ── Run ────────────────────────────────────────────────────── -->
+      <button class="btn btn-primary" id="cmpRunBtn" onclick="runStandaloneCompliance()"
+        style="width:100%;font-size:15px;padding:14px" disabled>
+        🔍 Run Compliance Check
+      </button>
+      <p class="tip" style="margin-top:8px;text-align:center">Checks every requirement against your proposal volumes. Takes ~30–60 seconds.</p>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="cmpResultsCard" style="display:none;margin-bottom:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="icon">📊</span> Compliance Results</span>
+      <button onclick="copyCmpResults()"
+        style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy results</button>
+    </div>
+    <div class="card-body">
+      <div id="cmpSummaryBar" style="margin-bottom:16px;font-size:14px;font-weight:700"></div>
+      <div id="cmpResultsList" style="max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:12px;background:#fafafa"></div>
+    </div>
+  </div>
+
+</div><!-- end tab-pane compliance -->
+
+<!-- ══════════════════════════ PARTNERS TAB ══════════════════════════════ -->
+<div class="tab-pane" id="pane-partners">
+
+  <!-- HubSpot connection card -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="icon">🔗</span> HubSpot Connection</span>
+      <div id="hsConnectionBadge" style="display:none;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#f0fdf4;border:1px solid #86efac;color:var(--success)">✅ Connected</div>
+    </div>
+    <div class="card-body">
+
+      <!-- Step-by-step setup instructions -->
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">📋 How to get your HubSpot token (one-time setup, ~3 minutes)</div>
+        <ol style="font-size:13px;color:var(--text);line-height:1.9;margin:0;padding-left:20px">
+          <li>In HubSpot, click the <strong>Settings</strong> gear (top right)</li>
+          <li>In the left sidebar, go to <strong>Integrations → Private Apps</strong></li>
+          <li>Click <strong>Create a private app</strong></li>
+          <li>Give it any name (e.g. "SRFed Proposal Tool")</li>
+          <li>Click the <strong>Scopes</strong> tab — search for and enable:<br/>
+            <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.companies.read</code> &nbsp;
+            <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.notes.read</code>
+          </li>
+          <li>Click <strong>Create app</strong>, then copy the token shown (starts with <code>pat-na1-...</code>)</li>
+          <li>Paste it below and click <strong>Connect</strong></li>
+        </ol>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">🔒 The token is stored in your browser session only — it is never sent to Anthropic or stored anywhere else. You'll need to re-enter it if you close the browser tab.</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input type="password" id="hsTokenInput" placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:monospace"
+          oninput="updateHsBtn()"/>
+        <button id="hsToggleBtn" onclick="toggleHsToken()"
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:16px" title="Show/hide token">👁</button>
+        <button id="hsSaveBtn" onclick="saveHsToken()" disabled
+          style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45">
+          Connect
+        </button>
+      </div>
+      <div id="hsTokenStatus" style="font-size:12px;color:var(--muted)">Token will be verified when you click Connect.</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Drop RFP docs -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">📄</span> Step 1: Drop Solicitation Documents</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
+      <div class="drop-zone" id="dropZoneHsRfp" style="margin-bottom:8px">
+        <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
+        <div class="dz-icon">📄</div>
+        <div class="dz-title">Drop RFP / PWS / SOW Here</div>
+        <div class="dz-sub">PDF or Word</div>
+      </div>
+      <div class="file-list" id="fileListHsRfp" style="margin-bottom:14px"></div>
+      <button id="hsExtractBtn" onclick="runHsExtract()"
+        style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
+        🔍 Extract Opportunity Attributes
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Extracted attributes + Run -->
+  <div class="card" id="hsAttributesCard" style="display:none;margin-bottom:24px">
+    <div class="card-header"><span class="icon">📊</span> Step 2: Confirm Extracted Attributes</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Review what was extracted. These are used to match against your HubSpot companies. Edit any field if needed.</p>
+      <div id="hsAttributesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px"></div>
+
+      <div id="hsAdditionalContext" style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:4px">Additional context for matching <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <textarea id="hsContextNotes" rows="2"
+          style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;resize:vertical"
+          placeholder="e.g. We need a partner with active CMMC Level 2, strong Navy SYSCOM relationships, and ideally prior NSWCDD experience…"></textarea>
+      </div>
+
+      <button id="hsMatchBtn" onclick="runHsMatch()"
+        style="width:100%;padding:13px;font-size:15px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;opacity:0.45" disabled>
+        🤝 Find Partner Matches in HubSpot
+      </button>
+      <p class="tip" style="margin-top:8px;text-align:center">Pulls your CRM companies and scores them against this opportunity. Returns top 5.</p>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="hsResultsCard" style="display:none;margin-bottom:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="icon">🏆</span> Recommended Partners</span>
+      <button onclick="copyHsResults()"
+        style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
+    </div>
+    <div class="card-body">
+      <!-- Overall BD take — rendered above the ranked list -->
+      <div id="hsOverallTake" style="display:none;border-radius:8px;padding:14px 16px;margin-bottom:20px;border-left:4px solid var(--blue);background:#f0f7ff"></div>
+      <div id="hsResultsList"></div>
+    </div>
+  </div>
+
+</div><!-- end tab-pane partners -->
 <!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
 <div class="tab-pane" id="pane-bidnobid">
 
@@ -1740,14 +1946,24 @@ async function runOutlinePreview() {
     });
     const volNames = {'0':'Executive Summary','1':'Technical Approach','2':'Past Performance','3':'Price Narrative','4':'Contract Documentation'};
 
+    // Extract any page limit assumptions that were confirmed in Step 5
+    const pageLimitCtx = assumptions
+      .filter(a => a.status === 'accepted' && /page limit|page count|not to exceed|pages/i.test(a.label + ' ' + a.value))
+      .map(a => `${a.label}: ${a.value}`)
+      .join('\n');
+
     const prompt =
       `You are a government proposal manager. Based on the information below, generate a detailed proposal outline.\n\n` +
       `VOLUMES TO WRITE: ${genVols.map(v => volNames[v]).join(', ')}\n\n` +
       (assumptionCtx ? `CONFIRMED RFP DATA:\n${assumptionCtx}\n\n` : '') +
+      (pageLimitCtx ? `CONFIRMED PAGE LIMITS FROM RFP:\n${pageLimitCtx}\n\n` : '') +
       (winThemes.length ? `WIN THEMES: ${winThemes.join(' | ')}\n\n` : '') +
       (shallsSample ? `SAMPLE REQUIREMENTS:\n${shallsSample}\n\n` : '') +
       (notes ? `PROPOSAL MANAGER NOTES: ${notes}\n\n` : '') +
-      `For each volume, list: proposed section headings, estimated page count, and 3 key points each.\n\n` +
+      `CRITICAL: Page counts per section must reflect the actual RFP page limits above — not generic estimates. ` +
+      `If a volume has a stated page limit, your section page allocations must sum to 90-97% of that limit (leave a small buffer). ` +
+      `If no limit is stated, estimate based on typical government proposals.\n\n` +
+      `For each volume, list: proposed section headings, page allocation per section (must sum to volume total), and 3 key points each.\n\n` +
       `Return ONLY compact JSON (no whitespace):\n{"volumes":[{"vol":"1","title":"Technical Approach","total_pages":"15-20","sections":[{"heading":"1.1 Understanding","pages":"3-4","key_points":["point1","point2","point3"]}]}]}\n` +
       `Limit to max 5 sections per volume. Keep key_points under 10 words each. Be concise.`;
 
@@ -1770,6 +1986,9 @@ async function runOutlinePreview() {
     let result;
     try { result = JSON.parse(raw); }
     catch(e) { const m=raw.match(/\{[\s\S]+\}/); if(m){try{result=JSON.parse(m[0]);}catch(_){}}  if(!result) throw new Error('Outline parse failed — try again. Detail: '+e.message); }
+
+    // Store the approved outline so generation can use it as binding structure
+    window._approvedOutline = result;
 
     // Render outline
     const panel   = document.getElementById('outlinePreviewPanel');
@@ -1808,20 +2027,867 @@ async function runOutlinePreview() {
 }
 
 function proceedToGenerate() {
-  document.getElementById('outlinePreviewPanel').style.display = 'none';
-  // Scroll to top so user sees the status bar showing generation progress
+  // Put the approve button into a spinner/disabled state so user knows it's running
+  const approveBtn = document.querySelector('#outlinePreviewPanel .btn-primary');
+  if (approveBtn) {
+    approveBtn.disabled = true;
+    approveBtn.innerHTML = '<span class="spinner-dark" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Generating proposal…';
+  }
+  // Scroll to top so user can see the global progress bar
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // Small delay to let scroll start before generation begins
-  setTimeout(() => {
-    const runBtn = document.getElementById('runBtn');
-    if (runBtn) runBtn.click();
-    else runGeneration();
-  }, 300);
+  // Short delay to let scroll start, then begin generation directly
+  setTimeout(() => runGeneration(), 300);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PAST PERFORMANCE RELEVANCE SCORING
+// PARTNERS TAB — HubSpot CRM Teaming Partner Matcher
 // ═══════════════════════════════════════════════════════════════════════════
+let hsRfpFiles       = [];
+let hsExtractedAttrs = null;
+let _hsToken         = '';
+
+function updateHsBtn() {
+  const val = document.getElementById('hsTokenInput')?.value.trim() || '';
+  const btn = document.getElementById('hsSaveBtn');
+  if (btn) { btn.disabled = val.length < 10; btn.style.opacity = val.length >= 10 ? '1' : '0.45'; }
+}
+
+function toggleHsToken() {
+  const inp = document.getElementById('hsTokenInput');
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function saveHsToken() {
+  const val = document.getElementById('hsTokenInput')?.value.trim() || '';
+  if (!val) return;
+  const btn = document.getElementById('hsSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+
+  try {
+    // Verify token by fetching company properties — also discovers internal names
+    const r = await fetch('https://api.hubapi.com/crm/v3/properties/companies', {
+      headers: { 'Authorization': `Bearer ${val}` }
+    });
+    if (!r.ok) {
+      const et = await r.text().catch(()=>'');
+      if (r.status === 401) throw new Error('Token rejected by HubSpot. Check that you copied the full token and that the scopes include crm.objects.companies.read.');
+      throw new Error(`HubSpot returned ${r.status}. Check your token and scopes.`);
+    }
+    const data = await r.json();
+
+    // Build a map of label → internal name for the properties we care about
+    const wantLabels = {
+      'Agency': 'agency',
+      'City': 'city',
+      'State/Region': 'state',
+      'State': 'state',
+      'Contract Vehicles': 'contract_vehicles',
+      'Disadvantaged Business Certifications': 'disadvantaged_business_certifications',
+      'NAICS': 'naics_codes',
+      'NAICS Codes': 'naics_codes',
+      'Number of Employees': 'numberofemployees',
+      'Facility Clearance': 'clearance_level',
+      'Clearance Level': 'clearance_level',
+      'Annual Revenue': 'annualrevenue',
+      'Description': 'description',
+      'Industry': 'industry',
+    };
+    const discovered = {};
+    (data.results || []).forEach(prop => {
+      const fallback = wantLabels[prop.label];
+      if (fallback) {
+        // Use the actual internal name from HubSpot, not our guess
+        discovered[fallback] = prop.name;
+      }
+    });
+    window._hsPropertyMap = discovered;
+    console.log('HubSpot property map:', discovered);
+
+    _hsToken = val;
+    sessionStorage.setItem('srfed_hs_token', val);
+    document.getElementById('hsConnectionBadge').style.display = 'block';
+    const discoveredCount = Object.keys(discovered).length;
+    document.getElementById('hsTokenStatus').innerHTML =
+      `✅ Connected. Discovered ${discoveredCount} matching CRM properties. Ready to query.`;
+    document.getElementById('hsTokenStatus').style.color = 'var(--success)';
+    updateHsMatchBtn();
+    showStatus('success', 'HubSpot connected', `Token verified. ${discoveredCount} company properties discovered.`);
+  } catch(e) {
+    document.getElementById('hsTokenStatus').textContent = '❌ ' + e.message;
+    document.getElementById('hsTokenStatus').style.color = 'var(--error)';
+    showStatus('error', 'HubSpot connection failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connect';
+    updateHsBtn();
+  }
+}
+
+function loadHsToken() {
+  const saved = sessionStorage.getItem('srfed_hs_token');
+  if (saved) {
+    _hsToken = saved;
+    const inp = document.getElementById('hsTokenInput');
+    if (inp) inp.value = saved;
+    const badge = document.getElementById('hsConnectionBadge');
+    const status = document.getElementById('hsTokenStatus');
+    if (badge) badge.style.display = 'block';
+    if (status) { status.textContent = '✅ Token loaded from this session.'; status.style.color = 'var(--success)'; }
+  }
+}
+
+function updateHsMatchBtn() {
+  const btn = document.getElementById('hsMatchBtn');
+  if (!btn) return;
+  const ok = !!_hsToken && !!hsExtractedAttrs;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.45';
+}
+
+function initHsDropZone() {
+  const dz = document.getElementById('dropZoneHsRfp');
+  const fi = document.getElementById('fileInputHsRfp');
+  if (!dz || !fi) return;
+  dz.addEventListener('click', () => fi.click());
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); addHsFiles([...e.dataTransfer.files]); });
+  fi.addEventListener('change', () => { addHsFiles([...fi.files]); fi.value = ''; });
+}
+
+function addHsFiles(files) {
+  files.forEach(f => { if (!hsRfpFiles.find(x => x.name === f.name)) hsRfpFiles.push(f); });
+  renderHsFileList();
+  const btn = document.getElementById('hsExtractBtn');
+  if (btn) { btn.disabled = hsRfpFiles.length === 0; btn.style.opacity = hsRfpFiles.length > 0 ? '1' : '0.45'; }
+}
+
+function removeHsFile(name) {
+  hsRfpFiles = hsRfpFiles.filter(f => f.name !== name);
+  renderHsFileList();
+  const btn = document.getElementById('hsExtractBtn');
+  if (btn) { btn.disabled = hsRfpFiles.length === 0; btn.style.opacity = hsRfpFiles.length > 0 ? '1' : '0.45'; }
+}
+
+function renderHsFileList() {
+  const el = document.getElementById('fileListHsRfp');
+  if (!el) return;
+  el.innerHTML = hsRfpFiles.map(f => {
+    const icon = f.name.endsWith('.pdf') ? '📄' : '📝';
+    const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+    return `<div class="file-item"><span class="file-icon">${icon}</span><span class="file-name">${escHtml(f.name)}</span><span class="file-meta"><span class="file-size">${size}</span></span><span class="file-remove" onclick="removeHsFile('${f.name.replace(/'/g,"\\'")}')">✕</span></div>`;
+  }).join('');
+}
+
+async function runHsExtract() {
+  const btn = document.getElementById('hsExtractBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> Extracting…';
+  showStatus('info', 'Extracting opportunity attributes…', 'Reading solicitation documents. ~30 seconds.', true);
+  setProgress(5, [{ text: 'Reading solicitation documents', status: 'active' }, { text: 'Extracting attributes', status: '' }]);
+  _startEtaTimer(35);
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
+    const content = [];
+    for (const f of hsRfpFiles.slice(0, 6)) { const block = await fileToContentBlock(f); if (block) content.push(block); }
+    setProgress(20, [{ text: 'Reading solicitation documents', status: 'done' }, { text: 'Extracting attributes', status: 'active' }]);
+    content.push({ type: 'text', text:
+      `Extract teaming partner matching criteria from this solicitation. Return ONLY a JSON object. Plain ASCII only, no em-dashes.\n` +
+      `{"opportunity_title":"","solicitation_number":"","agency":"","naics_code":"","naics_description":"",` +
+      `"set_aside":"e.g. Total Small Business / SDVOSB / 8(a) / Unrestricted","place_of_performance":"city, state",` +
+      `"estimated_value":"","period_of_performance":"","clearance_required":"e.g. SECRET / None",` +
+      `"key_capabilities_needed":["capability1","capability2","capability3"],` +
+      `"required_certifications":["cert1"],"contract_vehicle":"",` +
+      `"partnering_rationale":"2-3 sentences on what an ideal teaming partner would bring to this pursuit"}`
+    });
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1500, temperature: 0,
+        messages: [{ role: 'user', content }] })
+    });
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const d = await resp.json();
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
+    const m = raw.match(/\{[\s\S]+\}/);
+    if (!m) throw new Error('No JSON in response');
+    hsExtractedAttrs = JSON.parse(m[0]
+      .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"'));
+    renderHsAttributes(hsExtractedAttrs);
+    document.getElementById('hsAttributesCard').style.display = 'block';
+    document.getElementById('hsAttributesCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setProgress(100, [{ text: 'Reading solicitation documents', status: 'done' }, { text: 'Extracting attributes', status: 'done' }]);
+    showStatus('success', 'Attributes extracted', 'Review the fields below, then click Find Partner Matches.');
+    updateHsMatchBtn();
+  } catch(e) {
+    showStatus('error', 'Extraction failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Extract Opportunity Attributes';
+  }
+}
+
+function renderHsAttributes(attrs) {
+  const grid = document.getElementById('hsAttributesGrid');
+  if (!grid) return;
+  const fields = [
+    { key:'agency', label:'Agency' }, { key:'naics_code', label:'NAICS Code' },
+    { key:'naics_description', label:'NAICS Description' }, { key:'set_aside', label:'Set-Aside Type' },
+    { key:'place_of_performance', label:'Place of Performance' }, { key:'estimated_value', label:'Estimated Value' },
+    { key:'clearance_required', label:'Clearance Required' }, { key:'contract_vehicle', label:'Contract Vehicle' },
+  ];
+  grid.innerHTML = fields.map(f => `
+    <div>
+      <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">${f.label}</label>
+      <input type="text" id="hsAttr_${f.key}" value="${escHtml(attrs[f.key] || '')}"
+        style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px"
+        oninput="if(hsExtractedAttrs) hsExtractedAttrs['${f.key}']=this.value"/>
+    </div>`).join('');
+  // Array fields
+  ['key_capabilities_needed','required_certifications'].forEach((key, i) => {
+    const label = i === 0 ? 'Key Capabilities Needed' : 'Required Certifications';
+    const items = attrs[key] || [];
+    const div = document.createElement('div');
+    div.style.cssText = 'grid-column:1/-1';
+    div.innerHTML = `<label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px">${label}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--border);border-radius:6px;background:white;min-height:36px">
+        ${items.map(item=>`<span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:3px 10px;font-size:12px;color:#1e40af">${escHtml(item)}</span>`).join('')}
+        ${items.length===0?'<span style="color:var(--muted);font-size:12px;font-style:italic">None extracted</span>':''}
+      </div>`;
+    grid.appendChild(div);
+  });
+  // Rationale
+  const ratDiv = document.createElement('div');
+  ratDiv.style.cssText = 'grid-column:1/-1;margin-top:4px';
+  ratDiv.innerHTML = `<label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">Partnering Rationale</label>
+    <div style="padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6">${escHtml(attrs.partnering_rationale||'')}</div>`;
+  grid.appendChild(ratDiv);
+}
+
+async function runHsMatch() {
+  const btn = document.getElementById('hsMatchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Querying CRM…';
+  showStatus('info', 'Fetching CRM data…', 'Pulling companies from HubSpot and scoring against this opportunity.', true);
+  setProgress(5, [{ text: 'Fetching HubSpot companies', status: 'active' }, { text: 'Scoring with AI', status: '' }]);
+  _startEtaTimer(50);
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
+    if (!_hsToken) throw new Error('No HubSpot token. Enter it in the HubSpot Connection section above.');
+
+    // Use discovered property names if available, fall back to guesses
+    const pm = window._hsPropertyMap || {};
+    const prop = (key) => pm[key] || key; // returns discovered internal name or fallback
+    const props = [
+      'name', prop('city') || 'city', prop('state') || 'state',
+      prop('agency') || 'agency__primary_',
+      prop('contract_vehicles') || 'contract_vehicles',
+      prop('disadvantaged_business_certifications') || 'disadvantaged_business_certifications',
+      prop('naics_codes') || 'naics_codes',
+      prop('clearance_level') || 'clearance_level',
+      prop('annualrevenue') || 'annualrevenue',
+      prop('description') || 'description',
+      prop('industry') || 'industry',
+      prop('numberofemployees') || 'numberofemployees',
+      'notes_last_contacted', 'domain'
+    ].filter((v,i,a) => a.indexOf(v) === i).join(','); // deduplicate
+    let companies = [], after = null, pages = 0;
+    while (pages < 10) {
+      pages++;
+      const url = `https://api.hubapi.com/crm/v3/objects/companies?limit=100&properties=${props}${after?'&after='+after:''}`;
+      const r = await fetch(url, { headers: { 'Authorization': `Bearer ${_hsToken}` } });
+      if (!r.ok) {
+        const et = await r.text().catch(()=>'');
+        if (r.status===401) throw new Error('HubSpot auth failed. Check token scopes: crm.objects.companies.read');
+        throw new Error(`HubSpot error ${r.status}: ${et.substring(0,150)}`);
+      }
+      const data = await r.json();
+      companies = companies.concat(data.results||[]);
+      if (data.paging?.next?.after) after = data.paging.next.after; else break;
+    }
+    if (companies.length===0) throw new Error('No companies found in HubSpot.');
+
+    setProgress(35, [{ text: `Fetched ${companies.length} companies`, status: 'done' }, { text: 'Fetching notes', status: 'active' }]);
+
+    // Fetch notes for top 20 most-recently-contacted companies
+    const forNotes = [...companies]
+      .filter(c=>c.properties?.notes_last_contacted)
+      .sort((a,b)=>new Date(b.properties.notes_last_contacted)-new Date(a.properties.notes_last_contacted))
+      .slice(0,20);
+    const companyNotes = {};
+    await Promise.all(forNotes.map(async (co) => {
+      try {
+        const ar = await fetch(`https://api.hubapi.com/crm/v3/objects/companies/${co.id}/associations/notes?limit=3`,
+          { headers: { 'Authorization': `Bearer ${_hsToken}` } });
+        if (!ar.ok) return;
+        const ad = await ar.json();
+        const noteIds = (ad.results||[]).map(n=>n.id).slice(0,3);
+        const texts = await Promise.all(noteIds.map(async nid => {
+          const nr = await fetch(`https://api.hubapi.com/crm/v3/objects/notes/${nid}?properties=hs_note_body`,
+            { headers: { 'Authorization': `Bearer ${_hsToken}` } });
+          if (!nr.ok) return '';
+          const nd = await nr.json();
+          return nd.properties?.hs_note_body || '';
+        }));
+        const combined = texts.filter(Boolean).join(' | ').substring(0,400);
+        if (combined) companyNotes[co.id] = combined;
+      } catch(_) {}
+    }));
+
+    setProgress(55, [{ text: `Fetched ${companies.length} companies`, status: 'done' }, { text: 'Scoring with AI', status: 'active' }]);
+
+    // Build compact text summary for each company
+    const summaries = companies.map(c => {
+      const p = c.properties||{};
+      return [
+        `Company: ${p.name||'Unknown'}`,
+        p.city&&p.state?`Location: ${p.city}, ${p.state}`:(p.city||p.state)?`Location: ${p.city||p.state}`:'',
+        p['agency__primary_']?`Agency focus: ${p['agency__primary_']}`:'',
+        p.naics_codes?`NAICS: ${p.naics_codes}`:'',
+        p.disadvantaged_business_certifications?`Certs: ${p.disadvantaged_business_certifications}`:'',
+        p.clearance_level?`Clearance: ${p.clearance_level}`:'',
+        p.contract_vehicles?`Contract vehicles: ${p.contract_vehicles}`:'',
+        p.annualrevenue?`Revenue: $${Number(p.annualrevenue).toLocaleString()}`:'',
+        p.numberofemployees?`Employees: ${p.numberofemployees}`:'',
+        p.industry?`Industry: ${p.industry}`:'',
+        p.description?`About: ${String(p.description).substring(0,200)}`:'',
+        companyNotes[c.id]?`Relationship notes: ${companyNotes[c.id]}`:'',
+      ].filter(Boolean).join(' | ');
+    }).filter(s=>s.includes('Company:'));
+
+    // Build opportunity summary from editable fields
+    const opp =
+      `OPPORTUNITY: ${hsExtractedAttrs.opportunity_title||''}\n` +
+      `Agency: ${document.getElementById('hsAttr_agency')?.value||''}\n` +
+      `NAICS: ${document.getElementById('hsAttr_naics_code')?.value||''} ${document.getElementById('hsAttr_naics_description')?.value||''}\n` +
+      `Set-Aside: ${document.getElementById('hsAttr_set_aside')?.value||''}\n` +
+      `Place of Performance: ${document.getElementById('hsAttr_place_of_performance')?.value||''}\n` +
+      `Estimated Value: ${document.getElementById('hsAttr_estimated_value')?.value||''}\n` +
+      `Clearance Required: ${document.getElementById('hsAttr_clearance_required')?.value||''}\n` +
+      `Contract Vehicle: ${document.getElementById('hsAttr_contract_vehicle')?.value||''}\n` +
+      `Key Capabilities Needed: ${(hsExtractedAttrs.key_capabilities_needed||[]).join(', ')}\n` +
+      `Required Certifications: ${(hsExtractedAttrs.required_certifications||[]).join(', ')}\n` +
+      `Partnering Rationale: ${hsExtractedAttrs.partnering_rationale||''}\n` +
+      (document.getElementById('hsContextNotes')?.value.trim()?`Additional Context: ${document.getElementById('hsContextNotes').value.trim()}`:'');
+
+    const matchPrompt =
+      `You are a senior BD analyst at ${CLIENT_CONFIG.companyFullName}, an SDVOSB. Give your honest, direct professional opinion.\n\n` +
+      `${opp}\n\n` +
+      `CRM COMPANIES (${summaries.length} total - one per line):\n` +
+      summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
+      `TASK: Identify the top 5 companies best suited as teaming partners for this specific pursuit.\n` +
+      `Scoring factors in priority order: (1) capability match to the PWS requirements, ` +
+      `(2) set-aside certification alignment with the opportunity set-aside type, ` +
+      `(3) clearance level match, (4) geographic proximity to place of performance, ` +
+      `(5) contract vehicle alignment, (6) relationship quality from notes.\n\n` +
+      `Also provide a brief, honest assessment of the partner landscape specifically — not whether SRFed should pursue, ` +
+      `but: How strong is the teaming bench from this CRM? Are any of the top matches compelling enough to warrant an immediate outreach call? ` +
+      `Does the contract structure or value make teaming sensible, or is it the kind of contract where a partner adds overhead without adding much? ` +
+      `Be direct and specific. Do not comment on SRFed's own capabilities or whether to bid — only on the quality of the available partner pool.\n\n` +
+      `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
+      `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match",` +
+      `"why":"2-3 specific sentences citing their actual CRM properties and why they match this opportunity",` +
+      `"potential_role":"Specific contribution they would make to this proposal and contract",` +
+      `"concerns":"Specific gaps or risks, or None"}],` +
+      `"overall_take":"3-5 sentences assessing the partner landscape only: how strong the bench is, whether top matches are worth an immediate call, and whether the contract structure makes teaming worthwhile. Do not comment on SRFed pursuit decision."}` +
+      `\nfit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match.`;
+
+    const mr = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 3000, temperature: 0,
+        messages: [{ role: 'user', content: [{ type: 'text', text: matchPrompt }] }] })
+    });
+    if (!mr.ok) throw new Error(`Claude API error ${mr.status}`);
+    const md = await mr.json();
+    let mraw = md.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
+      .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"');
+    // Parse as object {matches, overall_take} or fall back to bare array
+    let matches, overallTake = '';
+    const objM = mraw.match(/\{[\s\S]+\}/);
+    if (objM) {
+      const parsed = JSON.parse(objM[0]);
+      if (parsed.matches) {
+        matches = parsed.matches;
+        overallTake = parsed.overall_take || '';
+      } else if (Array.isArray(parsed)) {
+        matches = parsed;
+      } else {
+        // might be object with numeric keys
+        const arr = mraw.match(/\[[\s\S]+\]/);
+        matches = arr ? JSON.parse(arr[0]) : [];
+      }
+    } else {
+      const arr = mraw.match(/\[[\s\S]+\]/);
+      if (!arr) throw new Error('No results in response');
+      matches = JSON.parse(arr[0]);
+    }
+    window._hsLastMatches  = matches;
+    window._hsOverallTake  = overallTake;
+    renderHsResults(matches, summaries.length, overallTake);
+    document.getElementById('hsResultsCard').style.display = 'block';
+    document.getElementById('hsResultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setProgress(100, [{ text: 'Fetching HubSpot companies', status: 'done' }, { text: 'Scoring with AI', status: 'done' }]);
+    showStatus('success', 'Partner matches ready', `Top ${matches.length} partners from ${summaries.length} CRM companies.`);
+  } catch(e) {
+    showStatus('error', 'Partner matching failed', e.message);
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🤝 Find Partner Matches in HubSpot';
+    updateHsMatchBtn();
+  }
+}
+
+function renderHsResults(matches, total, overallTake) {
+  const el = document.getElementById('hsResultsList');
+  const takeEl = document.getElementById('hsOverallTake');
+  if (!el) return;
+
+  // Render overall BD take above the ranked list
+  if (takeEl) {
+    if (overallTake) {
+      takeEl.style.display = 'block';
+      takeEl.innerHTML =
+        `<div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">💡 Partner Landscape Assessment</div>` +
+        `<div style="font-size:13px;line-height:1.7;color:var(--text)">${escHtml(overallTake)}</div>`;
+    } else {
+      takeEl.style.display = 'none';
+    }
+  }
+  const scoreColor = s => s>=8?'var(--success)':s>=6?'#2563eb':s>=4?'#b45309':'var(--error)';
+  const labelStyle = lbl => lbl.includes('Strong')?'background:#f0fdf4;border-color:#86efac;color:var(--success)':
+    lbl.includes('Good')?'background:#eff6ff;border-color:#bfdbfe;color:#1e40af':
+    lbl.includes('Possible')?'background:#fefce8;border-color:#fde047;color:#92400e':
+    'background:#fef2f2;border-color:#fca5a5;color:var(--error)';
+  el.innerHTML = `<p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ranked from ${total} companies in HubSpot.</p>` +
+    matches.map(m=>`
+      <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;background:white">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;flex:1">
+            <div style="font-size:22px;font-weight:900;color:var(--muted);min-width:28px">#${m.rank}</div>
+            <div>
+              <div style="font-size:16px;font-weight:800">${escHtml(m.company_name)}</div>
+              <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid;${labelStyle(m.fit_label)}">${escHtml(m.fit_label)}</span>
+            </div>
+          </div>
+          <div style="text-align:center;flex-shrink:0">
+            <div style="font-size:28px;font-weight:900;color:${scoreColor(m.fit_score)}">${m.fit_score}</div>
+            <div style="font-size:10px;color:var(--muted)">/10 fit</div>
+          </div>
+        </div>
+        <div style="font-size:13px;line-height:1.6;margin-bottom:10px">${escHtml(m.why)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:#f8fafc;border-radius:6px;padding:8px 10px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Potential Role</div>
+            <div style="font-size:12px">${escHtml(m.potential_role)}</div>
+          </div>
+          <div style="background:${m.concerns&&m.concerns!=='None'?'#fefce8':'#f0fdf4'};border-radius:6px;padding:8px 10px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Considerations</div>
+            <div style="font-size:12px">${escHtml(m.concerns||'None identified')}</div>
+          </div>
+        </div>
+      </div>`).join('');
+}
+
+function copyHsResults() {
+  const m    = window._hsLastMatches;
+  const take = window._hsOverallTake || '';
+  if (!m) return;
+  const lines = [
+    take ? `BD ANALYST TAKE:\n${take}\n` : '',
+    'RECOMMENDED PARTNERS:',
+    ...m.map(r=>`#${r.rank} ${r.company_name} (${r.fit_label}, ${r.fit_score}/10)\nWhy: ${r.why}\nRole: ${r.potential_role}\nConsiderations: ${r.concerns||'None'}`)
+  ].filter(Boolean).join('\n\n');
+  navigator.clipboard.writeText(lines).catch(()=>{ const ta=document.createElement('textarea');ta.value=lines;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta); });
+}
+
+// Partners tab init — called from DOMContentLoaded
+function initPartnersTab() {
+  loadHsToken();
+  initHsDropZone();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STANDALONE COMPLIANCE TAB
+// ═══════════════════════════════════════════════════════════════════════════
+let cmpMode       = 'session';  // 'session' | 'paste' | 'extract'
+let cmpRfpFiles   = [];
+let cmpDocFiles   = [];
+let cmpExtractedRequirements = []; // populated by extraction call
+
+function setCmpMode(mode) {
+  cmpMode = mode;
+  // Update pill styling
+  ['session','paste','extract'].forEach((m, i) => {
+    const btn = document.getElementById(`cmpModeBtn${i}`);
+    if (!btn) return;
+    const active = m === mode;
+    btn.style.background     = active ? '#eff6ff' : 'white';
+    btn.style.borderColor    = active ? 'var(--blue)' : 'var(--border)';
+    btn.style.color          = active ? 'var(--blue)' : 'var(--text)';
+    btn.style.fontWeight     = active ? '700' : '600';
+  });
+  document.getElementById('cmpModeSession').style.display  = mode === 'session'  ? 'block' : 'none';
+  document.getElementById('cmpModePaste').style.display    = mode === 'paste'    ? 'block' : 'none';
+  document.getElementById('cmpModeExtract').style.display  = mode === 'extract'  ? 'block' : 'none';
+  updateCmpRunBtn();
+  // Check session state when switching to session mode
+  if (mode === 'session') updateCmpSessionStatus();
+}
+
+function updateCmpSessionStatus() {
+  const shallsBody = document.getElementById('shallsBody');
+  const items = shallsBody ? shallsBody.querySelectorAll('.shall-item') : [];
+  const hasReqs = items.length > 0;
+  document.getElementById('cmpSessionStatus').style.display = hasReqs ? 'block' : 'none';
+  document.getElementById('cmpSessionEmpty').style.display  = hasReqs ? 'none' : 'block';
+  if (hasReqs) {
+    document.getElementById('cmpSessionStatus').textContent =
+      `✅ ${items.length} requirements from this session are ready to use.`;
+  }
+  updateCmpRunBtn();
+}
+
+function updateCmpRunBtn() {
+  const btn = document.getElementById('cmpRunBtn');
+  if (!btn) return;
+  const hasDocs = cmpDocFiles.length > 0;
+  let hasReqs = false;
+  if (cmpMode === 'session') {
+    const items = document.getElementById('shallsBody')?.querySelectorAll('.shall-item') || [];
+    hasReqs = items.length > 0;
+  } else if (cmpMode === 'paste') {
+    const txt = document.getElementById('cmpPastedReqs')?.value.trim() || '';
+    hasReqs = txt.length > 20;
+  } else if (cmpMode === 'extract') {
+    hasReqs = cmpExtractedRequirements.length > 0;
+  }
+  const ok = hasDocs && hasReqs;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.45';
+}
+
+// Pasted requirements: count lines on input
+document.addEventListener('DOMContentLoaded', () => {
+  // Init Partners tab
+  initPartnersTab();
+  // Init Compliance tab
+  const ta = document.getElementById('cmpPastedReqs');
+  if (ta) {
+    ta.addEventListener('input', () => {
+      const lines = ta.value.split('\n').map(l => l.trim()).filter(l => l.length > 10);
+      document.getElementById('cmpPasteCount').textContent = `${lines.length} requirement${lines.length !== 1 ? 's' : ''} detected`;
+      updateCmpRunBtn();
+    });
+  }
+  initCmpDropZones();
+});
+
+function initCmpDropZones() {
+  // RFP docs drop zone
+  const dzRfp = document.getElementById('dropZoneCmpRfp');
+  const fiRfp = document.getElementById('fileInputCmpRfp');
+  if (dzRfp && fiRfp) {
+    dzRfp.addEventListener('click', () => fiRfp.click());
+    dzRfp.addEventListener('dragover', e => { e.preventDefault(); dzRfp.classList.add('drag-over'); });
+    dzRfp.addEventListener('dragleave', () => dzRfp.classList.remove('drag-over'));
+    dzRfp.addEventListener('drop', e => {
+      e.preventDefault(); dzRfp.classList.remove('drag-over');
+      addCmpFiles([...e.dataTransfer.files], 'rfp');
+    });
+    fiRfp.addEventListener('change', () => { addCmpFiles([...fiRfp.files], 'rfp'); fiRfp.value = ''; });
+  }
+  // Proposal docs drop zone
+  const dzDocs = document.getElementById('dropZoneCmpDocs');
+  const fiDocs = document.getElementById('fileInputCmpDocs');
+  if (dzDocs && fiDocs) {
+    dzDocs.addEventListener('click', () => fiDocs.click());
+    dzDocs.addEventListener('dragover', e => { e.preventDefault(); dzDocs.classList.add('drag-over'); });
+    dzDocs.addEventListener('dragleave', () => dzDocs.classList.remove('drag-over'));
+    dzDocs.addEventListener('drop', e => {
+      e.preventDefault(); dzDocs.classList.remove('drag-over');
+      addCmpFiles([...e.dataTransfer.files], 'docs');
+    });
+    fiDocs.addEventListener('change', () => { addCmpFiles([...fiDocs.files], 'docs'); fiDocs.value = ''; });
+  }
+}
+
+function addCmpFiles(files, which) {
+  const arr  = which === 'rfp' ? cmpRfpFiles : cmpDocFiles;
+  const list = which === 'rfp' ? 'fileListCmpRfp' : 'fileListCmpDocs';
+  files.forEach(f => { if (!arr.find(x => x.name === f.name)) arr.push(f); });
+  renderCmpFileList(arr, list, which);
+  if (which === 'rfp') {
+    const btn = document.getElementById('cmpExtractBtn');
+    if (btn) { btn.disabled = arr.length === 0; btn.style.opacity = arr.length > 0 ? '1' : '0.45'; }
+  }
+  updateCmpRunBtn();
+}
+
+function removeCmpFile(name, which) {
+  if (which === 'rfp') {
+    cmpRfpFiles = cmpRfpFiles.filter(f => f.name !== name);
+    renderCmpFileList(cmpRfpFiles, 'fileListCmpRfp', 'rfp');
+    const btn = document.getElementById('cmpExtractBtn');
+    if (btn) { btn.disabled = cmpRfpFiles.length === 0; btn.style.opacity = cmpRfpFiles.length > 0 ? '1' : '0.45'; }
+  } else {
+    cmpDocFiles = cmpDocFiles.filter(f => f.name !== name);
+    renderCmpFileList(cmpDocFiles, 'fileListCmpDocs', 'docs');
+  }
+  updateCmpRunBtn();
+}
+
+function renderCmpFileList(arr, listId, which) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  el.innerHTML = arr.map(f => {
+    const icon = f.name.endsWith('.pdf') ? '📄' : '📝';
+    const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+    const safe = f.name.replace(/'/g,"\\'");
+    return `<div class="file-item">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name">${escHtml(f.name)}</span>
+      <span class="file-meta"><span class="file-size">${size}</span></span>
+      <span class="file-remove" onclick="removeCmpFile('${safe}','${which}')">✕</span>
+    </div>`;
+  }).join('');
+}
+
+async function runCmpExtraction() {
+  const btn = document.getElementById('cmpExtractBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> Extracting…';
+
+  const progressWrap = document.getElementById('cmpExtractProgress');
+  const bar = document.getElementById('cmpExtractBar');
+  const eta = document.getElementById('cmpExtractEta');
+  const lbl = document.getElementById('cmpExtractLabel');
+  progressWrap.style.display = 'block';
+
+  // Animate mini progress bar
+  let pct = 3;
+  const startT = Date.now();
+  const estSecs = 50;
+  const tick = setInterval(() => {
+    const elapsed = (Date.now() - startT) / 1000;
+    pct = Math.max(pct, 3 + Math.sqrt(Math.min(elapsed/estSecs,1)) * 85);
+    pct = Math.min(pct, 91);
+    if (bar) bar.style.width = pct + '%';
+    const rem = Math.max(0, estSecs - elapsed);
+    if (eta) eta.textContent = elapsed >= estSecs * 0.9 ? 'Almost done...' : `~${Math.round(rem)}s remaining`;
+  }, 500);
+
+  const finishBar = (ok) => {
+    clearInterval(tick);
+    const startPct = pct;
+    const t0 = performance.now();
+    const anim = (now) => {
+      const t = Math.min((now-t0)/500, 1);
+      const cur = startPct + (100-startPct) * (1-Math.pow(1-t,3));
+      if (bar) bar.style.width = cur + '%';
+      if (t < 1) requestAnimationFrame(anim);
+      else {
+        if (bar) bar.style.background = ok ? 'var(--success)' : 'var(--error)';
+        if (lbl) lbl.textContent = ok ? 'Requirements extracted' : 'Extraction failed';
+        if (eta) eta.textContent = ok ? 'Complete' : '';
+      }
+    };
+    requestAnimationFrame(anim);
+  };
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
+    const content = [];
+    for (const f of cmpRfpFiles.slice(0, 8)) {
+      const block = await fileToContentBlock(f);
+      if (block) content.push(block);
+    }
+    content.push({ type: 'text', text:
+      `Extract every contractor obligation from these documents — sentences with "shall", "must", "should", "will", or "required to".\n` +
+      `Return ONLY a JSON array of plain strings. Limit to the 80 most important unique requirements.\n` +
+      `["The Contractor shall provide weekly status reports to the COR.","All personnel must hold a minimum SECRET clearance."]`
+    });
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000, temperature: 0,
+        messages: [{ role: 'user', content }] })
+    });
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const d = await resp.json();
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
+    if (!raw.endsWith(']')) { const lb = raw.lastIndexOf('"'); if(lb>0) raw = raw.substring(0,lb+1)+']'; }
+    const shalls = JSON.parse(raw);
+    if (!Array.isArray(shalls) || shalls.length === 0) throw new Error('No requirements found in documents.');
+    cmpExtractedRequirements = shalls;
+
+    // Show extracted list
+    const listEl = document.getElementById('cmpExtractedReqs');
+    listEl.style.display = 'block';
+    listEl.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${shalls.length} requirements extracted:</div>` +
+      shalls.map((s,i) => `<div style="padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:12px">${i+1}. ${escHtml(s)}</div>`).join('');
+
+    finishBar(true);
+    showBnaStatus('success', 'Requirements extracted', `${shalls.length} requirements ready. Now drop your proposal documents and run the check.`);
+    updateCmpRunBtn();
+  } catch(e) {
+    finishBar(false);
+    showBnaStatus('error', 'Extraction failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Extract Requirements';
+  }
+}
+
+async function runStandaloneCompliance() {
+  const btn = document.getElementById('cmpRunBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Checking compliance…';
+
+  // Gather requirements based on mode
+  let requirements = [];
+  if (cmpMode === 'session') {
+    const shallsBody = document.getElementById('shallsBody');
+    requirements = Array.from(shallsBody?.querySelectorAll('.shall-item') || [])
+      .map(el => el.textContent.trim()).filter(r => r.length > 10);
+  } else if (cmpMode === 'paste') {
+    const txt = document.getElementById('cmpPastedReqs')?.value || '';
+    requirements = txt.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/,'').trim()).filter(r => r.length > 10);
+  } else if (cmpMode === 'extract') {
+    requirements = cmpExtractedRequirements;
+  }
+
+  if (requirements.length === 0) {
+    showBnaStatus('warn', 'No requirements', 'Provide requirements before running the check.');
+    btn.disabled = false; btn.innerHTML = '🔍 Run Compliance Check';
+    return;
+  }
+
+  showStatus('info', 'Running compliance check…', `Checking ${cmpDocFiles.length} proposal document${cmpDocFiles.length!==1?'s':''} against ${requirements.length} requirements. ~30-60 seconds.`, true);
+  setProgress(5, [{ text: 'Reading proposal documents', status: 'active' }, { text: 'Checking requirements', status: '' }]);
+  _startEtaTimer(50);
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
+
+    const content = [];
+    for (const f of cmpDocFiles.slice(0, 10)) {
+      const block = await fileToContentBlock(f);
+      if (block) content.push(block);
+    }
+
+    setProgress(20, [{ text: 'Reading proposal documents', status: 'done' }, { text: 'Checking requirements', status: 'active' }]);
+
+    const requirementsList = requirements.map((r, i) => `${i+1}. ${r}`).join('\n');
+    content.push({ type: 'text', text:
+      `You are a government proposal compliance reviewer. Check whether each requirement below is addressed in the proposal documents above.\n\n` +
+      `For each requirement return one of:\n` +
+      `- "addressed": requirement is clearly and explicitly covered\n` +
+      `- "partial": requirement is mentioned but lacks detail, specifics, or full compliance\n` +
+      `- "missing": requirement is not addressed at all\n\n` +
+      `REQUIREMENTS TO CHECK:\n${requirementsList}\n\n` +
+      `Return ONLY a JSON array — one object per requirement in the same order:\n` +
+      `[{"index":1,"status":"addressed","note":"brief explanation"},{"index":2,"status":"partial","note":"what is missing"},...]`
+    });
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 8000, temperature: 0,
+        messages: [{ role: 'user', content }] })
+    });
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const d = await resp.json();
+    let raw = d.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
+      .replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"')
+      .replace(/\u2014/g,' - ').replace(/\u2013/g,'-');
+    if (!raw.endsWith(']')) { const lb=raw.lastIndexOf('}'); if(lb>0) raw=raw.substring(0,lb+1)+']'; }
+
+    let results;
+    try { results = JSON.parse(raw); }
+    catch(e) {
+      const m = raw.match(/\[[\s\S]+\]/);
+      if (m) results = JSON.parse(m[0]); else throw new Error('Could not parse compliance results.');
+    }
+
+    // Render results
+    const addressed = results.filter(r => r.status === 'addressed');
+    const partial   = results.filter(r => r.status === 'partial');
+    const missing   = results.filter(r => r.status === 'missing');
+    const pct = Math.round((addressed.length + partial.length * 0.5) / results.length * 100);
+
+    const summaryEl = document.getElementById('cmpSummaryBar');
+    const color = pct >= 90 ? 'var(--success)' : pct >= 70 ? '#b45309' : 'var(--error)';
+    summaryEl.innerHTML =
+      `<span style="color:var(--success)">✅ ${addressed.length} addressed</span> &nbsp;` +
+      `<span style="color:#b45309">⚠️ ${partial.length} partial</span> &nbsp;` +
+      `<span style="color:var(--error)">❌ ${missing.length} missing</span> &nbsp;` +
+      `<span style="color:${color};font-size:16px;margin-left:8px">(${pct}% compliant)</span>`;
+
+    let html = '';
+    if (missing.length > 0) {
+      html += `<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--error);margin-bottom:6px">❌ MISSING — Not addressed (${missing.length})</div>`;
+      html += missing.map(r => `<div class="shall-item" style="border-left:3px solid #dc2626;padding-left:8px;color:#dc2626;margin-bottom:4px">${escHtml(requirements[r.index-1]||'')}</div>`).join('');
+      html += '</div>';
+    }
+    if (partial.length > 0) {
+      html += `<div style="margin-bottom:14px"><div style="font-weight:700;color:#b45309;margin-bottom:6px">⚠️ PARTIAL — Needs strengthening (${partial.length})</div>`;
+      html += partial.map(r => `<div class="shall-item" style="border-left:3px solid #f59e0b;padding-left:8px;margin-bottom:4px"><strong style="color:#92400e">${escHtml(requirements[r.index-1]||'')}</strong>${r.note ? `<div style="font-size:12px;color:var(--muted);margin-top:2px">${escHtml(r.note)}</div>` : ''}</div>`).join('');
+      html += '</div>';
+    }
+    if (addressed.length > 0) {
+      html += `<details style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:700;color:var(--success);margin-bottom:6px">✅ Addressed (${addressed.length}) — click to expand</summary>`;
+      html += addressed.map(r => `<div class="shall-item" style="color:var(--success);padding:3px 0;font-size:12px">${escHtml(requirements[r.index-1]||'')}</div>`).join('');
+      html += '</details>';
+    }
+
+    document.getElementById('cmpResultsList').innerHTML = html;
+    document.getElementById('cmpResultsCard').style.display = 'block';
+    document.getElementById('cmpResultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    setProgress(100, [{ text: 'Reading proposal documents', status: 'done' }, { text: 'Checking requirements', status: 'done' }]);
+    showStatus('success', 'Compliance check complete', `${addressed.length} addressed · ${partial.length} partial · ${missing.length} missing (${pct}% compliant)`);
+
+    window._cmpLastRequirements = requirements;
+    window._cmpLastResults = results;
+
+  } catch(e) {
+    showStatus('error', 'Compliance check failed', e.message);
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Run Compliance Check';
+    updateCmpRunBtn();
+  }
+}
+
+function copyCmpResults() {
+  const reqs = window._cmpLastRequirements || [];
+  const res  = window._cmpLastResults || [];
+  if (!res.length) return;
+  const lines = res.map(r => `[${r.status.toUpperCase()}] ${reqs[r.index-1]||''}${r.note ? ' — ' + r.note : ''}`);
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
 async function scorePastPerformanceRelevance() {
   if (companyFiles.filter(f => f._fromSP).length === 0) return;
   if (rfpFiles.length === 0) return; // need RFP context
@@ -2917,6 +3983,7 @@ async function runAnalysis() {
   btn.disabled = true;
   document.getElementById('analyzeBtnIcon').innerHTML = '<div class="spinner"></div>';
   document.getElementById('analyzeBtnText').textContent = 'Analyzing...';
+  window._approvedOutline = null; // clear any previous outline — new analysis = new documents
   const totalFiles = rfpFiles.length + companyFiles.length;
   const totalAnalyzeFiles = rfpFiles.length + companyFiles.length;
   showStatus('info', 'Analyzing documents...', 
@@ -2949,6 +4016,38 @@ async function runAnalysis() {
     });
 
     setProgress(20, [{ text: 'Reading RFP documents', status: 'done' }, { text: 'Analyzing with AI (this takes ~30s)', status: 'active' }]);
+
+    // ── Fire shalls extraction IN PARALLEL with the main analysis call ──────────
+    // Both calls read the same docs — starting them simultaneously cuts total wait
+    // time from (analysis + extraction) to max(analysis, extraction).
+    const rfpDocContent = msgContent.slice(0, -1); // docs without the prompt text block
+    let shallsPromise = null;
+    if (rfpFiles.length > 0) {
+      // Show loading state in shalls panel immediately
+      const shallsSection = document.getElementById('shallsSection');
+      const shallsBody    = document.getElementById('shallsBody');
+      const shallsCount   = document.getElementById('shallsCount');
+      if (shallsSection) {
+        shallsSection.style.display = 'block';
+        if (shallsCount) shallsCount.textContent = 'Extracting…';
+        if (shallsBody) {
+          shallsBody.style.display = 'block';
+          shallsBody.innerHTML = `
+            <div style="padding:12px 0">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:12px;font-weight:600;color:var(--blue)" id="shallsExtractLabel">Extracting requirements…</span>
+                <span style="font-size:11px;color:var(--muted)" id="shallsExtractEta"></span>
+              </div>
+              <div style="height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden">
+                <div id="shallsExtractBar" style="height:100%;width:3%;background:var(--blue);border-radius:2px;transition:width 0.6s"></div>
+              </div>
+            </div>`;
+          document.getElementById('shallsToggleIcon').textContent = '▲';
+        }
+      }
+      // Start shalls extraction now — runs concurrently with main analysis
+      shallsPromise = extractShallsViaApi(rfpDocContent, apiKey);
+    }
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -3003,28 +4102,6 @@ async function runAnalysis() {
     }
 
     setProgress(85, [{ text: 'Reading RFP documents', status: 'done' }, { text: 'Analyzing with AI', status: 'done' }, { text: 'Building review panels', status: 'active' }]);
-
-    // Shalls: make a SEPARATE smaller call so it doesn't truncate the main response
-    // Run it async in background — don't block the assumption display
-    if (rfpFiles.length > 0) {
-      // Show loading state in shalls panel
-      const shallsSection = document.getElementById('shallsSection');
-      const shallsBody    = document.getElementById('shallsBody');
-      const shallsCount   = document.getElementById('shallsCount');
-      if (shallsSection) {
-        shallsSection.style.display = 'block';
-        if (shallsCount) shallsCount.textContent = 'Extracting…';
-        if (shallsBody) {
-          shallsBody.style.display = 'block';
-          shallsBody.innerHTML = `<div style="font-size:13px;color:var(--muted);padding:8px 0">
-            <span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>
-            Extracting requirements from your RFP documents…
-          </div>`;
-          document.getElementById('shallsToggleIcon').textContent = '▲';
-        }
-      }
-      extractShallsViaApi(msgContent.slice(0, -1), apiKey); // pass docs without the prompt
-    }
 
     // Company-side assumptions: prefer what Claude found in SP documents.
     // Fall back to CLIENT_CONFIG cards only if no company docs were loaded.
@@ -3127,6 +4204,50 @@ function renderClarifyingQuestions(panelId, items) {
 }
 
 async function extractShallsViaApi(docContent, apiKey) {
+  // Animate the dedicated mini progress bar inside the shalls panel
+  let pct = 3;
+  const startTime = Date.now();
+  const estSecs   = 55; // extraction typically 40-70s
+  const tickInterval = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const ratio   = Math.min(elapsed / estSecs, 1);
+    pct = Math.max(pct, 3 + Math.sqrt(ratio) * 88); // sqrt curve, cap at 91
+    pct = Math.min(pct, 91);
+    const bar = document.getElementById('shallsExtractBar');
+    const eta = document.getElementById('shallsExtractEta');
+    const lbl = document.getElementById('shallsExtractLabel');
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = 'Extracting requirements…';
+    if (eta) {
+      const remaining = Math.max(0, estSecs - elapsed);
+      eta.textContent = elapsed >= estSecs * 0.9 ? 'Almost done...'
+        : remaining > 60 ? `~${Math.floor(remaining/60)}m ${Math.round(remaining%60)}s`
+        : `~${Math.round(remaining)}s remaining`;
+    }
+  }, 500);
+
+  const finishBar = (success) => {
+    clearInterval(tickInterval);
+    const bar = document.getElementById('shallsExtractBar');
+    const eta = document.getElementById('shallsExtractEta');
+    const lbl = document.getElementById('shallsExtractLabel');
+    // Animate to 100%
+    const startPct = pct;
+    const t0 = performance.now();
+    const anim = (now) => {
+      const t = Math.min((now - t0) / 500, 1);
+      const cur = startPct + (100 - startPct) * (1 - Math.pow(1-t, 3));
+      if (bar) bar.style.width = cur + '%';
+      if (t < 1) requestAnimationFrame(anim);
+      else {
+        if (bar) bar.style.background = success ? 'var(--success)' : 'var(--error)';
+        if (eta) eta.textContent = success ? 'Complete' : 'Failed';
+        if (lbl) lbl.textContent = success ? 'Requirements extracted' : 'Extraction failed';
+      }
+    };
+    requestAnimationFrame(anim);
+  };
+
   try {
     const content = [...docContent, { type: 'text', text:
       `Extract every sentence or clause from these documents that contains a contractor obligation — specifically sentences with "shall", "must", "should", "will", or "required to".\n` +
@@ -3155,10 +4276,13 @@ async function extractShallsViaApi(docContent, apiKey) {
     try {
       const shalls = JSON.parse(raw);
       if (Array.isArray(shalls) && shalls.length > 0) {
+        finishBar(true);
         populateShallsFromAnalysis(shalls.join('\n'));
+      } else {
+        finishBar(false);
       }
-    } catch(e) { console.warn('Shalls parse failed:', e.message); }
-  } catch(e) { console.warn('Shalls extraction failed:', e.message); }
+    } catch(e) { finishBar(false); console.warn('Shalls parse failed:', e.message); }
+  } catch(e) { finishBar(false); console.warn('Shalls extraction failed:', e.message); }
 }
 
 // ─── SHALLS COPY TO CLIPBOARD ────────────────────────────────────────────────
@@ -3920,6 +5044,21 @@ async function runGeneration() {
       `  ${formatPageLimit('4', 'Vol IV Contract Docs')}\n` +
       (pageLimits.notes ? `  Notes: ${pageLimits.notes}\n` : '') + '\n' +
 
+      // Approved Pink Team outline — if present, use as binding section structure
+      (window._approvedOutline && window._approvedOutline.volumes && window._approvedOutline.volumes.length > 0 ? (
+        `APPROVED PROPOSAL OUTLINE (Pink Team — treat as binding structure):\n` +
+        `You MUST follow this exact section structure. Use these headings verbatim. ` +
+        `Target page counts are the page budgets approved during Pink Team review — stay within ±5% of each section target.\n` +
+        window._approvedOutline.volumes.map(vol => {
+          const volPageLimit = pageLimits[`vol${vol.vol}`] || pageLimits[vol.vol] || '';
+          const hasHardLimit = volPageLimit && !/not specified|unlimited/i.test(String(volPageLimit));
+          return `  Volume ${vol.vol} — ${vol.title} (Pink Team target: ${vol.total_pages} pages${hasHardLimit ? `; RFP hard limit: ${volPageLimit} pages` : ''}):\n` +
+            (vol.sections || []).map(s =>
+              `    ${s.heading} [${s.pages} pp]: ${(s.key_points || []).join('; ')}`
+            ).join('\n');
+        }).join('\n') + '\n\n'
+      ) : '') +
+
       `SECTION L FORMAT REQUIREMENTS:\n` +
       (briefing.section_l_instructions||[]).map(i => `  - ${i}`).join('\n') + '\n\n' +
 
@@ -3946,7 +5085,7 @@ async function runGeneration() {
     // Helper: make a single API call for one section, with timeout
     async function writeSection(sectionPrompt, maxTok) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 300000); // 5 min timeout per section
+      const timeout = setTimeout(() => controller.abort(), 480000); // 8 min timeout per section
       try {
         const resp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -3987,7 +5126,7 @@ async function runGeneration() {
         }
       } catch(e) {
         clearTimeout(timeout);
-        if (e.name === 'AbortError') throw new Error('API call timed out after 2 minutes. Your document bundle may be too large, or the API is overloaded. Try again.');
+        if (e.name === 'AbortError') throw new Error('A section writing call timed out after 8 minutes. Your document bundle may be very large. Try reducing company documents (keep only the most relevant past performance) or run with fewer volumes selected.');
         throw e;
       }
     }
@@ -4157,11 +5296,16 @@ async function runGeneration() {
     showStatus('success', 'Proposal ready!', 'Your proposal volumes are ready to download. Review all content before submission.');
     renderDownloads(docs);
     setRunning(false);
+    // Reset the approve button if generation was started from the outline panel
+    const approveBtn = document.querySelector('#outlinePreviewPanel .btn-primary');
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.innerHTML = '✅ Approve &amp; Generate Proposal'; }
 
   } catch(err) {
     showStatus('error', 'Generation failed', err.message);
     console.error(err);
     setRunning(false);
+    const approveBtn = document.querySelector('#outlinePreviewPanel .btn-primary');
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.innerHTML = '✅ Approve &amp; Generate Proposal'; }
   }
 }
 
@@ -4534,6 +5678,9 @@ function switchTab(name) {
   const btn  = document.getElementById(`tab-${name}`);
   if (pane) pane.classList.add('active');
   if (btn)  btn.classList.add('active');
+  if (name === 'compliance' && typeof updateCmpSessionStatus === 'function') {
+    updateCmpSessionStatus();
+  }
   sessionStorage.setItem('srfed_active_tab', name);
 }
 
