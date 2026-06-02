@@ -572,7 +572,7 @@
     <button class="tab-btn" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
     <button class="tab-btn" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
-    <button class="tab-btn active" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
+    <button class="tab-btn" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
     <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
@@ -634,7 +634,7 @@
 <div class="container">
 
 <!-- ══════════════════════════ PROPOSAL TAB ══════════════════════════════ -->
-<div class="tab-pane active" id="pane-proposal">
+<div class="tab-pane" id="pane-proposal">
 
   <!-- ── ROW 1: Step 1 | Step 2 ───────────────────────────────────────────── -->
   <div class="two-col" style="margin-bottom:24px">
@@ -697,11 +697,8 @@
 
   </div>
 
-  <!-- ── ROW 2: Step 3 | Step 4 ───────────────────────────────────────────── -->
-  <div class="two-col" style="margin-bottom:24px">
-
-    <!-- Step 3: Connect SharePoint -->
-    <div class="card step-locked" id="step3Card">
+  <!-- ── Step 3: Connect SharePoint — full width ───────────────────────────── -->
+    <div class="card step-locked" id="step3Card" style="margin-bottom:24px">
       <div class="card-header"><span class="icon">🔗</span> Step 3: Connect SharePoint</div>
       <div class="card-body">
         <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete steps 1 &amp; 2 to unlock</span></div>
@@ -749,10 +746,7 @@
       </div>
     </div>
 
-    <!-- Step 4 placeholder to fill the row -->
-    <div style="display:flex;flex-direction:column;gap:0"></div>
-
-  </div>
+    <!-- Step 4: drop zones below -->
 
   <!-- ── ROW 3: Step 4 (two drop zones) ──────────────────────────────────── -->
 
@@ -962,11 +956,8 @@
     </div>
   </div>
 
-  <!-- ── ROW 5: Step 7 (left) + Proposal Calendar (right) ─────────────────── -->
-  <div class="two-col" style="margin-bottom:24px">
-
-    <!-- Step 7: Select Volumes + Generate -->
-    <div class="card step-locked" id="step7Card">
+  <!-- ── Step 7: Select Volumes & Generate — full width ───────────────────── -->
+    <div class="card step-locked" id="step7Card" style="margin-bottom:24px">
       <div class="card-header"><span class="icon">🚀</span> Step 7: Select Volumes &amp; Generate</div>
       <div class="card-body">
         <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete step 5 to unlock</span></div>
@@ -1006,15 +997,13 @@
     </div>
 
     <!-- Proposal Calendar (right side, same row as Step 7) -->
-    <div class="card" id="calendarCard" style="display:none">
+    <div class="card" id="calendarCard" style="display:none;margin-bottom:24px">
       <div class="card-header"><span class="icon">📅</span> Proposal Calendar</div>
       <div class="card-body">
         <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Key dates extracted from your RFP. Add to your calendar to stay on track.</p>
         <div id="calendarList"></div>
       </div>
     </div>
-
-  </div>
 
   <!-- ── Downloads + Log ──────────────────────────────────────────────────── -->
   <div class="card" id="downloadCard" style="display:none;margin-bottom:24px">
@@ -1087,12 +1076,11 @@
 <div class="tab-pane" id="pane-compliance">
 
   <div class="card" style="margin-bottom:24px">
-    <div class="card-header"><span class="icon">✅</span> Standalone Compliance Checker</div>
+    <div class="card-header"><span class="icon">✅</span> Step 1 — Provide Requirements</div>
     <div class="card-body">
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Check any proposal against its RFP requirements — no need to run the full generation flow. Choose how to provide requirements, drop your proposal documents, and run the check.</p>
 
-      <!-- ── Step A: Requirements Source ──────────────────────────────── -->
-      <div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:12px">Step 1 — Provide Requirements</div>
+      <!-- ── Requirements Source ──────────────────────────────── -->
 
       <!-- Mode selector -->
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
@@ -1157,10 +1145,15 @@
           </div>
         </div>
         <div id="cmpExtractedReqs" style="display:none;margin-top:12px;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:10px;background:#fafafa;font-size:12px;line-height:1.7"></div>
-      </div>
+      </div><!-- end cmpModeExtract -->
 
-      <!-- ── Step B: Proposal Documents ─────────────────────────────── -->
-      <div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:12px;margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">Step 2 — Drop Proposal Documents</div>
+    </div><!-- end Step 1 card-body -->
+  </div><!-- end Step 1 card -->
+
+  <!-- Step 2: Drop Proposal Documents + Run -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">📝</span> Step 2 — Drop Proposal Documents</div>
+    <div class="card-body">
       <div class="drop-zone" id="dropZoneCmpDocs" style="margin-bottom:8px">
         <input type="file" id="fileInputCmpDocs" multiple accept=".pdf,.docx,.doc"/>
         <div class="dz-icon">📝</div>
@@ -1169,7 +1162,6 @@
       </div>
       <div class="file-list" id="fileListCmpDocs" style="margin-bottom:16px"></div>
 
-      <!-- ── Run ────────────────────────────────────────────────────── -->
       <button class="btn btn-primary" id="cmpRunBtn" onclick="runStandaloneCompliance()"
         style="width:100%;font-size:15px;padding:14px" disabled>
         🔍 Run Compliance Check
@@ -1199,7 +1191,7 @@
   <!-- HubSpot connection card -->
   <div class="card" style="margin-bottom:24px">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-      <span><span class="icon">🔗</span> HubSpot Connection</span>
+      <span><span class="icon">🔗</span> Step 1: HubSpot Connection</span>
       <div id="hsConnectionBadge" style="display:none;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;background:#f0fdf4;border:1px solid #86efac;color:var(--success)">✅ Connected</div>
     </div>
     <div class="card-body">
@@ -1270,15 +1262,19 @@
         </button>
       </div>
       <div id="hsTokenStatus" style="font-size:12px;color:var(--muted)">Scope needed: <code>crm.objects.companies.read</code></div>
-      </div><!-- end hsApiMethod -->
-    </div>
-  </div>
+    </div><!-- end card-body -->
+  </div><!-- end HubSpot connection card -->
+
 
   <!-- Step 2: Drop RFP docs — locked until HubSpot connected -->
-  <div class="card step-locked" id="hsRfpCard" style="margin-bottom:24px">
+  <div class="card" id="hsRfpCard" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📄</span> Step 2: Drop Solicitation Documents</div>
     <div class="card-body">
-      <div class="lock-msg" id="hsRfpLockMsg"><span class="lock-icon">🔒</span><span class="lock-text">Connect to HubSpot in Step 1 to unlock</span></div>
+      <!-- Lock message — shown until HubSpot connects, hidden inline (no position:absolute) -->
+      <div id="hsRfpLockMsg" style="text-align:center;padding:24px 16px;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;margin-bottom:14px">
+        <div style="font-size:24px;margin-bottom:6px">🔒</div>
+        <div style="font-size:13px;font-weight:700;color:var(--muted)">Connect to HubSpot in Step 1 to unlock</div>
+      </div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
       <div class="drop-zone" id="dropZoneHsRfp" style="margin-bottom:8px">
         <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
@@ -1332,7 +1328,7 @@
 
 </div><!-- end tab-pane partners -->
 <!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
-<div class="tab-pane" id="pane-bidnobid">
+<div class="tab-pane active" id="pane-bidnobid">
 
   <div class="card" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📄</span> Bid/No-Bid Analysis — Document Input</div>
@@ -2106,7 +2102,6 @@ async function saveHsToken() {
   try {
     // Verify token and discover properties via proxy
     const data = await hsProxyFetch(val, '/crm/v3/properties/companies');
-
     // Build a map of label → internal name for the properties we care about
     const wantLabels = {
       'Agency': 'agency',
@@ -2143,9 +2138,8 @@ async function saveHsToken() {
       `✅ Connected. Discovered ${discoveredCount} matching CRM properties. Ready to query.`;
     document.getElementById('hsTokenStatus').style.color = 'var(--success)';
     // Unlock Step 2
-    const rfpCard = document.getElementById('hsRfpCard');
     const rfpLock = document.getElementById('hsRfpLockMsg');
-    if (rfpCard) rfpCard.classList.remove('step-locked');
+    if (rfpCard) 
     if (rfpLock) rfpLock.style.display = 'none';
     updateHsMatchBtn();
     showStatus('success', 'HubSpot connected', `Token verified. ${discoveredCount} company properties discovered. You can now drop your solicitation documents.`);
@@ -2171,9 +2165,8 @@ function loadHsToken() {
     if (badge) badge.style.display = 'block';
     if (status) { status.textContent = '✅ Token loaded from this session.'; status.style.color = 'var(--success)'; }
     // Unlock Step 2
-    const rfpCard = document.getElementById('hsRfpCard');
     const rfpLock = document.getElementById('hsRfpLockMsg');
-    if (rfpCard) rfpCard.classList.remove('step-locked');
+    if (rfpCard) 
     if (rfpLock) rfpLock.style.display = 'none';
   }
 }
@@ -2227,9 +2220,8 @@ function loadHsCsv(file) {
       _hsCsvCompanies = rows;
       _hsToken = 'csv'; // flag that we're in CSV mode
       // Unlock Step 2
-      const rfpCard = document.getElementById('hsRfpCard');
       const rfpLock = document.getElementById('hsRfpLockMsg');
-      if (rfpCard) rfpCard.classList.remove('step-locked');
+      if (rfpCard) 
       if (rfpLock) rfpLock.style.display = 'none';
       document.getElementById('hsConnectionBadge').style.display = 'block';
       status.style.background = '#f0fdf4';
@@ -2274,17 +2266,28 @@ function parseHsCsv(text) {
 
 const HS_PROXY = 'https://srfed-hubspot-proxy.paul-scace.workers.dev';
 
-// Call HubSpot via the Cloudflare proxy (avoids browser CORS restriction)
 async function hsProxyFetch(token, path) {
-  const r = await fetch(HS_PROXY, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, path })
-  });
+  let r;
+  try {
+    r = await fetch(HS_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, path })
+    });
+  } catch(networkErr) {
+    throw new Error(
+      'Could not reach the HubSpot proxy. This can happen if:\n' +
+      '1. The Cloudflare Worker is not deployed — go to srfed-hubspot-proxy on Cloudflare and click Deploy.\n' +
+      '2. Your browser is blocking the request — try a different browser or disable extensions.\n' +
+      'Technical detail: ' + networkErr.message
+    );
+  }
   if (!r.ok) {
-    const et = await r.text().catch(() => '');
-    if (r.status === 401) throw new Error('HubSpot auth failed. Check that your API key has the crm.objects.companies.read scope.');
-    throw new Error(`HubSpot error ${r.status}: ${et.substring(0, 200)}`);
+    let errText = '';
+    try { errText = await r.text(); } catch(_) {}
+    if (r.status === 401) throw new Error('HubSpot auth failed. Check that your API key has the crm.objects.companies.read scope and is still active.');
+    if (r.status === 403) throw new Error('Path not allowed by proxy. Contact your administrator.');
+    throw new Error(`HubSpot/proxy error ${r.status}: ${errText.substring(0, 200)}`);
   }
   return r.json();
 }
@@ -5953,7 +5956,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateStepLocks();
   restoreSession();
   const savedTab = sessionStorage.getItem('srfed_active_tab');
-  if (savedTab) switchTab(savedTab);
+  switchTab(savedTab || 'bidnobid');
 });
 
 // BNA button update — defined below after weight system is initialized
