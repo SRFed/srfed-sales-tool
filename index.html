@@ -1270,23 +1270,26 @@
   <div class="card" id="hsRfpCard" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📄</span> Step 2: Drop Solicitation Documents</div>
     <div class="card-body">
-      <!-- Lock message — shown until HubSpot connects, hidden inline (no position:absolute) -->
+      <!-- Lock message — shown until HubSpot connects -->
       <div id="hsRfpLockMsg" style="text-align:center;padding:24px 16px;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;margin-bottom:14px">
         <div style="font-size:24px;margin-bottom:6px">🔒</div>
         <div style="font-size:13px;font-weight:700;color:var(--muted)">Connect to HubSpot in Step 1 to unlock</div>
       </div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
-      <div class="drop-zone" id="dropZoneHsRfp" style="margin-bottom:8px">
-        <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
-        <div class="dz-icon">📄</div>
-        <div class="dz-title">Drop RFP / PWS / SOW Here</div>
-        <div class="dz-sub">PDF or Word</div>
+      <!-- Step 2 content — hidden until connected -->
+      <div id="hsRfpContent" style="display:none">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
+        <div class="drop-zone" id="dropZoneHsRfp" style="margin-bottom:8px">
+          <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
+          <div class="dz-icon">📄</div>
+          <div class="dz-title">Drop RFP / PWS / SOW Here</div>
+          <div class="dz-sub">PDF or Word</div>
+        </div>
+        <div class="file-list" id="fileListHsRfp" style="margin-bottom:14px"></div>
+        <button id="hsExtractBtn" onclick="runHsExtract()"
+          style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
+          🔍 Extract Opportunity Attributes
+        </button>
       </div>
-      <div class="file-list" id="fileListHsRfp" style="margin-bottom:14px"></div>
-      <button id="hsExtractBtn" onclick="runHsExtract()"
-        style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
-        🔍 Extract Opportunity Attributes
-      </button>
     </div>
   </div>
 
@@ -1330,13 +1333,14 @@
 <!-- ══════════════════════════ BID/NO-BID TAB ════════════════════════════ -->
 <div class="tab-pane active" id="pane-bidnobid">
 
+  <!-- Step 1: Document Input -->
   <div class="card" style="margin-bottom:24px">
-    <div class="card-header"><span class="icon">📄</span> Bid/No-Bid Analysis — Document Input</div>
+    <div class="card-header"><span class="icon">📄</span> Step 1: Document Input</div>
     <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Upload the solicitation and optionally your company documents. Use the drop zones, SharePoint links, or both. Company documents significantly improve scoring accuracy.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Upload the solicitation and optionally your company documents. Company documents significantly improve scoring accuracy for Past Performance and Technical Capability.</p>
 
-      <!-- RFP Documents -->
-      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px">📂 Solicitation Documents</div>
+      <!-- Solicitation Documents -->
+      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px">📂 Solicitation Documents <span style="font-size:12px;font-weight:600;color:var(--error)">*required</span></div>
       <div class="drop-zone" id="dropZoneBNA" style="margin-bottom:8px">
         <input type="file" id="fileInputBNA" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
         <div class="dz-icon">📂</div>
@@ -1347,7 +1351,7 @@
 
       <!-- Company Documents -->
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:8px">
-        <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">🏢 Company Documents <span style="font-size:12px;font-weight:400;color:var(--muted)">(optional — improves PP and capability scoring)</span></div>
+        <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">🏢 Company Documents <span style="font-size:12px;font-weight:400;color:var(--muted)">(optional — significantly improves PP and capability scoring)</span></div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Drop files directly, enter SharePoint folder URLs, or both. Without company documents, Past Performance and Technical Capability scores are estimates only.</p>
 
         <div class="drop-zone" id="dropZoneBNADocs" style="min-height:80px;margin-bottom:8px">
@@ -1358,60 +1362,57 @@
         </div>
         <div class="file-list" id="fileListBNADocs" style="margin-bottom:12px"></div>
 
-        <!-- SharePoint URL inputs — self-contained, independent of Proposal tab -->
-        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">🔗 Or load from SharePoint</div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+        <!-- SharePoint — prominent, not buried -->
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:10px">🔗 Load from SharePoint</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Enter your SharePoint folder URLs to load past performance and resume documents directly from your company's files.</p>
+          <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px">
             <div>
-              <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Past Performance Folder URL</label>
-              <input type="text" id="bnaSPPastPerf" placeholder="https://yourcompany.sharepoint.com/..." style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>
+              <label style="font-size:12px;font-weight:600;color:var(--blue);display:block;margin-bottom:3px">Past Performance Folder URL</label>
+              <input type="text" id="bnaSPPastPerf" placeholder="https://yourcompany.sharepoint.com/..." style="width:100%;padding:8px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px"/>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--blue);display:block;margin-bottom:3px">Resumes / Capability Folder URL</label>
+              <input type="text" id="bnaSPResumes" placeholder="https://yourcompany.sharepoint.com/..." style="width:100%;padding:8px 10px;border:1px solid #bfdbfe;border-radius:6px;font-size:13px"/>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px">
-            <div>
-              <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Resumes / Capability Folder URL</label>
-              <input type="text" id="bnaSPResumes" placeholder="https://yourcompany.sharepoint.com/..." style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>
-            </div>
-          </div>
-          <button onclick="loadBnaSPFiles()" id="bnaSPLoadBtn" style="padding:7px 16px;font-size:12px;font-weight:600;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer">
+          <button onclick="loadBnaSPFiles()" id="bnaSPLoadBtn" style="padding:8px 18px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer">
             🔗 Load from SharePoint
           </button>
-        <div id="bnaSPStatus" style="display:none;font-size:12px;margin-top:8px"></div>
+          <div id="bnaSPStatus" style="display:none;font-size:12px;margin-top:8px"></div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Weight Editor — inside doc card, before Analyze -->
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
-        <div onclick="toggleWeightEditor()"
-          style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0">
-          <div style="font-size:15px;font-weight:700;color:var(--blue)">⚖️ Customize Scoring Weights</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span id="weightTotalBadge"
-              style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#f0fdf4;border:1px solid #86efac;color:var(--success)">
-              100% ✓
-            </span>
-            <span id="weightEditorToggle" style="font-size:12px;color:var(--muted)">▲ collapse</span>
+  <!-- Step 2: Scoring Weights + Analyze — locked until solicitation docs present -->
+  <div class="card step-locked" id="bnaStep2Card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">⚖️</span> Step 2: Customize Scoring &amp; Analyze</div>
+    <div class="card-body">
+      <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Drop solicitation documents in Step 1 to unlock</span></div>
+
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Adjust how much each factor contributes to the final score. All weights must total exactly 100%.</p>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 Tier 1 — Auto-Scored (Claude reads documents)</div>
+        <div id="weightsTier1" style="margin-bottom:16px"></div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">✍️ Tier 2 — Your Assessment</div>
+        <div id="weightsTier2" style="margin-bottom:12px"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:2px solid" id="weightTotalRow">
+          <span style="font-size:13px;font-weight:700">Total Weight</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px;font-weight:900" id="weightTotalDisplay">100%</span>
+            <button onclick="resetWeights()" style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--muted)">Reset</button>
           </div>
         </div>
-        <div id="weightEditorBody" style="display:block;margin-top:12px">
-          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Adjust how much each factor contributes to the final score. All weights must total exactly 100%.</p>
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 Tier 1 — Auto-Scored (Claude reads documents)</div>
-          <div id="weightsTier1" style="margin-bottom:16px"></div>
-          <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">✍️ Tier 2 — Your Assessment</div>
-          <div id="weightsTier2" style="margin-bottom:12px"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:2px solid" id="weightTotalRow">
-            <span style="font-size:13px;font-weight:700">Total Weight</span>
-            <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-size:18px;font-weight:900" id="weightTotalDisplay">100%</span>
-              <button onclick="resetWeights()" style="padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--muted)">Reset</button>
-            </div>
-          </div>
-        </div>
+        <span id="weightTotalBadge" style="display:none"></span><!-- kept for JS compat -->
+        <span id="weightEditorToggle" style="display:none"></span><!-- kept for JS compat -->
+        <div id="weightEditorBody" style="display:none"></div><!-- kept for JS compat -->
       </div>
 
       <div id="bnaWeightError" style="display:none;margin-top:10px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;font-size:12px;font-weight:600;color:var(--error)"></div>
 
-      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:12px">
+      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:12px;font-size:15px;padding:14px">
         🎯 Analyze Opportunity
       </button>
     </div>
@@ -2139,8 +2140,7 @@ async function saveHsToken() {
     document.getElementById('hsTokenStatus').style.color = 'var(--success)';
     // Unlock Step 2
     const rfpLock = document.getElementById('hsRfpLockMsg');
-    if (rfpCard) 
-    if (rfpLock) rfpLock.style.display = 'none';
+    if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block';
     updateHsMatchBtn();
     showStatus('success', 'HubSpot connected', `Token verified. ${discoveredCount} company properties discovered. You can now drop your solicitation documents.`);
   } catch(e) {
@@ -2166,8 +2166,7 @@ function loadHsToken() {
     if (status) { status.textContent = '✅ Token loaded from this session.'; status.style.color = 'var(--success)'; }
     // Unlock Step 2
     const rfpLock = document.getElementById('hsRfpLockMsg');
-    if (rfpCard) 
-    if (rfpLock) rfpLock.style.display = 'none';
+    if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block';
   }
 }
 
@@ -2218,11 +2217,10 @@ function loadHsCsv(file) {
       const rows = parseHsCsv(e.target.result);
       if (rows.length === 0) throw new Error('No data rows found in CSV.');
       _hsCsvCompanies = rows;
-      _hsToken = 'csv'; // flag that we're in CSV mode
+      _hsToken = 'csv';
       // Unlock Step 2
       const rfpLock = document.getElementById('hsRfpLockMsg');
-      if (rfpCard) 
-      if (rfpLock) rfpLock.style.display = 'none';
+      if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block';
       document.getElementById('hsConnectionBadge').style.display = 'block';
       status.style.background = '#f0fdf4';
       status.style.border = '1px solid #86efac';
@@ -3912,6 +3910,12 @@ function initDropZone(zoneId, inputId, fileArray, listId) {
   const input = document.getElementById(inputId);
   if (!zone || !input) return;
 
+  // Prevent clicks on file list items from re-opening the file picker
+  zone.addEventListener('click', (e) => {
+    if (e.target.closest('.file-item') || e.target.closest('.file-remove')) {
+      e.preventDefault(); e.stopPropagation();
+    }
+  });
   zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
@@ -6246,6 +6250,12 @@ function updateBnaBtn() {
   const weightsOk = getWeightTotal() === 100;
   btn.disabled    = !hasFiles || !weightsOk;
   btn.style.opacity = (hasFiles && weightsOk) ? '1' : '0.45';
+  // Lock/unlock Step 2 based on whether solicitation docs are present
+  const step2 = document.getElementById('bnaStep2Card');
+  if (step2) {
+    if (hasFiles) step2.classList.remove('step-locked');
+    else step2.classList.add('step-locked');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
