@@ -1267,14 +1267,10 @@
 
 
   <!-- Step 2: Drop RFP docs — locked until HubSpot connected -->
-  <div class="card" id="hsRfpCard" style="margin-bottom:24px">
+  <div class="card step-locked" id="hsRfpCard" style="margin-bottom:24px">
     <div class="card-header"><span class="icon">📄</span> Step 2: Drop Solicitation Documents</div>
     <div class="card-body">
-      <!-- Lock message — shown until HubSpot connects -->
-      <div id="hsRfpLockMsg" style="text-align:center;padding:24px 16px;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;margin-bottom:14px">
-        <div style="font-size:24px;margin-bottom:6px">🔒</div>
-        <div style="font-size:13px;font-weight:700;color:var(--muted)">Connect to HubSpot in Step 1 to unlock</div>
-      </div>
+      <div class="lock-msg" id="hsRfpLockMsg"><span class="lock-icon">🔒</span><span class="lock-text">Connect to HubSpot in Step 1 to unlock</span></div>
       <!-- Step 2 content — hidden until connected -->
       <div id="hsRfpContent" style="display:none">
         <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
@@ -1394,9 +1390,9 @@
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Adjust how much each factor contributes to the final score. All weights must total exactly 100%.</p>
 
       <div style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 Tier 1 — Auto-Scored (Claude reads documents)</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 Automated Tier — Scored by Claude</div>
         <div id="weightsTier1" style="margin-bottom:16px"></div>
-        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">✍️ Tier 2 — Your Assessment</div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">✍️ Manual Tier — Your Assessment</div>
         <div id="weightsTier2" style="margin-bottom:12px"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:2px solid" id="weightTotalRow">
           <span style="font-size:13px;font-weight:700">Total Weight</span>
@@ -1433,15 +1429,15 @@
 
         <div id="bnaDataConfidence" style="display:none;padding:8px 12px;border:1px solid;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:16px"></div>
 
-        <!-- Tier 1: Claude-scored factors -->
+        <!-- Automated Tier: Claude-scored factors -->
         <div style="font-size:15px;font-weight:800;color:var(--blue);margin-bottom:12px;letter-spacing:0.2px">
-          🤖 Tier 1 — Auto-Scored from Documents
+          🤖 Automated Tier — Scored from Documents
         </div>
         <div id="bnaFactorsTier1" style="margin-bottom:24px"></div>
 
-        <!-- Tier 2: Human-scored factors -->
+        <!-- Manual Tier: Human-scored factors -->
         <div style="font-size:15px;font-weight:800;color:var(--blue);margin-bottom:4px;letter-spacing:0.2px">
-          ✍️ Tier 2 — Your Assessment (adjusts score live)
+          ✍️ Manual Tier — Your Assessment (adjusts score live)
         </div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:12px">These factors require internal knowledge only you have. Set each 0-10 using the anchors as guides.</p>
         <div id="bnaFactorsTier2" style="margin-bottom:20px"></div>
@@ -1503,7 +1499,7 @@
     <!-- Opportunity Intelligence Card -->
     <div class="card" style="margin-bottom:24px">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-        <span><span class="icon">📊</span> Opportunity Intelligence</span>
+        <span><span class="icon">📊</span> Step 3: Opportunity Intelligence</span>
         <div style="display:flex;gap:8px;align-items:center">
           <span style="font-size:11px;font-weight:600;padding:3px 8px;background:#fef9c3;border:1px solid #fde047;border-radius:10px;color:#92400e">🔶 Amber = Inferred</span>
           <button onclick="copyOpportunityIntel()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
@@ -2140,7 +2136,7 @@ async function saveHsToken() {
     document.getElementById('hsTokenStatus').style.color = 'var(--success)';
     // Unlock Step 2
     const rfpLock = document.getElementById('hsRfpLockMsg');
-    if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block';
+    if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block'; const rfpCard2 = document.getElementById('hsRfpCard'); if (rfpCard2) rfpCard2.classList.remove('step-locked');
     updateHsMatchBtn();
     showStatus('success', 'HubSpot connected', `Token verified. ${discoveredCount} company properties discovered. You can now drop your solicitation documents.`);
   } catch(e) {
@@ -2166,7 +2162,8 @@ function loadHsToken() {
     if (status) { status.textContent = '✅ Token loaded from this session.'; status.style.color = 'var(--success)'; }
     // Unlock Step 2
     const rfpLock = document.getElementById('hsRfpLockMsg');
-    if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block';
+    if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block'; const rfpCard2 = document.getElementById('hsRfpCard'); if (rfpCard2) rfpCard2.classList.remove('step-locked');
+    updateHsBtn(); // enable Connect button so user can re-verify if needed
   }
 }
 
@@ -2220,7 +2217,7 @@ function loadHsCsv(file) {
       _hsToken = 'csv';
       // Unlock Step 2
       const rfpLock = document.getElementById('hsRfpLockMsg');
-      if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block';
+      if (rfpLock) rfpLock.style.display = 'none'; const rfpContent = document.getElementById('hsRfpContent'); if (rfpContent) rfpContent.style.display = 'block'; const rfpCard2 = document.getElementById('hsRfpCard'); if (rfpCard2) rfpCard2.classList.remove('step-locked');
       document.getElementById('hsConnectionBadge').style.display = 'block';
       status.style.background = '#f0fdf4';
       status.style.border = '1px solid #86efac';
@@ -2292,6 +2289,8 @@ async function hsProxyFetch(token, path) {
 
 function updateHsMatchBtn() {
   const btn = document.getElementById('hsMatchBtn');
+  if (!btn) return;
+  const ok = !!_hsToken && !!hsExtractedAttrs;
   btn.disabled = !ok;
   btn.style.opacity = ok ? '1' : '0.45';
 }
@@ -6457,7 +6456,7 @@ async function runBidNoBid() {
       `- Each rationale: 2-3 sentences citing SPECIFIC evidence from the solicitation (section numbers, NAICS, set-aside type, FTE counts, clearance levels, etc.). NO generic statements.\n` +
       `- risks: 3-5 items citing SPECIFIC risks found in this solicitation (incumbent language, certification requirements, evaluation criteria, timeline constraints, etc.)\n` +
       `- win_strategy: 3-5 SPECIFIC strategies for THIS opportunity based on the solicitation requirements\n` +
-      `- summary: 3-4 sentences of analytical narrative explaining the overall score and bid/no-bid rationale\n` +
+      `- summary: 3-4 sentences of analytical narrative explaining the overall score and bid/no-bid rationale. Reference the score as X out of 10 (combining both Automated and Manual tiers). Do NOT invent alternative scoring scales like x/60 or percentages — the final score is always out of 10.\n` +
       `- Use only plain ASCII text. No em-dashes, no smart quotes, no backslashes.\n\n` +
       `Respond with ONLY the completed JSON. No markdown. No preamble.`
     });
@@ -6610,8 +6609,8 @@ async function runBidNoBid() {
     if (confEl) {
       confEl.style.display = 'block';
       confEl.textContent = hasCompanyDocs
-        ? '✅ HIGH confidence — Tier 1 scored from actual company documents'
-        : '⚠️ LOW confidence for Tier 1 PP/capability — no company documents provided.';
+        ? '✅ HIGH confidence — Automated Tier scored from actual company documents'
+        : '⚠️ LOW confidence for Automated Tier PP/capability — no company documents provided.';
       confEl.style.background = hasCompanyDocs ? '#f0fdf4' : '#fefce8';
       confEl.style.borderColor = hasCompanyDocs ? '#86efac' : '#fde047';
       confEl.style.color = hasCompanyDocs ? 'var(--success)' : '#92400e';
@@ -6652,7 +6651,7 @@ async function runBidNoBid() {
 
     stopBnaEta();
     setBnaProgress(100, 'Complete');
-    showBnaStatus('success', 'Analysis complete', `Tier 1 scored. Adjust Tier 2 sliders and confirm to get your final bid/no-bid score.`);
+    showBnaStatus('success', 'Analysis complete', `Automated Tier scored. Adjust Manual Tier sliders and confirm to get your final bid/no-bid score.`);
 
   } catch(e) {
     stopBnaEta();
@@ -6670,13 +6669,12 @@ function confirmBnaScore() {
   const scoreBreakdown  = document.getElementById('bnaScoreBreakdown');
   if (verdictBanner)  verdictBanner.style.display  = 'flex';
   if (scoreBreakdown) scoreBreakdown.style.display  = 'block';
-  // Replace confirm button with "Recalculate" option
+  // Replace confirm button with simple confirmation note (sliders update live)
   const confirmRow = document.getElementById('bnaConfirmRow');
   if (confirmRow) {
     confirmRow.style.background = '#f0fdf4';
     confirmRow.style.borderColor = '#86efac';
-    confirmRow.innerHTML = '<p style="font-size:12px;color:var(--success);font-weight:600;margin-bottom:6px">✅ Score confirmed. Adjust sliders above and click Recalculate to update.</p>' +
-      '<button onclick="confirmBnaScore()" style="padding:6px 18px;font-size:12px;font-weight:600;border:1px solid var(--success);color:var(--success);background:white;border-radius:6px;cursor:pointer">🔄 Recalculate</button>';
+    confirmRow.innerHTML = '<p style="font-size:13px;color:var(--success);font-weight:600;text-align:center">✅ Score confirmed — adjust sliders above to update live.</p>';
   }
   // Scroll to verdict
   verdictBanner?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -6884,7 +6882,7 @@ function renderOpportunityIntel(intel, container) {
     { key:'opportunity_url',              label:'Opportunity URL' },
     { key:'description',                  label:'Description of Procurement' },
     { key:'fte_count',                    label:'Number of FTEs' },
-    { key:'contract_years',               label:'Contract Duration' },
+    { key:'contract_years',               label:'Contract Duration (years)' },
     { key:'place_of_performance',         label:'Place of Performance' },
     { key:'work_setting',                 label:'In-Person / Remote / Hybrid' },
     { key:'period_of_performance',        label:'Period of Performance' },
@@ -7032,7 +7030,7 @@ function renderOpportunityIntel(intel, container) {
       </div>`;
     }
     return `<div style="display:flex;gap:12px;padding:8px 4px;${rowBg}align-items:baseline">
-      <div style="min-width:220px;max-width:220px;font-size:12px;font-weight:700;color:var(--text);flex-shrink:0">${escHtml(f.label)}:</div>
+      <div style="min-width:220px;max-width:220px;font-size:12px;font-weight:700;color:var(--text);flex-shrink:0;text-align:right">${escHtml(f.label)}:</div>
       <div style="font-size:13px;flex:1;line-height:1.5">${displayHtml}</div>
     </div>`;
   }).join('');
