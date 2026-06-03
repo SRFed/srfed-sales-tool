@@ -2299,11 +2299,13 @@ function initHsDropZone() {
   const dz = document.getElementById('dropZoneHsRfp');
   const fi = document.getElementById('fileInputHsRfp');
   if (!dz || !fi) return;
+  // Mirror initDropZone exactly — let native browser behavior open the file picker,
+  // only block clicks on file list items from re-triggering it
   dz.addEventListener('click', (e) => {
     if (e.target.closest('.file-item') || e.target.closest('.file-remove')) {
-      e.preventDefault(); e.stopPropagation(); return;
+      e.preventDefault(); e.stopPropagation();
     }
-    fi.click();
+    // No manual fi.click() — native input inside div handles it automatically
   });
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
@@ -2535,7 +2537,7 @@ async function runHsMatch() {
 
     const setAside = document.getElementById('hsAttr_set_aside')?.value || hsExtractedAttrs.set_aside || '';
     const fteCount = hsExtractedAttrs.fte_count || '';
-    const isRestrictiveSetAside = setAside && !/unrestricted|full.and.open|not.stated|none|n\/a|total small business/i.test(setAside);
+    const isRestrictiveSetAside = setAside && !/unrestricted|full.and.open|not.stated|none|n\/a/i.test(setAside);
     const isSingleFte = /^1$|^one$/i.test(fteCount.trim());
 
     const matchPrompt =
@@ -2545,19 +2547,22 @@ async function runHsMatch() {
       summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
       `TASK: Identify the top 5 companies best suited as teaming partners for this specific pursuit.\n` +
       (isSingleFte ? `CRITICAL: This opportunity is for approximately ${fteCount} FTE. You CANNOT meaningfully split a single position between two companies. Lead your overall_take with a clear, prominent statement that teaming is almost certainly not viable for this opportunity regardless of who is in the CRM.\n` : '') +
-      `Scoring factors: (1) capability match to the PWS requirements, ` +
       (isRestrictiveSetAside
-        ? `(2) set-aside certification match — this IS a ${setAside} set-aside so only qualifying companies apply, `
-        : `(2) capability and past performance fit — this opportunity has NO restrictive set-aside so do NOT discuss 8(a), SDVOSB, or other small business certifications as matching factors since they are irrelevant here, `) +
-      `(3) clearance level, (4) geographic proximity, (5) contract vehicle alignment, (6) relationship quality from notes.\n\n` +
-      `Also provide a partner landscape assessment: how strong is the bench, are any matches worth an immediate call, does teaming make sense for this contract? ` +
+        ? (/total.small.business/i.test(setAside)
+            ? `SET-ASIDE NOTE: This is a Total Small Business set-aside. Partners must qualify as small businesses under the applicable NAICS size standard. 8(a), SDVOSB, HUBZone and other specific certifications beyond small business status are NOT required and should not be weighted as matching factors.\n`
+            : `SET-ASIDE NOTE: This IS a ${setAside} set-aside. Only companies with that specific certification are eligible — weight this heavily in your scoring.\n`)
+        : `SET-ASIDE NOTE: This opportunity has NO restrictive set-aside (unrestricted or open). Small business certifications (8(a), SDVOSB, HUBZone, WOSB, etc.) are completely IRRELEVANT to partner selection. Do NOT mention them. Score partners on capability, vehicle access, clearance, and geographic fit only.\n`) +
+      `Scoring factors: (1) capability match to the PWS requirements, ` +
+      `(2) clearance level match, (3) geographic proximity, (4) contract vehicle alignment, (5) relationship quality from notes.\n\n` +
+      `Provide a partner landscape assessment: how strong is the bench, are any matches worth an immediate call, does teaming make sense? ` +
+      (isSingleFte ? `Since this is a single-FTE position, lead with a clear statement that teaming is not viable. ` : '') +
       `Do not comment on SRFed pursuit decision — only on partner quality.\n\n` +
       `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
       `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match",` +
       `"why":"2-3 specific sentences citing their actual CRM properties and why they match this opportunity",` +
       `"potential_role":"Specific contribution they would make to this proposal and contract",` +
       `"concerns":"Specific gaps or risks, or None"}],` +
-      `"overall_take":"3-5 sentences assessing the partner landscape only: how strong the bench is, whether top matches are worth an immediate call, and whether the contract structure makes teaming worthwhile. Do not comment on SRFed pursuit decision."}` +
+      `"overall_take":"3-5 sentences assessing the partner landscape only. Do not comment on SRFed pursuit decision."}` +
       `\nfit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match.`;
 
     const mr = await fetch('https://api.anthropic.com/v1/messages', {
