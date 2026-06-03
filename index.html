@@ -1291,7 +1291,7 @@
 
   <!-- Step 2: Extracted attributes + Run -->
   <div class="card" id="hsAttributesCard" style="display:none;margin-bottom:24px">
-    <div class="card-header"><span class="icon">📊</span> Step 2: Confirm Extracted Attributes</div>
+    <div class="card-header"><span class="icon">📊</span> Step 3: Confirm Extracted Attributes</div>
     <div class="card-body">
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Review what was extracted. These are used to match against your HubSpot companies. Edit any field if needed.</p>
       <div id="hsAttributesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px"></div>
@@ -2300,7 +2300,9 @@ function initHsDropZone() {
   const fi = document.getElementById('fileInputHsRfp');
   if (!dz || !fi) return;
   dz.addEventListener('click', (e) => {
-    if (e.target.closest('.file-item') || e.target.closest('.file-remove')) return;
+    if (e.target.closest('.file-item') || e.target.closest('.file-remove')) {
+      e.preventDefault(); e.stopPropagation(); return;
+    }
     fi.click();
   });
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
@@ -2531,20 +2533,25 @@ async function runHsMatch() {
       `Partnering Rationale: ${hsExtractedAttrs.partnering_rationale||''}\n` +
       (document.getElementById('hsContextNotes')?.value.trim()?`Additional Context: ${document.getElementById('hsContextNotes').value.trim()}`:'');
 
+    const setAside = document.getElementById('hsAttr_set_aside')?.value || hsExtractedAttrs.set_aside || '';
+    const fteCount = hsExtractedAttrs.fte_count || '';
+    const isRestrictiveSetAside = setAside && !/unrestricted|full.and.open|not.stated|none|n\/a|total small business/i.test(setAside);
+    const isSingleFte = /^1$|^one$/i.test(fteCount.trim());
+
     const matchPrompt =
       `You are a senior BD analyst at ${CLIENT_CONFIG.companyFullName}, an SDVOSB. Give your honest, direct professional opinion.\n\n` +
       `${opp}\n\n` +
       `CRM COMPANIES (${summaries.length} total - one per line):\n` +
       summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
       `TASK: Identify the top 5 companies best suited as teaming partners for this specific pursuit.\n` +
-      `Scoring factors in priority order: (1) capability match to the PWS requirements, ` +
-      `(2) set-aside certification alignment with the opportunity set-aside type, ` +
-      `(3) clearance level match, (4) geographic proximity to place of performance, ` +
-      `(5) contract vehicle alignment, (6) relationship quality from notes.\n\n` +
-      `Also provide a brief, honest assessment of the partner landscape specifically — not whether SRFed should pursue, ` +
-      `but: How strong is the teaming bench from this CRM? Are any of the top matches compelling enough to warrant an immediate outreach call? ` +
-      `Does the contract structure or value make teaming sensible, or is it the kind of contract where a partner adds overhead without adding much? ` +
-      `Be direct and specific. Do not comment on SRFed's own capabilities or whether to bid — only on the quality of the available partner pool.\n\n` +
+      (isSingleFte ? `CRITICAL: This opportunity is for approximately ${fteCount} FTE. You CANNOT meaningfully split a single position between two companies. Lead your overall_take with a clear, prominent statement that teaming is almost certainly not viable for this opportunity regardless of who is in the CRM.\n` : '') +
+      `Scoring factors: (1) capability match to the PWS requirements, ` +
+      (isRestrictiveSetAside
+        ? `(2) set-aside certification match — this IS a ${setAside} set-aside so only qualifying companies apply, `
+        : `(2) capability and past performance fit — this opportunity has NO restrictive set-aside so do NOT discuss 8(a), SDVOSB, or other small business certifications as matching factors since they are irrelevant here, `) +
+      `(3) clearance level, (4) geographic proximity, (5) contract vehicle alignment, (6) relationship quality from notes.\n\n` +
+      `Also provide a partner landscape assessment: how strong is the bench, are any matches worth an immediate call, does teaming make sense for this contract? ` +
+      `Do not comment on SRFed pursuit decision — only on partner quality.\n\n` +
       `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
       `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match",` +
       `"why":"2-3 specific sentences citing their actual CRM properties and why they match this opportunity",` +
