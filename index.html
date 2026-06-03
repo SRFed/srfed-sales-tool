@@ -2538,25 +2538,33 @@ async function runHsMatch() {
     const setAside = document.getElementById('hsAttr_set_aside')?.value || hsExtractedAttrs.set_aside || '';
     const fteCount = hsExtractedAttrs.fte_count || '';
     const isRestrictiveSetAside = setAside && !/unrestricted|full.and.open|not.stated|none|n\/a/i.test(setAside);
-    const isSingleFte = /^1$|^one$/i.test(fteCount.trim());
+    const isTotalSmallBusiness = /total.small.business/i.test(setAside);
+    const isSpecificSetAside = isRestrictiveSetAside && !isTotalSmallBusiness;
+    // Parse FTE count — treat "2 FTEs", "2", "two" etc. as low-FTE
+    const fteNum = parseFloat(fteCount.replace(/[^0-9.]/g, '')) || null;
+    const isLowFte = fteNum !== null && fteNum <= 2;
 
     const matchPrompt =
       `You are a senior BD analyst at ${CLIENT_CONFIG.companyFullName}, an SDVOSB. Give your honest, direct professional opinion.\n\n` +
       `${opp}\n\n` +
       `CRM COMPANIES (${summaries.length} total - one per line):\n` +
       summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
-      `TASK: Identify the top 5 companies best suited as teaming partners for this specific pursuit.\n` +
-      (isSingleFte ? `CRITICAL: This opportunity is for approximately ${fteCount} FTE. You CANNOT meaningfully split a single position between two companies. Lead your overall_take with a clear, prominent statement that teaming is almost certainly not viable for this opportunity regardless of who is in the CRM.\n` : '') +
-      (isRestrictiveSetAside
-        ? (/total.small.business/i.test(setAside)
-            ? `SET-ASIDE NOTE: This is a Total Small Business set-aside. Partners must qualify as small businesses under the applicable NAICS size standard. 8(a), SDVOSB, HUBZone and other specific certifications beyond small business status are NOT required and should not be weighted as matching factors.\n`
-            : `SET-ASIDE NOTE: This IS a ${setAside} set-aside. Only companies with that specific certification are eligible — weight this heavily in your scoring.\n`)
-        : `SET-ASIDE NOTE: This opportunity has NO restrictive set-aside (unrestricted or open). Small business certifications (8(a), SDVOSB, HUBZone, WOSB, etc.) are completely IRRELEVANT to partner selection. Do NOT mention them. Score partners on capability, vehicle access, clearance, and geographic fit only.\n`) +
-      `Scoring factors: (1) capability match to the PWS requirements, ` +
-      `(2) clearance level match, (3) geographic proximity, (4) contract vehicle alignment, (5) relationship quality from notes.\n\n` +
-      `Provide a partner landscape assessment: how strong is the bench, are any matches worth an immediate call, does teaming make sense? ` +
-      (isSingleFte ? `Since this is a single-FTE position, lead with a clear statement that teaming is not viable. ` : '') +
-      `Do not comment on SRFed pursuit decision — only on partner quality.\n\n` +
+      `TASK: Identify the top 8 companies best suited as teaming partners for this specific pursuit.\n\n` +
+      (isLowFte ? `CRITICAL - LOW FTE COUNT: This opportunity is for only ${fteCount} FTE(s). With 2 or fewer positions, splitting work between teaming companies is typically not viable and adds overhead without value. Your overall_take MUST open with a clear, prominent discouragement of teaming for this specific reason.\n\n` : '') +
+      (isSpecificSetAside
+        ? `SET-ASIDE FILTER (HARD REQUIREMENT): This is a ${setAside} set-aside. You MUST only include companies that have the ${setAside} certification in their CRM record. Companies without this certification are INELIGIBLE regardless of capability — exclude them entirely from your ranked list.\n\n`
+        : isTotalSmallBusiness
+        ? `SET-ASIDE NOTE: This is a Total Small Business set-aside. Partners must qualify as small businesses. All small business types (8(a), SDVOSB, HUBZone, WOSB, SB, etc.) are eligible — small business status is a qualifying factor but specific certifications beyond that are NOT required and should not be weighted.\n\n`
+        : `SET-ASIDE NOTE: This opportunity is unrestricted or open competition. Small business certifications (8(a), SDVOSB, HUBZone, etc.) are NOT relevant matching criteria. Do not mention them.\n\n`) +
+      `SCORING WEIGHTS (apply in this order of importance):\n` +
+      `1. Capability match to PWS requirements — HIGHEST weight (~40%)\n` +
+      `2. Set-aside/eligibility alignment — HIGH weight (~25%) — see set-aside note above\n` +
+      `3. Contract vehicle alignment — MEDIUM weight (~20%)\n` +
+      `4. Clearance level and geographic proximity — MEDIUM weight (~10%)\n` +
+      `5. Relationship quality and prior contact from CRM notes — LOW weight (~5%) — relevant but not a primary factor\n\n` +
+      `Also provide a partner landscape assessment covering: bench strength, whether top matches warrant immediate outreach, and whether teaming makes sense for this contract structure. ` +
+      (isLowFte ? `Given the low FTE count, lead with a clear statement discouraging teaming. ` : '') +
+      `Do not comment on SRFed's own pursuit decision.\n\n` +
       `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
       `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match",` +
       `"why":"2-3 specific sentences citing their actual CRM properties and why they match this opportunity",` +
