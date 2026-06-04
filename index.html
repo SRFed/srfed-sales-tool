@@ -1307,7 +1307,7 @@
         style="width:100%;padding:13px;font-size:15px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;opacity:0.45" disabled>
         🤝 Find Partner Matches in HubSpot
       </button>
-      <p class="tip" style="margin-top:8px;text-align:center">Pulls your CRM companies and scores them against this opportunity. Returns top 5.</p>
+      <p class="tip" style="margin-top:8px;text-align:center">Pulls your CRM companies and scores them against this opportunity. Returns top 8.</p>
     </div>
   </div>
 
@@ -2611,8 +2611,7 @@ async function runHsMatch() {
     document.getElementById('hsResultsCard').style.display = 'block';
     document.getElementById('hsResultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     setProgress(100, [{ text: 'Fetching HubSpot companies', status: 'done' }, { text: 'Scoring with AI', status: 'done' }]);
-    showStatus('success', 'Partner matches ready', `Top ${matches.length} partners from ${summaries.length} CRM companies.`);
-  } catch(e) {
+    showStatus('success', 'Partner matches ready', `Top ${matches.length} partners from ${summaries.length} CRM companies.`);  } catch(e) {
     showStatus('error', 'Partner matching failed', e.message);
     console.error(e);
   } finally {
@@ -2643,8 +2642,7 @@ function renderHsResults(matches, total, overallTake) {
     lbl.includes('Good')?'background:#eff6ff;border-color:#bfdbfe;color:#1e40af':
     lbl.includes('Possible')?'background:#fefce8;border-color:#fde047;color:#92400e':
     'background:#fef2f2;border-color:#fca5a5;color:var(--error)';
-  el.innerHTML = `<p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ranked from ${total} companies in HubSpot.</p>` +
-    matches.map(m=>`
+  el.innerHTML = `<p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ranked from ${total} companies in HubSpot.</p>` +    matches.map(m=>`
       <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;background:white">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">
           <div style="display:flex;align-items:center;gap:12px;flex:1">
@@ -2769,13 +2767,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initCmpDropZones() {
-  // RFP docs drop zone
+  // RFP docs drop zone — rely on native input behavior, only block file-item clicks
   const dzRfp = document.getElementById('dropZoneCmpRfp');
   const fiRfp = document.getElementById('fileInputCmpRfp');
   if (dzRfp && fiRfp) {
     dzRfp.addEventListener('click', (e) => {
-      if (e.target.closest('.file-item') || e.target.closest('.file-remove')) return;
-      fiRfp.click();
+      if (e.target.closest('.file-item') || e.target.closest('.file-remove')) {
+        e.preventDefault(); e.stopPropagation();
+      }
     });
     dzRfp.addEventListener('dragover', e => { e.preventDefault(); dzRfp.classList.add('drag-over'); });
     dzRfp.addEventListener('dragleave', () => dzRfp.classList.remove('drag-over'));
@@ -2785,14 +2784,14 @@ function initCmpDropZones() {
     });
     fiRfp.addEventListener('change', () => { addCmpFiles([...fiRfp.files], 'rfp'); fiRfp.value = ''; });
   }
-  // Proposal docs drop zone
+  // Proposal docs drop zone — same pattern
   const dzDocs = document.getElementById('dropZoneCmpDocs');
   const fiDocs = document.getElementById('fileInputCmpDocs');
   if (dzDocs && fiDocs) {
-    // Only trigger file dialog when clicking the drop zone itself, not its children (file list items)
     dzDocs.addEventListener('click', (e) => {
-      if (e.target.closest('.file-item') || e.target.closest('.file-remove')) return;
-      fiDocs.click();
+      if (e.target.closest('.file-item') || e.target.closest('.file-remove')) {
+        e.preventDefault(); e.stopPropagation();
+      }
     });
     dzDocs.addEventListener('dragover', e => { e.preventDefault(); dzDocs.classList.add('drag-over'); });
     dzDocs.addEventListener('dragleave', () => dzDocs.classList.remove('drag-over'));
@@ -3158,9 +3157,9 @@ function renderProposalCalendar(briefing) {
   if (briefing.qa_deadline)      events.push({ label: 'Q&A Deadline', date: briefing.qa_deadline, icon: '❓' });
   if (briefing.solicitation_release) events.push({ label: 'Solicitation Released', date: briefing.solicitation_release, icon: '📋' });
 
-  // Extract from assumptions that look like dates
+  // Extract from assumptions that are actual dates (value must parse as a date)
   assumptions.filter(a => a.category === 'rfp' && a.value &&
-    /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/i.test(a.value) &&
+    parseDate(a.value) !== null &&  // must be an actual parseable date
     a.label && !events.find(e => e.label.toLowerCase().includes(a.label.toLowerCase().substring(0, 10)))
   ).slice(0, 5).forEach(a => events.push({ label: a.label, date: a.value, icon: '📌' }));
 
@@ -3257,6 +3256,8 @@ function annotateDocXml(xml) {
   // Patterns that need yellow highlight — unresolved placeholders or missing data
   // We match at the <w:t> text node level
   const needsHighlight = (text) => {
+    // [PROVIDE: ...] placeholders for missing data — always highlight
+    if (/\[PROVIDE:/i.test(text)) return true;
     // Explicit unfilled placeholders
     if (/\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD|TBE|N\/A|UNKNOWN|DATE|NAME|NUMBER|PHONE|EMAIL|ADDRESS)[^\]]{0,60}\]/i.test(text)) return true;
     if (/\{\{[A-Z_]+\}\}/.test(text)) return true;
@@ -3450,13 +3451,16 @@ function _nudgeProgress() {
     if (minF)  minF.style.width  = _currentPct + '%';
     if (minP)  minP.textContent  = Math.round(_currentPct) + '%';
 
-    // ETA: once we're near the end, just say "Almost done..."
+    // ETA: count down based on dynamically updated _totalEstSecs
     if (etaEl) {
       const minE = document.getElementById('gsbMinEta');
       const remaining = Math.max(0, _totalEstSecs - elapsed);
-      const etaTxt = elapsed >= _totalEstSecs * 0.9 ? 'Almost done...'
-        : remaining > 60 ? `~${Math.floor(remaining/60)}m ${Math.round(remaining%60)}s remaining`
-        : `~${Math.round(remaining)}s remaining`;
+      // Never show "Almost done..." based on time alone — that fires too early on long jobs
+      // Instead just count down to ~0 and show the remaining time honestly
+      const etaTxt = remaining > 60
+        ? `~${Math.floor(remaining/60)}m ${Math.round(remaining%60)}s remaining`
+        : remaining > 3 ? `~${Math.round(remaining)}s remaining`
+        : 'Finishing up...';
       etaEl.textContent = etaTxt;
       if (minE) minE.textContent = etaTxt;
     }
@@ -4856,6 +4860,7 @@ async function reviseVolume() {
             zip.file(fname, injectMetaOnly(hXml, revisedProposalData));
           }
         }
+        await ensureUpdateFieldsOnOpen(zip);
         const buffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
         const url = URL.createObjectURL(blob);
@@ -4869,7 +4874,7 @@ async function reviseVolume() {
           `<span style="font-size:12px;color:var(--success);margin-left:10px">✅ Addressed ${missing.length} missing + ${partial.length} partial items</span>`;
         status.textContent = 'Revision complete — download above.';
         setProgress(100, [{ text: 'Analyzing gaps', status: 'done' }, { text: 'Rewriting sections', status: 'done' }, { text: 'Building document', status: 'done' }]);
-        showStatus('success', 'Revised document ready', `Volume ${vol} has been strengthened. Download above.`);
+        showStatus('success', 'Revised document ready', `Volume ${vol} has been strengthened. Download below.`);
         window._lastProposalData = revisedProposalData;
       } else {
         status.textContent = `No template matched Volume ${vol}. Ensure your SharePoint Templates folder contains a file named Vol_${vol}_Template.docx (or similar), then click "Reload Files from SharePoint" in Step 3 and try again.`;
@@ -5424,14 +5429,17 @@ async function runGeneration() {
         vol2Content.push({ type: 'text', text: briefingText });
         vol2Content.push({ type: 'text', text:
           `You are writing the PAST PERFORMANCE volume of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
-          `Read the attached company documents (past performance write-ups, capability statements) carefully. ` +
-          `Extract accurate contact names, phone numbers, emails, contract numbers, values, and periods of performance from those documents — do NOT invent or approximate these fields.\n\n` +
-          `Write detailed narratives for each reference that explicitly map to THIS solicitation's requirements.\n\n` +
+          `ABSOLUTE RULE — NO FABRICATION: You may ONLY describe past performance that is explicitly documented in the attached company documents. ` +
+          `You must NEVER invent, assume, or approximate ANY of the following: client/agency names, contract numbers, contact names, phone numbers, emails, contract values, periods of performance, or program descriptions. ` +
+          `If the attached documents do not contain real past performance data, DO NOT make up a reference (for example, do NOT invent a DEA, DoD, or any other agency engagement that is not in the documents).\n\n` +
+          `HANDLING MISSING DATA: For any field you cannot find in the documents, output the literal placeholder text "[PROVIDE: <field name>]" — for example "[PROVIDE: Contract Number]" or "[PROVIDE: PM Phone]". For narrative fields with no source data, output "[PROVIDE: describe this past performance engagement - no source document found]". This makes gaps obvious to the proposal reviewer instead of fabricating content.\n\n` +
+          `If the documents contain N real references, return exactly N references — do not pad to 3 with invented ones. If they contain zero, return a single reference object with all fields set to the appropriate [PROVIDE: ...] placeholder.\n\n` +
+          `For references that ARE in the documents, write detailed narratives that explicitly map to THIS solicitation's requirements.\n\n` +
           `Return ONLY JSON:\n{"references": [` +
-          `{"program_name":"exact name from documents","contract_number":"exact number from documents","pm_name":"exact from docs","pm_phone":"exact from docs","pm_email":"exact from docs","co_name":"exact from docs","co_phone":"exact from docs","co_email":"exact from docs","cor_name":"exact from docs","cor_phone":"exact from docs","cor_email":"exact from docs","contract_type":"","period_of_performance":"exact dates from docs","total_value":"exact value from docs","prime_or_sub":"Prime or Subcontractor",` +
-          `"overview":"MINIMUM 3 paragraphs. Describe what was performed, scope, operational environment, and outcomes achieved.",` +
+          `{"program_name":"exact name from documents or [PROVIDE: Program Name]","contract_number":"exact or [PROVIDE: Contract Number]","pm_name":"exact or [PROVIDE: PM Name]","pm_phone":"exact or [PROVIDE: PM Phone]","pm_email":"exact or [PROVIDE: PM Email]","co_name":"exact or [PROVIDE: CO Name]","co_phone":"exact or [PROVIDE: CO Phone]","co_email":"exact or [PROVIDE: CO Email]","cor_name":"exact or [PROVIDE: COR Name]","cor_phone":"exact or [PROVIDE: COR Phone]","cor_email":"exact or [PROVIDE: COR Email]","contract_type":"exact or [PROVIDE: Contract Type]","period_of_performance":"exact or [PROVIDE: Period of Performance]","total_value":"exact or [PROVIDE: Contract Value]","prime_or_sub":"Prime or Subcontractor or [PROVIDE: Prime/Sub]",` +
+          `"overview":"MINIMUM 3 paragraphs IF documented. Describe what was performed, scope, operational environment, and outcomes. Use specifics only from the documents.",` +
           `"relevance":"MINIMUM 2 paragraphs explicitly mapping to THIS solicitation PWS task areas and evaluation factors.",` +
-          `"similarity":"5-8 specific bullet points: size/scope/complexity/agency type/contract type/technical domain similarities."}]}`
+          `"similarity":"5-8 specific bullet points: size/scope/complexity/agency type/contract type/technical domain similarities. Plain text, one per line, prefix each with a hyphen."}]}`
         });
 
         // Make this call directly (not via writeSection which only uses briefingText)
@@ -5600,6 +5608,9 @@ async function generateDocsClientSide(proposalData, volumes) {
             .replace(/<dc:creator>[^<]*<\/dc:creator>/, `<dc:creator>${escXml(CLIENT_CONFIG.companyFullName)}</dc:creator>`);
           zip.file('docProps/core.xml', coreXml);
         }
+
+        // Force Word to recalculate fields (TOC page numbers) when the doc opens
+        await ensureUpdateFieldsOnOpen(zip);
 
         const buffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
         const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
@@ -5801,10 +5812,17 @@ function injectContentIntoXml(xml, data, vol) {
 
   if (vol === '2') {
     const refs = v.references || [];
+    // Map suffix to human-readable field name for placeholders
+    const fieldLabels = {
+      'PROGRAM':'Program Name','CONTRACT':'Contract Number','TYPE':'Contract Type',
+      'PERIOD':'Period of Performance','VALUE':'Contract Value','PRIME_SUB':'Prime/Sub',
+      'PM_NAME':'PM Name','PM_PHONE':'PM Phone','PM_EMAIL':'PM Email',
+      'CO_NAME':'CO Name','CO_PHONE':'CO Phone','CO_EMAIL':'CO Email',
+      'COR_NAME':'COR Name','COR_PHONE':'COR Phone','COR_EMAIL':'COR Email',
+    };
     for (let i = 0; i < 3; i++) {
       const r = refs[i] || {};
       const n = i + 1;
-      // Contact info — inline metadata replacement
       for (const [suffix, field] of [
         ['PROGRAM', 'program_name'], ['CONTRACT', 'contract_number'],
         ['TYPE', 'contract_type'], ['PERIOD', 'period_of_performance'],
@@ -5813,12 +5831,22 @@ function injectContentIntoXml(xml, data, vol) {
         ['CO_NAME', 'co_name'], ['CO_PHONE', 'co_phone'], ['CO_EMAIL', 'co_email'],
         ['COR_NAME', 'cor_name'], ['COR_PHONE', 'cor_phone'], ['COR_EMAIL', 'cor_email'],
       ]) {
-        xml = replaceMeta(xml, `{{REF${n}_${suffix}}}`, r[field] || '');
+        let val = r[field] || '';
+        // If empty or whitespace, insert a clear placeholder so reviewer sees the gap
+        if (!val.trim()) val = `[PROVIDE: ${fieldLabels[suffix]}]`;
+        xml = replaceMeta(xml, `{{REF${n}_${suffix}}}`, val);
       }
       // Narrative fields — full paragraph replacement
-      xml = replaceContent(xml, `{{REF${n}_OVERVIEW}}`,    r.overview    || '');
+      xml = replaceContent(xml, `{{REF${n}_OVERVIEW}}`,    r.overview    || (refs[i] ? '' : ''));
       xml = replaceContent(xml, `{{REF${n}_RELEVANCE}}`,   r.relevance   || '');
-      xml = replaceContent(xml, `{{REF${n}_SIMILARITY}}`,  r.similarity  || '');
+      // Similarity: convert to bulleted list, not a wall of text
+      let sim = r.similarity || '';
+      if (sim) {
+        // Normalize to bullet lines
+        sim = sim.split(/\n|(?:^|\s)[-•]\s*/).map(s => s.trim()).filter(Boolean)
+          .map(s => '• ' + s).join('\n');
+      }
+      xml = replaceContent(xml, `{{REF${n}_SIMILARITY}}`,  sim);
     }
   }
 
@@ -5843,6 +5871,68 @@ function injectContentIntoXml(xml, data, vol) {
   }
 
   return xml;
+}
+
+// Force Word to recalculate all fields (especially TOC page numbers) on open.
+// Without this, a TOC inserted in the template shows stale "1" page numbers until
+// the user manually presses F9. Setting <w:updateFields w:val="true"/> in
+// settings.xml makes Word prompt to update fields automatically on open.
+async function ensureUpdateFieldsOnOpen(zip) {
+  try {
+    const settingsPath = 'word/settings.xml';
+    const settingsFile = zip.file(settingsPath);
+    if (settingsFile) {
+      let xml = await settingsFile.async('string');
+      if (!/w:updateFields/.test(xml)) {
+        const tag = '<w:updateFields w:val="true"/>';
+        // OOXML CT_Settings has a strict element order. updateFields must appear
+        // before <w:compat>, <w:docVars>, <w:rsids>, <w:mathPr>, etc. Insert it
+        // immediately before the first such later-ordered element we can find.
+        const after = ['<w:compat', '<w:docVars', '<w:rsids', '<w:mathPr',
+          '<w:attachedSchema', '<w:themeFontLang', '<w:clrSchemeMapping',
+          '<w:doNotIncludeSubdocsInStats', '<w:doNotAutoCompressPictures',
+          '<w:forceUpgrade', '<w:captions', '<w:readModeInkLockDown', '<w:smartTagType',
+          '<w:schemaLibrary', '<w:doNotEmbedSmartTags', '<w:decimalSymbol',
+          '<w:listSeparator', '<w:docId'];
+        let insertPos = -1;
+        for (const el of after) {
+          const idx = xml.indexOf(el);
+          if (idx !== -1 && (insertPos === -1 || idx < insertPos)) insertPos = idx;
+        }
+        if (insertPos !== -1) {
+          xml = xml.slice(0, insertPos) + tag + xml.slice(insertPos);
+        } else {
+          xml = xml.replace(/<\/w:settings>/, tag + '</w:settings>');
+        }
+        zip.file(settingsPath, xml);
+      }
+    } else {
+      const settingsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+        '<w:updateFields w:val="true"/></w:settings>';
+      zip.file(settingsPath, settingsXml);
+      const ctFile = zip.file('[Content_Types].xml');
+      if (ctFile) {
+        let ct = await ctFile.async('string');
+        if (!ct.includes('settings.xml')) {
+          ct = ct.replace(/(<\/Types>)/,
+            '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>$1');
+          zip.file('[Content_Types].xml', ct);
+        }
+      }
+      const relsFile = zip.file('word/_rels/document.xml.rels');
+      if (relsFile) {
+        let rels = await relsFile.async('string');
+        if (!rels.includes('settings.xml')) {
+          rels = rels.replace(/(<\/Relationships>)/,
+            '<Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>$1');
+          zip.file('word/_rels/document.xml.rels', rels);
+        }
+      }
+    }
+  } catch(e) {
+    console.warn('Could not set updateFields on settings.xml:', e);
+  }
 }
 
 function renderDownloads(docs) {
@@ -5927,30 +6017,13 @@ function restoreSession() {
     const saved = localStorage.getItem('srfed_session');
     if (!saved) return;
     const data = JSON.parse(saved);
-    // Restore SharePoint URLs
+    // Restore SharePoint URLs only — win strategy intentionally starts blank each session
     if (data.spPP)        { const el = document.getElementById('spPP');        if (el) el.value = data.spPP; }
     if (data.spResumes)   { const el = document.getElementById('spResumes');   if (el) el.value = data.spResumes; }
     if (data.spTemplates) { const el = document.getElementById('spTemplates'); if (el) el.value = data.spTemplates; }
-    // Restore win strategy
-    if (data.winThemes) {
-      ['winTheme1','winTheme2','winTheme3'].forEach((id, i) => {
-        const el = document.getElementById(id);
-        if (el && data.winThemes[i]) el.value = data.winThemes[i];
-      });
-    }
-    if (data.discriminators) {
-      ['discrim1','discrim2','discrim3','discrim4','discrim5'].forEach((id, i) => {
-        const el = document.getElementById(id);
-        if (el && data.discriminators[i]) el.value = data.discriminators[i];
-      });
-    }
-    if (data.notes) {
-      const el = document.getElementById('additionalNotes');
-      if (el) el.value = data.notes;
-    }
     if (data.rfpFileNames && data.rfpFileNames.length > 0) {
       showStatus('info', 'Session restored',
-        `Previous session loaded. SharePoint URLs and win strategy restored. Re-upload your RFP files (${data.rfpFileNames.join(', ')}) to continue.`);
+        `Previous session loaded. SharePoint URLs restored. Re-upload your RFP files (${data.rfpFileNames.join(', ')}) to continue.`);
     }
   } catch(e) { console.warn('Session restore failed:', e); }
 }
@@ -6473,11 +6546,12 @@ async function runBidNoBid() {
       `- strategic_value: Does winning align with growth goals? Consider contract value, recompete potential, agency relationships.\n` +
       `- scope_clarity: How well-defined is the scope? Score high if clear requirements, low if vague PWS.\n\n` +
       `OUTPUT RULES — complete the JSON object below with REAL content from the documents:\n` +
-      `- Each rationale: 2-3 sentences citing SPECIFIC evidence from the solicitation (section numbers, NAICS, set-aside type, FTE counts, clearance levels, etc.). NO generic statements.\n` +
-      `- risks: 3-5 items citing SPECIFIC risks found in this solicitation (incumbent language, certification requirements, evaluation criteria, timeline constraints, etc.)\n` +
-      `- win_strategy: 3-5 SPECIFIC strategies for THIS opportunity based on the solicitation requirements\n` +
-      `- summary: 3-4 sentences of analytical narrative explaining the overall score and bid/no-bid rationale. Reference the score as X out of 10 (combining both Automated and Manual tiers). Do NOT invent alternative scoring scales like x/60 or percentages — the final score is always out of 10.\n` +
-      `- Use only plain ASCII text. No em-dashes, no smart quotes, no backslashes.\n\n` +
+      `- Each rationale: 1-2 sentences maximum, citing SPECIFIC evidence (section numbers, NAICS, set-aside type, FTE counts, clearance levels). Be concise.\n` +
+      `- risks: 3-5 items citing SPECIFIC risks from this solicitation\n` +
+      `- win_strategy: 3-5 SPECIFIC strategies for THIS opportunity\n` +
+      `- summary: 2-3 sentences. Reference the final score as X out of 10. Do NOT invent alternative scales like x/60.\n` +
+      `- Use only plain ASCII. No em-dashes, no smart quotes.\n` +
+      `- IMPORTANT: Always complete the full JSON including risks, win_strategy, and summary — do not stop after factors.\n\n` +
       `Respond with ONLY the completed JSON. No markdown. No preamble.`
     });
 
@@ -6487,7 +6561,7 @@ async function runBidNoBid() {
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 3000,
+        max_tokens: 4000,
         temperature: 0,
         messages: [
           { role: 'user', content },
