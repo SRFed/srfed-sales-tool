@@ -6,6 +6,7 @@
 <title>SRFed Proposal Tool</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23005FD5'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js" crossorigin="anonymous"></script>
 <style>
   :root {
@@ -1601,6 +1602,56 @@
         </div>
       </div>
 
+      <div class="settings-section">
+        <h3>🔌 Integrations</h3>
+        <div class="settings-grid">
+          <div class="settings-field" style="grid-column:1/-1">
+            <label>Document Conversion Service URL</label>
+            <input type="text" id="s_conversionProxyUrl" placeholder="https://your-doc-convert.workers.dev"/>
+            <p style="font-size:12px;color:var(--muted);margin:6px 0 0">
+              Server-side proxy that converts legacy/any Office file (.doc, .xls, .ppt, etc.) to PDF via Microsoft 365.
+              Required for reliable conversion across all tenants. Deploy the included <code>srfed-doc-convert-worker.js</code>
+              as a Cloudflare Worker and paste its URL here. Leave blank to attempt browser-direct conversion (works only in permissive tenants).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔐 Microsoft 365 Sign-In (Azure)</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+          Connects the tool to a Microsoft 365 organization for sign-in, SharePoint, and document conversion.
+          These come from an Azure App Registration (Azure Portal → App registrations). Changing them re-initializes
+          sign-in — you'll be asked to reload.
+        </p>
+        <div class="settings-grid">
+          <div class="settings-field">
+            <label>Azure Application (Client) ID</label>
+            <input type="text" id="s_azureClientId" placeholder="00000000-0000-0000-0000-000000000000"/>
+          </div>
+          <div class="settings-field">
+            <label>Directory (Tenant) ID</label>
+            <input type="text" id="s_azureTenantId" placeholder="tenant GUID, or 'organizations' for multi-tenant"/>
+          </div>
+          <div class="settings-field">
+            <label>Authorized Email Domain(s)</label>
+            <input type="text" id="s_authorizedDomain" placeholder="acme.com (blank = allow any account)"/>
+          </div>
+          <div class="settings-field">
+            <label>Redirect URI</label>
+            <input type="text" id="s_redirectUri" placeholder="https://yourapp.example.com/"/>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:10px 0 0">
+          <strong>Tenant ID:</strong> use your organization's GUID to restrict sign-in to your org only, or
+          <code>organizations</code> to let any Microsoft 365 business tenant sign in (for multi-tenant deployments).<br>
+          <strong>Authorized domain:</strong> restricts who can generate proposals. Enter one domain, several
+          (comma-separated), or leave blank to allow any signed-in account.<br>
+          <strong>Redirect URI:</strong> must exactly match a redirect URI registered in the Azure app, and is
+          normally the URL where this tool is hosted.
+        </p>
+      </div>
+
       <div style="display:flex;gap:10px;margin-top:8px">
         <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
         <button onclick="resetSettings()" style="padding:8px 16px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--muted)">↺ Reset to Defaults</button>
@@ -1736,24 +1787,52 @@ const CLIENT_CONFIG = {
   // Leave as null to prompt user to enter their own key, or hardcode for single-tenant use.
   anthropicApiKey: null,   // e.g. 'sk-ant-...'
 
+  // ── Document Conversion Service ───────────────────────────────────────────
+  // A server-side proxy (e.g. Cloudflare Worker) that converts legacy/any Office
+  // format to PDF via Microsoft Graph. Server-to-server calls have no CORS limits,
+  // so this works for ANY tenant — unlike calling Graph directly from the browser.
+  // Deploy the included worker (srfed-doc-convert-worker.js) and paste its URL here.
+  // Leave null to attempt browser-direct Graph conversion (works only in permissive tenants).
+  conversionProxyUrl: null,  // e.g. 'https://srfed-doc-convert.<account>.workers.dev'
+
 };
 
 // ── Logo (kept here for readability — do not move) ────────────────────────────
 CLIENT_CONFIG.logoBase64 = "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";
 
 // ─── MICROSOFT AUTH (MSAL) ────────────────────────────────────────────────────
-const MSAL_CONFIG = {
-  auth: {
-    clientId:    CLIENT_CONFIG.azureClientId,
-    authority:   `https://login.microsoftonline.com/${CLIENT_CONFIG.azureTenantId}`,
-    redirectUri: CLIENT_CONFIG.redirectUri,
-  },
-  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
-};
-const SP_SCOPES = ['User.Read', 'Sites.Read.All', 'Files.Read.All'];
+// Build the MSAL config from the CURRENT CLIENT_CONFIG each time, so changes made
+// in Settings (clientId, tenant, redirect URI) take effect after a re-init.
+// The tenant value may be a specific tenant GUID (locks sign-in to one org), or
+// "organizations" (any work/school org — the right choice for multi-tenant SaaS),
+// or "common" (any org + personal Microsoft accounts).
+function buildMsalConfig() {
+  const tenant = (CLIENT_CONFIG.azureTenantId || 'organizations').trim();
+  return {
+    auth: {
+      clientId:    (CLIENT_CONFIG.azureClientId || '').trim(),
+      authority:   `https://login.microsoftonline.com/${tenant}`,
+      redirectUri: (CLIENT_CONFIG.redirectUri || window.location.origin + window.location.pathname).trim(),
+    },
+    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+  };
+}
+const SP_SCOPES = ['User.Read', 'Sites.Read.All', 'Files.Read.All', 'Files.ReadWrite'];
 
 let msalClient = null;
 let msAccount   = null;
+
+// Returns true if the signed-in account is allowed to generate proposals.
+// authorizedDomain may be: blank (allow ANY signed-in account — multi-tenant open),
+// a single domain ("acme.com"), or a comma/space separated list ("acme.com, sub.acme.com").
+function isAuthorizedAccount(username) {
+  if (!username) return false;
+  const raw = (CLIENT_CONFIG.authorizedDomain || '').trim();
+  if (!raw) return true; // no restriction configured — any authenticated user is allowed
+  const domains = raw.split(/[,\s]+/).map(d => d.trim().toLowerCase().replace(/^@/, '')).filter(Boolean);
+  const lower = username.toLowerCase();
+  return domains.some(d => lower.endsWith('@' + d));
+}
 
 function applyClientConfig() {
   // Title
@@ -1779,7 +1858,12 @@ async function initMsal() {
       setTimeout(initMsal, 300);
       return;
     }
-    msalClient = new msal.PublicClientApplication(MSAL_CONFIG);
+    const cfg = buildMsalConfig();
+    if (!cfg.auth.clientId) {
+      console.warn('MSAL not initialized: no Azure Client ID configured. Set it in Settings.');
+      return;
+    }
+    msalClient = new msal.PublicClientApplication(cfg);
     await msalClient.initialize();
     const resp = await msalClient.handleRedirectPromise();
     if (resp && resp.account) {
@@ -2347,14 +2431,20 @@ async function runHsExtract() {
   try {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
-    const content = [];
-    for (const f of hsRfpFiles.slice(0, 6)) { const block = await fileToContentBlock(f); if (block) content.push(block); }
+    const { blocks: content, unreadable } = await buildContentBlocks(hsRfpFiles, 6);
+    if (unreadable.length === hsRfpFiles.length && hsRfpFiles.length > 0) {
+      // ALL files unreadable — stop and tell the user clearly
+      throw new Error(`None of the uploaded files could be read. ${unreadable.join(', ')} ${unreadable.length>1?'are':'is'} a legacy or password-protected Word file (old .doc saved as .docx, or an encrypted/protected document). Re-save ${unreadable.length>1?'them':'it'} in Word as "Word Document (.docx)" or export to PDF, then re-upload.`);
+    }
     setProgress(20, [{ text: 'Reading solicitation documents', status: 'done' }, { text: 'Extracting attributes', status: 'active' }]);
     content.push({ type: 'text', text:
-      `Extract teaming partner matching criteria from this solicitation. Return ONLY a JSON object. Plain ASCII only, no em-dashes.\n` +
+      `Extract teaming partner matching criteria from this solicitation. ` +
+      `CRITICAL: Only use information actually present in the documents above. If a document is marked UNREADABLE, do not guess its contents. ` +
+      `For any field you cannot determine from the readable text, use the exact value "Not stated in available documents" — never invent or infer a set-aside type, value, clearance, or place of performance that is not explicitly written.\n` +
+      `Return ONLY a JSON object. Plain ASCII only, no em-dashes.\n` +
       `{"opportunity_title":"","solicitation_number":"","agency":"","naics_code":"","naics_description":"",` +
-      `"set_aside":"e.g. Total Small Business / SDVOSB / 8(a) / Unrestricted","place_of_performance":"city, state",` +
-      `"estimated_value":"","period_of_performance":"","clearance_required":"e.g. SECRET / None",` +
+      `"set_aside":"exact set-aside if stated, else 'Not stated in available documents'","place_of_performance":"city, state or 'Not stated in available documents'",` +
+      `"estimated_value":"","period_of_performance":"","clearance_required":"e.g. SECRET / None / 'Not stated in available documents'",` +
       `"key_capabilities_needed":["capability1","capability2","capability3"],` +
       `"required_certifications":["cert1"],"contract_vehicle":"",` +
       `"partnering_rationale":"2-3 sentences on what an ideal teaming partner would bring to this pursuit"}`
@@ -3525,17 +3615,52 @@ function fileToBase64(file) {
 function getMimeType(file) {
   const n = file.name.toLowerCase();
   if (n.endsWith('.pdf'))                    return 'application/pdf';
-  if (n.match(/\.docx?$/))                  return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  if (n.match(/\.xlsx?$/))                  return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (n.endsWith('.docx'))                  return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (n.endsWith('.doc'))                   return 'application/msword'; // legacy OLE2 Word
+  if (n.endsWith('.xlsx'))                  return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (n.endsWith('.xls'))                   return 'application/vnd.ms-excel'; // legacy BIFF Excel
+  if (n.endsWith('.pptx'))                  return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
   if (n.match(/\.(csv|tsv)$/))              return 'text/csv';
-  if (n.match(/\.(txt|md|markdown)$/))      return 'text/plain';
+  if (n.match(/\.(txt|md|markdown|rtf)$/))  return 'text/plain';
   return 'application/octet-stream';
+}
+
+// Build a Claude API content block for any supported file type.
+// Strategy: try fast browser-side extraction first. If that fails (legacy .doc,
+// encrypted/mislabeled Office files, etc.) AND the file is a format Microsoft Graph
+// can convert AND the user is signed into Microsoft 365, fall back to converting the
+// file to PDF via Graph (Microsoft's cloud rendering) and read that PDF natively.
+async function fileToContentBlock(file) {
+  const local = await fileToContentBlockLocal(file);
+  // If local extraction succeeded (not flagged unreadable), use it — fast path.
+  if (local && !local._unreadable) return local;
+
+  // Local failed. Try Microsoft Graph conversion if possible.
+  const canTryGraph = isGraphConvertible(file.name) &&
+                      typeof msalClient !== 'undefined' && msalClient && msAccount;
+  if (canTryGraph) {
+    try {
+      const pdfFile = await convertViaGraph(file);
+      const b64 = await fileToBase64(pdfFile);
+      return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } };
+    } catch(e) {
+      console.warn('Graph conversion failed for', file.name, e.message);
+      // Fall through to returning the local (unreadable) block with a note.
+      if (local) {
+        return { ...local, text: (local.text || '').replace(']', '; automatic Microsoft 365 conversion was attempted but did not succeed]') };
+      }
+    }
+  }
+  // No Graph available or it failed — return whatever local produced (may be unreadable flag).
+  return local;
 }
 
 // Build a Claude API content block for any supported file type
 // Claude API only accepts 'application/pdf' as document type.
 // Other formats are sent as plain text where possible.
-async function fileToContentBlock(file) {
+// Core local (browser-only) extraction — no network. Returns a content block,
+// possibly flagged _unreadable if the format can't be read in-browser.
+async function fileToContentBlockLocal(file) {
   const mime = getMimeType(file);
 
   // PDFs: send as native document
@@ -3551,15 +3676,50 @@ async function fileToContentBlock(file) {
     return null;
   }
 
-  // Word/Excel: try to extract readable text from the XML inside the docx/xlsx
-  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+  // Spreadsheets (.xlsx AND legacy .xls) — use SheetJS which reads both formats natively.
+  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      mime === 'application/vnd.ms-excel') {
+    try {
+      if (typeof XLSX === 'undefined') throw new Error('XLSX not loaded');
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      let out = '';
+      wb.SheetNames.forEach(name => {
+        const sheet = wb.Sheets[name];
+        const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+        if (csv && csv.trim().length > 0) {
+          out += `\n=== Sheet: ${name} ===\n${csv}\n`;
+        }
+      });
+      out = out.trim();
+      if (out.length > 20) {
+        return { type: 'text', text: `[File: ${file.name}]\n${out.substring(0, 60000)}` };
+      }
+      // Empty workbook
+      return { type: 'text', text: `[File: ${file.name} — spreadsheet opened but contained no data cells.]`, _unreadable: true, _fileName: file.name };
+    } catch(e) {
+      console.warn('SheetJS could not read', file.name, e);
+      return { type: 'text', text: `[File: ${file.name} — UNREADABLE spreadsheet: the file may be password-protected or corrupted. Re-save it in Excel as ".xlsx" and re-upload. Treat its contents as UNKNOWN.]`, _unreadable: true, _fileName: file.name };
+    }
+  }
+
+  // Modern Word (.docx) — zip-based, extract from document.xml
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    // Verify it is actually a zip (PK header). If not, it's a mislabeled legacy/encrypted file.
+    try {
+      const headBuf = await file.slice(0, 4).arrayBuffer();
+      const head = new Uint8Array(headBuf);
+      const isZip = head[0] === 0x50 && head[1] === 0x4B; // "PK"
+      if (!isZip) {
+        return { type: 'text', text: `[File: ${file.name} — UNREADABLE: this file has a .docx extension but is actually a legacy or password-protected Word file (it is not a valid modern .docx). Open it in Word and use "Save As -> Word Document (.docx)", or export to PDF, then re-upload. Treat its contents as UNKNOWN — do not guess.]`, _unreadable: true, _fileName: file.name };
+      }
+    } catch(e) { /* fall through */ }
+
     try {
       const zip = await JSZip.loadAsync(file);
-      const docFile = zip.file('word/document.xml') || zip.file('xl/sharedStrings.xml');
+      const docFile = zip.file('word/document.xml');
       if (docFile) {
         const xmlContent = await docFile.async('string');
-        // Strip XML tags to get plain text
         const text = xmlContent
           .replace(/<w:br[^>]*>/g, '\n')
           .replace(/<\/w:p>/g, '\n')
@@ -3568,16 +3728,111 @@ async function fileToContentBlock(file) {
           .replace(/&quot;/g,'"').replace(/&apos;/g,"'")
           .replace(/\s{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
         if (text.length > 50) {
-          return { type: 'text', text: `[File: ${file.name}]\n${text.substring(0, 50000)}` };
+          return { type: 'text', text: `[File: ${file.name}]\n${text.substring(0, 60000)}` };
         }
       }
     } catch(e) {
       console.warn('Could not extract text from', file.name, e);
     }
-    return { type: 'text', text: `[File: ${file.name} — binary file, content not extractable]` };
+    return { type: 'text', text: `[File: ${file.name} — UNREADABLE: the document opened but contained no extractable text. Treat its contents as UNKNOWN — do not guess or infer.]`, _unreadable: true, _fileName: file.name };
+  }
+
+  // Legacy Word (.doc, OLE2 binary). The body text in a .doc lives in internal
+  // OLE2 streams at table-defined offsets — it cannot be reliably extracted by
+  // browser-side byte scraping, and there is no dependable pure-JS .doc parser.
+  // We try a best-effort scrape, but ONLY use it if the result is genuinely
+  // readable prose; otherwise we give clear conversion guidance (honest > garbage).
+  if (mime === 'application/msword') {
+    try {
+      const buf = await file.arrayBuffer();
+      const scraped = scrapeLegacyDocText(new Uint8Array(buf));
+      if (scraped && scraped.length > 400 && looksLikeReadableText(scraped)) {
+        return { type: 'text', text: `[File: ${file.name} (legacy .doc — text recovered best-effort, formatting and tables may be incomplete; verify against the source)]\n${scraped.substring(0, 60000)}` };
+      }
+    } catch(e) {
+      console.warn('Legacy .doc scrape failed for', file.name, e);
+    }
+    return { type: 'text', text: `[File: ${file.name} — COULD NOT READ: this is a legacy Microsoft Word ".doc" file (pre-2007 binary format) or a password-protected document. Browsers cannot reliably extract text from this format. To use it: open in Word and choose "Save As -> Word Document (.docx)", or "Save As -> PDF", then re-upload. Treat its contents as UNKNOWN — do not guess or infer.]`, _unreadable: true, _fileName: file.name };
   }
 
   return null; // unsupported type
+}
+
+// Heuristic: does a recovered string look like real readable language, or random
+// bytes from an encrypted/binary file? Real prose has a high ratio of letters,
+// spaces, and common short words; encrypted garbage is mostly symbols and has
+// very few dictionary words.
+function looksLikeReadableText(s) {
+  const sample = s.substring(0, 4000);
+  if (sample.length < 100) return false;
+  const letters = (sample.match(/[a-zA-Z]/g) || []).length;
+  const spaces  = (sample.match(/\s/g) || []).length;
+  const letterRatio = letters / sample.length;
+  const spaceRatio  = spaces / sample.length;
+  // Real text: letters typically 55-80% of chars, spaces 10-20%.
+  if (letterRatio < 0.45 || spaceRatio < 0.05) return false;
+  // Count common English words as a sanity check
+  const common = (sample.toLowerCase().match(/\b(the|and|of|to|in|for|shall|will|contractor|services|data|with|a|is|be|or|this)\b/g) || []).length;
+  // At least a handful of common words in 4000 chars of genuine prose
+  return common >= 5;
+}
+
+// Best-effort text recovery from a legacy OLE2 .doc binary.
+// Word .doc stores the document text as a run inside the WordDocument stream,
+// largely as readable characters interspersed with control bytes. We can't fully
+// parse OLE2 in-browser, but we can pull out printable ASCII/Latin runs which
+// recovers the bulk of body text for analysis (formatting is discarded).
+function scrapeLegacyDocText(bytes) {
+  // Collect runs of printable characters (length >= 4) to skip binary noise.
+  let result = [];
+  let run = [];
+  const flush = () => {
+    if (run.length >= 4) result.push(String.fromCharCode(...run));
+    run = [];
+  };
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i];
+    // Printable ASCII range + common whitespace
+    if ((b >= 0x20 && b <= 0x7E) || b === 0x09) {
+      run.push(b);
+    } else if (b === 0x0D || b === 0x0A) {
+      run.push(0x0A); // normalize line breaks
+    } else {
+      flush();
+    }
+    // Guard against runaway memory on huge files
+    if (result.length > 200000) break;
+  }
+  flush();
+  let text = result.join(' ');
+  // Clean up: collapse whitespace, drop obvious OLE/XML metadata fragments
+  text = text
+    .replace(/\bMicrosoft\b.*?\bWord\b/gi, ' ')
+    .replace(/\b(Root Entry|WordDocument|SummaryInformation|DocumentSummaryInformation|CompObj|ObjectPool|1Table|0Table|Data)\b/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return text;
+}
+
+// Build content blocks for a set of files, and report which ones were unreadable.
+// Returns { blocks: [...], unreadable: [filenames] }
+// Internal flags (_unreadable, _fileName) are stripped from the returned blocks
+// so only valid API fields (type, text, source) are sent to the model.
+async function buildContentBlocks(files, limit) {
+  const blocks = [];
+  const unreadable = [];
+  const list = limit ? files.slice(0, limit) : files;
+  for (const f of list) {
+    const block = await fileToContentBlock(f);
+    if (block) {
+      if (block._unreadable) unreadable.push(block._fileName || f.name);
+      // Strip internal flags — keep only valid API fields
+      const { _unreadable, _fileName, ...clean } = block;
+      blocks.push(clean);
+    }
+  }
+  return { blocks, unreadable };
 }
 
 function buildAcceptedAssumptionsContext() {
@@ -3679,25 +3934,114 @@ async function downloadSpFile(item, token) {
   return new File([blob], item.name, { type: blob.type || 'application/octet-stream', lastModified: Date.now() });
 }
 
+// Microsoft Graph file conversion to PDF.
+// Uploads the file to a temp location in the signed-in user's OneDrive, asks Graph
+// to return it as PDF (Microsoft 365 cloud rendering), downloads the PDF, then deletes
+// the temp file. Used as a fallback for formats the browser can't read directly
+// (legacy .doc/.xls/.ppt, .rtf, .odt, etc.). Requires Files.ReadWrite scope.
+// Graph PDF-convertible source extensions: csv, doc, docx, odp, ods, odt, pot, potm,
+// potx, pps, ppsx, ppt, pptm, pptx, rtf, xls, xlsx. (.docm is NOT supported.)
+const GRAPH_PDF_CONVERTIBLE = ['doc','docx','xls','xlsx','ppt','pptx','rtf','odt','ods','odp','csv','pps','ppsx','pot','potx','potm','pptm'];
+
+function isGraphConvertible(filename) {
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  return GRAPH_PDF_CONVERTIBLE.includes(ext);
+}
+
+// Returns a PDF File on success, or throws on failure. Caller decides fallback.
+// Two paths:
+//   1. PREFERRED — a configured server-side proxy (CLIENT_CONFIG.conversionProxyUrl).
+//      Server-to-server Graph calls have NO CORS restriction, so this works for
+//      every tenant. The browser sends the file bytes + the user's Graph token;
+//      the proxy does upload -> convert -> download -> delete and returns the PDF.
+//   2. FALLBACK — direct browser-to-Graph. Subject to the CORS/redirect limitation
+//      and only works in permissive tenants. Used when no proxy is configured.
+async function convertViaGraph(file) {
+  if (!msalClient || !msAccount) throw new Error('Not signed in to Microsoft 365');
+  const token = await getSpAccessToken();
+
+  const proxyUrl = (CLIENT_CONFIG.conversionProxyUrl || '').trim();
+  if (proxyUrl) {
+    return await convertViaProxy(file, token, proxyUrl);
+  }
+  return await convertViaGraphDirect(file, token);
+}
+
+// PREFERRED PATH: send file + token to the server-side conversion proxy.
+async function convertViaProxy(file, token, proxyUrl) {
+  const buf = await file.arrayBuffer();
+  const resp = await fetch(proxyUrl, {
+    method: 'POST',
+    headers: {
+      'X-Graph-Token': token,
+      'X-File-Name': encodeURIComponent(file.name),
+      'Content-Type': 'application/octet-stream'
+    },
+    body: buf
+  });
+  if (!resp.ok) {
+    let msg = `Conversion proxy error (${resp.status})`;
+    try { const j = await resp.json(); if (j && j.error) msg += `: ${j.error}`; } catch(_) {}
+    throw new Error(msg);
+  }
+  const pdfBlob = await resp.blob();
+  if (!pdfBlob || pdfBlob.size < 100) throw new Error('Converted PDF was empty');
+  const pdfName = file.name.replace(/\.[^.]+$/, '') + '.pdf';
+  return new File([pdfBlob], pdfName, { type: 'application/pdf', lastModified: Date.now() });
+}
+
+// FALLBACK PATH: browser calls Graph directly (CORS-limited; permissive tenants only).
+async function convertViaGraphDirect(file, token) {
+  // Unique temp path in the user's OneDrive.
+  const stamp = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const tempPath = `SRFedProposalTool_temp/${stamp}-${safeName}`;
+  const encodedPath = tempPath.split('/').map(encodeURIComponent).join('/');
+  const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodedPath}:/content`;
+
+  let itemId = null;
+  try {
+    const buf = await file.arrayBuffer();
+    const upResp = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
+      body: buf
+    });
+    if (!upResp.ok) throw new Error(`Upload failed (${upResp.status})`);
+    const upData = await upResp.json();
+    itemId = upData.id;
+    if (!itemId) throw new Error('No item id returned from upload');
+
+    const convUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/content?format=pdf`;
+    const pdfResp = await fetch(convUrl, { method: 'GET', headers: { Authorization: `Bearer ${token}` } });
+    if (!pdfResp.ok) throw new Error(`Conversion request failed (${pdfResp.status})`);
+    const pdfBlob = await pdfResp.blob();
+    if (!pdfBlob || pdfBlob.size < 100) throw new Error('Converted PDF was empty');
+    if (pdfBlob.type && pdfBlob.type.indexOf('pdf') === -1 && pdfBlob.type.indexOf('octet') === -1) {
+      throw new Error(`Unexpected content type: ${pdfBlob.type}`);
+    }
+    const pdfName = file.name.replace(/\.[^.]+$/, '') + '.pdf';
+    return new File([pdfBlob], pdfName, { type: 'application/pdf', lastModified: Date.now() });
+  } finally {
+    if (itemId) {
+      fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
+  }
+}
+
 // Auto-detect which proposal volume a template file corresponds to by filename
 function detectTemplateVolume(filename) {
-  const n = filename.toLowerCase();
-  // Check most specific (longest roman numeral) first to avoid false matches
-  // e.g. "vol_iv" contains "i" so must check IV before I
-  if (n.includes('vol_iv') || n.includes('vol-iv') || n.includes('volume_iv') ||
-      n.includes('vol_4')  || n.includes('vol-4')  || n.includes('volume_4')  ||
-      n.includes('vol4')   || n.includes('contract') || n.includes('_iv_'))   return '4';
-  if (n.includes('vol_iii') || n.includes('vol-iii') || n.includes('volume_iii') ||
-      n.includes('vol_3')   || n.includes('vol-3')   || n.includes('volume_3')   ||
-      n.includes('vol3')    || n.includes('price')   || n.includes('cost')    ||
-      n.includes('narrative') || n.includes('_iii_'))                         return '3';
-  if (n.includes('vol_ii') || n.includes('vol-ii') || n.includes('volume_ii') ||
-      n.includes('vol_2')  || n.includes('vol-2')  || n.includes('volume_2')  ||
-      n.includes('vol2')   || n.includes('past')   || n.includes('perf')    ||
-      n.includes('_ii_'))                                                      return '2';
-  if (n.includes('vol_i')  || n.includes('vol-i')  || n.includes('volume_i')  ||
-      n.includes('vol_1')  || n.includes('vol-1')  || n.includes('volume_1')  ||
-      n.includes('vol1')   || n.includes('technical') || n.includes('_i_'))   return '1';
+  // Strip extension so ".docx" can't false-match the "doc" keyword
+  const n = filename.toLowerCase().replace(/\.(docx?|pdf)$/,'');
+  // Vol 0 (executive summary) first — "executive"/"summary"/"vol_0" are unambiguous
+  if (n.match(/vol[_\s-]*0\b|volume[_\s-]*0\b|vol0|executive|exec[_\s-]*sum/))     return '0';
+  // Vol IV before Vol I (since "iv" contains "i")
+  if (n.match(/vol[_\s-]*iv\b|vol[_\s-]*4\b|volume[_\s-]*4\b|vol4|contract/))       return '4';
+  if (n.match(/vol[_\s-]*iii\b|vol[_\s-]*3\b|volume[_\s-]*3\b|vol3|price|cost|narrative/)) return '3';
+  if (n.match(/vol[_\s-]*ii\b|vol[_\s-]*2\b|volume[_\s-]*2\b|vol2|past|perf/))      return '2';
+  if (n.match(/vol[_\s-]*i\b|vol[_\s-]*1\b|volume[_\s-]*1\b|vol1|technical/))       return '1';
   return null;
 }
 
@@ -3707,19 +4051,22 @@ function matchTemplatesToVolumes(templates) {
   const unmatched = [];
 
   for (const f of templates) {
-    const n = f.name.toLowerCase();
-    // Direct filename pattern matching — unambiguous
+    // Strip the file extension first so ".docx" can't false-match the "doc" keyword
+    const n = f.name.toLowerCase().replace(/\.(docx?|pdf)$/,'');
+    // Direct filename pattern matching. Check Vol 0 and Vol IV first
+    // (Vol 0 = executive summary; Vol IV must be checked before Vol I since "iv" contains "i").
     let key = null;
-    if      (n.match(/vol[_\s-]*i[_\s-]|vol[_\s-]*1[_\s-]|volume[_\s-]*1[_\s-]|technical/)) key = '1';
-    else if (n.match(/vol[_\s-]*ii[_\s-]|vol[_\s-]*2[_\s-]|volume[_\s-]*2[_\s-]|past.*perf|performance/)) key = '2';
-    else if (n.match(/vol[_\s-]*iii[_\s-]|vol[_\s-]*3[_\s-]|volume[_\s-]*3[_\s-]|price|cost|narrative/)) key = '3';
-    else if (n.match(/vol[_\s-]*iv[_\s-]|vol[_\s-]*4[_\s-]|volume[_\s-]*4[_\s-]|contract|doc/)) key = '4';
+    if      (n.match(/vol[_\s-]*0\b|volume[_\s-]*0\b|vol0|executive|exec[_\s-]*sum/)) key = '0';
+    else if (n.match(/vol[_\s-]*iv\b|vol[_\s-]*4\b|volume[_\s-]*4\b|vol4|contract/)) key = '4';
+    else if (n.match(/vol[_\s-]*iii\b|vol[_\s-]*3\b|volume[_\s-]*3\b|vol3|price|cost|narrative/)) key = '3';
+    else if (n.match(/vol[_\s-]*ii\b|vol[_\s-]*2\b|volume[_\s-]*2\b|vol2|past.*perf|performance/)) key = '2';
+    else if (n.match(/vol[_\s-]*i\b|vol[_\s-]*1\b|volume[_\s-]*1\b|vol1|technical/)) key = '1';
 
     if (key && !map[key]) map[key] = f;
     else unmatched.push(f);
   }
 
-  // Assign unmatched files to unfilled slots in order
+  // Assign unmatched files to unfilled slots in order (1-4 only; never auto-fill Vol 0)
   let ui = 0;
   for (const v of ['1','2','3','4']) {
     if (!map[v] && ui < unmatched.length) map[v] = unmatched[ui++];
@@ -3909,12 +4256,14 @@ function updateStepLocks() {
 
   const gateEl  = document.getElementById('generateGateLocked');
   const runBtn  = document.getElementById('runBtn');
-  const isSRFed = signedIn && msAccount.username &&
-    msAccount.username.toLowerCase().endsWith('@' + CLIENT_CONFIG.authorizedDomain);
+  const isSRFed = signedIn && msAccount.username && isAuthorizedAccount(msAccount.username);
   if (gateEl) gateEl.style.display = isSRFed ? 'none' : 'block';
   if (runBtn) runBtn.style.display  = isSRFed ? 'flex' : 'none';
-  if (gateEl && !isSRFed && signedIn)
-    gateEl.innerHTML = '<b>' + (msAccount.username||'') + '</b> is not an @' + CLIENT_CONFIG.authorizedDomain + ' account.';
+  if (gateEl && !isSRFed && signedIn) {
+    const dom = (CLIENT_CONFIG.authorizedDomain || '').trim();
+    gateEl.innerHTML = '<b>' + (msAccount.username||'') + '</b> is not an authorized account' +
+      (dom ? ' (must be @' + dom.split(/[,\s]+/)[0] + ')' : '') + '.';
+  }
 
   const allFiles = [...rfpFiles, ...companyFiles];
   if (allFiles.length > 0 && typeof preflightCheck === 'function') {
@@ -4439,7 +4788,7 @@ async function extractShallsViaApi(docContent, apiKey) {
     }
   }, 500);
 
-  const finishBar = (success) => {
+  const finishBar = (success, reason) => {
     clearInterval(tickInterval);
     const bar = document.getElementById('shallsExtractBar');
     const eta = document.getElementById('shallsExtractEta');
@@ -4456,6 +4805,22 @@ async function extractShallsViaApi(docContent, apiKey) {
         if (bar) bar.style.background = success ? 'var(--success)' : 'var(--error)';
         if (eta) eta.textContent = success ? 'Complete' : 'Failed';
         if (lbl) lbl.textContent = success ? 'Requirements extracted' : 'Extraction failed';
+        // On failure, replace the panel body with an actionable explanation
+        if (!success) {
+          const body = document.getElementById('shallsBody');
+          if (body) {
+            body.innerHTML = `<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#92400e">
+              <strong>Could not extract requirements.</strong><br>
+              ${reason || 'No "shall / must / should" requirements were found in the uploaded documents.'}<br><br>
+              This usually means one of:<br>
+              • The solicitation is a <strong>Sources Sought / RFI</strong> with no binding requirements yet (normal — there is nothing to extract).<br>
+              • The uploaded file is a <strong>legacy or password-protected Word file</strong> and its text could not be read. Re-save it as a modern .docx or export to PDF, then re-upload.<br><br>
+              You can still paste requirements manually on the <strong>Compliance</strong> tab using "Paste requirements" mode.
+            </div>`;
+          }
+          const cnt = document.getElementById('shallsCount');
+          if (cnt) cnt.textContent = 'None found';
+        }
       }
     };
     requestAnimationFrame(anim);
@@ -4477,7 +4842,7 @@ async function extractShallsViaApi(docContent, apiKey) {
       body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
         messages: [{ role: 'user', content }] })
     });
-    if (!resp.ok) return;
+    if (!resp.ok) { finishBar(false, `The AI service returned an error (${resp.status}).`); return; }
     const d = await resp.json();
     let raw = d.content.map(c=>c.text||'').join('').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
@@ -4492,10 +4857,10 @@ async function extractShallsViaApi(docContent, apiKey) {
         finishBar(true);
         populateShallsFromAnalysis(shalls.join('\n'));
       } else {
-        finishBar(false);
+        finishBar(false, 'No binding requirements were found in the readable text.');
       }
-    } catch(e) { finishBar(false); console.warn('Shalls parse failed:', e.message); }
-  } catch(e) { finishBar(false); console.warn('Shalls extraction failed:', e.message); }
+    } catch(e) { finishBar(false, 'The response could not be parsed.'); console.warn('Shalls parse failed:', e.message); }
+  } catch(e) { finishBar(false, e.message); console.warn('Shalls extraction failed:', e.message); }
 }
 
 // ─── SHALLS COPY TO CLIPBOARD ────────────────────────────────────────────────
@@ -5007,8 +5372,11 @@ function buildClarifyingContext() {
 
 // ─── MAIN GENERATION FLOW ─────────────────────────────────────────────────────
 async function runGeneration() {
-  if (!msAccount || !msAccount.username.toLowerCase().endsWith('@' + CLIENT_CONFIG.authorizedDomain)) {
-    showStatus('error', 'Access denied', `Sign in with an @${CLIENT_CONFIG.authorizedDomain} account first.`);
+  if (!msAccount || !isAuthorizedAccount(msAccount.username)) {
+    const dom = (CLIENT_CONFIG.authorizedDomain || '').trim();
+    showStatus('error', 'Access denied', dom
+      ? `Sign in with an authorized account (@${dom.split(/[,\s]+/)[0]}) first.`
+      : 'Sign in with your Microsoft account first.');
     return;
   }
   const notes   = document.getElementById('additionalNotes').value.trim();
@@ -6021,10 +6389,37 @@ function restoreSession() {
     if (data.spPP)        { const el = document.getElementById('spPP');        if (el) el.value = data.spPP; }
     if (data.spResumes)   { const el = document.getElementById('spResumes');   if (el) el.value = data.spResumes; }
     if (data.spTemplates) { const el = document.getElementById('spTemplates'); if (el) el.value = data.spTemplates; }
+
+    // Build a concise summary of what carried over and what needs re-doing,
+    // rather than dumping every filename.
+    const restored = [];
+    const needsAction = [];
+
+    // Microsoft / SharePoint login
+    try {
+      const accts = (typeof msalClient !== 'undefined' && msalClient) ? msalClient.getAllAccounts() : [];
+      if (accts && accts.length > 0) restored.push('Microsoft login active');
+    } catch(_) {}
+
+    // Claude API key
+    if (getApiKey()) restored.push('Claude API key set');
+
+    // HubSpot connection
+    if (sessionStorage.getItem('srfed_hs_token')) restored.push('HubSpot connection active');
+
+    // SharePoint folder URLs
+    if (data.spPP || data.spResumes || data.spTemplates) restored.push('SharePoint folder URLs restored');
+
+    // Files always need re-upload (browsers can't persist File objects)
     if (data.rfpFileNames && data.rfpFileNames.length > 0) {
-      showStatus('info', 'Session restored',
-        `Previous session loaded. SharePoint URLs restored. Re-upload your RFP files (${data.rfpFileNames.join(', ')}) to continue.`);
+      needsAction.push(`re-upload ${data.rfpFileNames.length} solicitation file${data.rfpFileNames.length>1?'s':''}`);
     }
+
+    if (restored.length === 0 && needsAction.length === 0) return;
+
+    const summary = restored.length ? restored.join(' · ') : 'Session settings restored';
+    const action  = needsAction.length ? ` To continue, ${needsAction.join(' and ')}.` : '';
+    showStatus('info', 'Session restored', summary + '.' + action);
   } catch(e) { console.warn('Session restore failed:', e); }
 }
 
@@ -6512,16 +6907,15 @@ async function runBidNoBid() {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error('No API key. Enter your key in the Proposal tab Step 2.');
 
-    const content = [];
-    for (const file of bnaFiles.slice(0, 8)) {
-      const block = await fileToContentBlock(file);
-      if (block) content.push(block);
+    const solResult = await buildContentBlocks(bnaFiles, 8);
+    const content = [...solResult.blocks];
+    if (solResult.unreadable.length === bnaFiles.length && bnaFiles.length > 0) {
+      throw new Error(`None of the solicitation files could be read. ${solResult.unreadable.join(', ')} ${solResult.unreadable.length>1?'are':'is'} a legacy or password-protected Word file (old .doc saved as .docx, or an encrypted/protected document). Re-save ${solResult.unreadable.length>1?'them':'it'} in Word as "Word Document (.docx)" or export to PDF, then re-upload.`);
     }
     const hasCompanyDocs = bnaCompanyFiles.length > 0;
-    for (const file of bnaCompanyFiles.slice(0, 6)) {
-      const block = await fileToContentBlock(file);
-      if (block) content.push(block);
-    }
+    const coResult = await buildContentBlocks(bnaCompanyFiles, 6);
+    content.push(...coResult.blocks);
+    const someSolUnreadable = solResult.unreadable.length > 0;
 
     const companyProfile =
       `Company: ${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName})\n` +
@@ -6537,16 +6931,20 @@ async function runBidNoBid() {
       (hasCompanyDocs
         ? `COMPANY DOCUMENTS: Use the attached past performance and capability documents to score technical capability, past performance, and eligibility. Cite specific evidence in your rationales.\n\n`
         : `NOTE: No company documents provided. Use the company profile above for technical/PP scoring; note uncertainty in rationales.\n\n`) +
+      (someSolUnreadable
+        ? `WARNING: One or more solicitation files could not be read (marked UNREADABLE above). Base your analysis ONLY on readable content. Do NOT guess the set-aside type, NAICS, value, clearance, or scope from an unreadable file.\n\n`
+        : '') +
+      `ABSOLUTE RULE — NO FABRICATION: Only state facts that appear in the readable solicitation text. NEVER invent or assume the set-aside type, NAICS code, contract value, place of performance, clearance level, or incumbent. If the solicitation does not state something, say so explicitly in the rationale (e.g. "set-aside not stated in available documents") rather than guessing. A Sources Sought notice often has NO set-aside determined yet — do not assume SDVOSB or any other set-aside unless it is explicitly written.\n\n` +
       `TASK: Read the solicitation documents carefully and score each of the 6 factors from 0 to 10.\n\n` +
       `SCORING GUIDANCE:\n` +
       `- technical_capability: Does ${CLIENT_CONFIG.companyShortName} have the technical skills, personnel, and experience this SOW requires?\n` +
       `- competition: How competitive is the landscape? Score high if sole-source eligible or incumbent advantage, low if many competitors.\n` +
       `- past_performance: Do references match this solicitation in scope, size, and agency type?\n` +
-      `- eligibility: Does the set-aside type match ${CLIENT_CONFIG.companyShortName} certifications? Score 10 if perfect match, 0 if ineligible.\n` +
+      `- eligibility: Does the set-aside type match ${CLIENT_CONFIG.companyShortName} certifications? If the set-aside is NOT stated (e.g. Sources Sought), score based on whether ${CLIENT_CONFIG.companyShortName} would plausibly qualify and SAY the set-aside is undetermined — do not assume a perfect match.\n` +
       `- strategic_value: Does winning align with growth goals? Consider contract value, recompete potential, agency relationships.\n` +
       `- scope_clarity: How well-defined is the scope? Score high if clear requirements, low if vague PWS.\n\n` +
       `OUTPUT RULES — complete the JSON object below with REAL content from the documents:\n` +
-      `- Each rationale: 1-2 sentences maximum, citing SPECIFIC evidence (section numbers, NAICS, set-aside type, FTE counts, clearance levels). Be concise.\n` +
+      `- Each rationale: 1-2 sentences maximum, citing SPECIFIC evidence (section numbers, NAICS, set-aside type, FTE counts, clearance levels). Be concise. If something is not stated, say "not stated".\n` +
       `- risks: 3-5 items citing SPECIFIC risks from this solicitation\n` +
       `- win_strategy: 3-5 SPECIFIC strategies for THIS opportunity\n` +
       `- summary: 2-3 sentences. Reference the final score as X out of 10. Do NOT invent alternative scales like x/60.\n` +
@@ -7250,6 +7648,11 @@ function loadSettingsIntoUI() {
     s_dcaa: cfg.dcaa,
     s_appTitle: cfg.appTitle,
     s_primaryColor: cfg.primaryColor,
+    s_conversionProxyUrl: cfg.conversionProxyUrl,
+    s_azureClientId: cfg.azureClientId,
+    s_azureTenantId: cfg.azureTenantId,
+    s_authorizedDomain: cfg.authorizedDomain,
+    s_redirectUri: cfg.redirectUri,
   };
   Object.entries(fields).forEach(([id, val]) => {
     const el = document.getElementById(id);
@@ -7258,6 +7661,11 @@ function loadSettingsIntoUI() {
 }
 
 function saveSettings() {
+  // Capture prior Azure config to detect changes that require MSAL re-init
+  const priorAzure = JSON.stringify({
+    c: CLIENT_CONFIG.azureClientId, t: CLIENT_CONFIG.azureTenantId, r: CLIENT_CONFIG.redirectUri
+  });
+
   const overrides = {
     companyFullName:  document.getElementById('s_companyFullName')?.value.trim(),
     companyShortName: document.getElementById('s_companyShortName')?.value.trim(),
@@ -7275,17 +7683,40 @@ function saveSettings() {
     dcaa:             document.getElementById('s_dcaa')?.value.trim(),
     appTitle:         document.getElementById('s_appTitle')?.value.trim(),
     primaryColor:     document.getElementById('s_primaryColor')?.value.trim(),
+    conversionProxyUrl: document.getElementById('s_conversionProxyUrl')?.value.trim(),
+    azureClientId:    document.getElementById('s_azureClientId')?.value.trim(),
+    azureTenantId:    document.getElementById('s_azureTenantId')?.value.trim(),
+    authorizedDomain: document.getElementById('s_authorizedDomain')?.value.trim(),
+    redirectUri:      document.getElementById('s_redirectUri')?.value.trim(),
   };
-  // Remove empty values
-  Object.keys(overrides).forEach(k => { if (!overrides[k]) delete overrides[k]; });
+  // authorizedDomain is allowed to be empty (means "any account"), so preserve it
+  // explicitly; remove only the OTHER empty values.
+  const allowEmpty = new Set(['authorizedDomain']);
+  Object.keys(overrides).forEach(k => { if (!overrides[k] && !allowEmpty.has(k)) delete overrides[k]; });
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(overrides));
 
   // Apply immediately to CLIENT_CONFIG
   Object.assign(CLIENT_CONFIG, overrides);
   applyClientConfig();
 
+  // If Azure sign-in settings changed, MSAL must be re-initialized with the new app.
+  const newAzure = JSON.stringify({
+    c: CLIENT_CONFIG.azureClientId, t: CLIENT_CONFIG.azureTenantId, r: CLIENT_CONFIG.redirectUri
+  });
+  if (newAzure !== priorAzure) {
+    const msg = document.getElementById('settingsSavedMsg');
+    if (msg) {
+      msg.innerHTML = '✅ Settings saved. Microsoft sign-in settings changed — reload the page now for them to take effect.';
+      msg.style.display = 'block';
+    }
+    if (confirm('Microsoft sign-in settings changed.\n\nReload the page now to apply them?')) {
+      location.reload();
+    }
+    return;
+  }
+
   const msg = document.getElementById('settingsSavedMsg');
-  if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
+  if (msg) { msg.textContent = '✅ Settings saved successfully.'; msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
 }
 
 function resetSettings() {
