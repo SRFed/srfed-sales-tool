@@ -1604,17 +1604,23 @@
 
       <div class="settings-section">
         <h3>🔌 Integrations</h3>
-        <div class="settings-grid">
-          <div class="settings-field" style="grid-column:1/-1">
-            <label>Document Conversion Service URL</label>
-            <input type="text" id="s_conversionProxyUrl" placeholder="https://your-doc-convert.workers.dev"/>
-            <p style="font-size:12px;color:var(--muted);margin:6px 0 0">
-              Server-side proxy that converts legacy/any Office file (.doc, .xls, .ppt, etc.) to PDF via Microsoft 365.
-              Required for reliable conversion across all tenants. Deploy the included <code>srfed-doc-convert-worker.js</code>
-              as a Cloudflare Worker and paste its URL here. Leave blank to attempt browser-direct conversion (works only in permissive tenants).
-            </p>
-          </div>
+        <div style="padding:10px 14px;background:var(--success-bg);border:1px solid #86efac;border-radius:8px;font-size:13px;color:var(--success);margin-bottom:10px">
+          ✅ Document conversion service is managed by SRFed — no configuration needed.
         </div>
+        <!-- Advanced: override the conversion service URL if you move to a custom domain -->
+        <details style="font-size:12px;color:var(--muted);margin-top:4px">
+          <summary style="cursor:pointer;user-select:none">Advanced — override conversion service URL</summary>
+          <div style="margin-top:10px">
+            <div class="settings-field">
+              <label>Document Conversion Service URL</label>
+              <input type="text" id="s_conversionProxyUrl" placeholder="https://srfed-doc-convert.paul-scace.workers.dev"/>
+              <p style="font-size:12px;color:var(--muted);margin:6px 0 0">
+                Leave blank to use the built-in default. Only change this if you have moved the
+                conversion service to a custom domain (e.g. <code>https://convert.srfed.com</code>).
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div class="settings-section">
@@ -1788,12 +1794,9 @@ const CLIENT_CONFIG = {
   anthropicApiKey: null,   // e.g. 'sk-ant-...'
 
   // ── Document Conversion Service ───────────────────────────────────────────
-  // A server-side proxy (e.g. Cloudflare Worker) that converts legacy/any Office
-  // format to PDF via Microsoft Graph. Server-to-server calls have no CORS limits,
-  // so this works for ANY tenant — unlike calling Graph directly from the browser.
-  // Deploy the included worker (srfed-doc-convert-worker.js) and paste its URL here.
-  // Leave null to attempt browser-direct Graph conversion (works only in permissive tenants).
-  conversionProxyUrl: null,  // e.g. 'https://srfed-doc-convert.<account>.workers.dev'
+  // SRFed-operated shared service — clients do not configure this.
+  // To update (e.g. after adding a custom domain), change this one line.
+  conversionProxyUrl: 'https://srfed-doc-convert.paul-scace.workers.dev',
 
 };
 
