@@ -272,13 +272,46 @@
     transition: all 0.15s;
     letter-spacing: .3px;
   }
-  .btn-primary { background: var(--blue); color: white; }
-  .btn-primary:hover:not(:disabled) { background: #163c5e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31,78,121,0.3); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-secondary { background: white; color: var(--blue); border: 1.5px solid var(--mid-blue); }
-  .btn-secondary:hover { background: var(--pale); }
+  .btn-primary {
+    background: linear-gradient(180deg, #2a82ff 0%, #005FD5 100%);
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,68,153,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #3d8fff 0%, #0a6ae6 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(0,68,153,0.42), inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,68,153,0.40), inset 0 2px 4px rgba(0,0,0,0.18);
+  }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+  .btn-secondary {
+    background: white; color: var(--blue); border: 1.5px solid var(--mid-blue);
+    box-shadow: 0 1px 3px rgba(0,68,153,0.12);
+  }
+  .btn-secondary:hover { background: var(--pale); transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,68,153,0.18); }
   .btn-sm { padding: 7px 16px; font-size: 13px; }
   .btn-block { width: 100%; justify-content: center; }
+
+  /* ── Uniform raised affordance for inline blue action buttons across all tabs ── */
+  /* These are styled inline with background:var(--blue); the gradient + shadow makes
+     them read as raised buttons, distinct from the flat blue section/step headers. */
+  button[style*="background:var(--blue)"]:not(:disabled) {
+    background: linear-gradient(180deg, #2a82ff 0%, #005FD5 100%) !important;
+    box-shadow: 0 2px 5px rgba(0,68,153,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
+    transition: all 0.15s;
+  }
+  button[style*="background:var(--blue)"]:not(:disabled):hover {
+    background: linear-gradient(180deg, #3d8fff 0%, #0a6ae6 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(0,68,153,0.42), inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+  button[style*="background:var(--blue)"]:not(:disabled):active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,68,153,0.40), inset 0 2px 4px rgba(0,0,0,0.18);
+  }
 
   /* ── STATUS / PROGRESS ── */
   .status-bar {
@@ -596,11 +629,13 @@
     <div id="gsbMinimized" style="display:none;align-items:center;gap:10px;cursor:pointer" onclick="_gsbExpand()" title="Click to expand">
       <div id="gsbMinIcon" style="font-size:14px;flex-shrink:0">ℹ️</div>
       <div id="gsbMinTitle" style="font-size:12px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-      <div style="width:120px;height:4px;background:#e2e8f0;border-radius:2px;flex-shrink:0;overflow:hidden">
-        <div id="gsbMinFill" style="height:100%;width:0%;background:var(--mid-blue);transition:width 0.4s;border-radius:2px"></div>
+      <div id="gsbMinProgress" style="display:none;align-items:center;gap:10px;flex-shrink:0">
+        <div style="width:120px;height:4px;background:#e2e8f0;border-radius:2px;flex-shrink:0;overflow:hidden">
+          <div id="gsbMinFill" style="height:100%;width:0%;background:var(--mid-blue);transition:width 0.4s;border-radius:2px"></div>
+        </div>
+        <div id="gsbMinPct" style="font-size:11px;font-weight:700;color:var(--blue);flex-shrink:0;min-width:28px;text-align:right">0%</div>
+        <div id="gsbMinEta" style="font-size:11px;color:var(--muted);flex-shrink:0"></div>
       </div>
-      <div id="gsbMinPct" style="font-size:11px;font-weight:700;color:var(--blue);flex-shrink:0;min-width:28px;text-align:right">0%</div>
-      <div id="gsbMinEta" style="font-size:11px;color:var(--muted);flex-shrink:0"></div>
       <span style="font-size:11px;color:var(--muted);padding:1px 6px;border:1px solid var(--border);border-radius:4px;flex-shrink:0">▼ show</span>
     </div>
     <!-- Full expanded view -->
@@ -976,7 +1011,11 @@
         <div id="outlinePreviewPanel" style="display:none;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
           <div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:13px;font-weight:700">📋 Pink Team Outline Preview</span>
-            <button onclick="document.getElementById('outlinePreviewPanel').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px">×</button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onclick="copyPinkTeamOutline()" id="copyOutlineBtn"
+                style="padding:4px 12px;font-size:12px;font-weight:600;border:1px solid var(--mid-blue);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
+              <button onclick="document.getElementById('outlinePreviewPanel').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px">×</button>
+            </div>
           </div>
           <div id="outlineContent" style="padding:14px;max-height:300px;overflow-y:auto;overscroll-behavior-y:contain"></div>
           <div style="padding:10px 14px;background:#f8fafc;border-top:1px solid var(--border)">
@@ -1011,6 +1050,12 @@
     <div class="card-header"><span class="icon">📥</span> Download Generated Documents</div>
     <div class="card-body">
       <div class="downloads" id="downloadList"></div>
+      <div style="margin-top:14px;padding:12px 14px;background:var(--pale);border:1px solid var(--light-blue);border-radius:8px;font-size:13px;color:var(--text);line-height:1.55">
+        <div style="font-weight:700;color:var(--blue);margin-bottom:6px">📄 Opening your documents in Word</div>
+        <div style="margin-bottom:6px"><strong>1. Click “Enable Editing.”</strong> Word opens any file downloaded from a browser in Protected View. This is a Windows/Office security feature (not something the file can switch off), so this one click is required on every volume.</div>
+        <div style="margin-bottom:6px"><strong>2. The Table of Contents updates itself.</strong> As soon as you enable editing, Word repaginates and fills in the Table of Contents and its page numbers automatically — no manual refresh needed.</div>
+        <div><strong>3. If a TOC ever looks off</strong> (rare): click anywhere in it and press <strong>F9</strong> (or right-click → “Update Field” → “Update entire table”) to rebuild it. The header date, solicitation number, and company fields are already filled in — nothing else needs touching.</div>
+      </div>
       <hr class="section-divider"/>
       <p style="font-size:13px;color:var(--muted)">⚠️ <strong>Review required before submission.</strong> AI-generated content should be verified for accuracy, completeness, and compliance with the solicitation.</p>
     </div>
@@ -1461,13 +1506,13 @@
           <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="tier1SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div id="tier1PctLabel" style="font-size:11px;color:var(--muted)">Auto-scored (50% weight)</div>
+              <div id="tier1PctLabel" style="font-size:11px;color:var(--muted)">Auto-scored (60% weight)</div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
             </div>
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">+</div>
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="tier2SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div id="tier2PctLabel" style="font-size:11px;color:var(--muted)">Your input (50% weight)</div>
+              <div id="tier2PctLabel" style="font-size:11px;color:var(--muted)">Your input (40% weight)</div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
             </div>
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">=</div>
@@ -3497,6 +3542,8 @@ function setProgress(pct, steps) {
   if (bar && pct > 0) bar.style.display = 'block';
   const pw = document.getElementById('gsbProgressWrap');
   if (pw && pct > 0) pw.style.display = 'block';
+  const mp = document.getElementById('gsbMinProgress');
+  if (mp && pct > 0) mp.style.display = 'flex';
 
   const pctClamped = Math.min(pct, 100);
   const fill  = document.getElementById('gsbFill');
@@ -5959,7 +6006,9 @@ async function generateDocsClientSide(proposalData, volumes) {
         // Inject into document body
         const docXml = await zip.file('word/document.xml').async('string');
         const injectedXml = injectContentIntoXml(docXml, proposalData, vol);
-        zip.file('word/document.xml', typeof postProcessDocXml === 'function' ? postProcessDocXml(injectedXml) : injectedXml);
+        let finalDocXml = typeof postProcessDocXml === 'function' ? postProcessDocXml(injectedXml) : injectedXml;
+        finalDocXml = markTocFieldsDirty(finalDocXml);  // auto-update TOC on open (no manual F9)
+        zip.file('word/document.xml', finalDocXml);
 
         // Also inject metadata into headers and footers
         const zipFiles = Object.keys(zip.files);
@@ -6118,6 +6167,22 @@ function injectMetaOnly(xml, data) {
     xml = xml.split(ph).join(escXml(val));
     xml = xml.split(escXml(ph)).join(escXml(val));
   }
+  // ── Permanent fix for stale hard-coded dates left in template headers ──
+  // Some templates have a literal date typed into the running header (e.g.
+  // "March 31, 2026") instead of the {{SUBMISSION_DATE}} placeholder, so the
+  // replacement above never catches it. Scoped to headers/footers only (this
+  // function is only ever called on header*.xml / footer*.xml), where the only
+  // date that should appear is the proposal date — so it's safe to normalize
+  // any long-form date we find to the real submission date.
+  if (data.submission_date && data.submission_date.trim()) {
+    const MONTHS = '(?:January|February|March|April|May|June|July|August|September|October|November|December)';
+    const dateRe = new RegExp(MONTHS + '\\s+\\d{1,2},?\\s+\\d{4}');
+    const newDate = escXml(data.submission_date);
+    // Replace within individual text runs (the overwhelmingly common case).
+    xml = xml.replace(/(<w:t[^>]*>)([^<]*)(<\/w:t>)/g, (m, open, txt, close) => {
+      return dateRe.test(txt) ? open + txt.replace(new RegExp(MONTHS + '\\s+\\d{1,2},?\\s+\\d{4}', 'g'), newDate) + close : m;
+    });
+  }
   return xml;
 }
 
@@ -6242,6 +6307,29 @@ function injectContentIntoXml(xml, data, vol) {
   }
 
   return xml;
+}
+
+// Mark every TOC field "dirty" so Word recomputes its entries and page numbers
+// automatically when the document is opened (right after Enable Editing), with
+// no manual F9 / right-click → Update Field needed. Without the dirty flag Word
+// just shows the field's cached result — which is why the TOC appeared blank or
+// with every entry pointing to page 1.
+function markTocFieldsDirty(xml) {
+  if (!/<w:instrText[^>]*>[^<]*\bTOC\b/i.test(xml)) return xml;
+  // For each field-begin character, look ahead to the next field char. The TOC
+  // instruction always sits immediately after its own begin (before any nested
+  // PAGEREF/HYPERLINK fields), so if the slice up to the next <w:fldChar holds a
+  // TOC instrText, this begin starts the TOC field and we flag it dirty.
+  return xml.replace(/<w:fldChar\b[^>]*w:fldCharType="begin"[^>]*\/>/g, (match, offset, str) => {
+    if (/w:dirty\s*=\s*"true"/i.test(match)) return match; // already dirty
+    const ahead = str.slice(offset + match.length, offset + match.length + 1500);
+    const nextFld = ahead.search(/<w:fldChar/);
+    const segment = nextFld === -1 ? ahead : ahead.slice(0, nextFld);
+    if (/<w:instrText[^>]*>[^<]*\bTOC\b/i.test(segment)) {
+      return match.replace(/\/>$/, ' w:dirty="true"/>');
+    }
+    return match;
+  });
 }
 
 // Force Word to recalculate all fields (especially TOC page numbers) on open.
@@ -6506,31 +6594,31 @@ async function loadBnaSPFiles() {
 
 // ── HYBRID BID/NO-BID MATRIX ──────────────────────────────────────────────────
 const BNA_TIER1 = [
-  { key:'technical_capability', label:'Background, Experience & Technical Capability', weight:0.12,
+  { key:'technical_capability', label:'Background, Experience & Technical Capability', weight:0.15,
     neg:'Weak experience or not qualified', mid:'Average in-house or importable capability', pos:'Strong in-house, technically superior' },
-  { key:'competition',          label:'Competition & Market Position',                weight:0.10,
+  { key:'competition',          label:'Competition & Market Position',                weight:0.05,
     neg:'Unknown/wired competition',       mid:'Open market; know how to compete',     pos:'Sole source or customer prefers us' },
   { key:'past_performance',     label:'Past Performance Match',                      weight:0.10,
     neg:'No relevant past performance',    mid:'Some relevant experience',             pos:'Strong directly relevant references' },
-  { key:'eligibility',          label:'Set-Aside / Eligibility',                    weight:0.08,
+  { key:'eligibility',          label:'Set-Aside / Eligibility',                    weight:0.20,
     neg:'Not eligible or disadvantaged',   mid:'Eligible but no preference',           pos:'Preferred or sole-source eligible' },
   { key:'strategic_value',      label:"Program's Strategic Advantage",              weight:0.05,
     neg:'Low strategic value',             mid:'Average strategic value',              pos:'High value / growth platform' },
   { key:'scope_clarity',        label:'Ability to Respond (Scope Clarity)',         weight:0.05,
     neg:"Don't understand the problem",    mid:'Understand and can respond',           pos:'Can meet and exceed every requirement' },
 ];
-// Tier 1 total: 50%
+// Tier 1 total: 60%
 const BNA_TIER2 = [
   { key:'customer_rapport', label:'Customer Knowledge & Rapport',          weight:0.15,
     neg:'Unknown; no relationship',        mid:'Known but not cultivated',             pos:'Good relationship; know real needs' },
-  { key:'team_personnel',   label:'Proposed Team, Partners & Personnel',   weight:0.15,
+  { key:'team_personnel',   label:'Proposed Team, Partners & Personnel',   weight:0.10,
     neg:'Second-best or diluting scope',   mid:'Best available, no scope impact',      pos:'Best team, available, ready' },
   { key:'price_strategy',   label:'Price Strategy',                        weight:0.10,
     neg:'Must guess or cut corners',       mid:'Reasonable; good idea of price to win',pos:'Honest, credible, know price to win' },
-  { key:'resources',        label:'Resources Available (Proposal & Exec)', weight:0.10,
+  { key:'resources',        label:'Resources Available (Proposal & Exec)', weight:0.05,
     neg:'Not available',                   mid:'Available with effort',                pos:'Readily available or not needed' },
 ];
-// Tier 2 total: 50%
+// Tier 2 total: 40%
 const BNA_THRESHOLD = 7.5;
 let bna_tier1_scores = {};
 let bna_tier2_scores = {};
@@ -6769,6 +6857,9 @@ function _gsb(type, title, msg, showProgress) {
   if (minTitle) minTitle.textContent = title;
   const pw = document.getElementById('gsbProgressWrap');
   if (pw) pw.style.display = showProgress ? 'block' : 'none';
+  // Keep the minimized strip's progress bar in sync — no ghost 0% bar for plain messages
+  const minProg = document.getElementById('gsbMinProgress');
+  if (minProg) minProg.style.display = showProgress ? 'flex' : 'none';
   bar.style.display = 'block';
   // Make sure expanded is visible (not minimized) when a new operation starts
   const exp = document.getElementById('gsbExpanded');
@@ -6844,6 +6935,8 @@ function _ensureBnaProgressVisible() {
   const bar = document.getElementById('globalStatusBar');
   if (pw)  pw.style.display  = 'block';
   if (bar) bar.style.display = 'block';
+  const mp = document.getElementById('gsbMinProgress');
+  if (mp) mp.style.display = 'flex';
   const container = document.querySelector('.container');
   if (container) container.style.paddingTop = '130px';
 }
@@ -7558,6 +7651,29 @@ function copyBnaResults() {
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.querySelector('[onclick="copyBnaResults()"]');
     if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy Report', 2000); }
+  });
+}
+
+function copyPinkTeamOutline() {
+  const outline = window._approvedOutline;
+  if (!outline || !outline.volumes) return;
+  let text = `PINK TEAM PROPOSAL OUTLINE — ${CLIENT_CONFIG.companyShortName}\n\n`;
+  (outline.volumes || []).forEach(vol => {
+    text += `VOLUME ${vol.vol} — ${vol.title} (~${vol.total_pages} pages)\n`;
+    (vol.sections || []).forEach(s => {
+      text += `  ${s.heading} (${s.pages} pp)\n`;
+      (s.key_points || []).forEach(p => { text += `    • ${p}\n`; });
+    });
+    text += `\n`;
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyOutlineBtn');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy', 2000); }
+  }).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = text;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    const btn = document.getElementById('copyOutlineBtn');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy', 2000); }
   });
 }
 
