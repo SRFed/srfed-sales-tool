@@ -762,14 +762,22 @@
             </label>
             <input type="text" id="spPP" placeholder="https://yourcompany.sharepoint.com/.../Past Performance"/>
           </div>
-          <div class="form-group" style="margin-bottom:0">
+          <div class="form-group">
             <label style="display:flex;align-items:center;gap:6px">
               Resumes Folder URL
               <span id="resumesTokenBadge" style="font-size:11px;font-weight:600;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:10px;padding:1px 8px">counts toward tokens</span>
             </label>
             <input type="text" id="spResumes" placeholder="https://yourcompany.sharepoint.com/.../Resumes"/>
           </div>
-          <p class="tip" style="margin-top:10px;margin-bottom:14px">Past performance and resume documents are sent to the AI as source documents — they count toward token usage. Templates are formatting only.</p>
+          <div class="form-group" style="margin-bottom:0">
+            <label style="display:flex;align-items:center;gap:6px">
+              Past Proposals — Tone &amp; Style Reference Folder URL
+              <span id="toneTokenBadge" style="font-size:11px;font-weight:600;background:#f5f3ff;border:1px solid #ddd6fe;color:#6d28d9;border-radius:10px;padding:1px 8px">style only</span>
+            </label>
+            <input type="text" id="spTone" placeholder="https://yourcompany.sharepoint.com/.../Submitted Proposals"/>
+            <div class="tip" style="margin-top:4px">Previously submitted proposals, used <strong>only</strong> to learn your house writing voice. The tool extracts a style profile once — content, facts, client names, and numbers are never copied into new proposals.</div>
+          </div>
+          <p class="tip" style="margin-top:10px;margin-bottom:14px">Past performance and resume documents are sent to the AI as source documents — they count toward token usage. Templates are formatting only. Tone references are read once to build a short style guide.</p>
           <button class="btn btn-primary" id="spLoadBtn" onclick="loadSharePointFiles()" style="width:100%">
             <span id="spLoadIcon">🔗</span> <span id="spLoadText">Load Files from SharePoint</span>
           </button>
@@ -2639,6 +2647,11 @@ async function runHsMatch() {
 
     setProgress(55, [{ text: `Loaded ${companies.length} companies`, status: 'done' }, { text: 'Scoring with AI', status: 'active' }]);
 
+    // Sort companies deterministically (by name) before scoring. HubSpot can return
+    // pages in a different order between runs; a stable input order removes one source
+    // of run-to-run variance in the ranked results.
+    companies.sort((a, b) => String(a.properties?.name || '').localeCompare(String(b.properties?.name || '')));
+
     // Build compact text summary for each company
     const summaries = companies.map(c => {
       const p = c.properties||{};
@@ -3503,11 +3516,20 @@ let _etaInterval  = null;
 let _currentPct   = 0;
 let _targetPct    = 0;      // where we're animating toward
 let _totalEstSecs = null;   // estimated total duration in seconds
+// Segment-based fill (used during multi-volume proposal generation): the bar
+// rises asymptotically toward the CURRENT volume's ceiling and can never
+// overshoot it on elapsed time alone — so it tracks real work, not a guess.
+let _segFloor     = null;
+let _segCeil      = null;
+let _segStartTime = null;
+let _segTau       = 35;     // time-constant (s) controlling approach speed
 
 // Called with a hard milestone (e.g. 10%, 35%, 88%) — we animate toward it smoothly
 function setProgress(pct, steps) {
   _targetPct  = pct;
   _currentPct = pct;
+  // An explicit milestone overrides any active segment animation.
+  _segFloor = null; _segCeil = null; _segStartTime = null;
 
   if (pct > 0 && pct < 100 && !_genStartTime) _startEtaTimer();
   if (pct >= 100 || pct === 0) {
@@ -3571,40 +3593,81 @@ function setProgress(pct, steps) {
 // Soft-advance: nudge progress forward visually between hard milestones
 // so the bar doesn't appear frozen
 function _nudgeProgress() {
-  if (!_genStartTime || _currentPct >= 91) return;
+  if (!_genStartTime) return;
 
   const fill  = document.getElementById('gsbFill');
+  if (!fill) return;
   const pctEl = document.getElementById('gsbPct');
   const etaEl = document.getElementById('gsbEta');
   const minF  = document.getElementById('gsbMinFill');
   const minP  = document.getElementById('gsbMinPct');
-  if (!fill) return;
+  const minE  = document.getElementById('gsbMinEta');
 
-  if (_totalEstSecs !== null) {
-    const elapsed      = (Date.now() - _genStartTime) / 1000;
-    const elapsedRatio = Math.min(elapsed / _totalEstSecs, 1);
-    // sqrt curve: fast start, slows near end — never exceeds 91% until done
-    const targetPct = 3 + Math.sqrt(elapsedRatio) * 88;
-    _currentPct = Math.max(_currentPct, Math.min(targetPct, 91));
-    fill.style.width = _currentPct + '%';
-    if (pctEl) pctEl.textContent = Math.round(_currentPct) + '%';
-    if (minF)  minF.style.width  = _currentPct + '%';
-    if (minP)  minP.textContent  = Math.round(_currentPct) + '%';
-
-    // ETA: count down based on dynamically updated _totalEstSecs
-    if (etaEl) {
-      const minE = document.getElementById('gsbMinEta');
-      const remaining = Math.max(0, _totalEstSecs - elapsed);
-      // Never show "Almost done..." based on time alone — that fires too early on long jobs
-      // Instead just count down to ~0 and show the remaining time honestly
-      const etaTxt = remaining > 60
-        ? `~${Math.floor(remaining/60)}m ${Math.round(remaining%60)}s remaining`
-        : remaining > 3 ? `~${Math.round(remaining)}s remaining`
-        : 'Finishing up...';
-      etaEl.textContent = etaTxt;
-      if (minE) minE.textContent = etaTxt;
+  if (_segCeil !== null) {
+    // ── Segment mode (proposal generation) ──
+    // Approach the current volume's ceiling asymptotically; never reach it on
+    // time alone. The bar advances to the ceiling only when the real milestone
+    // completes (the next _beginSegment / setProgress call). This is why the
+    // bar can no longer read 91% while only on volume 2.
+    const elapsedSeg = (Date.now() - _segStartTime) / 1000;
+    const frac = 1 - Math.exp(-elapsedSeg / _segTau);   // 0 → ~1, asymptotic
+    let cur = _segFloor + (_segCeil - _segFloor) * frac;
+    cur = Math.min(cur, _segCeil - 0.4);                 // stay just under ceiling
+    _currentPct = Math.max(_currentPct, cur);
+  } else if (_totalEstSecs !== null) {
+    // ── Legacy time-based mode (single-call flows: matching, compliance, etc.) ──
+    if (_currentPct >= 91) { /* still refresh ETA below */ }
+    else {
+      const elapsed      = (Date.now() - _genStartTime) / 1000;
+      const elapsedRatio = Math.min(elapsed / _totalEstSecs, 1);
+      const targetPct    = 3 + Math.sqrt(elapsedRatio) * 88;
+      _currentPct = Math.max(_currentPct, Math.min(targetPct, 91));
     }
+  } else {
+    return;
   }
+
+  fill.style.width = _currentPct + '%';
+  if (pctEl) pctEl.textContent = Math.round(_currentPct) + '%';
+  if (minF)  minF.style.width  = _currentPct + '%';
+  if (minP)  minP.textContent  = Math.round(_currentPct) + '%';
+
+  // ── ETA (honest countdown) ──
+  if (etaEl && _totalEstSecs !== null) {
+    const elapsed   = (Date.now() - _genStartTime) / 1000;
+    const remaining = Math.max(0, _totalEstSecs - elapsed);
+    // Only say "Almost done" once we're genuinely in the final (docx) phase —
+    // never during volume writing, even if the time estimate is off.
+    const nearEnd = _currentPct >= 84;
+    let etaTxt;
+    if (remaining > 60)      etaTxt = `~${Math.floor(remaining/60)}m ${Math.round(remaining%60)}s remaining`;
+    else if (remaining > 5)  etaTxt = `~${Math.round(remaining)}s remaining`;
+    else if (nearEnd)        etaTxt = 'Almost done…';
+    else                     etaTxt = 'Working…';   // estimate exhausted but real work continues
+    etaEl.textContent = etaTxt;
+    if (minE) minE.textContent = etaTxt;
+  }
+}
+
+// Begin a progress "segment" bounded by [floor, ceil]. The fill rises toward
+// ceil but only crosses it when the next milestone fires. Used per volume so
+// the bar reflects actual volume completion instead of an elapsed-time guess.
+function _beginSegment(floor, ceil, tau) {
+  _segFloor = floor;
+  _segCeil  = ceil;
+  _segTau   = tau || 35;
+  _segStartTime = Date.now();
+  if (!_genStartTime) _genStartTime = Date.now();
+  if (!_etaInterval)  _etaInterval = setInterval(_nudgeProgress, 800);
+  _currentPct = Math.max(_currentPct, floor);
+  const fill  = document.getElementById('gsbFill');
+  const pctEl = document.getElementById('gsbPct');
+  const minF  = document.getElementById('gsbMinFill');
+  const minP  = document.getElementById('gsbMinPct');
+  if (fill)  fill.style.width  = _currentPct + '%';
+  if (pctEl) pctEl.textContent = Math.round(_currentPct) + '%';
+  if (minF)  minF.style.width  = _currentPct + '%';
+  if (minP)  minP.textContent  = Math.round(_currentPct) + '%';
 }
 
 function _startEtaTimer(estimatedSeconds) {
@@ -3885,6 +3948,61 @@ async function buildContentBlocks(files, limit) {
   return { blocks, unreadable };
 }
 
+// Extract a concise "house style" profile from past-proposal tone references.
+// Runs ONCE per generation (token-efficient): the ~300-word profile is then
+// woven into the briefing for every volume. Deliberately style-only — the
+// prompt forbids reusing any facts, names, or numbers from the references.
+async function extractToneProfile(apiKey) {
+  try {
+    if (!spToneFiles || spToneFiles.length === 0) return '';
+    const TONE_BUDGET = 120000;
+    const sorted = [...spToneFiles].sort((a, b) => a.size - b.size);
+    const blocks = [];
+    let toks = 0;
+    for (const f of sorted.slice(0, 6)) {
+      const est = estimateTokens(f);
+      if (toks + est > TONE_BUDGET) continue;
+      const b = await fileToContentBlock(f);
+      if (b && !b._unreadable) { const { _unreadable, _fileName, ...clean } = b; blocks.push(clean); toks += est; }
+    }
+    if (blocks.length === 0) return '';
+
+    const prompt =
+      `The documents above are previously submitted proposals from ${CLIENT_CONFIG.companyShortName}. ` +
+      `Analyze ONLY their WRITING STYLE AND TONE — never their content, facts, or subject matter. ` +
+      `Produce a concise house-style guide (250-400 words) another writer could follow to match this voice exactly. Cover:\n` +
+      `- Overall voice and register (e.g. formal, confident, plain-spoken, technical)\n` +
+      `- Typical sentence length and rhythm; typical paragraph length\n` +
+      `- Point of view and how the company refers to itself (e.g. "we", company name)\n` +
+      `- Characteristic vocabulary, transitions, and recurring phrasings actually observed\n` +
+      `- How sections typically open and close; use of topic sentences\n` +
+      `- Formatting habits (headings, bullets vs. prose, emphasis)\n` +
+      `- Any distinctive tics to replicate, and anything to avoid\n\n` +
+      `Do NOT summarize the proposals' content and do NOT reuse any project-specific facts, client/agency names, contract numbers, or figures. ` +
+      `Output ONLY the style guide as plain prose with short labeled points. Begin directly with the guide.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1200, temperature: 0,
+        messages: [{ role: 'user', content: [...blocks, { type: 'text', text: prompt }] }] })
+    });
+    if (!resp.ok) return '';
+    const d = await resp.json();
+    const profile = d.content.map(c => c.text || '').join('').trim();
+    if (!profile) return '';
+    window._lastToneProfile = profile;
+    return `\n\nHOUSE WRITING STYLE — MATCH THIS VOICE (learned from ${CLIENT_CONFIG.companyShortName}'s past proposals):\n` +
+      `Write ALL prose in the voice and tone described below so this proposal reads as the same brand. ` +
+      `This governs HOW you write, never WHAT you write — do NOT copy any facts, client/agency names, numbers, or project details from the style reference; ` +
+      `all substantive content must come only from THIS opportunity's documents.\n${profile}\n`;
+  } catch (e) {
+    console.warn('Tone profile extraction failed:', e);
+    return '';
+  }
+}
+
 function buildAcceptedAssumptionsContext() {
   const accepted  = assumptions.filter(a => a.status === 'accepted');
   const rejected  = assumptions.filter(a => a.status === 'rejected');
@@ -3905,6 +4023,7 @@ function buildAcceptedAssumptionsContext() {
 let rfpFiles     = [];   // RFP / PWS / solicitation docs
 let companyFiles = [];   // company / past performance docs (dropped)
 let spFiles          = [];   // files fetched from SharePoint content folders
+let spToneFiles      = [];   // past proposals fetched ONLY for tone/style extraction (kept out of companyFiles)
 let spTemplateFiles  = [];   // proposal template .docx files — never sent to API
 let generatedDocs = {};
 let assumptions        = [];   // [{id, category, label, value, status, correction}]
@@ -4128,9 +4247,10 @@ async function loadSharePointFiles() {
   const ppUrl       = document.getElementById('spPP').value.trim();
   const resUrl      = document.getElementById('spResumes').value.trim();
   const tmplUrl     = document.getElementById('spTemplates').value.trim();
+  const toneUrl     = document.getElementById('spTone') ? document.getElementById('spTone').value.trim() : '';
   const contentUrls = [ppUrl, resUrl].filter(u => u);
 
-  if (contentUrls.length === 0 && !tmplUrl) {
+  if (contentUrls.length === 0 && !tmplUrl && !toneUrl) {
     showStatus('warn', 'No folders specified', 'Enter at least one SharePoint folder URL in Step 3.');
     return;
   }
@@ -4177,6 +4297,23 @@ async function loadSharePointFiles() {
         }
       } catch(e) { errors.push(`Templates folder: ${e.message}`); }
     }
+
+    // Fetch tone/style reference folder — past proposals, kept SEPARATE from
+    // company content so their text is never used as past-performance source.
+    const loadedTone = [];
+    if (toneUrl) {
+      try {
+        showStatus('info', 'Loading tone references...', `Reading past-proposals folder...`, true);
+        const items = await fetchSpFolderFiles(toneUrl, token);
+        const supported = items.filter(f => f.name.match(/\.(pdf|docx?)$/i) && f.size < 50 * 1024 * 1024);
+        for (const item of supported) {
+          const file = await downloadSpFile(item, token);
+          file._spFolder = 'tone';
+          loadedTone.push(file);
+        }
+      } catch(e) { errors.push(`Tone folder: ${e.message}`); }
+    }
+    spToneFiles = loadedTone;
 
     // Merge content files into companyFiles IN PLACE (never reassign — drop zone holds a reference)
     spFiles = loadedContent;
@@ -4232,7 +4369,26 @@ async function loadSharePointFiles() {
       </div>`;
     }
 
-    if (loadedContent.length === 0 && loadedTemplates.length === 0) {
+    if (loadedTone.length > 0) {
+      html += `<div style="margin-top:10px">
+        <div class="section-label" style="margin-top:0;display:flex;align-items:center;gap:8px">
+          🎨 Tone &amp; Style References (${loadedTone.length} file${loadedTone.length>1?'s':''})
+          <span style="font-size:11px;font-weight:600;background:#f5f3ff;border:1px solid #ddd6fe;color:#6d28d9;border-radius:10px;padding:1px 8px">read once for style only</span>
+        </div>
+        ${loadedTone.map(f => {
+          const icon = f.name.endsWith('.pdf') ? '📄' : '📝';
+          const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+          return `<div class="file-item" style="background:#faf5ff;border-color:#e9d5ff">
+            <span class="file-icon">${icon}</span>
+            <span class="file-name">${escHtml(f.name)}</span>
+            <span class="file-meta"><span class="file-size">${size}</span></span>
+          </div>`;
+        }).join('')}
+        <div class="tip" style="margin-top:6px">These shape the writing voice of generated volumes. Their content is never reused.</div>
+      </div>`;
+    }
+
+    if (loadedContent.length === 0 && loadedTemplates.length === 0 && loadedTone.length === 0) {
       html = `<div style="font-size:13px;color:var(--muted);margin-top:8px">No files found in the specified folders.${errors.length > 0 ? ' Errors: ' + errors.join('; ') : ''}</div>`;
     }
     if (errors.length > 0) {
@@ -4251,9 +4407,13 @@ async function loadSharePointFiles() {
     const resBadge = document.getElementById('resumesTokenBadge');
     if (ppBadge)  ppBadge.textContent  = ppTok  > 0 ? `~${Math.round(ppTok/1000)}k tokens`  : 'counts toward tokens';
     if (resBadge) resBadge.textContent = resTok > 0 ? `~${Math.round(resTok/1000)}k tokens` : 'counts toward tokens';
+    const toneTok  = loadedTone.reduce((s,f) => s + estimateTokens(f), 0);
+    const toneBadge = document.getElementById('toneTokenBadge');
+    if (toneBadge) toneBadge.textContent = toneTok > 0 ? `~${Math.round(toneTok/1000)}k once` : 'style only';
     const parts = [];
     if (loadedContent.length)   parts.push(`${loadedContent.length} company document${loadedContent.length>1?'s':''}`);
     if (loadedTemplates.length) parts.push(`${loadedTemplates.length} proposal template${loadedTemplates.length>1?'s':''} (0 tokens)`);
+    if (loadedTone.length)      parts.push(`${loadedTone.length} tone reference${loadedTone.length>1?'s':''}`);
     showStatus('success', 'SharePoint loaded', parts.join(' · ') + ' ready.');
 
   } catch(e) {
@@ -5267,6 +5427,7 @@ async function reviseVolume() {
         let docXml = await zip.file('word/document.xml').async('string');
         docXml = injectContentIntoXml(docXml, revisedProposalData, vol);
         if (typeof postProcessDocXml === 'function') docXml = postProcessDocXml(docXml);
+        docXml = markTocFieldsDirty(docXml);  // auto-update TOC on open (no manual F9)
         zip.file('word/document.xml', docXml);
         const zipFiles = Object.keys(zip.files);
         for (const fname of zipFiles) {
@@ -5450,8 +5611,8 @@ async function runGeneration() {
   setRunning(true);
   document.getElementById('downloadCard').style.display = 'none';
 
-  // Estimate total time: ~90s for briefing + ~60s per volume (avg)
-  const estTotalSecs = 90 + (genVols.length * 60);
+  // Estimate total time: ~90s for briefing + ~60s per volume (avg) + ~20s tone profiling if used
+  const estTotalSecs = 90 + (genVols.length * 60) + ((typeof spToneFiles !== 'undefined' && spToneFiles.length) ? 20 : 0);
 
   const allSteps = [
     { text: 'Reading all documents',      status: 'active' },
@@ -5660,6 +5821,13 @@ async function runGeneration() {
     const shallsItems = shallsBody ? shallsBody.querySelectorAll('.shall-item') : [];
     const shallsList = Array.from(shallsItems).map(el => el.textContent.trim()).filter(r => r.length > 10);
 
+    // Learn the house writing style from past proposals (once), if a tone folder was loaded.
+    let toneGuidance = '';
+    if (spToneFiles && spToneFiles.length > 0) {
+      showStatus('info', 'Learning your writing style...', `Reading ${spToneFiles.length} past proposal${spToneFiles.length>1?'s':''} to match SRFed's house voice.`, true);
+      toneGuidance = await extractToneProfile(apiKey);
+    }
+
     const briefingText =
       `VERIFIED PROPOSAL BRIEFING (extracted from RFP documents):\n` +
       `Sol: ${briefing.solicitation_number} | ${briefing.requirement_title}\n` +
@@ -5721,7 +5889,7 @@ async function runGeneration() {
         ? `ALL SHALL/MUST/SHOULD COMPLIANCE REQUIREMENTS (${shallsList.length} total — address EVERY one):\n` +
           shallsList.map((r,i) => `${i+1}. ${r}`).join('\n') + '\n\n'
         : '') +
-      companyCtx;
+      companyCtx + toneGuidance;
 
     // Helper: make a single API call for one section, with timeout
     async function writeSection(sectionPrompt, maxTok) {
@@ -5775,18 +5943,42 @@ async function runGeneration() {
     const totalVols = genVols.length;
     let volsDone = 0;
 
+    // ── Weighted progress bands across the volumes phase (30% → 85%) ──
+    // Volume I makes 3 separate writing calls and Volume II ingests company
+    // documents, so they take much longer than a flat per-volume average.
+    // Weighting the bands by real effort keeps the bar honest — e.g. the bar
+    // sits in Vol I's wide band while its 3 sections write, instead of racing
+    // ahead. ETA is recalibrated from the actual observed rate per weight unit.
+    const VOL_WEIGHTS = { '0': 1.0, '1': 3.0, '2': 2.0, '3': 1.0, '4': 1.0 };
+    const volWeights  = genVols.map(v => VOL_WEIGHTS[v] || 1.0);
+    const totalWeight = volWeights.reduce((a, b) => a + b, 0) || 1;
+    const volBands = [];
+    let _cw = 0;
+    for (let i = 0; i < genVols.length; i++) {
+      const floor = 30 + (_cw / totalWeight) * 55;
+      _cw += volWeights[i];
+      const ceil = 30 + (_cw / totalWeight) * 55;
+      volBands.push({ floor, ceil });
+    }
+    const _volsPhaseStart = Date.now();
+
     for (const vol of genVols) {
       volsDone++;
-      // Spread volumes across 30–85%
-      const pct = 30 + ((volsDone / totalVols) * 55);
-      // Recalibrate ETA: remaining volumes × avg 55s
-      const volsLeft = totalVols - volsDone + 1;
-      _totalEstSecs = ((Date.now() - _genStartTime) / 1000) + (volsLeft * 55);
+      const band = volBands[volsDone - 1];
+      // Adaptive ETA: rate = elapsed-in-volumes-phase ÷ weight already consumed.
+      // Falls back to ~55s/weight before we have a measurement.
+      const weightConsumed = volWeights.slice(0, volsDone - 1).reduce((a, b) => a + b, 0);
+      const weightRemaining = volWeights.slice(volsDone - 1).reduce((a, b) => a + b, 0);
+      const volsElapsed = (Date.now() - _volsPhaseStart) / 1000;
+      const ratePerWeight = (volsDone > 1 && weightConsumed > 0) ? (volsElapsed / weightConsumed) : 55;
+      _totalEstSecs = ((Date.now() - _genStartTime) / 1000) + (weightRemaining * ratePerWeight);
+      // Begin this volume's segment — the bar approaches band.ceil but won't
+      // cross it until the next volume starts. Heavier volumes get a longer tau.
+      _beginSegment(band.floor, band.ceil, 25 + volWeights[volsDone - 1] * 18);
       let volData = {};
 
       if (vol === '0') {
         showStatus('info', 'Writing Vol 0 — Executive Summary...', `Volume ${volsDone} of ${totalVols}`, true);
-        setProgress(pct, allSteps);
 
         volData = await writeSection(
           `You are writing a STANDALONE EXECUTIVE SUMMARY for a government proposal by ${CLIENT_CONFIG.companyShortName}.\n\n` +
@@ -5808,7 +6000,6 @@ async function runGeneration() {
       } else if (vol === '1') {
         // Vol I: 3 separate calls for quality and length
         showStatus('info', 'Writing Volume I — Understanding & Technical Approach...', `Volume ${volsDone} of ${totalVols} (section 1/3)`, true);
-        setProgress(pct - 2, allSteps);
 
         const sec1 = await writeSection(
           `You are writing the TECHNICAL APPROACH section of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
@@ -5840,7 +6031,6 @@ async function runGeneration() {
 
       } else if (vol === '2') {
         showStatus('info', 'Writing Volume II — Past Performance...', `Volume ${volsDone} of ${totalVols} (reading company documents…)`, true);
-        setProgress(pct, allSteps);
 
         // Vol II gets company documents directly for accurate contact info and narratives
         const vol2Content = [...companyDocContent];
@@ -5887,7 +6077,6 @@ async function runGeneration() {
 
       } else if (vol === '3') {
         showStatus('info', 'Writing Volume III — Price Narrative...', `Volume ${volsDone} of ${totalVols}`, true);
-        setProgress(pct, allSteps);
 
         volData = await writeSection(
           `You are writing the PRICE/COST NARRATIVE volume of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
@@ -5902,7 +6091,6 @@ async function runGeneration() {
 
       } else if (vol === '4') {
         showStatus('info', 'Writing Volume IV — Contract Documentation...', `Volume ${volsDone} of ${totalVols}`, true);
-        setProgress(pct, allSteps);
 
         volData = await writeSection(
           `You are writing the CONTRACT DOCUMENTATION volume of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
@@ -5923,7 +6111,6 @@ async function runGeneration() {
       }
 
     proposalData[`volume${vol}`] = volData;
-    setProgress(pct, allSteps);
   }
 
   // Store for revise function
@@ -6394,6 +6581,100 @@ async function ensureUpdateFieldsOnOpen(zip) {
   }
 }
 
+// ── Page-count compliance estimate ───────────────────────────────────────────
+// Word determines exact pagination at render time (fonts, margins, tables), which
+// a browser can't reproduce, so these are calibrated ESTIMATES from the generated
+// text plus fixed template overhead (cover, TOC, headings). They're meant to show
+// whether the draft is in the right ballpark vs. the RFP limit — the user confirms
+// the exact count in Word once the TOC updates.
+function _collectText(v) {
+  if (v == null) return '';
+  if (typeof v === 'string') return v + ' ';
+  if (Array.isArray(v)) return v.map(_collectText).join(' ');
+  if (typeof v === 'object') return Object.values(v).map(_collectText).join(' ');
+  return '';
+}
+
+function _parsePageLimit(raw) {
+  const s = String(raw || '').trim();
+  if (!s || /unlimited|no limit|not specified|none|n\/a/i.test(s)) return { max: null, unlimited: true, raw: s };
+  // Pull all integers; treat the largest as the max (handles "10", "10 pages", "10-15", "no more than 12")
+  const nums = (s.match(/\d+/g) || []).map(Number).filter(n => n > 0 && n < 2000);
+  if (!nums.length) return { max: null, unlimited: true, raw: s };
+  return { max: Math.max(...nums), min: Math.min(...nums), unlimited: false, raw: s };
+}
+
+function _estimateVolumePages(vol, volData) {
+  if (!volData) return null;
+  const words = _collectText(volData).trim().split(/\s+/).filter(Boolean).length;
+  const WORDS_PER_PAGE = 450; // 11–12pt Arial, 1" margins, with headings/spacing
+  // Fixed template overhead: cover page, and (for full volumes) a TOC + section headers.
+  const overhead = vol === '0' ? 1 : 2.5;
+  let pages = overhead + words / WORDS_PER_PAGE;
+  // Vol II reference contact tables/headers consume extra space the word count misses.
+  if (vol === '2' && Array.isArray(volData.references)) pages += volData.references.length * 0.4;
+  return Math.max(1, Math.round(pages));
+}
+
+function renderPageComplianceTable() {
+  const proposalData = window._lastProposalData;
+  const limits = (typeof cachedBriefing !== 'undefined' && cachedBriefing && cachedBriefing.page_limits) || {};
+  if (!proposalData) return '';
+
+  const volNames = {
+    '0': 'Vol 0 — Executive Summary',
+    '1': 'Vol I — Technical',
+    '2': 'Vol II — Past Performance',
+    '3': 'Vol III — Price Narrative',
+    '4': 'Vol IV — Contract Documentation',
+  };
+
+  const rows = [];
+  let anyLimit = false;
+  Object.keys(volNames).forEach(vol => {
+    const volData = proposalData[`volume${vol}`];
+    if (!volData) return; // only volumes that were generated
+    const est = _estimateVolumePages(vol, volData);
+    const lim = _parsePageLimit(limits[`vol${vol}`] || limits[vol]);
+    if (!lim.unlimited) anyLimit = true;
+
+    let status, color, bg;
+    if (lim.unlimited) {
+      status = 'No limit stated'; color = 'var(--muted)'; bg = 'transparent';
+    } else if (est <= lim.max) {
+      status = `✓ Within ${lim.max}-page limit`; color = '#166534'; bg = '#f0fdf4';
+    } else {
+      status = `⚠ ~${est - lim.max} over — trim before submission`; color = '#92400e'; bg = '#fffbeb';
+    }
+    const limText = lim.unlimited ? '—' : (lim.min && lim.min !== lim.max ? `${lim.min}–${lim.max}` : String(lim.max));
+    rows.push(
+      `<tr style="background:${bg}">` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;font-weight:600">${volNames[vol]}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center">${limText}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center">~${est}</td>` +
+      `<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;color:${color};font-size:12px">${status}</td>` +
+      `</tr>`
+    );
+  });
+  if (!rows.length) return '';
+
+  return (
+    `<div style="margin-top:18px">` +
+    `<div style="font-weight:700;color:var(--blue);font-size:14px;margin-bottom:4px">📏 Page-Count Compliance (estimate)</div>` +
+    `<p style="font-size:12px;color:var(--muted);margin:0 0 10px">` +
+    `Estimated from the generated text. Open each volume in Word (after the Table of Contents updates) to confirm exact pagination before submission.` +
+    (anyLimit ? '' : ' No explicit page limits were found in this solicitation — figures are shown for reference.') +
+    `</p>` +
+    `<table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:8px;overflow:hidden">` +
+    `<thead><tr style="background:var(--pale)">` +
+    `<th style="padding:8px 10px;text-align:left;font-size:12px;color:var(--blue)">Volume</th>` +
+    `<th style="padding:8px 10px;text-align:center;font-size:12px;color:var(--blue)">RFP Limit (pp)</th>` +
+    `<th style="padding:8px 10px;text-align:center;font-size:12px;color:var(--blue)">Est. Written (pp)</th>` +
+    `<th style="padding:8px 10px;text-align:left;font-size:12px;color:var(--blue)">Status</th>` +
+    `</tr></thead><tbody>${rows.join('')}</tbody></table></div>`
+  );
+}
+
 function renderDownloads(docs) {
   const card = document.getElementById('downloadCard');
   const list = document.getElementById('downloadList');
@@ -6432,6 +6713,17 @@ function renderDownloads(docs) {
     list.appendChild(item);
   });
 
+  // Page-count compliance table (estimate) — appended below the file list
+  const existingTable = document.getElementById('pageComplianceWrap');
+  if (existingTable) existingTable.remove();
+  const tableHtml = renderPageComplianceTable();
+  if (tableHtml) {
+    const wrap = document.createElement('div');
+    wrap.id = 'pageComplianceWrap';
+    wrap.innerHTML = tableHtml;
+    list.appendChild(wrap);
+  }
+
   card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -6466,6 +6758,7 @@ function saveSession() {
       spPP:            document.getElementById('spPP')?.value || '',
       spResumes:       document.getElementById('spResumes')?.value || '',
       spTemplates:     document.getElementById('spTemplates')?.value || '',
+      spTone:          document.getElementById('spTone')?.value || '',
     };
     localStorage.setItem('srfed_session', JSON.stringify(data));
   } catch(e) { console.warn('Session save failed:', e); }
@@ -6480,6 +6773,7 @@ function restoreSession() {
     if (data.spPP)        { const el = document.getElementById('spPP');        if (el) el.value = data.spPP; }
     if (data.spResumes)   { const el = document.getElementById('spResumes');   if (el) el.value = data.spResumes; }
     if (data.spTemplates) { const el = document.getElementById('spTemplates'); if (el) el.value = data.spTemplates; }
+    if (data.spTone)      { const el = document.getElementById('spTone');      if (el) el.value = data.spTone; }
 
     // Build a concise summary of what carried over and what needs re-doing,
     // rather than dumping every filename.
@@ -6499,7 +6793,7 @@ function restoreSession() {
     if (sessionStorage.getItem('srfed_hs_token')) restored.push('HubSpot connection active');
 
     // SharePoint folder URLs
-    if (data.spPP || data.spResumes || data.spTemplates) restored.push('SharePoint folder URLs restored');
+    if (data.spPP || data.spResumes || data.spTemplates || data.spTone) restored.push('SharePoint folder URLs restored');
 
     // Files always need re-upload (browsers can't persist File objects)
     if (data.rfpFileNames && data.rfpFileNames.length > 0) {
@@ -7308,7 +7602,8 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n` +
     `6. For labor_categories: list EVERY labor category or position title mentioned anywhere in the solicitation (PWS, staffing plan, Section B, wage determinations, attachments). Sort them alphabetically by lcat name.\n` +
     `7. For is_sca: set to true ONLY if the solicitation explicitly states this position falls under the Service Contract Act or references a Wage Determination for it. Set to false if no SCA language applies.\n` +
-    `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n\n` +
+    `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
+    `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName} (an SDVOSB) and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - SDVOSB set-aside aligns directly with SRFed status and the NAICS matches core capabilities."\n\n` +
     `Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
     `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
@@ -7594,10 +7889,18 @@ function renderOpportunityIntel(intel, container) {
         displayHtml = items.length ? `<ul style="margin:0;padding-left:18px;line-height:1.7">${items.map(i => `<li>${escHtml(i)}</li>`).join('')}</ul>` : '<span style="color:var(--muted);font-style:italic">Not stated</span>';
       }
     } else {
-      let displayVal = String(raw);
+      let displayVal = String(raw).trim();
       const isInferred = displayVal.startsWith('[Inferred]');
       displayVal = displayVal.replace(/^\[Inferred\]\s*/, '');
-      const isMissing = displayVal === 'Not stated in documents' || displayVal === 'Not stated' || displayVal === 'null';
+      let isMissing = !displayVal || /^(not stated( in documents)?|null|n\/a|none)$/i.test(displayVal);
+      // The pursuit recommendation is a required judgment, never a "blank" — if the
+      // model returned nothing usable, say so explicitly instead of rendering empty.
+      if (isMissing && f.key === 'pursuit_recommendation') {
+        displayVal = 'No automatic recommendation was returned. Re-run the analysis, or weigh the factors above and decide manually (Prime / Subcontract / Pass).';
+        isMissing = false; // render as real, attention-worthy text (not muted)
+      } else if (isMissing) {
+        displayVal = 'Not stated in documents';
+      }
       const isUrl = /^https?:\/\//i.test(displayVal);
       const valStyle = isInferred ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
       const badge = isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : '';
