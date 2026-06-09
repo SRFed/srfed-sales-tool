@@ -1334,7 +1334,12 @@
           <div class="dz-title">Drop RFP / PWS / SOW Here</div>
           <div class="dz-sub">PDF or Word</div>
         </div>
-        <div class="file-list" id="fileListHsRfp" style="margin-bottom:14px"></div>
+        <div class="file-list" id="fileListHsRfp" style="margin-bottom:10px"></div>
+        <details style="margin-bottom:14px" id="hsTextDetails">
+          <summary style="cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--blue)">✏️ Or paste opportunity text (no formal PWS/SOW yet?)</summary>
+          <p style="font-size:12px;color:var(--muted);margin:8px 0 6px">For early-stage opportunities — paste details from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. Usable alone or with uploaded documents.</p>
+          <textarea id="hsTextInput" rows="6" oninput="onHsRfpInputChange()" placeholder="Paste opportunity summary, required capabilities, agency, NAICS, set-aside, clearance, place of performance, estimated value, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+        </details>
         <button id="hsExtractBtn" onclick="runHsExtract()"
           style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
           🔍 Extract Opportunity Attributes
@@ -1390,14 +1395,19 @@
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Upload the solicitation and optionally your company documents. Company documents significantly improve scoring accuracy for Past Performance and Technical Capability.</p>
 
       <!-- Solicitation Documents -->
-      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px">📂 Solicitation Documents <span style="font-size:12px;font-weight:600;color:var(--error)">*required</span></div>
+      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px">📂 Solicitation Documents <span style="font-size:12px;font-weight:600;color:var(--muted)">(documents and/or pasted text — at least one)</span></div>
       <div class="drop-zone" id="dropZoneBNA" style="margin-bottom:8px">
         <input type="file" id="fileInputBNA" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
         <div class="dz-icon">📂</div>
         <div class="dz-title">Drop Solicitation Documents Here</div>
         <div class="dz-sub">RFP, PWS, SOW, amendment — PDF or Word</div>
       </div>
-      <div class="file-list" id="fileListBNA" style="margin-bottom:16px"></div>
+      <div class="file-list" id="fileListBNA" style="margin-bottom:10px"></div>
+      <details style="margin-bottom:16px" id="bnaTextDetails">
+        <summary style="cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--blue)">✏️ Or paste opportunity text (no formal PWS/SOW yet?)</summary>
+        <p style="font-size:12px;color:var(--muted);margin:8px 0 6px">For early-stage opportunities — paste what you have from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. You can use this alone or alongside uploaded documents.</p>
+        <textarea id="bnaTextInput" rows="6" oninput="updateBnaBtn()" placeholder="Paste solicitation summary, requirements, agency, set-aside, clearance, estimated value, scope notes, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+      </details>
 
       <!-- Company Documents -->
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:8px">
@@ -1514,31 +1524,29 @@
           </div>
         </div>
 
-        <!-- Score breakdown — hidden until user confirms Tier 2 -->
+        <!-- Fit derivation — explains the fit score shown in the decision panel above -->
         <div id="bnaScoreBreakdown" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📐 Weighted Score Breakdown</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📐 How the fit score is derived</div>
           <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
             <div style="text-align:center;flex:1;min-width:100px">
-              <div id="tier1SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div id="tier1PctLabel" style="font-size:11px;color:var(--muted)">Auto-scored (60% weight)</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
+              <div id="fitBaseScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
+              <div style="font-size:11px;color:var(--muted)">weighted avg of fit factors</div>
             </div>
-            <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">+</div>
+            <div style="text-align:center;color:var(--muted);font-size:14px;display:flex;align-items:center;font-weight:700">blended<br>with</div>
             <div style="text-align:center;flex:1;min-width:100px">
-              <div id="tier2SubScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div id="tier2PctLabel" style="font-size:11px;color:var(--muted)">Your input (40% weight)</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px">weighted pts</div>
+              <div id="fitMinCritical" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
+              <div style="font-size:11px;color:var(--muted)">weakest critical factor</div>
             </div>
             <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">=</div>
             <div style="text-align:center;flex:1;min-width:100px">
               <div id="totalWeightedScore" style="font-size:28px;font-weight:900;color:var(--text)">—</div>
-              <div style="font-size:11px;color:var(--muted)">out of 10</div>
+              <div style="font-size:11px;color:var(--muted)">fit / 10</div>
             </div>
           </div>
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
             <div id="bnaScoreBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.4s,background 0.4s"></div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Each tier contributes weighted points that sum to the final score out of 10</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">A weak critical factor (technical capability, past performance, scope clarity) pulls the fit down — that's why one real gap is decisive rather than averaged away. <strong>Eligibility is handled as a prime/sub gate, not averaged in</strong>, and the final verdict above also weighs how much scope you can self-perform.</div>
         </div><!-- end bnaScoreBreakdown -->
 
         <!-- Risks and strategy -->
@@ -1685,36 +1693,42 @@
           </div>
           <div class="settings-field">
             <label>Max Single-Award Value You Can Prime <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-            <input type="text" id="s_cap_maxvalue" placeholder="e.g. $10M — leave blank for no cap"/>
+            <input type="text" id="s_cap_maxvalue" inputmode="numeric" oninput="formatMoneyInput(this)" placeholder="e.g. $10,000,000 — leave blank for no cap"/>
           </div>
         </div>
 
         <div class="settings-field" style="margin-top:14px">
           <label>Set-Aside Certifications Held</label>
-          <div id="s_cap_setasides" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="Small Business" style="accent-color:var(--blue)"/> Small Business</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="8(a)" style="accent-color:var(--blue)"/> 8(a)</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="HUBZone" style="accent-color:var(--blue)"/> HUBZone</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="WOSB" style="accent-color:var(--blue)"/> WOSB</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="EDWOSB" style="accent-color:var(--blue)"/> EDWOSB</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="SDVOSB" style="accent-color:var(--blue)"/> SDVOSB</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="VOSB" style="accent-color:var(--blue)"/> VOSB</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="SDB (Small Disadvantaged Business)" style="accent-color:var(--blue)"/> SDB (Small Disadvantaged Business)</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="ISBEE / Indian Economic Enterprise" style="accent-color:var(--blue)"/> ISBEE / Indian Economic Enterprise</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="ANC / Tribal / NHO" style="accent-color:var(--blue)"/> ANC / Tribal / NHO</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="HBCU/MI" style="accent-color:var(--blue)"/> HBCU/MI</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="AbilityOne" style="accent-color:var(--blue)"/> AbilityOne</label>
+          <div id="s_cap_setasides" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="Small Business" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> Small Business</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="8(a)" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> 8(a)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="HUBZone" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> HUBZone</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="WOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> WOSB</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="EDWOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> EDWOSB</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="SDVOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> SDVOSB</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="VOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> VOSB</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="SDB (Small Disadvantaged Business)" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> SDB (Small Disadvantaged Business)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="ISBEE / Indian Economic Enterprise" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISBEE / Indian Economic Enterprise</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="ANC / Tribal / NHO" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ANC / Tribal / NHO</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="HBCU/MI" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> HBCU/MI</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="AbilityOne" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> AbilityOne</label>
           </div>
           <input type="text" id="s_cap_setasides_other" placeholder="Other certifications (comma-separated)" style="margin-top:6px"/>
         </div>
 
         <div class="settings-field" style="margin-top:14px">
           <label>ISO Certifications Held</label>
-          <div id="s_cap_iso" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="9001" style="accent-color:var(--blue)"/> ISO 9001</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="27001" style="accent-color:var(--blue)"/> ISO 27001</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="20000" style="accent-color:var(--blue)"/> ISO 20000</label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="13485" style="accent-color:var(--blue)"/> ISO 13485</label>
+          <div id="s_cap_iso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="9001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 9001 (Quality)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 27001 (InfoSec)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="20000-1" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 20000-1 (IT Service Mgmt)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="14001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 14001 (Environmental)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="45001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 45001 (Occ. Health &amp; Safety)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="22301" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 22301 (Business Continuity)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27017" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 27017 (Cloud Security)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27018" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 27018 (Cloud Privacy)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="13485" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 13485 (Medical Devices)</label>
+            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="17025" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO/IEC 17025 (Testing Labs)</label>
           </div>
           <input type="text" id="s_cap_iso_other" placeholder="Other ISO standards (comma-separated)" style="margin-top:6px"/>
         </div>
@@ -1726,7 +1740,7 @@
             <button type="button" class="btn btn-secondary btn-sm" onclick="const i=document.getElementById('s_cap_vehicle_input');addVehicleTag(i.value);i.value='';">Add</button>
           </div>
           <div id="s_cap_vehicles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Common: <span onclick="addVehicleTag('GSA MAS')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ GSA MAS</span><span onclick="addVehicleTag('SeaPort-NxG')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ SeaPort-NxG</span><span onclick="addVehicleTag('OASIS+')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ OASIS+</span><span onclick="addVehicleTag('CIO-SP4')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ CIO-SP4</span><span onclick="addVehicleTag('Alliant 2')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ Alliant 2</span><span onclick="addVehicleTag('VETS 2')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ VETS 2</span><span onclick="addVehicleTag('8(a) STARS III')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ 8(a) STARS III</span></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Common (click to add): <span onclick="addVehicleTag('eFAST')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ eFAST</span><span onclick="addVehicleTag('GSA MAS')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ GSA MAS</span><span onclick="addVehicleTag('HCaTS')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ HCaTS</span><span onclick="addVehicleTag('ICSP')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ ICSP</span><span onclick="addVehicleTag('IHT2.0')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ IHT2.0</span><span onclick="addVehicleTag('MDA SHIELD')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ MDA SHIELD</span><span onclick="addVehicleTag('OASIS+')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ OASIS+</span><span onclick="addVehicleTag('OASIS+ (SB)')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ OASIS+ (SB)</span><span onclick="addVehicleTag('PRISM')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ PRISM</span><span onclick="addVehicleTag('SeaPort-NxG')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ SeaPort-NxG</span><span onclick="addVehicleTag('SEWP VI')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ SEWP VI</span><span onclick="addVehicleTag('STARS III')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ STARS III</span><span onclick="addVehicleTag('T4NG2')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ T4NG2</span><span onclick="addVehicleTag('VECTOR')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ VECTOR</span><span onclick="addVehicleTag('VETS 2')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ VETS 2</span></div>
         </div>
       </div>
 
@@ -1734,6 +1748,7 @@
         <h3>🎨 Branding</h3>
         <div class="settings-grid">
           <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5"/></div>
+          <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872"/></div>
           <div class="settings-field"><label>Logo URL or leave blank</label><input type="text" id="s_logoUrl" placeholder="https://... or leave blank to use default"/></div>
         </div>
       </div>
@@ -1749,7 +1764,7 @@
           <div style="margin-top:10px">
             <div class="settings-field">
               <label>Document Conversion Service URL</label>
-              <input type="text" id="s_conversionProxyUrl" placeholder="https://srfed-doc-convert.paul-scace.workers.dev"/>
+              <input type="text" id="s_conversionProxyUrl" placeholder="Leave blank — uses the managed default"/>
               <p style="font-size:12px;color:var(--muted);margin:6px 0 0">
                 Leave blank to use the built-in default. Only change this if you have moved the
                 conversion service to a custom domain (e.g. <code>https://convert.srfed.com</code>).
@@ -2550,18 +2565,23 @@ function initHsDropZone() {
   fi.addEventListener('change', () => { addHsFiles([...fi.files]); fi.value = ''; });
 }
 
+function onHsRfpInputChange() {
+  const txt = (document.getElementById('hsTextInput')?.value || '').trim();
+  const ok = hsRfpFiles.length > 0 || txt.length >= 30;
+  const btn = document.getElementById('hsExtractBtn');
+  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.45'; }
+}
+
 function addHsFiles(files) {
   files.forEach(f => { if (!hsRfpFiles.find(x => x.name === f.name)) hsRfpFiles.push(f); });
   renderHsFileList();
-  const btn = document.getElementById('hsExtractBtn');
-  if (btn) { btn.disabled = hsRfpFiles.length === 0; btn.style.opacity = hsRfpFiles.length > 0 ? '1' : '0.45'; }
+  onHsRfpInputChange();
 }
 
 function removeHsFile(name) {
   hsRfpFiles = hsRfpFiles.filter(f => f.name !== name);
   renderHsFileList();
-  const btn = document.getElementById('hsExtractBtn');
-  if (btn) { btn.disabled = hsRfpFiles.length === 0; btn.style.opacity = hsRfpFiles.length > 0 ? '1' : '0.45'; }
+  onHsRfpInputChange();
 }
 
 function renderHsFileList() {
@@ -2585,9 +2605,11 @@ async function runHsExtract() {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error('No API key. Enter it on the Proposal tab Step 2.');
     const { blocks: content, unreadable } = await buildContentBlocks(hsRfpFiles, 6);
-    if (unreadable.length === hsRfpFiles.length && hsRfpFiles.length > 0) {
-      // ALL files unreadable — stop and tell the user clearly
-      throw new Error(`None of the uploaded files could be read. ${unreadable.join(', ')} ${unreadable.length>1?'are':'is'} a legacy or password-protected Word file (old .doc saved as .docx, or an encrypted/protected document). Re-save ${unreadable.length>1?'them':'it'} in Word as "Word Document (.docx)" or export to PDF, then re-upload.`);
+    const hsText = (document.getElementById('hsTextInput')?.value || '').trim();
+    if (hsText.length >= 30) content.push({ type: 'text', text: `PASTED OPPORTUNITY INFORMATION (provided by the user — treat as solicitation source):\n${hsText}` });
+    if (hsRfpFiles.length > 0 && unreadable.length === hsRfpFiles.length && hsText.length < 30) {
+      // ALL files unreadable and no pasted text — stop and tell the user clearly
+      throw new Error(`None of the uploaded files could be read. ${unreadable.join(', ')} ${unreadable.length>1?'are':'is'} a legacy or password-protected Word file (old .doc saved as .docx, or an encrypted/protected document). Re-save ${unreadable.length>1?'them':'it'} in Word as "Word Document (.docx)" or export to PDF, then re-upload — or paste the text instead.`);
     }
     setProgress(20, [{ text: 'Reading solicitation documents', status: 'done' }, { text: 'Extracting attributes', status: 'active' }]);
     content.push({ type: 'text', text:
@@ -7018,46 +7040,22 @@ let bna_tier2_scores = {};
 
 function updateBnaLiveScore() {
   const { t1, t2, t1raw, t2raw, total } = calcBnaScore();
-  const color = total >= 8.5 ? 'var(--success)' : total >= 7.5 ? '#2563eb' : total >= 6.0 ? '#b45309' : 'var(--error)';
-  const bg    = total >= 8.5 ? '#f0fdf4' : total >= 7.5 ? '#eff6ff' : total >= 6.0 ? '#fefce8' : '#fef2f2';
-  const bord  = total >= 8.5 ? '#86efac'  : total >= 7.5 ? '#bfdbfe'  : total >= 6.0 ? '#fde047'  : '#fca5a5';
+  // The decisive verdict (fit) is authoritative — derive display from it so the
+  // breakdown can't contradict the headline panel.
+  let dv = null;
+  try { dv = computeDecisiveVerdict(); } catch(e) {}
+  const fitVal = dv ? dv.fit : total;
+  const color = fitVal >= 8 ? 'var(--success)' : fitVal >= 6.5 ? '#16a34a' : fitVal >= 5 ? '#b45309' : 'var(--error)';
 
-  // Nuanced verdict text
-  let verdictText;
-  if (total >= 8.5)      verdictText = '✅ STRONG BID — Pursue aggressively';
-  else if (total >= 7.5) verdictText = '✅ BID — Favorable opportunity, allocate resources';
-  else if (total >= 6.5) verdictText = '⚠️ MARGINAL BID — Proceed with lean investment; address gaps first';
-  else if (total >= 5.5) verdictText = '⚠️ CONDITIONAL — Resolve major risks before committing';
-  else                   verdictText = '❌ NO BID — Opportunity does not meet threshold';
+  const fitBaseEl = document.getElementById('fitBaseScore');
+  const fitMinEl  = document.getElementById('fitMinCritical');
+  const totalEl   = document.getElementById('totalWeightedScore');
+  const barEl     = document.getElementById('bnaScoreBar');
 
-  const scoreEl  = document.getElementById('bnaScore');
-  const verdictEl= document.getElementById('bnaVerdict');
-  const t1El     = document.getElementById('tier1SubScore');
-  const t2El     = document.getElementById('tier2SubScore');
-  const totalEl  = document.getElementById('totalWeightedScore');
-  const barEl    = document.getElementById('bnaScoreBar');
-  const bannerEl = document.getElementById('bnaVerdictBanner');
-
-  if (scoreEl)  { scoreEl.textContent = total.toFixed(1); scoreEl.style.color = color; }
-  if (verdictEl){ verdictEl.textContent = verdictText; verdictEl.style.color = color; }
-  if (totalEl)  { totalEl.textContent = total.toFixed(1); totalEl.style.color = color; }
-  if (barEl)    { barEl.style.width = Math.min((total/10)*100, 100)+'%'; barEl.style.background = color; }
-  if (bannerEl) { bannerEl.style.background = bg; bannerEl.style.border = `1px solid ${bord}`; }
-
-  // Dynamic tier labels showing actual weight percentages
-  const w = getEffectiveWeights();
-  const tier1Pct = Math.round(BNA_TIER1.reduce((s,f) => s + (w[f.key]||f.weight), 0) * 100);
-  const tier2Pct = Math.round(BNA_TIER2.reduce((s,f) => s + (w[f.key]||f.weight), 0) * 100);
-  if (t1El) {
-    t1El.textContent = t1raw.toFixed(2);
-    const lbl = document.getElementById('tier1PctLabel');
-    if (lbl) lbl.textContent = `Auto-scored (${tier1Pct}% weight)`;
-  }
-  if (t2El) {
-    t2El.textContent = t2raw.toFixed(2);
-    const lbl = document.getElementById('tier2PctLabel');
-    if (lbl) lbl.textContent = `Your input (${tier2Pct}% weight)`;
-  }
+  if (fitBaseEl && dv) fitBaseEl.textContent = dv.base.toFixed(1);
+  if (fitMinEl && dv)  fitMinEl.textContent  = Number(dv.minCritical).toFixed(1);
+  if (totalEl)  { totalEl.textContent = fitVal.toFixed(1); totalEl.style.color = color; }
+  if (barEl)    { barEl.style.width = Math.min((fitVal/10)*100, 100)+'%'; barEl.style.background = color; }
 
   // Decisive prime/sub verdict (headline) — updates live with sliders
   renderBnaDecisionPanel();
@@ -7337,21 +7335,39 @@ function computeDecisiveVerdict() {
 
   // ---- Verdict ----
   const FIT_PRIME = 6.5, FIT_GAPS = 5.0, COV_MIN_SUB = 25;
+  const LOS_SELF_PERFORM_MIN = 50; // FAR Limitations on Subcontracting: set-aside services prime must self-perform >=50% of cost
+  const PRIME_DEPENDENCY_MIN = 40; // off-set-aside: below this, prime is heavily sub-dependent
   let code, label, color, detail;
   const blockers = gates.primeBlockers.slice();
   const constraints = gates.perfConstraints.slice();
+
+  // Is this a restrictive set-aside (where Limitations on Subcontracting applies)?
+  const _sa = String(opp.set_aside || '').toLowerCase();
+  const isSetAside = _sa && !/unrestricted|full.and.open|open competition|not stated|none|n\/a/.test(_sa);
+  const selfPerformFloor = isSetAside ? LOS_SELF_PERFORM_MIN : PRIME_DEPENDENCY_MIN;
+  const selfPerformOK = scopeCov >= selfPerformFloor;
 
   if (scopeCov < 10) {
     code = 'pass'; label = '❌ PASS'; color = '#dc2626';
     detail = `${CLIENT_CONFIG.companyShortName} can't meaningfully perform this scope` +
       (constraints.length ? ` (${constraints[0]})` : '') + '.';
   } else if (gates.canPrime) {
-    if (fit >= FIT_PRIME) { code = 'prime'; label = '🟢 PURSUE — PRIME'; color = '#16a34a';
-      detail = `Within your prime envelope and a strong fit.`; }
-    else if (fit >= FIT_GAPS) { code = 'gaps'; label = '🟡 PURSUE IF GAPS CLOSED'; color = '#b45309';
-      detail = `Primeable, but fit is held back by a weak area — close it (often via a teaming partner) before committing.`; }
-    else { code = 'pass'; label = '❌ PASS'; color = '#dc2626';
-      detail = `Fit is too weak to justify a pursuit.`; }
+    if (fit >= FIT_GAPS && !selfPerformOK) {
+      // Prime-eligible and attractive, but can't self-perform enough to prime cleanly.
+      code = 'gaps'; label = '🟡 PURSUE IF GAPS CLOSED'; color = '#b45309';
+      detail = isSetAside
+        ? `Strong fit, but ${CLIENT_CONFIG.companyShortName} can self-perform only ~${Math.round(scopeCov)}% — below the 50% a set-aside prime must self-perform under the Limitations on Subcontracting (FAR 52.219-14). Bring the missing capability in-house (hire/teaming) to prime compliantly, or this fits a subcontractor role.`
+        : `Strong fit, but at ~${Math.round(scopeCov)}% self-performance you'd be heavily dependent on subcontractors to prime. Line up committed teammates for the rest before committing as prime.`;
+    } else if (fit >= FIT_PRIME) {
+      code = 'prime'; label = '🟢 PURSUE — PRIME'; color = '#16a34a';
+      detail = `Within your prime envelope, a strong fit, and you can self-perform ~${Math.round(scopeCov)}% of the scope.`;
+    } else if (fit >= FIT_GAPS) {
+      code = 'gaps'; label = '🟡 PURSUE IF GAPS CLOSED'; color = '#b45309';
+      detail = `Primeable, but fit is held back by a weak area — close it (often via a teaming partner) before committing.`;
+    } else {
+      code = 'pass'; label = '❌ PASS'; color = '#dc2626';
+      detail = `Fit is too weak to justify a pursuit.`;
+    }
   } else {
     const subFit = 0.5 * fit + 0.5 * (scopeCov / 10);
     if (subFit >= FIT_GAPS && scopeCov >= COV_MIN_SUB) {
@@ -7366,7 +7382,7 @@ function computeDecisiveVerdict() {
   }
 
   return { code, label, color, detail, fit: parseFloat(fit.toFixed(1)), base: parseFloat(base.toFixed(1)),
-    minCritical, scopeCov: Math.round(scopeCov), gates, blockers, constraints };
+    minCritical, scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside, gates, blockers, constraints };
 }
 
 function setBnaPathView(view) { window._bnaPathView = view; renderBnaDecisionPanel(); }
@@ -7497,7 +7513,7 @@ async function findPrimePartners() {
       html += `<div style="font-size:13px;color:var(--muted)">No CRM company clearly clears the required gaps. You may need to source a prime outside your current CRM.</div>`;
     } else {
       html += matches.map(m => {
-        const sc = scoreColor(m.fit_score);
+        const sc = (m.fit_score>=8?'var(--success)':m.fit_score>=6?'#2563eb':m.fit_score>=4?'#b45309':'var(--error)');
         return `<div style="padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:white;margin-bottom:8px">` +
           `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">` +
             `<div style="font-size:14px;font-weight:800">#${m.rank} ${escHtml(m.company_name||'')}</div>` +
@@ -7610,11 +7626,13 @@ function renderBnaDecisionPanel() {
 function updateBnaBtn() {
   const btn = document.getElementById('bnaRunBtn');
   if (!btn) return;
-  const hasFiles  = bnaFiles.length > 0;
+  const textEl   = document.getElementById('bnaTextInput');
+  const hasText  = textEl && textEl.value.trim().length > 30;
+  const hasFiles  = bnaFiles.length > 0 || hasText;
   const weightsOk = getWeightTotal() === 100;
   btn.disabled    = !hasFiles || !weightsOk;
   btn.style.opacity = (hasFiles && weightsOk) ? '1' : '0.45';
-  // Lock/unlock Step 2 based on whether solicitation docs are present
+  // Lock/unlock Step 2 based on whether solicitation input (docs or text) is present
   const step2 = document.getElementById('bnaStep2Card');
   if (step2) {
     if (hasFiles) step2.classList.remove('step-locked');
@@ -7777,7 +7795,8 @@ function stopBnaEta() {
 }
 
 async function runBidNoBid() {
-  if (bnaFiles.length === 0) return;
+  const bnaText = (document.getElementById('bnaTextInput')?.value || '').trim();
+  if (bnaFiles.length === 0 && bnaText.length < 30) return;
 
   // Capacity profile must be complete — the prime/sub logic depends on it.
   const capCheck = checkCapacityProfile();
@@ -7810,8 +7829,12 @@ async function runBidNoBid() {
 
     const solResult = await buildContentBlocks(bnaFiles, 8);
     const content = [...solResult.blocks];
-    if (solResult.unreadable.length === bnaFiles.length && bnaFiles.length > 0) {
-      throw new Error(`None of the solicitation files could be read. ${solResult.unreadable.join(', ')} ${solResult.unreadable.length>1?'are':'is'} a legacy or password-protected Word file (old .doc saved as .docx, or an encrypted/protected document). Re-save ${solResult.unreadable.length>1?'them':'it'} in Word as "Word Document (.docx)" or export to PDF, then re-upload.`);
+    // Include pasted opportunity text (for early-stage opps with no formal PWS/SOW).
+    if (bnaText.length >= 30) {
+      content.push({ type: 'text', text: `PASTED OPPORTUNITY INFORMATION (provided by the user — treat as solicitation source material):\n${bnaText}` });
+    }
+    if (bnaFiles.length > 0 && solResult.unreadable.length === bnaFiles.length && bnaText.length < 30) {
+      throw new Error(`None of the solicitation files could be read. ${solResult.unreadable.join(', ')} ${solResult.unreadable.length>1?'are':'is'} a legacy or password-protected Word file (old .doc saved as .docx, or an encrypted/protected document). Re-save ${solResult.unreadable.length>1?'them':'it'} in Word as "Word Document (.docx)" or export to PDF, then re-upload — or paste the text instead.`);
     }
     const hasCompanyDocs = bnaCompanyFiles.length > 0;
     const coResult = await buildContentBlocks(bnaCompanyFiles, 6);
@@ -8126,12 +8149,14 @@ async function runOpportunityIntel() {
   showBnaStatus('info', 'Extracting opportunity intelligence…', 'Reading solicitation documents and extracting all 31 fields. Takes ~30 seconds.', true);
   startBnaEta(35);
 
-  // Only send RFP documents (bnaFiles), not company docs — much smaller request
+  // Only send RFP documents (bnaFiles) + any pasted text, not company docs — smaller request
   const rfpContent = [];
   for (const file of bnaFiles.slice(0, 6)) {
     const block = await fileToContentBlock(file);
     if (block) rfpContent.push(block);
   }
+  const bnaText = (document.getElementById('bnaTextInput')?.value || '').trim();
+  if (bnaText.length >= 30) rfpContent.push({ type: 'text', text: `PASTED OPPORTUNITY INFORMATION (treat as solicitation source):\n${bnaText}` });
 
   await extractOpportunityIntel(rfpContent, apiKey);
 }
@@ -8627,6 +8652,12 @@ function addVehicleTag(val) {
 }
 function removeVehicleTag(i) { _capVehicles.splice(i, 1); renderVehicleTags(); }
 
+// Format a text input as US dollars with commas, no decimals (e.g. "$10,000,000")
+function formatMoneyInput(el) {
+  const digits = (el.value || '').replace(/[^0-9]/g, '');
+  el.value = digits ? '$' + Number(digits).toLocaleString('en-US') : '';
+}
+
 // Populate the Capacity Profile inputs from a config object
 function loadCapacityIntoUI(cap) {
   cap = cap || {};
@@ -8636,6 +8667,7 @@ function loadCapacityIntoUI(cap) {
   set('s_cap_cmmc',      cap.cmmcLevel);
   set('s_cap_maxfte',    cap.maxPrimeFTE);
   set('s_cap_maxvalue',  cap.maxPrimeValue);
+  const mv = document.getElementById('s_cap_maxvalue'); if (mv && mv.value) formatMoneyInput(mv);
   // Set-aside checkboxes (+ other)
   const held = (cap.setAsides || []).map(s => s.toLowerCase());
   document.querySelectorAll('.cap-setaside').forEach(cb => { cb.checked = held.includes(cb.value.toLowerCase()); });
@@ -8704,7 +8736,7 @@ function loadSettingsIntoUI() {
     s_dcaa: cfg.dcaa,
     s_appTitle: cfg.appTitle,
     s_primaryColor: cfg.primaryColor,
-    s_conversionProxyUrl: cfg.conversionProxyUrl,
+    s_secondaryColor: cfg.secondaryColor,
     s_azureClientId: cfg.azureClientId,
     s_azureTenantId: cfg.azureTenantId,
     s_authorizedDomain: cfg.authorizedDomain,
@@ -8714,6 +8746,13 @@ function loadSettingsIntoUI() {
     const el = document.getElementById(id);
     if (el && val) el.value = val;
   });
+  // Conversion URL: only show a value if the user explicitly set an override —
+  // never surface the built-in managed default (keeps operator identity out of the UI).
+  try {
+    const rawOverride = saved ? (JSON.parse(saved).conversionProxyUrl || '') : '';
+    const cpEl = document.getElementById('s_conversionProxyUrl');
+    if (cpEl) cpEl.value = rawOverride;
+  } catch(e) {}
   loadCapacityIntoUI(cfg.capacity || {});
 }
 
@@ -8740,6 +8779,7 @@ function saveSettings() {
     dcaa:             document.getElementById('s_dcaa')?.value.trim(),
     appTitle:         document.getElementById('s_appTitle')?.value.trim(),
     primaryColor:     document.getElementById('s_primaryColor')?.value.trim(),
+    secondaryColor:   document.getElementById('s_secondaryColor')?.value.trim(),
     conversionProxyUrl: document.getElementById('s_conversionProxyUrl')?.value.trim(),
     azureClientId:    document.getElementById('s_azureClientId')?.value.trim(),
     azureTenantId:    document.getElementById('s_azureTenantId')?.value.trim(),
