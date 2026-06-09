@@ -1461,6 +1461,7 @@
       </div>
 
       <div id="bnaWeightError" style="display:none;margin-top:10px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;font-size:12px;font-weight:600;color:var(--error)"></div>
+      <div id="bnaCapacityWarning" style="display:none;margin-top:10px;padding:10px 14px;background:#fffbeb;border:1px solid #fde047;border-radius:8px;font-size:13px;color:#92400e"></div>
 
       <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:12px;font-size:15px;padding:14px">
         🎯 Analyze Opportunity
@@ -1495,6 +1496,11 @@
         </div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:12px">These factors require internal knowledge only you have. Set each 0-10 using the anchors as guides.</p>
         <div id="bnaFactorsTier2" style="margin-bottom:20px"></div>
+
+        <!-- Decisive verdict panel (prime/sub-aware) — rendered by updateBnaLiveScore -->
+        <div id="bnaDecisionPanel" style="display:none;margin-bottom:16px"></div>
+        <!-- Prime-partner recommendations (shown when subcontract is recommended) -->
+        <div id="bnaPrimePartnersPanel" style="display:none;margin-bottom:16px"></div>
 
         <!-- Verdict banner — shown after user confirms Tier 2 -->
         <div id="bnaVerdictBanner" style="display:none;border-radius:8px;padding:16px 20px;margin-bottom:16px;align-items:flex-start;gap:20px">
@@ -1648,6 +1654,83 @@
       </div>
 
       <div class="settings-section">
+        <h3>🎯 Company Capacity Profile <span style="font-size:12px;font-weight:500;color:var(--muted)">— drives Bid/No-Bid prime vs. subcontract logic</span></h3>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 14px">These facts decide what your company can <strong>prime</strong> vs. only <strong>subcontract</strong>. They must be filled in before running a Bid/No-Bid analysis.</p>
+        <div class="settings-grid">
+          <div class="settings-field">
+            <label>Highest Facility Clearance Held</label>
+            <select id="s_cap_clearance" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+              <option value="">— select —</option>
+              <option>None</option><option>Public Trust</option><option>Confidential</option>
+              <option>Secret</option><option>Top Secret</option><option>TS/SCI</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Business Size Status</label>
+            <select id="s_cap_size" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+              <option value="">— select —</option>
+              <option>Small</option><option>Other-than-small</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>CMMC Level</label>
+            <select id="s_cap_cmmc" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+              <option value="">— select —</option>
+              <option>None</option><option>1</option><option>2</option><option>3</option>
+            </select>
+          </div>
+          <div class="settings-field">
+            <label>Max FTEs You Can Prime</label>
+            <input type="number" id="s_cap_maxfte" min="0" step="1" placeholder="e.g. 20"/>
+          </div>
+          <div class="settings-field">
+            <label>Max Single-Award Value You Can Prime <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+            <input type="text" id="s_cap_maxvalue" placeholder="e.g. $10M — leave blank for no cap"/>
+          </div>
+        </div>
+
+        <div class="settings-field" style="margin-top:14px">
+          <label>Set-Aside Certifications Held</label>
+          <div id="s_cap_setasides" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="Small Business" style="accent-color:var(--blue)"/> Small Business</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="8(a)" style="accent-color:var(--blue)"/> 8(a)</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="HUBZone" style="accent-color:var(--blue)"/> HUBZone</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="WOSB" style="accent-color:var(--blue)"/> WOSB</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="EDWOSB" style="accent-color:var(--blue)"/> EDWOSB</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="SDVOSB" style="accent-color:var(--blue)"/> SDVOSB</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="VOSB" style="accent-color:var(--blue)"/> VOSB</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="SDB (Small Disadvantaged Business)" style="accent-color:var(--blue)"/> SDB (Small Disadvantaged Business)</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="ISBEE / Indian Economic Enterprise" style="accent-color:var(--blue)"/> ISBEE / Indian Economic Enterprise</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="ANC / Tribal / NHO" style="accent-color:var(--blue)"/> ANC / Tribal / NHO</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="HBCU/MI" style="accent-color:var(--blue)"/> HBCU/MI</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-setaside" value="AbilityOne" style="accent-color:var(--blue)"/> AbilityOne</label>
+          </div>
+          <input type="text" id="s_cap_setasides_other" placeholder="Other certifications (comma-separated)" style="margin-top:6px"/>
+        </div>
+
+        <div class="settings-field" style="margin-top:14px">
+          <label>ISO Certifications Held</label>
+          <div id="s_cap_iso" style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="9001" style="accent-color:var(--blue)"/> ISO 9001</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="27001" style="accent-color:var(--blue)"/> ISO 27001</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="20000" style="accent-color:var(--blue)"/> ISO 20000</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" class="cap-iso" value="13485" style="accent-color:var(--blue)"/> ISO 13485</label>
+          </div>
+          <input type="text" id="s_cap_iso_other" placeholder="Other ISO standards (comma-separated)" style="margin-top:6px"/>
+        </div>
+
+        <div class="settings-field" style="margin-top:14px">
+          <label>Contract Vehicles Held</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="s_cap_vehicle_input" placeholder="Type a vehicle and press Enter (e.g. SeaPort-NxG)" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addVehicleTag(this.value);this.value='';}"/>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="const i=document.getElementById('s_cap_vehicle_input');addVehicleTag(i.value);i.value='';">Add</button>
+          </div>
+          <div id="s_cap_vehicles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Common: <span onclick="addVehicleTag('GSA MAS')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ GSA MAS</span><span onclick="addVehicleTag('SeaPort-NxG')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ SeaPort-NxG</span><span onclick="addVehicleTag('OASIS+')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ OASIS+</span><span onclick="addVehicleTag('CIO-SP4')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ CIO-SP4</span><span onclick="addVehicleTag('Alliant 2')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ Alliant 2</span><span onclick="addVehicleTag('VETS 2')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ VETS 2</span><span onclick="addVehicleTag('8(a) STARS III')" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px dashed var(--mid-blue);border-radius:10px;cursor:pointer;color:var(--blue)">+ 8(a) STARS III</span></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
         <h3>🎨 Branding</h3>
         <div class="settings-grid">
           <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5"/></div>
@@ -1750,6 +1833,20 @@ const CLIENT_CONFIG = {
   clearances:       'Active SECRET Facility Clearance (FCL); key personnel hold SECRET or above',
   cmmc:             'CMMC Level 1 self-attested; advancing toward Level 2 in partnership with USXCyber, implementing all NIST SP 800-171 controls.',
   dcaa:             'DCAA-compliant accounting system (audited by DCAA Central Maryland Branch Office and DCMA Mid-Atlantic).',
+
+  // ── Company Capacity Profile (drives Bid/No-Bid prime/sub gating) ──────────
+  // Structured facts about what this company can actually hold/perform/prime.
+  // Generic by design so any company can configure its own envelope (resalable).
+  capacity: {
+    facilityClearance: 'Secret',                 // None | Public Trust | Confidential | Secret | Top Secret | TS/SCI
+    businessSize:      'Small',                   // Small | Other-than-small
+    setAsides:         ['SDVOSB','VOSB','Small Business'], // certifications HELD
+    cmmcLevel:         '1',                        // None | 1 | 2 | 3
+    isoCerts:          [],                          // e.g. ['9001','27001']
+    contractVehicles:  ['GSA MAS'],                 // free-text vehicle tags HELD
+    maxPrimeFTE:       20,                          // largest team size realistically primeable
+    maxPrimeValue:     '',                          // optional $ ceiling for prime; '' = no cap
+  },
 
   // ── Primary Contact (for cover letters and doc footers) ───────────────────
   ceoName:    'Matthew Tarjick',
@@ -6961,6 +7058,9 @@ function updateBnaLiveScore() {
     const lbl = document.getElementById('tier2PctLabel');
     if (lbl) lbl.textContent = `Your input (${tier2Pct}% weight)`;
   }
+
+  // Decisive prime/sub verdict (headline) — updates live with sliders
+  renderBnaDecisionPanel();
 }
 
 function renderTier2Inputs() {
@@ -7113,6 +7213,398 @@ function calcBnaScore() {
     total: parseFloat(total.toFixed(1))
   };
 }
+
+// ── DECISIVE BID/NO-BID ENGINE ────────────────────────────────────────────────
+// Separates "can we play, and in what role?" (capacity gates) from "is it worth
+// it?" (fit). Gates that block priming REDIRECT to subcontract rather than kill.
+function _clearanceRank(s) {
+  const k = String(s || '').toLowerCase();
+  if (/ts.?\/?.?sci|sci\b|top secret\/sci/.test(k)) return 5;
+  if (/top secret|ts\b/.test(k)) return 4;
+  if (/secret/.test(k)) return 3;
+  if (/confidential/.test(k)) return 2;
+  if (/public trust/.test(k)) return 1;
+  return 0; // none / unclassified / not stated
+}
+function _cmmcRank(s) { const m = String(s || '').match(/[123]/); return m ? +m[0] : 0; }
+function _parseMoney(s) {
+  if (!s) return null;
+  const str = String(s).toLowerCase().replace(/[, $]/g, '');
+  const m = str.match(/([\d.]+)\s*([mbk])?/);
+  if (!m) return null;
+  let n = parseFloat(m[1]); if (isNaN(n)) return null;
+  if (m[2] === 'k') n *= 1e3; else if (m[2] === 'm') n *= 1e6; else if (m[2] === 'b') n *= 1e9;
+  return n;
+}
+function _vehicleMatch(held, req) {
+  const norm = x => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const h = norm(held), r = norm(req);
+  if (!h || !r) return false;
+  return h === r || h.includes(r) || r.includes(h) ||
+    (/seaport/.test(h) && /seaport/.test(r)) || (/oasis/.test(h) && /oasis/.test(r)) ||
+    (/gsamas|gsaschedule|mas/.test(h) && /gsamas|gsaschedule|schedule|mas/.test(r));
+}
+
+// opp fields come from the analysis extraction (window._bnaOpp)
+function evaluateBnaGates(opp, cap) {
+  opp = opp || {}; cap = cap || {};
+  const primeBlockers = [];   // block PRIME → redirect to sub
+  const perfConstraints = []; // limit scope; apply to sub too
+  const co = CLIENT_CONFIG.companyShortName;
+
+  // ---- Prime-eligibility gates ----
+  const sa = String(opp.set_aside || '').toLowerCase();
+  const restrictive = sa && !/unrestricted|full.and.open|open competition|not stated|none|n\/a/.test(sa);
+  const totalSB = /total small business|small business set.?aside/.test(sa);
+  if (restrictive) {
+    const held = (cap.setAsides || []).map(x => x.toLowerCase());
+    let eligible;
+    if (totalSB) {
+      eligible = cap.businessSize === 'Small';
+    } else {
+      eligible = held.some(h => {
+        const hk = h.replace(/[^a-z0-9]/g, ''), sk = sa.replace(/[^a-z0-9]/g, '');
+        return hk && (sk.includes(hk) || hk.includes(sk.replace('setaside', '').replace('set', '')));
+      });
+    }
+    if (!eligible) primeBlockers.push(`set-aside (${opp.set_aside}) — ${co} doesn't hold a qualifying certification`);
+  }
+  if (opp.contract_vehicle && opp.vehicle_is_open === false) {
+    const heldV = cap.contractVehicles || [];
+    if (!heldV.some(v => _vehicleMatch(v, opp.contract_vehicle))) {
+      primeBlockers.push(`requires the ${opp.contract_vehicle} vehicle — ${co} doesn't hold it`);
+    }
+  }
+  const fte = parseFloat(String(opp.fte_count || '').replace(/[^0-9.]/g, '')) || null;
+  const maxFte = parseFloat(String(cap.maxPrimeFTE || '').replace(/[^0-9.]/g, '')) || null;
+  if (fte && maxFte && fte > maxFte) primeBlockers.push(`${fte} FTEs exceed your prime ceiling of ${maxFte}`);
+  const val = _parseMoney(opp.estimated_value), maxVal = _parseMoney(cap.maxPrimeValue);
+  if (val && maxVal && val > maxVal) primeBlockers.push(`value (${opp.estimated_value}) exceeds your prime cap`);
+
+  // ---- Performance gates (flow down to subs too) ----
+  // Facility clearance is special: lacking the required FCL BOTH blocks priming
+  // (a prime must hold it) AND caps how much scope you can perform as a sub.
+  const clrGap = _clearanceRank(opp.required_clearance) > _clearanceRank(cap.facilityClearance);
+  if (clrGap) {
+    primeBlockers.push(`requires a ${opp.required_clearance} facility clearance to prime — ${co} holds ${cap.facilityClearance || 'None'}`);
+    perfConstraints.push(`classified work (${opp.required_clearance}) limits ${co} to the unclassified portion of scope`);
+  }
+  if (_cmmcRank(opp.required_cmmc) > _cmmcRank(cap.cmmcLevel)) {
+    perfConstraints.push(`requires CMMC Level ${_cmmcRank(opp.required_cmmc)}; ${co} holds ${cap.cmmcLevel || 'None'}`);
+  }
+  if (opp.required_iso) {
+    const reqIso = String(opp.required_iso).match(/\d{4,5}/g) || [];
+    const heldIso = (cap.isoCerts || []).map(String);
+    const missingIso = reqIso.filter(r => !heldIso.some(h => h.includes(r)));
+    if (missingIso.length) perfConstraints.push(`requires ISO ${missingIso.join(', ')}; ${co} doesn't hold ${missingIso.length > 1 ? 'them' : 'it'}`);
+  }
+  return { primeBlockers, perfConstraints, canPrime: primeBlockers.length === 0 };
+}
+
+// Build the decisive verdict from fit factors + scope coverage + gates.
+function computeDecisiveVerdict() {
+  const w = getEffectiveWeights();
+  const opp = window._bnaOpp || {};
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  const gates = evaluateBnaGates(opp, cap);
+  let scopeCov = (window._bnaScopeCoverage != null) ? Number(window._bnaScopeCoverage) : null;
+
+  // Fit factors = all factors EXCEPT eligibility (eligibility is now a gate).
+  const t2keys = new Set(BNA_TIER2.map(f => f.key));
+  const fitKeys = [...BNA_TIER1, ...BNA_TIER2].filter(f => f.key !== 'eligibility');
+  let wsum = 0, acc = 0;
+  fitKeys.forEach(f => {
+    const s = t2keys.has(f.key)
+      ? (bna_tier2_scores[f.key] != null ? bna_tier2_scores[f.key] : 5)
+      : (bna_tier1_scores[f.key] != null ? bna_tier1_scores[f.key] : 5);
+    const wt = (w[f.key] || f.weight);
+    acc += s * wt; wsum += wt;
+  });
+  const base = wsum > 0 ? acc / wsum : 5; // 0–10 weighted average of fit factors
+
+  // Weakest-link: one genuinely weak delivery factor should drag the verdict.
+  const criticalKeys = ['technical_capability', 'past_performance', 'scope_clarity'];
+  const criticalScores = criticalKeys.map(k => bna_tier1_scores[k]).filter(v => v != null);
+  const minCritical = criticalScores.length ? Math.min(...criticalScores) : base;
+  let fit = 0.55 * base + 0.45 * minCritical;       // decisive blend
+  fit = Math.max(0, Math.min(10, fit));
+
+  // Scope coverage drives the subcontract calculus.
+  if (scopeCov == null) scopeCov = gates.perfConstraints.length ? 40 : 80;
+  if (_clearanceRank(opp.required_clearance) > _clearanceRank(cap.facilityClearance)) {
+    scopeCov = Math.min(scopeCov, 45); // clearance gap caps self-performable share
+  }
+
+  // ---- Verdict ----
+  const FIT_PRIME = 6.5, FIT_GAPS = 5.0, COV_MIN_SUB = 25;
+  let code, label, color, detail;
+  const blockers = gates.primeBlockers.slice();
+  const constraints = gates.perfConstraints.slice();
+
+  if (scopeCov < 10) {
+    code = 'pass'; label = '❌ PASS'; color = '#dc2626';
+    detail = `${CLIENT_CONFIG.companyShortName} can't meaningfully perform this scope` +
+      (constraints.length ? ` (${constraints[0]})` : '') + '.';
+  } else if (gates.canPrime) {
+    if (fit >= FIT_PRIME) { code = 'prime'; label = '🟢 PURSUE — PRIME'; color = '#16a34a';
+      detail = `Within your prime envelope and a strong fit.`; }
+    else if (fit >= FIT_GAPS) { code = 'gaps'; label = '🟡 PURSUE IF GAPS CLOSED'; color = '#b45309';
+      detail = `Primeable, but fit is held back by a weak area — close it (often via a teaming partner) before committing.`; }
+    else { code = 'pass'; label = '❌ PASS'; color = '#dc2626';
+      detail = `Fit is too weak to justify a pursuit.`; }
+  } else {
+    const subFit = 0.5 * fit + 0.5 * (scopeCov / 10);
+    if (subFit >= FIT_GAPS && scopeCov >= COV_MIN_SUB) {
+      code = 'sub'; label = '🔵 PURSUE — SUBCONTRACT'; color = '#2563eb';
+      detail = `Can't prime (${blockers.join('; ')}), but a good teaming fit — you can self-perform about ${Math.round(scopeCov)}% of the scope.`;
+    } else {
+      code = 'pass'; label = '❌ PASS'; color = '#dc2626';
+      detail = scopeCov < COV_MIN_SUB
+        ? `Prime is blocked and your self-performable share (~${Math.round(scopeCov)}%) is too small to be worth subbing.`
+        : `Prime is blocked and the fit is too weak to sub.`;
+    }
+  }
+
+  return { code, label, color, detail, fit: parseFloat(fit.toFixed(1)), base: parseFloat(base.toFixed(1)),
+    minCritical, scopeCov: Math.round(scopeCov), gates, blockers, constraints };
+}
+
+function setBnaPathView(view) { window._bnaPathView = view; renderBnaDecisionPanel(); }
+
+// Reuse CRM data (HubSpot/CSV) to find companies that could PRIME this opportunity
+// (with SRFed subbing) — specifically ones that CLEAR the gates SRFed fails.
+async function _fetchCrmCompaniesForPrime() {
+  let companies = [];
+  if (_hsToken === 'csv') {
+    companies = _hsCsvCompanies.map((row, idx) => {
+      const g = (...keys) => { for (const k of keys) { const v = row[k]; if (v && v !== '') return v; } return ''; };
+      return { id: String(idx), properties: {
+        name: g('company_name','name','company'), city: g('city'),
+        state: g('state__region','state','state_region'),
+        'agency__primary_': g('agency','agency__primary_'),
+        contract_vehicles: g('contract_vehicles','contract_vehicle'),
+        disadvantaged_business_certifications: g('disadvantaged_business_certifications','certifications','small_business_certifications'),
+        naics_codes: g('naics','naics_codes','naics_code'),
+        clearance_level: g('facility_clearance','clearance_level','clearance'),
+        annualrevenue: g('annual_revenue','annualrevenue'), description: g('description','about_us'),
+        industry: g('industry'), numberofemployees: g('number_of_employees','numberofemployees'),
+      }};
+    }).filter(c => c.properties.name);
+  } else {
+    const pm = window._hsPropertyMap || {};
+    const prop = (key) => pm[key] || key;
+    const props = ['name', prop('city')||'city', prop('state')||'state', prop('agency')||'agency__primary_',
+      prop('contract_vehicles')||'contract_vehicles', prop('disadvantaged_business_certifications')||'disadvantaged_business_certifications',
+      prop('naics_codes')||'naics_codes', prop('clearance_level')||'clearance_level', prop('annualrevenue')||'annualrevenue',
+      prop('description')||'description', prop('industry')||'industry', prop('numberofemployees')||'numberofemployees', 'domain'
+    ].filter((v,i,a)=>a.indexOf(v)===i).join(',');
+    let after=null, pages=0;
+    while (pages<10) { pages++;
+      const data = await hsProxyFetch(_hsToken, `/crm/v3/objects/companies?limit=100&properties=${props}${after?'&after='+after:''}`);
+      companies = companies.concat(data.results||[]);
+      if (data.paging?.next?.after) after = data.paging.next.after; else break;
+    }
+  }
+  companies.sort((a, b) => String(a.properties?.name || '').localeCompare(String(b.properties?.name || '')));
+  return companies;
+}
+
+async function findPrimePartners() {
+  const panel = document.getElementById('bnaPrimePartnersPanel');
+  if (!panel) return;
+  const apiKey = window._lastBnaApiKey || getApiKey();
+  const opp = window._bnaOpp || {};
+  const v = computeDecisiveVerdict();
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  const co = CLIENT_CONFIG.companyShortName;
+
+  if (!apiKey) { panel.style.display='block'; panel.innerHTML = `<div style="padding:12px 16px;border:1px solid #fca5a5;background:#fef2f2;border-radius:8px;font-size:13px;color:var(--error)">Enter your Claude API key (Proposal tab, Step 2) to find partners.</div>`; return; }
+  if (!_hsToken) {
+    panel.style.display='block';
+    panel.innerHTML = `<div style="padding:14px 16px;border:1px solid #fde047;background:#fffbeb;border-radius:8px;font-size:13px;color:#92400e">🔌 <strong>Connect your CRM first.</strong> Go to the <a href="#" onclick="switchTab('partners');return false;" style="color:var(--blue);font-weight:700">Partners tab</a> and connect HubSpot (or load a CSV). Then come back and click “Find prime partners.”</div>`;
+    return;
+  }
+
+  panel.style.display = 'block';
+  panel.innerHTML = `<div style="padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:#f8fafc;font-size:13px;color:var(--muted)"><span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Searching your CRM for companies that can prime this (and clear the gaps ${co} can't)…</div>`;
+
+  try {
+    const companies = await _fetchCrmCompaniesForPrime();
+    if (!companies.length) { panel.innerHTML = `<div style="padding:12px 16px;border:1px solid #fca5a5;background:#fef2f2;border-radius:8px;font-size:13px">No companies found in your CRM.</div>`; return; }
+
+    const summaries = companies.map(c => {
+      const p = c.properties||{};
+      return [
+        `Company: ${p.name||'Unknown'}`,
+        p.city&&p.state?`Location: ${p.city}, ${p.state}`:(p.city||p.state)?`Location: ${p.city||p.state}`:'',
+        p['agency__primary_']?`Agency focus: ${p['agency__primary_']}`:'',
+        p.disadvantaged_business_certifications?`Certs: ${p.disadvantaged_business_certifications}`:'',
+        p.clearance_level?`Clearance: ${p.clearance_level}`:'',
+        p.contract_vehicles?`Contract vehicles: ${p.contract_vehicles}`:'',
+        p.numberofemployees?`Employees: ${p.numberofemployees}`:'',
+        p.annualrevenue?`Revenue: $${Number(p.annualrevenue).toLocaleString()}`:'',
+        p.naics_codes?`NAICS: ${p.naics_codes}`:'',
+        p.industry?`Industry: ${p.industry}`:'',
+        p.description?`About: ${String(p.description).substring(0,200)}`:'',
+      ].filter(Boolean).join(' | ');
+    }).filter(s=>s.includes('Company:'));
+
+    const gapList = [...v.blockers, ...v.constraints];
+    const oppText =
+      `OPPORTUNITY: ${opp.set_aside||''} ${opp.contract_vehicle?('on '+opp.contract_vehicle):''}\n` +
+      `Required facility clearance: ${opp.required_clearance||'not stated'}\n` +
+      `FTE count: ${opp.fte_count||'not stated'}\n` +
+      `Set-aside: ${opp.set_aside||'not stated'}\n` +
+      `Contract vehicle: ${opp.contract_vehicle||'not stated'}${opp.vehicle_is_open===false?' (closed — must be held)':''}\n` +
+      `Estimated value: ${opp.estimated_value||'not stated'}\n` +
+      `Required CMMC: ${opp.required_cmmc||'not stated'}; Required ISO: ${opp.required_iso||'not stated'}\n`;
+
+    const prompt =
+      `You are a senior BD analyst at ${CLIENT_CONFIG.companyFullName} (${co}). ${co} wants to pursue the opportunity below as a SUBCONTRACTOR and needs a PRIME partner to lead the bid.\n\n` +
+      `${oppText}\n` +
+      `WHY ${co} CANNOT PRIME (the partner MUST cover these specific gaps):\n` +
+      (gapList.length ? gapList.map(g=>`- ${g}`).join('\n') : `- (general capacity — find a larger/credentialed prime)`) + '\n\n' +
+      `${co}'s OWN PROFILE (so the prime is complementary, not redundant): facility clearance ${cap.facilityClearance||'None'}, business size ${cap.businessSize||'?'}, set-asides held: ${(cap.setAsides||[]).join(', ')||'none'}, vehicles held: ${(cap.contractVehicles||[]).join(', ')||'none'}, max prime FTE ${cap.maxPrimeFTE||'?'}. ${co} can self-perform roughly ${v.scopeCov}% of this scope.\n\n` +
+      `CRM COMPANIES (${summaries.length} total - one per line):\n` +
+      summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
+      `TASK: Rank the top 6 companies best suited to PRIME this opportunity with ${co} subbing. A good prime MUST plausibly CLEAR the gaps listed above (e.g. hold the required clearance, hold the required vehicle, be large enough for the FTE scale) AND have capability that complements (not duplicates) ${co}. Exclude companies that cannot clear the gaps. If few or none qualify, say so honestly in overall_take and return only those that do.\n\n` +
+      `SCORING WEIGHTS: (1) Clears ${co}'s blocking gaps — HIGHEST (~45%); (2) Capability to lead/prime this scope — HIGH (~30%); (3) Complements ${co}'s self-perform share — MEDIUM (~15%); (4) Relationship/agency fit — LOW (~10%).\n\n` +
+      `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
+      `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match","why":"2-3 sentences citing their CRM properties and which specific gaps they clear","gaps_cleared":"e.g. holds TS facility clearance; holds SeaPort-NxG; ~400 employees","potential_role":"What they prime and what ${co} would sub","concerns":"Specific risks, or None"}],"overall_take":"3-5 sentences on whether a viable prime exists in the CRM for this pursuit."}\n` +
+      `fit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match.`;
+
+    const mr = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 3000, temperature: 0, messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+    });
+    if (!mr.ok) throw new Error(`Claude API error ${mr.status}`);
+    const md = await mr.json();
+    let mraw = md.content.map(c=>c.text||'').join('').trim()
+      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
+      .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"');
+    let matches = [], overallTake = '';
+    const objM = mraw.match(/\{[\s\S]+\}/);
+    if (objM) { try { const parsed = JSON.parse(objM[0]); matches = parsed.matches || []; overallTake = parsed.overall_take || ''; } catch(_) {} }
+
+    let html = `<div style="border:1px solid #bfdbfe;border-radius:10px;background:#f8fbff;padding:16px 18px">` +
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">` +
+        `<div style="font-size:15px;font-weight:800;color:var(--blue)">🤝 Potential Prime Partners (${co} subs)</div>` +
+        `<button onclick="document.getElementById('bnaPrimePartnersPanel').style.display='none'" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:18px">×</button>` +
+      `</div>`;
+    if (overallTake) html += `<div style="font-size:12px;color:var(--text);line-height:1.6;margin-bottom:12px;padding:10px 12px;background:white;border:1px solid var(--border);border-radius:8px">${escHtml(overallTake)}</div>`;
+    if (!matches.length) {
+      html += `<div style="font-size:13px;color:var(--muted)">No CRM company clearly clears the required gaps. You may need to source a prime outside your current CRM.</div>`;
+    } else {
+      html += matches.map(m => {
+        const sc = scoreColor(m.fit_score);
+        return `<div style="padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:white;margin-bottom:8px">` +
+          `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">` +
+            `<div style="font-size:14px;font-weight:800">#${m.rank} ${escHtml(m.company_name||'')}</div>` +
+            `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:700;color:${sc}">${escHtml(m.fit_label||'')}</span><span style="font-size:22px;font-weight:900;color:${sc}">${m.fit_score}</span></div>` +
+          `</div>` +
+          (m.gaps_cleared?`<div style="font-size:12px;margin-bottom:4px"><span style="font-weight:700;color:#166534">Clears:</span> ${escHtml(m.gaps_cleared)}</div>`:'') +
+          (m.why?`<div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:4px">${escHtml(m.why)}</div>`:'') +
+          (m.potential_role?`<div style="font-size:12px;color:var(--muted);line-height:1.5"><span style="font-weight:700">Role split:</span> ${escHtml(m.potential_role)}</div>`:'') +
+          (m.concerns && m.concerns!=='None'?`<div style="font-size:12px;color:#92400e;line-height:1.5;margin-top:4px"><span style="font-weight:700">Watch:</span> ${escHtml(m.concerns)}</div>`:'') +
+        `</div>`;
+      }).join('');
+    }
+    html += `<div style="font-size:11px;color:var(--muted);margin-top:6px">Ranked from your CRM against the specific gaps ${co} can't clear. Open the Partners tab for the full teaming workspace.</div></div>`;
+    panel.innerHTML = html;
+  } catch(e) {
+    panel.innerHTML = `<div style="padding:12px 16px;border:1px solid #fca5a5;background:#fef2f2;border-radius:8px;font-size:13px;color:var(--error)">Couldn't load prime partners: ${escHtml(e.message)}</div>`;
+    console.error(e);
+  }
+}
+function onScopeCoverageChange(val) {
+  window._bnaScopeCoverage = Math.max(0, Math.min(100, parseInt(val) || 0));
+  renderBnaDecisionPanel();
+}
+
+function renderBnaDecisionPanel() {
+  const panel = document.getElementById('bnaDecisionPanel');
+  if (!panel) return;
+  if (!window._bnaOpp && bna_tier1_scores && Object.keys(bna_tier1_scores).length === 0) { panel.style.display = 'none'; return; }
+
+  const v = computeDecisiveVerdict();
+  const canPrime = v.gates.canPrime;
+  const co = CLIENT_CONFIG.companyShortName;
+
+  // Which path to show: user override, else the recommended one.
+  const recommended = (v.code === 'sub') ? 'sub' : 'prime';
+  const view = (window._bnaPathView === 'prime' || window._bnaPathView === 'sub') ? window._bnaPathView : recommended;
+
+  // Per-path headline
+  let headLabel, headColor, headDetail;
+  if (view === 'prime') {
+    if (!canPrime) {
+      headLabel = '⛔ PRIME — NOT AVAILABLE'; headColor = '#6b7280';
+      headDetail = `${co} can't prime this: ${v.blockers.join('; ')}. Switch to the Subcontract view for the recommendation.`;
+    } else {
+      headLabel = v.code === 'prime' ? '🟢 PURSUE — PRIME' : v.code === 'gaps' ? '🟡 PURSUE IF GAPS CLOSED' : '🔴 PASS (as prime)';
+      headColor = v.code === 'prime' ? '#16a34a' : v.code === 'gaps' ? '#b45309' : '#dc2626';
+      headDetail = v.detail;
+    }
+  } else { // sub view
+    const subFit = 0.5 * v.fit + 0.5 * (v.scopeCov / 10);
+    const worth = subFit >= 5.0 && v.scopeCov >= 25;
+    headLabel = worth ? '🔵 PURSUE — SUBCONTRACT' : '🔴 PASS (as sub)';
+    headColor = worth ? '#2563eb' : '#dc2626';
+    headDetail = worth
+      ? `Good teaming fit — ${co} can self-perform about ${v.scopeCov}% of the scope.` + (canPrime ? ' (Note: you are also prime-eligible — see Prime view.)' : '')
+      : (v.scopeCov < 25 ? `Self-performable share (~${v.scopeCov}%) is too small to be worth subbing.` : `Fit is too weak to sub.`);
+  }
+
+  const bg = headColor === '#16a34a' ? '#f0fdf4' : headColor === '#2563eb' ? '#eff6ff' : headColor === '#b45309' ? '#fffbeb' : headColor === '#dc2626' ? '#fef2f2' : '#f8fafc';
+
+  const tabBtn = (key, txt) => {
+    const active = view === key;
+    const blocked = key === 'prime' && !canPrime;
+    return `<button onclick="setBnaPathView('${key}')" style="flex:1;padding:8px 10px;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;` +
+      `background:${active ? 'white' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--muted)'};box-shadow:${active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none'}">` +
+      `${txt}${blocked ? ' ⛔' : ''}</button>`;
+  };
+
+  const blockersHtml = v.blockers.length
+    ? `<div style="margin-top:10px;font-size:12px"><span style="font-weight:700;color:#b45309">Prime blocked by:</span><ul style="margin:4px 0 0;padding-left:18px;color:var(--text)">${v.blockers.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul></div>`
+    : `<div style="margin-top:10px;font-size:12px;color:#166534">✓ Clears all prime-eligibility gates</div>`;
+  const constraintsHtml = v.constraints.length
+    ? `<div style="margin-top:6px;font-size:12px"><span style="font-weight:700;color:#92400e">Limits your scope:</span><ul style="margin:4px 0 0;padding-left:18px;color:var(--text)">${v.constraints.map(c => `<li>${escHtml(c)}</li>`).join('')}</ul></div>`
+    : '';
+
+  const primePartnerBtn = (view === 'sub' && headColor === '#2563eb')
+    ? `<button onclick="findPrimePartners()" class="btn btn-primary btn-sm" style="margin-top:12px">🤝 Find prime partners for this opportunity</button>`
+    : '';
+
+  panel.style.display = 'block';
+  panel.innerHTML =
+    `<div style="border:2px solid ${headColor};border-radius:10px;background:${bg};padding:16px 20px">` +
+      `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">` +
+        `<div style="flex:1;min-width:240px">` +
+          `<div style="font-size:22px;font-weight:900;color:${headColor};margin-bottom:6px">${headLabel}</div>` +
+          `<div style="font-size:13px;line-height:1.6;color:var(--text)">${escHtml(headDetail)}</div>` +
+        `</div>` +
+        `<div style="text-align:center;min-width:80px">` +
+          `<div style="font-size:40px;font-weight:900;line-height:1;color:${headColor}">${v.fit.toFixed(1)}</div>` +
+          `<div style="font-size:10px;color:var(--muted)">fit / 10</div>` +
+        `</div>` +
+      `</div>` +
+      // Path toggle
+      `<div style="display:flex;gap:4px;background:#eef2f7;border-radius:8px;padding:4px;margin-top:14px;max-width:340px">${tabBtn('prime', 'As Prime')}${tabBtn('sub', 'As Subcontractor')}</div>` +
+      blockersHtml + constraintsHtml +
+      // Scope coverage control
+      `<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">` +
+        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px">` +
+          `<span style="font-weight:700">Scope ${co} can self-perform</span><span style="font-weight:800;color:var(--blue)">${v.scopeCov}%</span></div>` +
+        `<input type="range" min="0" max="100" step="5" value="${v.scopeCov}" style="width:100%;accent-color:var(--blue)" oninput="onScopeCoverageChange(this.value)"/>` +
+        `<div style="font-size:11px;color:var(--muted)">AI-estimated from the PWS vs. your capabilities — drag to adjust. Drives the subcontract decision.</div>` +
+      `</div>` +
+      primePartnerBtn +
+    `</div>`;
+}
+
+
 
 // updateBnaBtn — checks both files and weight validity
 function updateBnaBtn() {
@@ -7286,6 +7778,25 @@ function stopBnaEta() {
 
 async function runBidNoBid() {
   if (bnaFiles.length === 0) return;
+
+  // Capacity profile must be complete — the prime/sub logic depends on it.
+  const capCheck = checkCapacityProfile();
+  if (!capCheck.complete) {
+    showBnaStatus('warn', 'Complete your Company Capacity Profile first',
+      `Bid/No-Bid needs these in Settings → Company Capacity Profile before it can judge prime vs. subcontract: ${capCheck.missing.join('; ')}.`);
+    const banner = document.getElementById('bnaCapacityWarning');
+    if (banner) {
+      banner.style.display = 'block';
+      banner.innerHTML = `⚠️ <strong>Capacity profile incomplete.</strong> Fill these in <a href="#" onclick="switchTab('settings');return false;" style="color:var(--blue);font-weight:700">Settings → Company Capacity Profile</a> before running: ${capCheck.missing.map(m=>escHtml(m)).join(', ')}.`;
+    }
+    return;
+  }
+  const okBanner = document.getElementById('bnaCapacityWarning');
+  if (okBanner) okBanner.style.display = 'none';
+  window._bnaPathView = null; // start each analysis on its recommended path
+  const ppPanel = document.getElementById('bnaPrimePartnersPanel');
+  if (ppPanel) { ppPanel.style.display = 'none'; ppPanel.innerHTML = ''; }
+
   const btn = document.getElementById('bnaRunBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Analyzing…';
@@ -7325,21 +7836,37 @@ async function runBidNoBid() {
         ? `WARNING: One or more solicitation files could not be read (marked UNREADABLE above). Base your analysis ONLY on readable content. Do NOT guess the set-aside type, NAICS, value, clearance, or scope from an unreadable file.\n\n`
         : '') +
       `ABSOLUTE RULE — NO FABRICATION: Only state facts that appear in the readable solicitation text. NEVER invent or assume the set-aside type, NAICS code, contract value, place of performance, clearance level, or incumbent. If the solicitation does not state something, say so explicitly in the rationale (e.g. "set-aside not stated in available documents") rather than guessing. A Sources Sought notice often has NO set-aside determined yet — do not assume SDVOSB or any other set-aside unless it is explicitly written.\n\n` +
-      `TASK: Read the solicitation documents carefully and score each of the 6 factors from 0 to 10.\n\n` +
-      `SCORING GUIDANCE:\n` +
-      `- technical_capability: Does ${CLIENT_CONFIG.companyShortName} have the technical skills, personnel, and experience this SOW requires?\n` +
-      `- competition: How competitive is the landscape? Score high if sole-source eligible or incumbent advantage, low if many competitors.\n` +
-      `- past_performance: Do references match this solicitation in scope, size, and agency type?\n` +
-      `- eligibility: Does the set-aside type match ${CLIENT_CONFIG.companyShortName} certifications? If the set-aside is NOT stated (e.g. Sources Sought), score based on whether ${CLIENT_CONFIG.companyShortName} would plausibly qualify and SAY the set-aside is undetermined — do not assume a perfect match.\n` +
-      `- strategic_value: Does winning align with growth goals? Consider contract value, recompete potential, agency relationships.\n` +
-      `- scope_clarity: How well-defined is the scope? Score high if clear requirements, low if vague PWS.\n\n` +
-      `OUTPUT RULES — complete the JSON object below with REAL content from the documents:\n` +
-      `- Each rationale: 1-2 sentences maximum, citing SPECIFIC evidence (section numbers, NAICS, set-aside type, FTE counts, clearance levels). Be concise. If something is not stated, say "not stated".\n` +
-      `- risks: 3-5 items citing SPECIFIC risks from this solicitation\n` +
-      `- win_strategy: 3-5 SPECIFIC strategies for THIS opportunity\n` +
-      `- summary: 2-3 sentences. Reference the final score as X out of 10. Do NOT invent alternative scales like x/60.\n` +
+      `TASK: Read the solicitation carefully, then (A) extract key opportunity facts, (B) estimate how much of the work ${CLIENT_CONFIG.companyShortName} can self-perform, and (C) score 6 fit factors from 0 to 10.\n\n` +
+      `SCORING SCALE — USE THE FULL 0-10 RANGE. Most factors are NOT 5-7. Reserve the middle for genuinely average factors; score real strengths high and real weaknesses low. Do NOT cluster everything around 6-7.\n` +
+      `  0-2 = severe deficiency / near-disqualifying weakness\n` +
+      `  3-4 = clear weakness, material gap\n` +
+      `  5-6 = average / adequate\n` +
+      `  7-8 = clear strength\n` +
+      `  9-10 = exceptional, decisive advantage\n` +
+      `Be honest and decisive — a wishy-washy middling score on every factor is the least useful output.\n\n` +
+      `SCORING GUIDANCE (score the 6 FIT factors — do NOT score eligibility/set-aside here; that is handled separately):\n` +
+      `- technical_capability: Does ${CLIENT_CONFIG.companyShortName} have the technical skills, personnel, and experience this SOW requires? (CRITICAL factor)\n` +
+      `- competition: How competitive is the landscape? High if incumbent/sole-source advantage, low if many strong competitors.\n` +
+      `- past_performance: Do references match this solicitation in scope, size, and agency type? (CRITICAL factor)\n` +
+      `- strategic_value: Does winning align with growth goals? Consider value, recompete potential, agency relationships.\n` +
+      `- scope_clarity: How well-defined is the scope? High if clear requirements, low if vague PWS. (CRITICAL factor)\n\n` +
+      `OPPORTUNITY FACTS — extract these verbatim where stated, else "" (empty). These drive prime/sub eligibility:\n` +
+      `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
+      `- fte_count: number of FTEs/positions if stated (digits only, e.g. "45"), else ""\n` +
+      `- set_aside: exact set-aside type, or "Unrestricted"/"Full and Open" if so, or "Not stated"\n` +
+      `- contract_vehicle: required contract vehicle/IDIQ if any (e.g. "SeaPort-NxG"), else ""\n` +
+      `- vehicle_is_open: true if this is open-market / full-and-open / a Schedule anyone can get on; false if it requires holding a specific closed IDIQ/vehicle\n` +
+      `- estimated_value: total contract value if stated (e.g. "$12M"), else ""\n` +
+      `- required_cmmc: CMMC level required (1/2/3) if stated, else ""\n` +
+      `- required_iso: ISO standard(s) required of performers (e.g. "9001"), else ""\n\n` +
+      `SCOPE COVERAGE — scope_coverage: an integer 0-100 estimating the percentage of the PWS/required scope ${CLIENT_CONFIG.companyShortName} can credibly SELF-PERFORM, based on its profile/capabilities vs. the task areas. Be realistic: a broad multi-discipline scope where the company covers only part should score lower. This drives the subcontract decision.\n\n` +
+      `OUTPUT RULES — complete the JSON object with REAL content from the documents:\n` +
+      `- After the "factors" object, include an "opportunity" object with the 8 fields above, then "scope_coverage": N.\n` +
+      `- Each rationale: 1-2 sentences max, citing SPECIFIC evidence (sections, NAICS, clearance, FTE). If not stated, say "not stated".\n` +
+      `- risks: 3-5 specific items. win_strategy: 3-5 specific strategies. summary: 2-3 sentences (reference the score as X out of 10; do not invent scales like x/60).\n` +
       `- Use only plain ASCII. No em-dashes, no smart quotes.\n` +
-      `- IMPORTANT: Always complete the full JSON including risks, win_strategy, and summary — do not stop after factors.\n\n` +
+      `- JSON shape: {"data_confidence":"...","factors":{"technical_capability":{"score":N,"rationale":"..."}, ...5 more...},"opportunity":{"required_clearance":"","fte_count":"","set_aside":"","contract_vehicle":"","vehicle_is_open":true,"estimated_value":"","required_cmmc":"","required_iso":""},"scope_coverage":N,"risks":[...],"win_strategy":[...],"summary":"..."}\n` +
+      `- Always complete the full JSON — do not stop after factors.\n\n` +
       `Respond with ONLY the completed JSON. No markdown. No preamble.`
     });
 
@@ -7458,6 +7985,20 @@ async function runBidNoBid() {
       bna_tier1_scores[f.key] = (val && val.score != null) ? Number(val.score) : 5;
     });
 
+    // Store extracted opportunity facts + scope coverage for the decisive engine
+    window._bnaOpp = result.opportunity || {};
+    window._bnaScopeCoverage = (result.scope_coverage != null) ? Number(result.scope_coverage) : null;
+    // Eligibility is now a GATE, not an AI-scored fit factor. Derive its bar from the
+    // prime gate so the legacy display stays coherent (the verdict uses gates directly).
+    const _gatePreview = evaluateBnaGates(window._bnaOpp, (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {});
+    const _setAsideBlocked = _gatePreview.primeBlockers.some(b => /set-aside/i.test(b));
+    bna_tier1_scores['eligibility'] = _setAsideBlocked ? 2 : 9;
+    if (factors['eligibility']) {
+      factors['eligibility'].rationale = _setAsideBlocked
+        ? `Prime-ineligible on set-aside — routed to subcontract (see verdict).`
+        : `No set-aside barrier to priming (see verdict for full gate check).`;
+    }
+
     // Render Tier 1 factor bars
     const t1El = document.getElementById('bnaFactorsTier1');
     if (t1El) {
@@ -7486,6 +8027,9 @@ async function runBidNoBid() {
 
     // Set up Tier 2 inputs with defaults — user will confirm to get final score
     renderTier2Inputs();
+
+    // Show the decisive prime/sub verdict immediately (refines as sliders move)
+    renderBnaDecisionPanel();
 
     const confEl = document.getElementById('bnaDataConfidence');
     if (confEl) {
@@ -7547,19 +8091,23 @@ async function runBidNoBid() {
 }
 function confirmBnaScore() {
   updateBnaLiveScore();
-  const verdictBanner   = document.getElementById('bnaVerdictBanner');
   const scoreBreakdown  = document.getElementById('bnaScoreBreakdown');
-  if (verdictBanner)  verdictBanner.style.display  = 'flex';
   if (scoreBreakdown) scoreBreakdown.style.display  = 'block';
+  // The decisive prime/sub panel is the headline verdict now. Keep the legacy
+  // banner hidden so its compressed weighted average can't contradict it; the
+  // weighted-points breakdown remains as supporting detail.
+  const verdictBanner = document.getElementById('bnaVerdictBanner');
+  if (verdictBanner) verdictBanner.style.display = 'none';
+  renderBnaDecisionPanel();
   // Replace confirm button with simple confirmation note (sliders update live)
   const confirmRow = document.getElementById('bnaConfirmRow');
   if (confirmRow) {
     confirmRow.style.background = '#f0fdf4';
     confirmRow.style.borderColor = '#86efac';
-    confirmRow.innerHTML = '<p style="font-size:13px;color:var(--success);font-weight:600;text-align:center">✅ Score confirmed — adjust sliders above to update live.</p>';
+    confirmRow.innerHTML = '<p style="font-size:13px;color:var(--success);font-weight:600;text-align:center">✅ Confirmed — adjust sliders above to update the verdict live.</p>';
   }
-  // Scroll to verdict
-  verdictBanner?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Scroll to the decisive verdict
+  document.getElementById('bnaDecisionPanel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function runOpportunityIntel() {
@@ -7945,12 +8493,24 @@ function copyBnaResults() {
   const result = window._lastBnaResult;
   if (!result) return;
   let text = `BID/NO-BID ANALYSIS — ${CLIENT_CONFIG.companyShortName}\n`;
-  text += `Score: ${result.overall_score}/10  |  Verdict: ${result.verdict}\n\n`;
-  text += `${result.recommendation || result.summary}\n\n`;
-  text += `FACTOR SCORES:\n`;
-  (result.factors||[]).forEach(f => { text += `  ${f.name}: ${f.score}/10 — ${f.rationale}\n`; });
+  const _v = computeDecisiveVerdict();
+  const _co = CLIENT_CONFIG.companyShortName;
+  text += `VERDICT: ${_v.label.replace(/[^\x00-\x7F]/g, '').trim()}\n`;
+  text += `Fit: ${_v.fit.toFixed(1)}/10  |  Scope ${_co} can self-perform: ${_v.scopeCov}%\n`;
+  text += `${_v.detail}\n\n`;
+  if (_v.blockers.length) text += `PRIME BLOCKED BY:\n${_v.blockers.map(b => `  - ${b}`).join('\n')}\n\n`;
+  if (_v.constraints.length) text += `SCOPE CONSTRAINTS:\n${_v.constraints.map(c => `  - ${c}`).join('\n')}\n\n`;
+  text += `${result.summary || ''}\n\n`;
+  text += `FACTOR SCORES (eligibility handled as a gate, not scored):\n`;
+  const _labelFor = k => { const f = [...BNA_TIER1, ...BNA_TIER2].find(x => x.key === k); return f ? f.label : k; };
+  BNA_TIER1.filter(f => f.key !== 'eligibility').forEach(f => {
+    const s = bna_tier1_scores[f.key];
+    const rat = (result.factors && result.factors[f.key] && result.factors[f.key].rationale) || '';
+    text += `  ${_labelFor(f.key)}: ${s != null ? s : '-'}/10${rat ? ' - ' + rat : ''}\n`;
+  });
+  BNA_TIER2.forEach(f => { const s = bna_tier2_scores[f.key]; text += `  ${_labelFor(f.key)}: ${s != null ? s : 5}/10 (your input)\n`; });
   text += `\nRISKS:\n${(result.risks||[]).map(r=>`  • ${r}`).join('\n')}\n`;
-  text += `\nWIN STRATEGY IF BIDDING:\n${(result.win_strategy||[]).map(w=>`  • ${w}`).join('\n')}\n`;
+  text += `\nWIN STRATEGY IF PURSUING:\n${(result.win_strategy||[]).map(w=>`  - ${w}`).join('\n')}\n`;
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.querySelector('[onclick="copyBnaResults()"]');
     if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '⎘ Copy Report', 2000); }
@@ -8050,6 +8610,80 @@ function copyEditorResult() {
 // ═══════════════════════════════════════════════════════════════════════════
 const SETTINGS_KEY = 'srfed_client_config';
 
+// ── Contract-vehicle tag input (Capacity Profile) ─────────────────────────────
+let _capVehicles = [];
+function renderVehicleTags() {
+  const wrap = document.getElementById('s_cap_vehicles');
+  if (!wrap) return;
+  wrap.innerHTML = _capVehicles.map((v, i) =>
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;font-size:12px;font-weight:600;color:#1e40af">${escHtml(v)}<span onclick="removeVehicleTag(${i})" style="cursor:pointer;font-weight:700;color:#64748b">×</span></span>`
+  ).join('');
+}
+function addVehicleTag(val) {
+  const v = (val || '').trim();
+  if (!v) return;
+  if (!_capVehicles.some(x => x.toLowerCase() === v.toLowerCase())) _capVehicles.push(v);
+  renderVehicleTags();
+}
+function removeVehicleTag(i) { _capVehicles.splice(i, 1); renderVehicleTags(); }
+
+// Populate the Capacity Profile inputs from a config object
+function loadCapacityIntoUI(cap) {
+  cap = cap || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+  set('s_cap_clearance', cap.facilityClearance);
+  set('s_cap_size',      cap.businessSize);
+  set('s_cap_cmmc',      cap.cmmcLevel);
+  set('s_cap_maxfte',    cap.maxPrimeFTE);
+  set('s_cap_maxvalue',  cap.maxPrimeValue);
+  // Set-aside checkboxes (+ other)
+  const held = (cap.setAsides || []).map(s => s.toLowerCase());
+  document.querySelectorAll('.cap-setaside').forEach(cb => { cb.checked = held.includes(cb.value.toLowerCase()); });
+  const knownSA = Array.from(document.querySelectorAll('.cap-setaside')).map(cb => cb.value.toLowerCase());
+  const otherSA = (cap.setAsides || []).filter(s => !knownSA.includes(s.toLowerCase()));
+  set('s_cap_setasides_other', otherSA.join(', '));
+  // ISO checkboxes (+ other)
+  const iso = (cap.isoCerts || []).map(s => String(s).toLowerCase());
+  document.querySelectorAll('.cap-iso').forEach(cb => { cb.checked = iso.includes(cb.value.toLowerCase()); });
+  const knownISO = Array.from(document.querySelectorAll('.cap-iso')).map(cb => cb.value.toLowerCase());
+  const otherISO = (cap.isoCerts || []).filter(s => !knownISO.includes(String(s).toLowerCase()));
+  set('s_cap_iso_other', otherISO.join(', '));
+  // Vehicles
+  _capVehicles = [...(cap.contractVehicles || [])];
+  renderVehicleTags();
+}
+
+// Read the Capacity Profile inputs into a config object
+function readCapacityFromUI() {
+  const splitList = id => (document.getElementById(id)?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const setAsides = Array.from(document.querySelectorAll('.cap-setaside')).filter(cb => cb.checked).map(cb => cb.value)
+    .concat(splitList('s_cap_setasides_other'));
+  const isoCerts = Array.from(document.querySelectorAll('.cap-iso')).filter(cb => cb.checked).map(cb => cb.value)
+    .concat(splitList('s_cap_iso_other'));
+  return {
+    facilityClearance: document.getElementById('s_cap_clearance')?.value || '',
+    businessSize:      document.getElementById('s_cap_size')?.value || '',
+    cmmcLevel:         document.getElementById('s_cap_cmmc')?.value || '',
+    maxPrimeFTE:       document.getElementById('s_cap_maxfte')?.value || '',
+    maxPrimeValue:     document.getElementById('s_cap_maxvalue')?.value.trim() || '',
+    setAsides, isoCerts,
+    contractVehicles:  [..._capVehicles],
+  };
+}
+
+// Is the Capacity Profile complete enough to run a Bid/No-Bid? Returns {complete, missing[]}
+function checkCapacityProfile() {
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  const missing = [];
+  if (!cap.facilityClearance) missing.push('Highest facility clearance held');
+  if (!cap.businessSize)      missing.push('Business size status');
+  if (!cap.cmmcLevel)         missing.push('CMMC level');
+  if (cap.maxPrimeFTE === '' || cap.maxPrimeFTE == null) missing.push('Max FTEs you can prime');
+  if (!cap.setAsides || cap.setAsides.length === 0) missing.push('At least one set-aside certification (or "Small Business")');
+  // ISO, vehicles, and max value are optional for completeness
+  return { complete: missing.length === 0, missing };
+}
+
 function loadSettingsIntoUI() {
   const saved = localStorage.getItem(SETTINGS_KEY);
   const cfg   = saved ? { ...CLIENT_CONFIG, ...JSON.parse(saved) } : CLIENT_CONFIG;
@@ -8080,6 +8714,7 @@ function loadSettingsIntoUI() {
     const el = document.getElementById(id);
     if (el && val) el.value = val;
   });
+  loadCapacityIntoUI(cfg.capacity || {});
 }
 
 function saveSettings() {
@@ -8115,6 +8750,8 @@ function saveSettings() {
   // explicitly; remove only the OTHER empty values.
   const allowEmpty = new Set(['authorizedDomain']);
   Object.keys(overrides).forEach(k => { if (!overrides[k] && !allowEmpty.has(k)) delete overrides[k]; });
+  // Capacity profile is a structured object — always persisted whole.
+  overrides.capacity = readCapacityFromUI();
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(overrides));
 
   // Apply immediately to CLIENT_CONFIG
