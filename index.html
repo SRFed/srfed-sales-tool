@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SRFed Proposal Tool</title>
+<title>Proposal Tool</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23005FD5'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
@@ -599,7 +599,7 @@
 <header class="app-header">
   <div class="header-left">
     <img class="logo-img" id="appLogo" src="" alt="Logo"/>
-    <div class="logo-text" id="appTitle">SRFed Proposal Tool</div>
+    <div class="logo-text" id="appTitle">Proposal Tool</div>
   </div>
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
@@ -810,7 +810,7 @@
           <div>
             <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:4px">Our Role</label>
             <select id="teamingRole" onchange="updateTeamLabel()" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
-              <option value="prime">Prime Contractor (Team SRFed leads)</option>
+              <option value="prime">Prime Contractor (we lead the team)</option>
               <option value="sub">Subcontractor (we support the prime)</option>
             </select>
           </div>
@@ -1290,7 +1290,7 @@
           <li>In HubSpot, click the <strong>Settings</strong> gear (top right)</li>
           <li>In the left sidebar, go to <strong>Integrations → Service Keys</strong></li>
           <li>Click <strong>Create Service Key</strong></li>
-          <li>Name it anything you want (e.g. "SRFed Proposal Tool")</li>
+          <li>Name it anything you want (e.g. "Proposal Tool")</li>
           <li>Click <strong>Add Scope</strong> and search for:<br/>
             <code style="background:#eff6ff;padding:1px 6px;border-radius:4px;font-size:12px">crm.objects.companies.read</code>
             &nbsp;— add this one scope only
@@ -2160,7 +2160,7 @@ function updateTeamLabel() {
   const partner = document.getElementById('teamingPartnerName')?.value.trim();
   const label   = document.getElementById('teamLabelDisplay');
   if (!label) return;
-  const shortName = CLIENT_CONFIG.companyShortName || 'SRFed';
+  const shortName = CLIENT_CONFIG.companyShortName || '(your company)';
   if (role === 'prime') {
     label.textContent = `Team ${shortName}${partner ? ' (with ' + partner + ')' : ''}`;
   } else {
@@ -2524,7 +2524,7 @@ async function hsProxyFetch(token, path) {
   } catch(networkErr) {
     throw new Error(
       'Could not reach the HubSpot proxy. This can happen if:\n' +
-      '1. The Cloudflare Worker is not deployed — go to srfed-hubspot-proxy on Cloudflare and click Deploy.\n' +
+      '1. The Cloudflare Worker is not deployed — go to your HubSpot proxy Worker on Cloudflare and click Deploy.\n' +
       '2. Your browser is blocking the request — try a different browser or disable extensions.\n' +
       'Technical detail: ' + networkErr.message
     );
@@ -2834,13 +2834,13 @@ async function runHsMatch() {
       `5. Relationship quality and prior contact from CRM notes — LOW weight (~5%) — relevant but not a primary factor\n\n` +
       `Also provide a partner landscape assessment covering: bench strength, whether top matches warrant immediate outreach, and whether teaming makes sense for this contract structure. ` +
       (isLowFte ? `Given the low FTE count, lead with a clear statement discouraging teaming. ` : '') +
-      `Do not comment on SRFed's own pursuit decision.\n\n` +
+      `Do not comment on ${CLIENT_CONFIG.companyShortName || 'the prime'}'s own pursuit decision.\n\n` +
       `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
       `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match",` +
       `"why":"2-3 specific sentences citing their actual CRM properties and why they match this opportunity",` +
       `"potential_role":"Specific contribution they would make to this proposal and contract",` +
       `"concerns":"Specific gaps or risks, or None"}],` +
-      `"overall_take":"3-5 sentences assessing the partner landscape only. Do not comment on SRFed pursuit decision."}` +
+      `"overall_take":"3-5 sentences assessing the partner landscape only. Do not comment on the prime's pursuit decision."}` +
       `\nfit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match.`;
 
     const mr = await fetch('https://api.anthropic.com/v1/messages', {
@@ -5943,7 +5943,7 @@ async function runGeneration() {
     // Learn the house writing style from past proposals (once), if a tone folder was loaded.
     let toneGuidance = '';
     if (spToneFiles && spToneFiles.length > 0) {
-      showStatus('info', 'Learning your writing style...', `Reading ${spToneFiles.length} past proposal${spToneFiles.length>1?'s':''} to match SRFed's house voice.`, true);
+      showStatus('info', 'Learning your writing style...', `Reading ${spToneFiles.length} past proposal${spToneFiles.length>1?'s':''} to match ${CLIENT_CONFIG.companyShortName ? CLIENT_CONFIG.companyShortName + "'s" : 'your'} house voice.`, true);
       toneGuidance = await extractToneProfile(apiKey);
     }
 
@@ -6287,13 +6287,13 @@ async function generateDocsClientSide(proposalData, volumes) {
 
   // Check if we have JSZip available
   if (typeof JSZip === 'undefined') {
-    throw new Error('JSZip library failed to load. Please disable any ad blocker for srfed.github.io, do a hard refresh (Ctrl+Shift+R), and try again.');
+    throw new Error('JSZip library failed to load. Please disable any ad blocker for this site, do a hard refresh (Ctrl+Shift+R), and try again.');
   }
 
   // Try template-based generation first
   if (spTemplateFiles && spTemplateFiles.length > 0) {
     const templateMap = matchTemplatesToVolumes(spTemplateFiles);
-    showStatus('info', 'Building documents from templates...', 'Injecting content into your SRFed proposal templates.', true);
+    showStatus('info', 'Building documents from templates...', 'Injecting content into your proposal templates.', true);
 
     for (const vol of volumes) {
       const label    = volLabels[vol];
@@ -6369,7 +6369,7 @@ async function generateDocsClientSide(proposalData, volumes) {
   // No templates loaded at all
   throw new Error(
     'No proposal templates found. To generate formatted Word documents:\n\n' +
-    '1. Upload your 4 SRFed template .docx files to a SharePoint folder\n' +
+    '1. Upload your 4 proposal template .docx files to a SharePoint folder\n' +
     '2. Paste that folder URL into the "Proposal Templates Folder URL" field in Step 3\n' +
     '3. Click "Load Files from SharePoint"\n' +
     '4. Then click Generate\n\n' +
@@ -6495,7 +6495,7 @@ function injectMetaOnly(xml, data) {
 function injectContentIntoXml(xml, data, vol) {
   // Replace common metadata placeholders first (inline replacement)
   const addr = CLIENT_CONFIG.address || '';
-  // Parse address: "3168 Braverton Street, Suite 400, Edgewater, MD 21037"
+  // Parse address: "123 Main Street, Suite 100, City, ST 00000"
   // Line 1 = street + suite, Line 2 = city state zip
   const addrParts = addr.split(',').map(s => s.trim());
   const addrLine1 = addrParts.length >= 3 ? addrParts.slice(0, -2).join(', ') : addrParts[0] || '';
@@ -8166,7 +8166,8 @@ async function extractOpportunityIntel(docContent, apiKey) {
   if (!body) return;
   const btn = document.getElementById('bnaIntelBtn');
 
-  const prompt = `You are analyzing a US Government solicitation document for South River Federal Solutions (SRFed), an SDVOSB.\n\n` +
+  const _coName = CLIENT_CONFIG.companyFullName ? `${CLIENT_CONFIG.companyFullName}${CLIENT_CONFIG.companyShortName ? ' (' + CLIENT_CONFIG.companyShortName + ')' : ''}${CLIENT_CONFIG.businessType ? ', a ' + CLIENT_CONFIG.businessType : ''}` : 'a government contractor';
+  const prompt = `You are analyzing a US Government solicitation document for ${_coName}.\n\n` +
     `CRITICAL RULES:\n` +
     `1. Use VERBATIM text from the document for all fields — do not paraphrase, expand, or infer the title or ID. Copy them exactly.\n` +
     `2. For customer_agency: list BOTH the specific office (verbatim from document) AND its parent department/service branch with standard abbreviation. Format: "SPECIFIC OFFICE NAME - PARENT DEPARTMENT (ABBREV)". Examples: "Naval Surface Warfare Center Dahlgren Division (NSWCDD) - Department of the Navy (DON)", "Defense Logistics Agency J7 (DLA J7) - Department of Defense (DoD)", "Walter Reed National Military Medical Center - Department of the Army (DA)", "Defense Health Agency (DHA) - Department of Defense (DoD)". Common abbreviations: Army=DA, Navy=DON, Air Force=DAF, Marines=USMC, Space Force=USSF, Defense agencies=DoD, VA=VA, DHS=DHS, DOS=DoS, DOJ=DOJ.\n` +
@@ -8176,7 +8177,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `6. For labor_categories: list EVERY labor category or position title mentioned anywhere in the solicitation (PWS, staffing plan, Section B, wage determinations, attachments). Sort them alphabetically by lcat name.\n` +
     `7. For is_sca: set to true ONLY if the solicitation explicitly states this position falls under the Service Contract Act or references a Wage Determination for it. Set to false if no SCA language applies.\n` +
     `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
-    `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName} (an SDVOSB) and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - SDVOSB set-aside aligns directly with SRFed status and the NAICS matches core capabilities."\n\n` +
+    `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName || 'the company'}${CLIENT_CONFIG.businessType ? ' (a ' + CLIENT_CONFIG.businessType + ')' : ''} and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - the set-aside aligns directly with the company's certifications and the NAICS matches core capabilities."\n\n` +
     `Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
     `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
