@@ -28,6 +28,12 @@
     --white:       #ffffff;
     --gray:        #f2f4f8;
     --border:      #d0d7de;
+    /* Derived button/tab shades (set from primary at runtime by applyClientConfig) */
+    --btn-top:     #2a82ff;
+    --btn-bottom:  #005FD5;
+    --tab-top:     #4a8ae8;
+    --tab-bottom:  #2d6cc4;
+    --tab-text:    #ffffff;
     --text:        #1a1a2e;
     --muted:       #6b7280;
     --success:     #0a5c2e;
@@ -273,16 +279,17 @@
     letter-spacing: .3px;
   }
   .btn-primary {
-    background: linear-gradient(180deg, #2a82ff 0%, #005FD5 100%);
+    background: linear-gradient(180deg, var(--btn-top) 0%, var(--btn-bottom) 100%);
     color: white;
     box-shadow: 0 2px 5px rgba(0,68,153,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
   }
   .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(180deg, #3d8fff 0%, #0a6ae6 100%);
+    filter: brightness(1.08);
     transform: translateY(-1px);
     box-shadow: 0 5px 14px rgba(0,68,153,0.42), inset 0 1px 0 rgba(255,255,255,0.35);
   }
   .btn-primary:active:not(:disabled) {
+    filter: brightness(0.95);
     transform: translateY(0);
     box-shadow: 0 1px 3px rgba(0,68,153,0.40), inset 0 2px 4px rgba(0,0,0,0.18);
   }
@@ -525,10 +532,10 @@
     margin: 0 auto; flex: 1; justify-content: center;
   }
   .tab-btn {
-    background: linear-gradient(160deg, #4a8ae8 0%, #2d6cc4 100%);
+    background: linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%);
     border: 1px solid rgba(255,255,255,0.25);
     border-bottom: 2px solid rgba(0,0,0,0.15);
-    color: rgba(255,255,255,0.88);
+    color: var(--tab-text); opacity: 0.92;
     padding: 12px 0; border-radius: 8px;
     font-size: 15px; font-weight: 600; cursor: pointer;
     transition: all 0.15s; letter-spacing: 0.2px;
@@ -537,8 +544,7 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   .tab-btn:hover {
-    background: linear-gradient(160deg, #5c9bf5 0%, #3a7be0 100%);
-    color: white;
+    filter: brightness(1.08); opacity: 1;
     border-color: rgba(255,255,255,0.4);
     box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
     transform: translateY(-1px);
@@ -1335,11 +1341,11 @@
           <div class="dz-sub">PDF or Word</div>
         </div>
         <div class="file-list" id="fileListHsRfp" style="margin-bottom:10px"></div>
-        <details style="margin-bottom:14px" id="hsTextDetails">
-          <summary style="cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--blue)">✏️ Or paste opportunity text (no formal PWS/SOW yet?)</summary>
-          <p style="font-size:12px;color:var(--muted);margin:8px 0 6px">For early-stage opportunities — paste details from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. Usable alone or with uploaded documents.</p>
+        <div style="margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px">✏️ Or paste opportunity text</div>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 6px">For early-stage opportunities — paste details from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. Usable alone or with uploaded documents.</p>
           <textarea id="hsTextInput" rows="6" oninput="onHsRfpInputChange()" placeholder="Paste opportunity summary, required capabilities, agency, NAICS, set-aside, clearance, place of performance, estimated value, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-        </details>
+        </div>
         <button id="hsExtractBtn" onclick="runHsExtract()"
           style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
           🔍 Extract Opportunity Attributes
@@ -1699,36 +1705,36 @@
 
         <div class="settings-field" style="margin-top:14px">
           <label>Set-Aside Certifications Held</label>
-          <div id="s_cap_setasides" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="Small Business" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> Small Business</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="8(a)" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> 8(a)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="HUBZone" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> HUBZone</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="WOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> WOSB</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="EDWOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> EDWOSB</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="SDVOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> SDVOSB</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="VOSB" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> VOSB</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="SDB (Small Disadvantaged Business)" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> SDB (Small Disadvantaged Business)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="ISBEE / Indian Economic Enterprise" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISBEE / Indian Economic Enterprise</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="ANC / Tribal / NHO" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ANC / Tribal / NHO</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="HBCU/MI" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> HBCU/MI</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="AbilityOne" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> AbilityOne</label>
+          <div id="s_cap_setasides" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 16px;padding:14px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="Small Business" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>Small Business</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="8(a)" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>8(a)</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="HUBZone" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>HUBZone</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="WOSB" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>WOSB</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="EDWOSB" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>EDWOSB</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="SDVOSB" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>SDVOSB</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="VOSB" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>VOSB</span></label>
+            <label title="Small Disadvantaged Business" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="SDB (Small Disadvantaged Business)" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>SDB</span></label>
+            <label title="Indian Economic Enterprise" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="ISBEE / Indian Economic Enterprise" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISBEE</span></label>
+            <label title="Alaska Native Corp / Tribal / Native Hawaiian Org" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="ANC / Tribal / NHO" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ANC / Tribal / NHO</span></label>
+            <label title="Historically Black Colleges & Universities / Minority Institutions" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="HBCU/MI" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>HBCU/MI</span></label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-setaside" value="AbilityOne" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>AbilityOne</span></label>
           </div>
           <input type="text" id="s_cap_setasides_other" placeholder="Other certifications (comma-separated)" style="margin-top:6px"/>
         </div>
 
         <div class="settings-field" style="margin-top:14px">
           <label>ISO Certifications Held</label>
-          <div id="s_cap_iso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="9001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 9001 (Quality)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 27001 (InfoSec)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="20000-1" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 20000-1 (IT Service Mgmt)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="14001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 14001 (Environmental)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="45001" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 45001 (Occ. Health &amp; Safety)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="22301" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 22301 (Business Continuity)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27017" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 27017 (Cloud Security)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27018" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 27018 (Cloud Privacy)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="13485" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO 13485 (Medical Devices)</label>
-            <label style="display:flex;align-items:flex-start;gap:7px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="17025" style="accent-color:var(--blue);margin-top:1px;flex-shrink:0"/> ISO/IEC 17025 (Testing Labs)</label>
+          <div id="s_cap_iso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 16px;padding:14px;border:1px solid var(--border);border-radius:8px;background:#fafbff">
+            <label title="Quality Management" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="9001" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 9001 <span style="color:var(--muted);font-weight:400">Quality</span></span></label>
+            <label title="Information Security" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27001" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 27001 <span style="color:var(--muted);font-weight:400">InfoSec</span></span></label>
+            <label title="IT Service Management" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="20000-1" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 20000-1 <span style="color:var(--muted);font-weight:400">IT Svc</span></span></label>
+            <label title="Environmental Management" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="14001" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 14001 <span style="color:var(--muted);font-weight:400">Environmental</span></span></label>
+            <label title="Occupational Health &amp; Safety" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="45001" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 45001 <span style="color:var(--muted);font-weight:400">Safety</span></span></label>
+            <label title="Business Continuity" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="22301" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 22301 <span style="color:var(--muted);font-weight:400">Continuity</span></span></label>
+            <label title="Cloud Security" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27017" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 27017 <span style="color:var(--muted);font-weight:400">Cloud Sec</span></span></label>
+            <label title="Cloud Privacy (PII)" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="27018" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 27018 <span style="color:var(--muted);font-weight:400">Cloud Priv</span></span></label>
+            <label title="Medical Devices" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="13485" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO 13485 <span style="color:var(--muted);font-weight:400">Medical</span></span></label>
+            <label title="Testing &amp; Calibration Labs" style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;line-height:1.3"><input type="checkbox" class="cap-iso" value="17025" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/><span>ISO/IEC 17025 <span style="color:var(--muted);font-weight:400">Labs</span></span></label>
           </div>
           <input type="text" id="s_cap_iso_other" placeholder="Other ISO standards (comma-separated)" style="margin-top:6px"/>
         </div>
@@ -1824,6 +1830,11 @@
 // CLIENT CONFIGURATION — edit this block only when onboarding a new client
 // Everything below this block is generic tool logic and should not need changes.
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// Your Cloudflare workers.dev account subdomain. Both helper-service URLs below are
+// built from it, so if you rename your subdomain in Cloudflare, change ONLY this line.
+const WORKERS_SUBDOMAIN = 'srfed-svc';
+
 const CLIENT_CONFIG = {
 
   // ── Branding ──────────────────────────────────────────────────────────────
@@ -1960,8 +1971,8 @@ const CLIENT_CONFIG = {
 
   // ── Document Conversion Service ───────────────────────────────────────────
   // SRFed-operated shared service — clients do not configure this.
-  // To update (e.g. after adding a custom domain), change this one line.
-  conversionProxyUrl: 'https://srfed-doc-convert.paul-scace.workers.dev',
+  // Built from WORKERS_SUBDOMAIN above; change that one line if you rename it.
+  conversionProxyUrl: `https://srfed-doc-convert.${WORKERS_SUBDOMAIN}.workers.dev`,
 
 };
 
@@ -2002,6 +2013,40 @@ function isAuthorizedAccount(username) {
   return domains.some(d => lower.endsWith('@' + d));
 }
 
+// ── Color helpers: derive button shades from the primary color ───────────────
+function _hexToRgb(hex) {
+  let h = String(hex || '').trim().replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function _rgbToHex(r, g, b) {
+  const c = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return '#' + c(r) + c(g) + c(b);
+}
+// percent > 0 mixes toward white (lighten); < 0 toward black (darken)
+function _shade(hex, percent) {
+  const rgb = _hexToRgb(hex); if (!rgb) return hex;
+  const t = percent < 0 ? 0 : 255, p = Math.abs(percent);
+  return _rgbToHex(rgb.r + (t - rgb.r) * p, rgb.g + (t - rgb.g) * p, rgb.b + (t - rgb.b) * p);
+}
+function _relLum(hex) {
+  const rgb = _hexToRgb(hex); if (!rgb) return 0.5;
+  return (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255; // 0 (dark) .. 1 (light)
+}
+// Buttons/tabs sit a consistent "distance" from the primary in the SAME hue:
+// lighter than a dark primary, darker than a very light primary.
+function deriveButtonColors(primaryHex) {
+  const dir = _relLum(primaryHex) > 0.62 ? -1 : 1; // very light primary -> go darker
+  return {
+    btnTop:    _shade(primaryHex, dir * 0.22),
+    btnBottom: _shade(primaryHex, dir * 0.04),
+    tabTop:    _shade(primaryHex, dir * 0.34),
+    tabBottom: _shade(primaryHex, dir * 0.16),
+    tabText:   dir === 1 ? '#ffffff' : _shade(primaryHex, -0.55), // readable label on the tab
+  };
+}
+
 function applyClientConfig() {
   // Title
   document.title = CLIENT_CONFIG.appTitle;
@@ -2016,6 +2061,14 @@ function applyClientConfig() {
   document.documentElement.style.setProperty('--blue',     CLIENT_CONFIG.primaryColor);
   document.documentElement.style.setProperty('--mid-blue', CLIENT_CONFIG.secondaryColor);
   document.documentElement.style.setProperty('--sky-blue', CLIENT_CONFIG.accentColor);
+  // Derive button + header-tab shades from the primary so they shift together
+  const bc = deriveButtonColors(CLIENT_CONFIG.primaryColor);
+  const root = document.documentElement.style;
+  root.setProperty('--btn-top', bc.btnTop);
+  root.setProperty('--btn-bottom', bc.btnBottom);
+  root.setProperty('--tab-top', bc.tabTop);
+  root.setProperty('--tab-bottom', bc.tabBottom);
+  root.setProperty('--tab-text', bc.tabText);
   document.querySelector('.app-header').style.background = CLIENT_CONFIG.primaryColor;
   document.querySelectorAll('.card-header').forEach(el => el.style.background = CLIENT_CONFIG.primaryColor);
 }
@@ -2511,7 +2564,7 @@ function parseHsCsv(text) {
   }).filter(r => Object.values(r).some(v => v));
 }
 
-const HS_PROXY = 'https://srfed-hubspot-proxy.paul-scace.workers.dev';
+const HS_PROXY = `https://srfed-hubspot-proxy.${WORKERS_SUBDOMAIN}.workers.dev`;
 
 async function hsProxyFetch(token, path) {
   let r;
