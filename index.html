@@ -967,8 +967,9 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:13px;color:var(--muted)">These are woven into every proposal section.</div>
         <button id="populateWinBtn" onclick="populateWinStrategy()"
-          style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);border-radius:6px;background:white;cursor:pointer;color:var(--blue);white-space:nowrap"
-          title="Pre-populate based on Step 5 analysis">✨ Suggest from analysis</button>
+          class="btn btn-primary"
+          style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap"
+          title="Pre-populate based on Step 5 analysis">✨ Suggest from Analysis</button>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -1038,8 +1039,8 @@
             </button>
           </div>
         </div>
-        <button class="btn btn-secondary btn-block" id="previewOutlineBtn" onclick="runOutlinePreview()" style="width:100%;margin-bottom:8px;border:2px solid var(--blue);font-weight:700">
-          📋 Preview Outline First <span style="font-size:12px;font-weight:400;opacity:0.75">(optional Pink Team review)</span>
+        <button class="btn btn-primary btn-block" id="previewOutlineBtn" onclick="runOutlinePreview()" style="width:100%;margin-bottom:8px;font-weight:700">
+          📋 Pink Team Review <span style="font-size:12px;font-weight:400;opacity:0.85">— preview the outline first (optional)</span>
         </button>
         <div id="outlineDivider" style="text-align:center;font-size:12px;color:var(--muted);margin:4px 0">— or skip and generate directly —</div>
         <button class="btn btn-primary btn-block" id="runBtn" onclick="runGeneration()" style="display:flex;font-size:17px;padding:16px 28px">
@@ -1347,9 +1348,10 @@
           <textarea id="hsTextInput" rows="6" oninput="onHsRfpInputChange()" placeholder="Paste opportunity summary, required capabilities, agency, NAICS, set-aside, clearance, place of performance, estimated value, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
         </div>
         <button id="hsExtractBtn" onclick="runHsExtract()"
-          style="padding:9px 20px;font-size:13px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:6px;cursor:pointer;opacity:0.45" disabled>
-          🔍 Extract Opportunity Attributes
+          style="padding:11px 22px;font-size:15px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;opacity:0.45" disabled>
+          🤝 Find Teaming Partners
         </button>
+        <p class="tip" style="margin-top:8px">One click reads the opportunity, extracts its attributes, and matches them against your HubSpot companies.</p>
       </div>
     </div>
   </div>
@@ -1358,7 +1360,7 @@
   <div class="card" id="hsAttributesCard" style="display:none;margin-bottom:24px">
     <div class="card-header"><span class="icon">📊</span> Step 3: Confirm Extracted Attributes</div>
     <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Review what was extracted. These are used to match against your HubSpot companies. Edit any field if needed.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">These were auto-extracted and already matched against your CRM below. Edit any field and re-run if you want to refine the match.</p>
       <div id="hsAttributesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px"></div>
 
       <div id="hsAdditionalContext" style="margin-bottom:16px">
@@ -1370,9 +1372,9 @@
 
       <button id="hsMatchBtn" onclick="runHsMatch()"
         style="width:100%;padding:13px;font-size:15px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;opacity:0.45" disabled>
-        🤝 Find Partner Matches in HubSpot
+        🔄 Re-run Match With My Edits
       </button>
-      <p class="tip" style="margin-top:8px;text-align:center">Pulls your CRM companies and scores them against this opportunity. Returns top 8.</p>
+      <p class="tip" style="margin-top:8px;text-align:center">Re-scores your CRM companies against the edited attributes. Returns top 8.</p>
     </div>
   </div>
 
@@ -1409,11 +1411,11 @@
         <div class="dz-sub">RFP, PWS, SOW, amendment — PDF or Word</div>
       </div>
       <div class="file-list" id="fileListBNA" style="margin-bottom:10px"></div>
-      <details style="margin-bottom:16px" id="bnaTextDetails">
-        <summary style="cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--blue)">✏️ Or paste opportunity text (no formal PWS/SOW yet?)</summary>
-        <p style="font-size:12px;color:var(--muted);margin:8px 0 6px">For early-stage opportunities — paste what you have from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. You can use this alone or alongside uploaded documents.</p>
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px">✏️ Or paste opportunity text</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 6px">For early-stage opportunities — paste what you have from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. You can use this alone or alongside uploaded documents.</p>
         <textarea id="bnaTextInput" rows="6" oninput="updateBnaBtn()" placeholder="Paste solicitation summary, requirements, agency, set-aside, clearance, estimated value, scope notes, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-      </details>
+      </div>
 
       <!-- Company Documents -->
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:8px">
@@ -2358,7 +2360,7 @@ async function runOutlinePreview() {
     alert(`Outline preview failed: ${e.message}`);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '📋 Preview Outline First (Pink Team)';
+    btn.innerHTML = '📋 Pink Team Review <span style="font-size:12px;font-weight:400;opacity:0.85">— preview the outline first (optional)</span>';
   }
 }
 
@@ -2694,15 +2696,16 @@ async function runHsExtract() {
       .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"'));
     renderHsAttributes(hsExtractedAttrs);
     document.getElementById('hsAttributesCard').style.display = 'block';
-    document.getElementById('hsAttributesCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     setProgress(100, [{ text: 'Reading solicitation documents', status: 'done' }, { text: 'Extracting attributes', status: 'done' }]);
-    showStatus('success', 'Attributes extracted', 'Review the fields below, then click Find Partner Matches.');
     updateHsMatchBtn();
+    // One-click experience: immediately run the partner match against the CRM.
+    // The extracted attributes remain visible/editable above for re-running.
+    await runHsMatch();
   } catch(e) {
     showStatus('error', 'Extraction failed', e.message);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '🔍 Extract Opportunity Attributes';
+    btn.innerHTML = '🤝 Find Teaming Partners';
   }
 }
 
@@ -4526,22 +4529,26 @@ async function loadSharePointFiles() {
 
     if (loadedContent.length > 0) {
       html += `<div style="margin-top:10px">
-        <div class="section-label" style="margin-top:0">📂 Company Documents (${loadedContent.length} file${loadedContent.length>1?'s':''})</div>
+        <div class="section-label" style="margin-top:0">📂 Company Documents (${loadedContent.length} file${loadedContent.length>1?'s':''}) <span style="font-size:11px;font-weight:400;color:var(--muted)">— ✕ to drop any you don't need</span></div>
         ${loadedContent.map(f => {
           const icon = f.name.endsWith('.pdf') ? '📄' : f.name.match(/\.docx?$/) ? '📝' : '📊';
           const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
           const tok  = estimateTokens(f);
           const tokLabel = tok >= 1000 ? `~${Math.round(tok/1000)}k tokens` : `~${tok} tokens`;
+          const safeName = f.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
           return `<div class="file-item" style="background:#f0f9ff;border-color:#bae6fd">
             <span class="file-icon">${icon}</span>
             <span class="file-name">${escHtml(f.name)}</span>
             <span class="file-meta"><span class="file-size">${size}</span><span class="file-tokens">${tokLabel}</span></span>
+            <span class="file-remove" onclick="removeSpCompanyFile('${safeName}', this)" title="Remove from this proposal">✕</span>
           </div>`;
         }).join('')}
       </div>`;
     }
 
     if (loadedTone.length > 0) {
+      const toneTok = loadedTone.reduce((s,f) => s + estimateTokens(f), 0);
+      const toneTokLabel = toneTok >= 1000 ? `~${Math.round(toneTok/1000)}k tokens` : `~${toneTok} tokens`;
       html += `<div style="margin-top:10px">
         <div class="section-label" style="margin-top:0;display:flex;align-items:center;gap:8px">
           🎨 Tone &amp; Style References (${loadedTone.length} file${loadedTone.length>1?'s':''})
@@ -4550,13 +4557,15 @@ async function loadSharePointFiles() {
         ${loadedTone.map(f => {
           const icon = f.name.endsWith('.pdf') ? '📄' : '📝';
           const size = f.size < 1048576 ? `${(f.size/1024).toFixed(0)} KB` : `${(f.size/1048576).toFixed(1)} MB`;
+          const tok  = estimateTokens(f);
+          const tokLabel = tok >= 1000 ? `~${Math.round(tok/1000)}k once` : `~${tok} once`;
           return `<div class="file-item" style="background:#faf5ff;border-color:#e9d5ff">
             <span class="file-icon">${icon}</span>
             <span class="file-name">${escHtml(f.name)}</span>
-            <span class="file-meta"><span class="file-size">${size}</span></span>
+            <span class="file-meta"><span class="file-size">${size}</span><span class="file-tokens" style="background:#f5f3ff;border-color:#ddd6fe;color:#6d28d9">${tokLabel}</span></span>
           </div>`;
         }).join('')}
-        <div class="tip" style="margin-top:6px">These shape the writing voice of generated volumes. Their content is never reused.</div>
+        <div class="tip" style="margin-top:6px">✅ <strong>Token note:</strong> these <em>do</em> count toward tokens, but only <strong>once</strong> (${toneTokLabel} total) — they're read a single time to learn your writing voice, then a short style guide is reused. Unlike Company Documents, they are <strong>not</strong> re-sent while writing each volume, and their content is never copied into your proposal.</div>
       </div>`;
     }
 
@@ -4707,6 +4716,19 @@ function addFilesToArray(newFiles, arr, listId) {
     document.getElementById('analysisResults').style.display = 'none';
     updateStepLocks();
   }
+}
+
+// Remove a SharePoint-loaded company document from the generation set (X button).
+// SharePoint files live in both companyFiles (used for generation) and spFiles.
+function removeSpCompanyFile(name, el) {
+  let i = companyFiles.findIndex(f => f.name === name && f._fromSP);
+  if (i === -1) i = companyFiles.findIndex(f => f.name === name);
+  if (i > -1) companyFiles.splice(i, 1);
+  const j = spFiles.findIndex(f => f.name === name);
+  if (j > -1) spFiles.splice(j, 1);
+  const row = el && el.closest ? el.closest('.file-item') : null;
+  if (row) row.remove();
+  if (typeof updateTokenMeter === 'function') updateTokenMeter();
 }
 
 function removeFileFromArray(name, arr, listId) {
@@ -6065,6 +6087,10 @@ async function runGeneration() {
 
     // Helper: make a single API call for one section, with timeout
     async function writeSection(sectionPrompt, maxTok) {
+      // Try up to 2 times — a parse failure or empty result would otherwise leave
+      // a proposal section blank (and orphan its template header).
+      let lastResult = {};
+      for (let attempt = 0; attempt < 2; attempt++) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 480000); // 8 min timeout per section
       try {
@@ -6097,19 +6123,29 @@ async function runGeneration() {
             raw+='}';
           }
         }
-        try { return JSON.parse(raw); }
+        let parsed = null;
+        try { parsed = JSON.parse(raw); }
         catch(e) {
-          console.warn('Section JSON parse failed, attempting extraction:', e.message);
           const m=raw.match(/\{[\s\S]+\}/);
-          if (m) try { return JSON.parse(m[0]); } catch(_) {}
-          console.error('Raw response:', raw.substring(0, 500));
-          return {};
+          if (m) try { parsed = JSON.parse(m[0]); } catch(_) {}
         }
+        // Accept only if we got a non-empty object with at least one non-blank field
+        if (parsed && typeof parsed === 'object' &&
+            Object.values(parsed).some(x => typeof x === 'string' ? x.trim() : x != null)) {
+          return parsed;
+        }
+        lastResult = parsed || {};
+        if (attempt === 0) { console.warn('Section returned empty/unparseable — retrying once.'); continue; }
+        console.error('Section still empty after retry. Raw:', raw.substring(0, 500));
+        return lastResult;
       } catch(e) {
         clearTimeout(timeout);
         if (e.name === 'AbortError') throw new Error('A section writing call timed out after 8 minutes. Your document bundle may be very large. Try reducing company documents (keep only the most relevant past performance) or run with fewer volumes selected.');
+        if (attempt === 0) { console.warn('Section call failed — retrying once:', e.message); continue; }
         throw e;
       }
+      }
+      return lastResult;
     }
 
     const totalVols = genVols.length;
@@ -6444,6 +6480,25 @@ function escRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Convert one line of (lightly-marked-down) text into Word runs, honoring **bold**
+function _runsFromLine(line, rpr) {
+  const boldRpr = rpr.indexOf('<w:rPr>') === 0 ? rpr.replace('<w:rPr>', '<w:rPr><w:b/><w:bCs/>') : rpr;
+  let runs = '';
+  // Split on **bold** spans; render those bold, the rest normal. Strip stray ** and __.
+  const parts = line.split(/(\*\*.+?\*\*)/g);
+  for (const part of parts) {
+    if (!part) continue;
+    const m = part.match(/^\*\*(.+?)\*\*$/);
+    if (m) {
+      runs += `<w:r>${boldRpr}<w:t xml:space="preserve">${escXml(m[1])}</w:t></w:r>`;
+    } else {
+      const clean = part.replace(/\*\*/g, '').replace(/__/g, '');
+      if (clean) runs += `<w:r>${rpr}<w:t xml:space="preserve">${escXml(clean)}</w:t></w:r>`;
+    }
+  }
+  return runs || `<w:r>${rpr}<w:t xml:space="preserve"></w:t></w:r>`;
+}
+
 function textToWordParas(text, rprXml) {
   if (!text) return '';
   // Default: Times New Roman 12pt, black — standard government proposal font
@@ -6451,7 +6506,7 @@ function textToWordParas(text, rprXml) {
   const rpr = rprXml || defaultRpr;
   return text.split('\n')
     .filter(l => l.trim())
-    .map(line => `<w:p><w:r>${rpr}<w:t xml:space="preserve">${escXml(line)}</w:t></w:r></w:p>`)
+    .map(line => `<w:p>${_runsFromLine(line, rpr)}</w:p>`)
     .join('');
 }
 
@@ -6471,10 +6526,26 @@ function replaceContent(xml, placeholder, content) {
 
   for (const target of targets) {
     if (!xml.includes(target)) continue;
+    const esc = escRegex(target);
+
+    // EMPTY CONTENT: remove the placeholder paragraph AND an immediately-preceding
+    // section heading paragraph, so the document never shows an orphaned header
+    // (e.g. "Understanding of the Requirement" with nothing under it).
+    if (!repl.trim()) {
+      const withHeading = new RegExp(
+        '(?:<w:p\\b(?:(?!</w:p>)[\\s\\S])*?<w:pStyle\\b[^>]*w:val="[^"]*[Hh]eading[^"]*"(?:(?!</w:p>)[\\s\\S])*?</w:p>\\s*)?' +
+        '<w:p\\b(?:(?!</w:p>)[\\s\\S])*?' + esc + '(?:(?!</w:p>)[\\s\\S])*?</w:p>',
+        'g'
+      );
+      let foundE = false;
+      const resultE = xml.replace(withHeading, () => { foundE = true; return ''; });
+      if (foundE) return resultE;
+      continue;
+    }
 
     const pattern = new RegExp(
       '<w:p(?:[^>]*)>(?:(?!</w:p>)[\\s\\S])*?' +
-      escRegex(target) +
+      esc +
       '(?:(?!</w:p>)[\\s\\S])*?</w:p>',
       'g'
     );
@@ -6484,7 +6555,6 @@ function replaceContent(xml, placeholder, content) {
       found = true;
       const rprM = match.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
       const rpr  = rprM ? `<w:rPr>${rprM[1]}</w:rPr>` : '<w:rPr><w:color w:val="000000"/></w:rPr>';
-      if (!repl.trim()) return '';  // empty content = remove paragraph entirely
       return textToWordParas(repl, rpr);
     });
 
@@ -7435,7 +7505,9 @@ function computeDecisiveVerdict() {
   }
 
   return { code, label, color, detail, fit: parseFloat(fit.toFixed(1)), base: parseFloat(base.toFixed(1)),
-    minCritical, scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside, gates, blockers, constraints };
+    minCritical, scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside,
+    fteNum: (parseInt(String(opp.fte_count || '').replace(/[^0-9]/g, '')) || null),
+    gates, blockers, constraints };
 }
 
 function setBnaPathView(view) { window._bnaPathView = view; renderBnaDecisionPanel(); }
@@ -7646,6 +7718,15 @@ function renderBnaDecisionPanel() {
     ? `<button onclick="findPrimePartners()" class="btn btn-primary btn-sm" style="margin-top:12px">🤝 Find prime partners for this opportunity</button>`
     : '';
 
+  // A single-FTE effort cannot realistically be subcontracted — you can't split one
+  // person, and a prime won't sub out a lone FTE. Surface this loudly on the sub path.
+  const singleFteWarning = (v.fteNum === 1 && (view === 'sub' || v.code === 'sub'))
+    ? `<div style="margin-top:14px;padding:14px 16px;background:#fef2f2;border:2px solid #dc2626;border-radius:8px">` +
+        `<div style="font-size:16px;font-weight:900;color:#dc2626;margin-bottom:4px">⚠️ Subcontracting isn't realistic on a single-FTE effort</div>` +
+        `<div style="font-size:13px;line-height:1.6;color:var(--text)">This is a <strong>1-FTE</strong> requirement. You can't split one person across companies, and a prime won't subcontract a lone position — a single-FTE task is almost always a one-company award. If ${co} can't win it as the prime, there is realistically no subcontract path here. Treat the teaming analysis below as informational only.</div>` +
+      `</div>`
+    : '';
+
   panel.style.display = 'block';
   panel.innerHTML =
     `<div style="border:2px solid ${headColor};border-radius:10px;background:${bg};padding:16px 20px">` +
@@ -7659,6 +7740,7 @@ function renderBnaDecisionPanel() {
           `<div style="font-size:10px;color:var(--muted)">fit / 10</div>` +
         `</div>` +
       `</div>` +
+      singleFteWarning +
       // Path toggle
       `<div style="display:flex;gap:4px;background:#eef2f7;border-radius:8px;padding:4px;margin-top:14px;max-width:340px">${tabBtn('prime', 'As Prime')}${tabBtn('sub', 'As Subcontractor')}</div>` +
       blockersHtml + constraintsHtml +
