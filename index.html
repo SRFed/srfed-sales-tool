@@ -1703,6 +1703,13 @@
             <label>Max Single-Award Value You Can Prime <span style="color:var(--muted);font-weight:400">(optional)</span></label>
             <input type="text" id="s_cap_maxvalue" inputmode="numeric" oninput="formatMoneyInput(this)" placeholder="e.g. $10,000,000 — leave blank for no cap"/>
           </div>
+          <div class="settings-field">
+            <label>DCAA-Approved Accounting System</label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;padding:8px 0">
+              <input type="checkbox" id="s_cap_dcaa" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/>
+              <span>Yes — adequate/approved accounting system <span style="color:var(--muted);font-weight:400">(needed to prime cost-reimbursement contracts)</span></span>
+            </label>
+          </div>
         </div>
 
         <div class="settings-field" style="margin-top:14px">
@@ -1872,6 +1879,7 @@ const CLIENT_CONFIG = {
     cmmcLevel:         '1',                        // None | 1 | 2 | 3
     isoCerts:          [],                          // e.g. ['9001','27001']
     contractVehicles:  ['GSA MAS'],                 // free-text vehicle tags HELD
+    dcaaApproved:      true,                        // DCAA-approved/adequate accounting system (required to prime cost-reimbursement contracts)
     maxPrimeFTE:       20,                          // largest team size realistically primeable
     maxPrimeValue:     '',                          // optional $ ceiling for prime; '' = no cap
   },
@@ -7390,6 +7398,14 @@ function evaluateBnaGates(opp, cap) {
     }
     if (!eligible) primeBlockers.push(`set-aside (${opp.set_aside}) — ${co} doesn't hold a qualifying certification`);
   }
+  // AI holistic eligibility judgment — catches amendments and nuances the structured
+  // set-aside field can miss (e.g. an 8(a) set-aside added by amendment in free text).
+  if (opp.prime_eligible === false &&
+      !primeBlockers.some(b => /set-aside|eligib/i.test(b))) {
+    const reason = (opp.prime_ineligibility_reason || '').trim()
+      || `${co} is not eligible to compete as the prime on this`;
+    primeBlockers.push(reason);
+  }
   if (opp.contract_vehicle && opp.vehicle_is_open === false) {
     const heldV = cap.contractVehicles || [];
     if (!heldV.some(v => _vehicleMatch(v, opp.contract_vehicle))) {
@@ -7401,6 +7417,11 @@ function evaluateBnaGates(opp, cap) {
   if (fte && maxFte && fte > maxFte) primeBlockers.push(`${fte} FTEs exceed your prime ceiling of ${maxFte}`);
   const val = _parseMoney(opp.estimated_value), maxVal = _parseMoney(cap.maxPrimeValue);
   if (val && maxVal && val > maxVal) primeBlockers.push(`value (${opp.estimated_value}) exceeds your prime cap`);
+  // DCAA-approved/adequate accounting system is required to be eligible for award of a
+  // cost-reimbursement (and typically T&M) contract — FAR 16.301-3. Prime-eligibility gate.
+  if (opp.required_dcaa === true && !cap.dcaaApproved) {
+    primeBlockers.push(`requires a DCAA-approved accounting system to prime — ${co} doesn't have one`);
+  }
 
   // ---- Performance gates (flow down to subs too) ----
   // Facility clearance is special: lacking the required FCL BOTH blocks priming
@@ -7428,6 +7449,7 @@ function computeDecisiveVerdict() {
   const opp = window._bnaOpp || {};
   const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
   const gates = evaluateBnaGates(opp, cap);
+  const fteNum = parseInt(String(opp.fte_count || '').replace(/[^0-9]/g, '')) || null;
   let scopeCov = (window._bnaScopeCoverage != null) ? Number(window._bnaScopeCoverage) : null;
 
   // Fit factors = all factors EXCEPT eligibility (eligibility is now a gate).
@@ -7491,6 +7513,11 @@ function computeDecisiveVerdict() {
       code = 'pass'; label = '❌ PASS'; color = '#dc2626';
       detail = `Fit is too weak to justify a pursuit.`;
     }
+  } else if (fteNum === 1) {
+    // Can't prime AND it's a single-FTE effort: you can't split one person, and a prime
+    // won't subcontract a lone position — so there is no realistic subcontract path either.
+    code = 'pass'; label = '❌ PASS'; color = '#dc2626';
+    detail = `${CLIENT_CONFIG.companyShortName} can't prime this (${blockers.join('; ')}), and because it's a single-FTE effort it can't be subcontracted either — you can't split one person, so it's a one-company award. With no prime path and no realistic sub path, this is a pass.`;
   } else {
     const subFit = 0.5 * fit + 0.5 * (scopeCov / 10);
     if (subFit >= FIT_GAPS && scopeCov >= COV_MIN_SUB) {
@@ -7506,7 +7533,7 @@ function computeDecisiveVerdict() {
 
   return { code, label, color, detail, fit: parseFloat(fit.toFixed(1)), base: parseFloat(base.toFixed(1)),
     minCritical, scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside,
-    fteNum: (parseInt(String(opp.fte_count || '').replace(/[^0-9]/g, '')) || null),
+    fteNum,
     gates, blockers, constraints };
 }
 
@@ -7976,13 +8003,21 @@ async function runBidNoBid() {
     content.push(...coResult.blocks);
     const someSolUnreadable = solResult.unreadable.length > 0;
 
+    const _cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
     const companyProfile =
       `Company: ${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName})\n` +
       `Type: ${CLIENT_CONFIG.businessType}\n` +
-      `Clearances: ${CLIENT_CONFIG.clearances}\n` +
-      `CMMC: ${CLIENT_CONFIG.cmmc || 'not specified'}\n` +
-      `GSA MAS: ${CLIENT_CONFIG.gsaMas || 'none'}\n` +
-      `DCAA: ${CLIENT_CONFIG.dcaa || 'not specified'}`;
+      `--- PRIME-ELIGIBILITY CAPACITY (use these exact facts to judge prime_eligible) ---\n` +
+      `Set-aside certifications HELD: ${(_cap.setAsides || []).join(', ') || 'none'}\n` +
+      `Business size: ${_cap.businessSize || 'not specified'}\n` +
+      `Highest FACILITY clearance HELD: ${_cap.facilityClearance || 'None'}\n` +
+      `CMMC level HELD: ${_cap.cmmcLevel || 'None'}\n` +
+      `ISO certifications HELD: ${(_cap.isoCerts || []).join(', ') || 'none'}\n` +
+      `Contract vehicles/IDIQs HELD: ${(_cap.contractVehicles || []).join(', ') || 'none'}\n` +
+      `DCAA-approved/adequate accounting system: ${_cap.dcaaApproved ? 'YES' : 'NO'}\n` +
+      `Max FTEs the company can PRIME: ${_cap.maxPrimeFTE || 'not specified'}\n` +
+      `Max single-award value the company can PRIME: ${_cap.maxPrimeValue || 'no stated cap'}\n` +
+      `(Reference) DCAA narrative: ${CLIENT_CONFIG.dcaa || 'not specified'}`;
 
     content.push({ type: 'text', text:
       `You are a senior government BD analyst conducting a bid/no-bid evaluation for ${CLIENT_CONFIG.companyFullName}.\n\n` +
@@ -8011,7 +8046,18 @@ async function runBidNoBid() {
       `OPPORTUNITY FACTS — extract these verbatim where stated, else "" (empty). These drive prime/sub eligibility:\n` +
       `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
       `- fte_count: number of FTEs/positions if stated (digits only, e.g. "45"), else ""\n` +
-      `- set_aside: exact set-aside type, or "Unrestricted"/"Full and Open" if so, or "Not stated"\n` +
+      `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated".\n` +
+      `- required_dcaa: true if award requires a DCAA-approved/adequate accounting system (typically any cost-reimbursement / cost-plus / T&M contract type), else false.\n` +
+      `- prime_eligible: true or false. Can ${CLIENT_CONFIG.companyShortName} legally and practically compete as the PRIME on this? Weigh EVERY dimension below against the CAPACITY facts in the company profile, and set FALSE if ANY is a hard barrier:\n` +
+      `    • Set-aside: operative set-aside is one the company does NOT hold (e.g. 8(a)/HUBZone set-aside when not 8(a)/HUBZone certified).\n` +
+      `    • Business size: the requirement is restricted to small business and the company is not Small.\n` +
+      `    • Facility clearance: the work requires a higher FACILITY clearance than the company holds (a prime must hold the facility clearance).\n` +
+      `    • Contract vehicle: it requires holding a specific CLOSED IDIQ/vehicle the company does not hold.\n` +
+      `    • DCAA: required_dcaa is true but the company has NO DCAA-approved accounting system.\n` +
+      `    • Max prime FTE: the FTE count exceeds the max FTEs the company can prime.\n` +
+      `    • Max prime value: the contract value exceeds the max single-award value the company can prime.\n` +
+      `   If none of these is a hard barrier, set TRUE. When an explicit barrier the company lacks is stated, you MUST set FALSE.\n` +
+      `- prime_ineligibility_reason: if prime_eligible is false, ONE sentence naming the SPECIFIC barrier(s) (e.g. "8(a) set-aside; company holds SDVOSB/VOSB, not 8(a)" or "requires Top Secret FCL; company holds Secret"). Else "".\n` +
       `- contract_vehicle: required contract vehicle/IDIQ if any (e.g. "SeaPort-NxG"), else ""\n` +
       `- vehicle_is_open: true if this is open-market / full-and-open / a Schedule anyone can get on; false if it requires holding a specific closed IDIQ/vehicle\n` +
       `- estimated_value: total contract value if stated (e.g. "$12M"), else ""\n` +
@@ -8019,11 +8065,11 @@ async function runBidNoBid() {
       `- required_iso: ISO standard(s) required of performers (e.g. "9001"), else ""\n\n` +
       `SCOPE COVERAGE — scope_coverage: an integer 0-100 estimating the percentage of the PWS/required scope ${CLIENT_CONFIG.companyShortName} can credibly SELF-PERFORM, based on its profile/capabilities vs. the task areas. Be realistic: a broad multi-discipline scope where the company covers only part should score lower. This drives the subcontract decision.\n\n` +
       `OUTPUT RULES — complete the JSON object with REAL content from the documents:\n` +
-      `- After the "factors" object, include an "opportunity" object with the 8 fields above, then "scope_coverage": N.\n` +
+      `- After the "factors" object, include an "opportunity" object with the fields above, then "scope_coverage": N.\n` +
       `- Each rationale: 1-2 sentences max, citing SPECIFIC evidence (sections, NAICS, clearance, FTE). If not stated, say "not stated".\n` +
       `- risks: 3-5 specific items. win_strategy: 3-5 specific strategies. summary: 2-3 sentences (reference the score as X out of 10; do not invent scales like x/60).\n` +
       `- Use only plain ASCII. No em-dashes, no smart quotes.\n` +
-      `- JSON shape: {"data_confidence":"...","factors":{"technical_capability":{"score":N,"rationale":"..."}, ...5 more...},"opportunity":{"required_clearance":"","fte_count":"","set_aside":"","contract_vehicle":"","vehicle_is_open":true,"estimated_value":"","required_cmmc":"","required_iso":""},"scope_coverage":N,"risks":[...],"win_strategy":[...],"summary":"..."}\n` +
+      `- JSON shape: {"data_confidence":"...","factors":{"technical_capability":{"score":N,"rationale":"..."}, ...5 more...},"opportunity":{"required_clearance":"","fte_count":"","set_aside":"","required_dcaa":false,"prime_eligible":true,"prime_ineligibility_reason":"","contract_vehicle":"","vehicle_is_open":true,"estimated_value":"","required_cmmc":"","required_iso":""},"scope_coverage":N,"risks":[...],"win_strategy":[...],"summary":"..."}\n` +
       `- Always complete the full JSON — do not stop after factors.\n\n` +
       `Respond with ONLY the completed JSON. No markdown. No preamble.`
     });
@@ -8111,6 +8157,22 @@ async function runBidNoBid() {
         result = {
           data_confidence: extractStr('data_confidence') || (hasCompanyDocs ? 'HIGH' : 'LOW'),
           factors,
+          opportunity: {
+            required_clearance: extractStr('required_clearance') || '',
+            fte_count: extractStr('fte_count') || '',
+            set_aside: extractStr('set_aside') || '',
+            required_dcaa: /"required_dcaa"\s*:\s*true/i.test(jsonStr),
+            prime_eligible: /"prime_eligible"\s*:\s*false/i.test(jsonStr) ? false
+                          : (/"prime_eligible"\s*:\s*true/i.test(jsonStr) ? true : undefined),
+            prime_ineligibility_reason: extractStr('prime_ineligibility_reason') || '',
+            contract_vehicle: extractStr('contract_vehicle') || '',
+            vehicle_is_open: !/"vehicle_is_open"\s*:\s*false/i.test(jsonStr),
+            estimated_value: extractStr('estimated_value') || '',
+            required_cmmc: extractStr('required_cmmc') || '',
+            required_iso: extractStr('required_iso') || ''
+          },
+          scope_coverage: (jsonStr.match(/"scope_coverage"\s*:\s*(\d+)/) || [])[1]
+                          ? parseInt((jsonStr.match(/"scope_coverage"\s*:\s*(\d+)/))[1]) : null,
           risks: extractArr('risks'),
           win_strategy: extractArr('win_strategy'),
           summary: extractStr('summary') || 'Analysis complete — review factor scores above.'
@@ -8149,11 +8211,11 @@ async function runBidNoBid() {
     // Eligibility is now a GATE, not an AI-scored fit factor. Derive its bar from the
     // prime gate so the legacy display stays coherent (the verdict uses gates directly).
     const _gatePreview = evaluateBnaGates(window._bnaOpp, (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {});
-    const _setAsideBlocked = _gatePreview.primeBlockers.some(b => /set-aside/i.test(b));
+    const _setAsideBlocked = _gatePreview.primeBlockers.some(b => /set-aside|eligib/i.test(b));
     bna_tier1_scores['eligibility'] = _setAsideBlocked ? 2 : 9;
     if (factors['eligibility']) {
       factors['eligibility'].rationale = _setAsideBlocked
-        ? `Prime-ineligible on set-aside — routed to subcontract (see verdict).`
+        ? `Prime-ineligible — ${(window._bnaOpp.prime_ineligibility_reason || 'see verdict').trim()}. Routed to subcontract/pass per the verdict.`
         : `No set-aside barrier to priming (see verdict for full gate check).`;
     }
 
@@ -8803,6 +8865,7 @@ function loadCapacityIntoUI(cap) {
   set('s_cap_cmmc',      cap.cmmcLevel);
   set('s_cap_maxfte',    cap.maxPrimeFTE);
   set('s_cap_maxvalue',  cap.maxPrimeValue);
+  const dcaaCb = document.getElementById('s_cap_dcaa'); if (dcaaCb) dcaaCb.checked = !!cap.dcaaApproved;
   const mv = document.getElementById('s_cap_maxvalue'); if (mv && mv.value) formatMoneyInput(mv);
   // Set-aside checkboxes (+ other)
   const held = (cap.setAsides || []).map(s => s.toLowerCase());
@@ -8834,6 +8897,7 @@ function readCapacityFromUI() {
     cmmcLevel:         document.getElementById('s_cap_cmmc')?.value || '',
     maxPrimeFTE:       document.getElementById('s_cap_maxfte')?.value || '',
     maxPrimeValue:     document.getElementById('s_cap_maxvalue')?.value.trim() || '',
+    dcaaApproved:      !!document.getElementById('s_cap_dcaa')?.checked,
     setAsides, isoCerts,
     contractVehicles:  [..._capVehicles],
   };
