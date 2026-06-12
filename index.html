@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Proposal Tool</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23005FD5'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E"/>
+<link rel="icon" id="appFavicon" type="image/png" href="data:image/png;base64,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"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js" crossorigin="anonymous"></script>
@@ -225,6 +225,17 @@
   .token-bar-fill.warn   { background: #f59e0b; }
   .token-bar-fill.danger { background: #ef4444; }
   .token-meter-sub { margin-top: 6px; font-size: 11px; color: var(--muted); }
+  .token-meter-hint { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .tm-row { padding: 9px 0; border-top: 1px solid #f1f5f9; }
+  .tm-row:first-child { border-top: none; padding-top: 2px; }
+  .tm-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+  .tm-row-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .tm-row-note { font-size: 10px; font-weight: 600; color: var(--muted); background: #f1f5f9; padding: 1px 6px; border-radius: 4px; margin-left: 7px; white-space: nowrap; }
+  .tm-row-count { font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .tm-row-count.safe { color: var(--success); } .tm-row-count.warn { color: var(--warn); } .tm-row-count.danger { color: var(--error); }
+  .tm-row .token-bar-track { height: 7px; }
+  .tm-row-desc { margin-top: 4px; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+  .token-meter-foot { margin-top: 11px; padding-top: 9px; border-top: 1px dashed var(--border); font-size: 10.5px; color: var(--muted); line-height: 1.55; }
 
   /* ── FORM ── */
   .form-group { margin-bottom: 16px; }
@@ -613,6 +624,7 @@
     <button class="tab-btn" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
     <button class="tab-btn" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
+    <button class="tab-btn" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
     <button class="tab-btn" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
     <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
@@ -870,16 +882,14 @@
       <p class="tip" style="margin-top:16px">💡 RFP documents are required. Additional company documents are optional — resumes and past performance should be connected via SharePoint in Step 3.</p>
       <div id="fileSizeWarning" style="display:none;margin-top:12px;padding:12px 14px;background:var(--error-bg);border:1px solid #fca5a5;border-radius:8px;font-size:13px;color:var(--error);line-height:1.5"></div>
 
-      <!-- Token meter — shown once any file is uploaded -->
+      <!-- Token meter — one bar per outgoing API call; shown once relevant files are added -->
       <div class="token-meter" id="tokenMeter" style="display:none">
         <div class="token-meter-header">
-          <span class="token-meter-label">📊 Estimated Token Usage</span>
-          <span class="token-meter-count safe" id="tokenMeterCount">0k / 380k tokens</span>
+          <span class="token-meter-label">📊 Token usage by outgoing call</span>
+          <span class="token-meter-hint">Each call has its own limit — they aren't summed</span>
         </div>
-        <div class="token-bar-track">
-          <div class="token-bar-fill" id="tokenBarFill" style="width:0%"></div>
-        </div>
-        <div class="token-meter-sub" id="tokenMeterSub">Add documents above to see estimated usage.</div>
+        <div id="tokenMeterRows"></div>
+        <div class="token-meter-foot" id="tokenMeterFoot"></div>
       </div>
 
     </div>
@@ -1629,6 +1639,87 @@
   </div>
 </div>
 
+<!-- ══════════════════════════ PRICING TAB ══════════════════════════════ -->
+<div class="tab-pane" id="pane-pricing">
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="icon">💵</span> Pricing</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Build the pricing for this opportunity on a single labor-category × PWS-task hours matrix. Every methodology is just a different roll-up of that one matrix, and the result feeds Volume III directly. You can run this without generating a full proposal.</p>
+
+      <!-- Opportunity context -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;background:#f8fafc">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="font-weight:700;font-size:13px">📋 Opportunity Context</div>
+          <button class="btn" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:6px 14px;font-size:12px;font-weight:600;background:var(--mid-blue);color:white;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">⤵ Pull from RFP analysis</button>
+        </div>
+        <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.6">No opportunity loaded. Click <strong>Pull from RFP analysis</strong> to bring in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
+        <div style="margin-top:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:220px">
+            <label style="display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Pricing Methodology <span style="color:var(--muted);font-weight:400">(how the Government wants it)</span></label>
+            <select id="pricingMethodology" onchange="pricingOnMethodologyChange()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+              <option value="lcat">By Labor Category (fully burdened rates)</option>
+              <option value="pws_task">By PWS Task / Section</option>
+              <option value="product">By Product / Deliverable / CLIN</option>
+              <option value="simple">Simple — Total Labor + Wrap</option>
+            </select>
+          </div>
+          <div id="pricingMethodologyNote" style="flex:2;min-width:240px;font-size:11px;color:var(--muted);line-height:1.5"></div>
+        </div>
+      </div>
+
+      <!-- FTE provenance + reconciliation summary -->
+      <div id="pricingFteBar" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+      <!-- PWS tasks (columns) -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700;font-size:13px">🧱 PWS Tasks <span style="color:var(--muted);font-weight:400;font-size:11px">— the columns of your matrix · auto-filled when you Pull from RFP analysis</span></div>
+          <button onclick="pricingAddTask()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Task</button>
+        </div>
+        <div id="pricingTasksList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Labor categories (rows) -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700;font-size:13px">👤 Labor Categories &amp; Rates <span style="color:var(--muted);font-weight:400;font-size:11px">— the rows of your matrix · you add these (the Government rarely dictates your rates)</span></div>
+          <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
+        </div>
+        <div id="pricingLcatsList" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- The matrix -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;overflow-x:auto">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">🗂️ Hours Allocation Matrix</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">Enter billable hours per labor category, per task. Greyed cells are <strong>locked</strong> by the role rules (click the 🔒/✓ on each row to set which tasks a role may touch). Row and column totals, costs, and FTE-equivalents update live.</div>
+        <div id="pricingMatrix"></div>
+      </div>
+
+      <!-- Period of performance / escalation -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:700;font-size:13px">📅 Periods &amp; Escalation</div>
+          <button onclick="pricingAddPeriod()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Option Year</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">The matrix above prices the <strong>base period</strong>. Each option year escalates the prior year's price by the % you set (compounded).</div>
+        <div id="pricingPeriodsList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Live summary -->
+      <div id="pricingSummary" style="margin-bottom:16px"></div>
+
+      <!-- Warnings -->
+      <div id="pricingWarnings" style="margin-bottom:16px"></div>
+
+      <!-- Footer / status -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid var(--border);padding-top:14px">
+        <div id="pricingFeedStatus" style="font-size:12px;color:var(--muted)"></div>
+        <button onclick="pricingResetModel()" style="padding:6px 14px;font-size:12px;font-weight:600;border:1px solid var(--border);color:var(--error);background:white;border-radius:6px;cursor:pointer">Reset pricing</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════════ SETTINGS TAB ══════════════════════════════ -->
 <div class="tab-pane" id="pane-settings">
   <div class="card" style="margin-bottom:24px">
@@ -1670,6 +1761,43 @@
       </div>
 
       <div class="settings-section">
+        <h3>🤖 AI Model</h3>
+        <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">The Claude model used to read RFPs and write proposals. This list is pulled live from Anthropic using your API key, so it always reflects the models that currently exist and that your key can use. Pick a newer one any time — nothing else in the tool needs to change.</p>
+        <div class="settings-grid">
+          <div class="settings-field">
+            <label>Model</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="s_model" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+                <option value="">Loading…</option>
+              </select>
+              <button type="button" onclick="loadModelsIntoDropdown(true)" style="padding:8px 14px;font-size:12px;font-weight:600;background:var(--mid-blue);color:white;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">↻ Refresh</button>
+            </div>
+            <div id="s_model_status" style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>💵 Pricing Defaults</h3>
+        <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Company-wide pricing constants. The per-opportunity work — labor categories, hours, and the allocation matrix — lives on the <strong>Pricing</strong> tab. These two items are the only pricing values that rarely change.</p>
+        <div class="settings-grid">
+          <div class="settings-field"><label>Fringe %</label><input type="number" id="s_pr_fringe" step="0.1" min="0" placeholder="28" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label>Overhead %</label><input type="number" id="s_pr_overhead" step="0.1" min="0" placeholder="15" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label>G&amp;A %</label><input type="number" id="s_pr_ga" step="0.1" min="0" placeholder="15" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label>Fee / Profit %</label><input type="number" id="s_pr_fee" step="0.1" min="0" placeholder="8" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field">
+            <label>Wrap Calculation</label>
+            <select id="s_pr_wrapmode" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white" onchange="updateWrapPreview()">
+              <option value="compounded">Multiplicative (Compounded)</option>
+              <option value="additive">Additive</option>
+            </select>
+          </div>
+          <div class="settings-field"><label>Default Billable Hours / FTE</label><input type="number" id="s_pr_hpf" step="1" min="1" placeholder="1912"/></div>
+        </div>
+        <div id="s_wrap_preview" style="margin-top:6px;padding:10px 12px;background:#f0f9ff;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text)"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>🎯 Company Capacity Profile <span style="font-size:12px;font-weight:500;color:var(--muted)">— drives Bid/No-Bid prime vs. subcontract logic</span></h3>
         <p style="font-size:12px;color:var(--muted);margin:0 0 14px">These facts decide what your company can <strong>prime</strong> vs. only <strong>subcontract</strong>. They must be filled in before running a Bid/No-Bid analysis.</p>
         <div class="settings-grid">
@@ -1704,11 +1832,12 @@
             <input type="text" id="s_cap_maxvalue" inputmode="numeric" oninput="formatMoneyInput(this)" placeholder="e.g. $10,000,000 — leave blank for no cap"/>
           </div>
           <div class="settings-field">
-            <label>DCAA-Approved Accounting System</label>
-            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer;padding:8px 0">
-              <input type="checkbox" id="s_cap_dcaa" style="width:auto;flex:none;margin:0;accent-color:var(--blue)"/>
-              <span>Yes — adequate/approved accounting system <span style="color:var(--muted);font-weight:400">(needed to prime cost-reimbursement contracts)</span></span>
-            </label>
+            <label>DCAA-Approved Accounting System <span style="color:var(--muted);font-weight:400">(needed to prime cost-reimbursement)</span></label>
+            <select id="s_cap_dcaa" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+              <option value="">— select —</option>
+              <option value="Yes">Yes — we have an approved/adequate accounting system</option>
+              <option value="No">No</option>
+            </select>
           </div>
         </div>
 
@@ -1764,7 +1893,23 @@
         <div class="settings-grid">
           <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5"/></div>
           <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872"/></div>
-          <div class="settings-field"><label>Logo URL or leave blank</label><input type="text" id="s_logoUrl" placeholder="https://... or leave blank to use default"/></div>
+          <div class="settings-field" style="grid-column:1/-1">
+            <label>Logo</label>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <div style="width:124px;height:50px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;flex-shrink:0">
+                <img id="s_logoPreview" src="" alt="" style="max-width:100%;max-height:100%;display:none"/>
+                <span id="s_logoPreviewEmpty" style="font-size:10px;color:var(--muted)">No logo</span>
+              </div>
+              <div style="flex:1;min-width:240px">
+                <input type="text" id="s_logoUrl" placeholder="https://your-logo.png  (or upload →)" oninput="onLogoUrlInput()"/>
+                <div style="display:flex;gap:8px;margin-top:6px">
+                  <label style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--mid-blue);color:#fff;border-radius:6px;cursor:pointer;display:inline-block">⤓ Upload logo<input type="file" id="s_logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" onchange="onLogoFileChosen(event)" style="display:none"/></label>
+                  <button type="button" onclick="clearLogo()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;color:var(--error)">Clear</button>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px">Paste a URL <em>or</em> upload an image — an uploaded logo is embedded directly, so it needs no hosting. Click Save to apply.</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1843,6 +1988,24 @@
 // Your Cloudflare workers.dev account subdomain. Both helper-service URLs below are
 // built from it, so if you rename your subdomain in Cloudflare, change ONLY this line.
 const WORKERS_SUBDOMAIN = 'srfed-svc';
+
+// The Claude model used for ALL AI calls. This is set at runtime from the model
+// you pick in Settings (which is populated live from Anthropic's models API, so it
+// always reflects what actually exists). The value here is only the initial default.
+let CLAUDE_MODEL = 'claude-sonnet-4-5';
+
+// Compute the loaded-cost wrap factor from the configured rate components.
+// 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
+// 'additive' simply sums the percentages. Returns a multiplier (e.g. 1.66 or 1.83).
+function computeWrapFactor(p) {
+  p = p || (CLIENT_CONFIG && CLIENT_CONFIG.pricing) || {};
+  const f = (parseFloat(p.fringe) || 0) / 100;
+  const o = (parseFloat(p.overhead) || 0) / 100;
+  const g = (parseFloat(p.ga) || 0) / 100;
+  const fee = (parseFloat(p.fee) || 0) / 100;
+  if ((p.wrapMode || 'compounded') === 'additive') return 1 + f + o + g + fee;
+  return (1 + f) * (1 + o) * (1 + g) * (1 + fee);
+}
 
 const CLIENT_CONFIG = {
 
@@ -1979,6 +2142,19 @@ const CLIENT_CONFIG = {
   // Leave as null to prompt user to enter their own key, or hardcode for single-tenant use.
   anthropicApiKey: null,   // e.g. 'sk-ant-...'
 
+  // Selected Claude model. Chosen in Settings from a list fetched live from the
+  // Anthropic models API, so it stays current as models come and go.
+  model: 'claude-sonnet-4-5',
+
+  // ── Pricing constants (company-wide; the per-opportunity work lives on the Pricing tab) ──
+  // wrapMode 'compounded' = (1+fringe)(1+oh)(1+ga)(1+fee); 'additive' = 1+fringe+oh+ga+fee.
+  // hoursPerFte is the default BILLABLE hours in one full FTE-year (e.g. 1912).
+  pricing: {
+    fringe: 28, overhead: 15, ga: 15, fee: 8,
+    wrapMode: 'compounded',
+    hoursPerFte: 1912,
+  },
+
   // ── Document Conversion Service ───────────────────────────────────────────
   // SRFed-operated shared service — clients do not configure this.
   // Built from WORKERS_SUBDOMAIN above; change that one line if you rename it.
@@ -2060,9 +2236,17 @@ function deriveButtonColors(primaryHex) {
 function applyClientConfig() {
   // Title
   document.title = CLIENT_CONFIG.appTitle;
-  // Logo
-  if (CLIENT_CONFIG.logoBase64) {
-    document.getElementById('appLogo').src = 'data:image/png;base64,' + CLIENT_CONFIG.logoBase64;
+  // Active Claude model (chosen in Settings)
+  if (CLIENT_CONFIG.model && CLIENT_CONFIG.model.trim()) CLAUDE_MODEL = CLIENT_CONFIG.model.trim();
+  // Logo — priority: an uploaded image or set URL (merged into CLIENT_CONFIG from
+  // saved settings) wins; otherwise the build's embedded default; otherwise hidden.
+  const logoEl = document.getElementById('appLogo');
+  if (logoEl) {
+    let src = '';
+    if (CLIENT_CONFIG.logoBase64) src = String(CLIENT_CONFIG.logoBase64).startsWith('data:') ? CLIENT_CONFIG.logoBase64 : ('data:image/png;base64,' + CLIENT_CONFIG.logoBase64);
+    else if (CLIENT_CONFIG.logoUrl) src = CLIENT_CONFIG.logoUrl;
+    if (src) { logoEl.src = src; logoEl.style.display = ''; }
+    else { logoEl.removeAttribute('src'); logoEl.style.display = 'none'; }
   }
   // App title text
   const titleEl = document.querySelector('.logo-text');
@@ -2321,7 +2505,7 @@ async function runOutlinePreview() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
         messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
@@ -2691,7 +2875,7 @@ async function runHsExtract() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1500, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1500, temperature: 0,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
@@ -2911,7 +3095,7 @@ async function runHsMatch() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 3000, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 3000, temperature: 0,
         messages: [{ role: 'user', content: [{ type: 'text', text: matchPrompt }] }] })
     });
     if (!mr.ok) throw new Error(`Claude API error ${mr.status}`);
@@ -3237,7 +3421,7 @@ async function runCmpExtraction() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000, temperature: 0,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
@@ -3323,7 +3507,7 @@ async function runStandaloneCompliance() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 8000, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 8000, temperature: 0,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
@@ -3439,7 +3623,7 @@ async function scorePastPerformanceRelevance() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1500,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1500,
         messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) throw new Error(`API ${resp.status}`);
@@ -3596,12 +3780,14 @@ function annotateDocXml(xml) {
     if (/\[\s*(?:RATE|HOURS|TOTAL|LCAT|INSERT|TBD|TBE|N\/A|UNKNOWN|DATE|NAME|NUMBER|PHONE|EMAIL|ADDRESS)[^\]]{0,60}\]/i.test(text)) return true;
     if (/\{\{[A-Z_]+\}\}/.test(text)) return true;
     if (/\[BASE YEAR TOTAL\]|\[GRAND TOTAL\]/i.test(text)) return true;
-    // "Not provided" / "Not stated" / "Not available" — reviewer must fill in
-    if (/\bnot\s+(?:provided|stated|available|specified|found|listed)\b/i.test(text)) return true;
+    // "Not provided/stated/available/..." — ONLY when it's essentially the entire
+    // field/cell value (a table cell or label), e.g. "Not provided" or "Period: not stated".
+    // Do NOT highlight the phrase when it appears inside a real sentence.
+    if (/^\s*(?:[A-Za-z][A-Za-z /]{0,24}:\s*)?not\s+(?:provided|stated|available|specified|found|listed)\b[.\s]*$/i.test(text)) return true;
     // Bare "N/A" standing alone (not as part of a larger word)
     if (/^\s*N\/A\s*$/i.test(text)) return true;
-    // Blank/empty telephone number indicators
-    if (/\bphone[:\s]*$|\btelephone[:\s]*$|\bfax[:\s]*$/i.test(text)) return true;
+    // A label run with an empty value, e.g. a run that is just "Phone:" / "Fax:" / "Telephone:"
+    if (/^\s*(?:tele)?phone\s*:?\s*$|^\s*fax\s*:?\s*$/i.test(text)) return true;
     // Unknown or missing government POC info
     if (/\[(?:POC|COR|KO|Contracting Officer)[^\]]{0,40}\]/i.test(text)) return true;
     return false;
@@ -4138,7 +4324,7 @@ async function buildContentBlocks(files, limit) {
 async function extractToneProfile(apiKey) {
   try {
     if (!spToneFiles || spToneFiles.length === 0) return '';
-    const TONE_BUDGET = 120000;
+    // TONE_BUDGET is a module-level constant (shared with the token meter).
     const sorted = [...spToneFiles].sort((a, b) => a.size - b.size);
     const blocks = [];
     let toks = 0;
@@ -4168,7 +4354,7 @@ async function extractToneProfile(apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1200, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1200, temperature: 0,
         messages: [{ role: 'user', content: [...blocks, { type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) return '';
@@ -4184,6 +4370,75 @@ async function extractToneProfile(apiKey) {
     console.warn('Tone profile extraction failed:', e);
     return '';
   }
+}
+
+// Read the company documents ONCE, up front, and return BOTH:
+//   • capability_digest — a grounded summary of real, documented strengths that the
+//     Technical, Management, Key Personnel, and Executive Summary volumes use so the
+//     proposal is written to the company's actual experience (not generic claims).
+//   • references — the structured past-performance records Volume II renders.
+// This is the single company-document read that powers every company-aware volume,
+// so the docs are never sent twice. briefingContext gives the model the opportunity
+// so both the digest and the reference narratives map to THIS solicitation.
+async function extractCompanyProfile(apiKey, companyDocContent, briefingContext) {
+  const empty = { capability_digest: '', references: [] };
+  if (!companyDocContent || companyDocContent.length === 0) return empty;
+  const co = CLIENT_CONFIG.companyShortName || 'the company';
+  const prompt =
+    `You are an expert government proposal analyst for ${CLIENT_CONFIG.companyFullName || co}.\n\n` +
+    `The documents above are ${co}'s OWN company materials — past-performance write-ups, resumes/CVs, capability statements, and similar — followed by the briefing for the opportunity being bid.\n\n` +
+    `Using ONLY what is actually in these documents, return a JSON object with two parts.\n\n` +
+    `PART 1 — "capability_digest": a concise prose briefing (250-450 words) the proposal writers will use to ground the Technical, Management, Key Personnel, and Executive Summary volumes in ${co}'s REAL, DEMONSTRATED strengths, written toward THIS opportunity. Where documented, cover: the most relevant prior engagements (what was performed, for which customer/agency, and measurable outcomes); core competencies and differentiators that map to this requirement's PWS task areas and evaluation factors; key personnel and their directly relevant qualifications, certifications, and clearances; and proven tools, methodologies, and processes. This is EVIDENCE later volumes will cite to substantiate claims. ABSOLUTE RULE: never invent or embellish — no made-up customers, engagements, outcomes, personnel, tools, or numbers. If the documents are thin, keep it short and state only what is supported.\n\n` +
+    `PART 2 — "references": the past-performance records, under the SAME no-fabrication rules. You may ONLY describe past performance explicitly documented above. NEVER invent client/agency names, contract numbers, contact names, phone numbers, emails, contract values, periods of performance, or program descriptions. For any field not found, output the literal "[PROVIDE: <field name>]" (e.g. "[PROVIDE: Contract Number]"). For a narrative with no source, output "[PROVIDE: describe this past performance engagement - no source document found]". If the documents contain N real references, return exactly N — never pad to 3 with invented ones; if zero, return a single reference object with every field set to its [PROVIDE: ...] placeholder.\n\n` +
+    `Return ONLY JSON:\n{"capability_digest":"...","references":[` +
+    `{"program_name":"exact or [PROVIDE: Program Name]","contract_number":"exact or [PROVIDE: Contract Number]","pm_name":"exact or [PROVIDE: PM Name]","pm_phone":"exact or [PROVIDE: PM Phone]","pm_email":"exact or [PROVIDE: PM Email]","co_name":"exact or [PROVIDE: CO Name]","co_phone":"exact or [PROVIDE: CO Phone]","co_email":"exact or [PROVIDE: CO Email]","cor_name":"exact or [PROVIDE: COR Name]","cor_phone":"exact or [PROVIDE: COR Phone]","cor_email":"exact or [PROVIDE: COR Email]","contract_type":"exact or [PROVIDE: Contract Type]","period_of_performance":"exact or [PROVIDE: Period of Performance]","total_value":"exact or [PROVIDE: Contract Value]","prime_or_sub":"Prime or Subcontractor or [PROVIDE: Prime/Sub]",` +
+    `"overview":"MINIMUM 3 paragraphs IF documented. What was performed, scope, operational environment, outcomes. Specifics only from the documents.",` +
+    `"relevance":"MINIMUM 2 paragraphs explicitly mapping to THIS solicitation's PWS task areas and evaluation factors.",` +
+    `"similarity":"5-8 specific bullet points: size/scope/complexity/agency type/contract type/technical domain similarities. Plain text, one per line, prefix each with a hyphen."}]}`;
+  const content = [...companyDocContent, { type: 'text', text: briefingContext || '' }, { type: 'text', text: prompt }];
+  try {
+    const result = await callClaudeForJson(apiKey, content, 12000, 360000, 'Reading company documents');
+    return {
+      capability_digest: (result.capability_digest || '').trim(),
+      references: Array.isArray(result.references) ? result.references : []
+    };
+  } catch (e) {
+    console.error('Company profile extraction failed after retry:', e);
+    showStatus('warn', 'Company documents need attention',
+      'Couldn\u2019t read the company documents automatically — Past Performance will use [PROVIDE: ...] placeholders and the Technical volume will rely on your win themes. ' + e.message);
+    return empty;
+  }
+}
+
+// Shared, cached briefing. Returns the full briefing if generation already produced
+// one; otherwise runs a focused RFP read (scope + pricing fields) so the Pricing tab
+// can work standalone, before any proposal is generated. Either way it populates the
+// same cachedBriefing, so there's a single source of truth.
+async function ensureBriefing(apiKey) {
+  if (typeof cachedBriefing !== 'undefined' && cachedBriefing) return cachedBriefing;
+  if (!rfpFiles || rfpFiles.length === 0) throw new Error('No RFP/PWS documents are loaded. Add them on the Proposal tab (Step 3).');
+  const blocks = [];
+  let toks = 0;
+  for (const f of [...rfpFiles].sort((a, b) => a.size - b.size)) {
+    const est = estimateTokens(f);
+    if (toks + est > RFP_BUDGET) continue;
+    const blk = await fileToContentBlock(f);
+    if (blk && !blk._unreadable) { const { _unreadable, _fileName, ...clean } = blk; blocks.push(clean); toks += est; }
+  }
+  if (!blocks.length) throw new Error('Could not read the RFP documents.');
+  const prompt =
+    `You are reading a U.S. government solicitation. Extract a concise JSON briefing focused on scope and pricing. Return ONLY JSON:\n` +
+    `{"solicitation_number":"","requirement_title":"","agency_name":"","contract_type":"","period_of_performance":"",` +
+    `"period_structure":"base + option breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
+    `"estimated_ftes":"the number of FTEs/labor the solicitation REQUIRES if stated; '' or 'not specified' if it does not state one",` +
+    `"estimated_value":"",` +
+    `"pricing_methodology":"exactly one of 'lcat','pws_task','product','simple' — how pricing must be STRUCTURED per Section L/B; '' if unstated",` +
+    `"pricing_instructions":"any cost/price-volume format instructions from Section L/B/M; '' if none",` +
+    `"pws_task_areas":["list EVERY distinct PWS task/section, prefixed with the PWS's own numbering, e.g. '2.1: Credit card reconciliation'"]}\n` +
+    `Be exact and do not invent an FTE count the solicitation does not give.`;
+  const briefing = await callClaudeForJson(apiKey, [...blocks, { type: 'text', text: prompt }], 4000, 240000, 'Reading the PWS');
+  cachedBriefing = briefing;       // becomes the shared briefing
+  return briefing;
 }
 
 function buildAcceptedAssumptionsContext() {
@@ -4784,40 +5039,73 @@ function renderFileListById(arr, listId) {
 function updateTokenMeter() {
   const meter = document.getElementById('tokenMeter');
   if (!meter) return;
+  const rowsEl = document.getElementById('tokenMeterRows');
+  const footEl = document.getElementById('tokenMeterFoot');
+  if (!rowsEl || !footEl) return;
 
-  // Always recompute from current state of both arrays
   const allRFP     = rfpFiles     || [];
   const allCompany = companyFiles || [];
-  const allFiles   = [...allRFP, ...allCompany];
+  const allTone    = (typeof spToneFiles !== 'undefined' && spToneFiles) ? spToneFiles : [];
+  const tmplCount  = (typeof spTemplateFiles !== 'undefined' && spTemplateFiles) ? spTemplateFiles.length : 0;
 
-  if (allFiles.length === 0) { meter.style.display = 'none'; return; }
-
+  // Hide entirely until something that actually consumes tokens is loaded.
+  if (allRFP.length === 0 && allCompany.length === 0 && allTone.length === 0) {
+    meter.style.display = 'none';
+    return;
+  }
   meter.style.display = 'block';
 
-  const total  = allFiles.reduce((s, f) => s + estimateTokens(f), 0);
-  const rfpTok = allRFP.reduce((s, f) => s + estimateTokens(f), 0);
-  const coTok  = allCompany.reduce((s, f) => s + estimateTokens(f), 0);
-  const spCount = allCompany.filter(f => f._fromSP).length;
+  const sumTok   = arr => arr.reduce((s, f) => s + estimateTokens(f), 0);
+  const rfpTok   = sumTok(allRFP);
+  const coTok    = sumTok(allCompany);
+  const toneTok  = sumTok(allTone);
+  const spCount  = allCompany.filter(f => f._fromSP).length;
 
-  const MAX    = 380000;
-  const pct    = Math.min((total / MAX) * 100, 100);
-  const totalK = `~${Math.round(total / 1000)}k`;
-  const maxK   = `${Math.round(MAX / 1000)}k`;
-  const level  = pct >= 85 ? 'danger' : pct >= 60 ? 'warn' : 'safe';
-  const labels = { safe: '✅ Well within limits', warn: '⚠️ Getting large — consider trimming', danger: '🔴 Very large — trim if generation fails' };
+  const kk        = n => `${Math.round(n / 1000)}k`;
+  const levelFor  = (used, budget) => { const p = used / budget * 100; return p >= 85 ? 'danger' : p >= 60 ? 'warn' : 'safe'; };
 
-  const countEl = document.getElementById('tokenMeterCount');
-  const fillEl  = document.getElementById('tokenBarFill');
-  const subEl   = document.getElementById('tokenMeterSub');
+  // One bar = one outgoing API call, measured against THAT call's own budget.
+  const row = (icon, label, note, used, budget, desc) => {
+    const lvl = levelFor(used, budget);
+    const pct = Math.min(used / budget * 100, 100);
+    return `<div class="tm-row">
+      <div class="tm-row-top">
+        <span class="tm-row-label">${icon} ${label}<span class="tm-row-note">${note}</span></span>
+        <span class="tm-row-count ${lvl}">~${kk(used)} / ${kk(budget)}</span>
+      </div>
+      <div class="token-bar-track"><div class="token-bar-fill${lvl !== 'safe' ? ' ' + lvl : ''}" style="width:${pct}%"></div></div>
+      <div class="tm-row-desc">${desc}</div>
+    </div>`;
+  };
 
-  if (countEl) { countEl.textContent = `${totalK} / ${maxK} tokens`; countEl.className = `token-meter-count ${level}`; }
-  if (fillEl)  { fillEl.style.width = pct + '%'; fillEl.className = `token-bar-fill${level !== 'safe' ? ' ' + level : ''}`; }
-  if (subEl) {
-    let sub = labels[level];
-    sub += ` · ${allRFP.length} RFP (~${Math.round(rfpTok/1000)}k tokens)`;
-    if (coTok > 0) sub += ` · ${allCompany.length} company (~${Math.round(coTok/1000)}k tokens${spCount > 0 ? `, ${spCount} from SharePoint` : ''})`;
-    subEl.textContent = sub;
+  let html = '';
+
+  // 1) RFP / PWS → the briefing (and analysis) read
+  html += row('📄', 'RFP / PWS reading', 'briefing', rfpTok, RFP_BUDGET,
+    `${allRFP.length} solicitation file${allRFP.length !== 1 ? 's' : ''} — sent in one call so the tool can extract requirements, evaluation factors, and metadata.` +
+    (rfpTok > RFP_BUDGET ? ' <strong style="color:var(--error)">Over the limit — the largest files will be skipped.</strong> Keep only the core PWS, Section L, Section M, and amendments.' : ''));
+
+  // 2) Company docs → read once, up front; powers Past Performance AND grounds the
+  //    Technical / Management / Key Personnel / Executive volumes in real strengths.
+  html += row('🏢', 'Company documents', 'Technical + Past Performance', coTok, COMPANY_BUDGET,
+    allCompany.length
+      ? `${allCompany.length} company document${allCompany.length !== 1 ? 's' : ''}${spCount ? ` (${spCount} from SharePoint)` : ''} — read once, up front. Builds your Past Performance references and grounds the Technical, Management, and Executive volumes in your proven experience.` +
+        (coTok > COMPANY_BUDGET ? ' <strong style="color:var(--error)">Over the limit — the largest files will be skipped.</strong>' : '')
+      : 'No company documents loaded — Past Performance would fall back to [PROVIDE: …] placeholders and the Technical volume would rely on your win themes. Add resumes / past-performance docs or a SharePoint folder.');
+
+  // 3) Tone → one-time style pass (only when a tone folder is loaded)
+  if (allTone.length) {
+    html += row('✍️', 'Style matching', 'one-time · optional', toneTok, TONE_BUDGET,
+      `${allTone.length} past proposal${allTone.length !== 1 ? 's' : ''} — sent once to learn your house voice. Style only; no facts, names, or numbers are reused.`);
   }
+
+  rowsEl.innerHTML = html;
+
+  // Footnote — the things that DON'T scale with your uploads
+  const parts = [];
+  if (tmplCount) parts.push(`<strong>${tmplCount} template${tmplCount !== 1 ? 's' : ''}</strong> are assembled in your browser and never sent (0 tokens).`);
+  parts.push('The other volumes — Executive Summary, Technical, Price Narrative, Contract Docs — reuse a small extracted briefing, so each of those calls stays well within limits.');
+  footEl.innerHTML = parts.join(' ');
 }
 
 // Init both drop zones on load
@@ -4911,6 +5199,23 @@ function updateAssumptionSummary() {
 const TOKENS_PER_KB    = 150;    // realistic: ~150 tokens per KB for PDFs
 const MAX_FILE_TOKENS  = 380000; // single file ceiling (~2,500 pages) — extremely generous
 const MAX_TOTAL_TOKENS = 380000; // total bundle ceiling — stays under 450k TPM limit
+
+// Per-call INPUT budgets (document allowances) — one per outgoing API call. Two real
+// ceilings bound these, which is why they aren't simply set to the maximum:
+//   1) PER CALL: the model's context window is ~200k tokens for input + output COMBINED,
+//      so any single call's documents must leave room for the prompt and the response.
+//      ~200k is the hard per-call limit — not 450k.
+//   2) PER MINUTE: the account allows ~450k tokens/minute (TPM) across ALL calls. One
+//      run fires several calls in quick succession (RFP read, optional tone read,
+//      company-document read, then the volume writes), so the big reads' combined size
+//      is kept under that ceiling to avoid rate-limit (429) errors.
+// These are INDEPENDENT allowances — the company budget does not eat into the RFP
+// budget — which is why the meter shows a separate bar per call. Files beyond a given
+// call's budget are skipped for that call only.
+const RFP_BUDGET     = 140000;           // RFP / PWS read (briefing + analysis)
+const COMPANY_BUDGET = 150000;           // Company-document read (Past Performance + Technical grounding)
+const TONE_BUDGET    = 120000;           // Style read — past proposals for voice matching
+const BODY_LIMIT     = 15 * 1024 * 1024; // ~15MB hard cap on a single request body (browser limit)
 
 function estimateTokens(file) {
   return Math.ceil((file.size / 1024) * TOKENS_PER_KB);
@@ -5027,7 +5332,7 @@ async function runAnalysis() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 2000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 2000,
         messages: [{ role: 'user', content: msgContent }] })
     });
 
@@ -5251,7 +5556,7 @@ async function extractShallsViaApi(docContent, apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) { finishBar(false, `The AI service returned an error (${resp.status}).`); return; }
@@ -5352,7 +5657,7 @@ async function runComplianceCheck() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 8000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 8000,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text().catch(()=>'')}`);
@@ -5498,7 +5803,7 @@ async function populateWinStrategy() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1000,
         messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
     });
 
@@ -5588,7 +5893,7 @@ async function reviseVolume() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 8000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 8000,
         messages: [{ role: 'user', content: [
           { type: 'text', text: briefingText },
           { type: 'text', text: prompt }
@@ -5784,6 +6089,51 @@ function buildClarifyingContext() {
 }
 
 // ─── MAIN GENERATION FLOW ─────────────────────────────────────────────────────
+
+// Shared Claude JSON call used by the briefing and Volume II steps. Retries once
+// on a network error, an HTTP error, or an empty/unparseable response — the same
+// resilience writeSection() has — then returns the parsed object (or throws so the
+// caller can decide how to recover). label is used in user-facing error messages.
+async function callClaudeForJson(apiKey, content, maxTok, timeoutMs, label) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTok, messages: [{ role: 'user', content }] })
+      });
+      clearTimeout(timer);
+      if (!resp.ok) throw new Error(`${label} failed (${resp.status}): ${(await resp.text().catch(()=>'')) .substring(0,200)}`);
+      const d = await resp.json();
+      let raw = d.content.map(c => c.text || '').join('').trim()
+        .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
+      if (!raw.endsWith('}')) {
+        const lb = raw.lastIndexOf('}');
+        if (lb > 0) { raw = raw.substring(0, lb+1); const ob=(raw.match(/\[/g)||[]).length-(raw.match(/\]/g)||[]).length; for(let i=0;i<ob;i++) raw+=']'; raw+='}'; }
+      }
+      let parsed = null;
+      try { parsed = JSON.parse(raw); }
+      catch(_) { const mm = raw.match(/\{[\s\S]+\}/); if (mm) { try { parsed = JSON.parse(mm[0]); } catch(__){} } }
+      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length) return parsed;
+      lastErr = new Error(`${label}: the response was empty or could not be parsed.`);
+      if (attempt === 0) { console.warn(lastErr.message + ' Retrying once.'); continue; }
+      throw lastErr;
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') throw new Error(`${label} timed out. Your document bundle may be too large — keep only the core PWS/SOW (ideally under 500KB) and try again.`);
+      if (e.message === 'Failed to fetch') { lastErr = new Error(`${label}: the request was too large for your browser to send. Remove larger files from Step 4 — keep only the core PWS/SOW and primary RFP — then try again.`); }
+      else { lastErr = e; }
+      if (attempt === 0) { console.warn(`${label} call failed — retrying once:`, e.message); continue; }
+      throw lastErr;
+    }
+  }
+  throw lastErr || new Error(`${label} failed`);
+}
+
 async function runGeneration() {
   if (!msAccount || !isAuthorizedAccount(msAccount.username)) {
     const dom = (CLIENT_CONFIG.authorizedDomain || '').trim();
@@ -5870,11 +6220,10 @@ async function runGeneration() {
     // Base64-encoded PDFs balloon in size: 1MB PDF → ~1.33MB base64 → ~1.33MB in JSON string.
     // With 4 RFP files at 237KB/365KB/18KB/90KB = ~710KB total → ~950KB base64.
     // BUT our estimator uses 150 tokens/KB which overestimates — actual safe limit is ~120k tokens.
-    const RFP_BUDGET = 120000; // conservative — prevents "Failed to fetch" body-too-large errors
+    // RFP_BUDGET / BODY_LIMIT are module-level constants (shared with the token meter).
     const docContent = [];
     let tokensSent = 0;
     let totalBytes = 0;
-    const BODY_LIMIT = 15 * 1024 * 1024; // 15MB body limit — browser drops larger requests silently
 
     for (const file of rfpFiles.slice(0, 10)) {
       const est = estimateTokens(file);
@@ -5899,10 +6248,10 @@ async function runGeneration() {
     }
 
     showStatus('info', 'Reading RFP documents...',
-      `Processing ${docContent.length} file${docContent.length>1?'s':''} (~${Math.round(tokensSent/1000)}k tokens, ~${Math.round(totalBytes/1024/1024*10)/10}MB). Company documents used when writing Vol II.`, true);
+      `Processing ${docContent.length} file${docContent.length>1?'s':''} (~${Math.round(tokensSent/1000)}k tokens, ~${Math.round(totalBytes/1024/1024*10)/10}MB). Company documents are read once to ground every volume.`, true);
 
     // Pre-build company doc content blocks for use in Vol II writing call
-    const COMPANY_BUDGET = 150000;
+    // COMPANY_BUDGET is a module-level constant (shared with the token meter).
     const companyDocContent = [];
     let companyTokensSent = 0;
     const sortedCompany = [...companyFiles].sort((a,b) => a.size - b.size);
@@ -5919,13 +6268,16 @@ async function runGeneration() {
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
       `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"",` +
+      `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
+      `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
+      `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
       `"page_limits":{"vol0":"pages or 'not specified'","vol1":"pages or 'not specified'","vol2":"pages or 'not specified'","vol3":"pages or 'not specified'","vol4":"pages or 'not specified'","notes":"any other format instructions"},` +
       `"section_l_instructions":["exact structural/format requirements from Section L: required headings, font, margins, file format, etc."],` +
       `"evaluation_factors":[{"factor":"Technical Approach","weight":"40%","subfactors":["..."]}],` +
       `"highest_weight_factor":"name of highest-weighted eval factor",` +
       `"pws_task_areas":["task: description"],` +
       `"key_requirements":["critical PWS requirements — every shall/must that drives proposal content"],` +
-      `"relevant_past_perf":["which past perf references are most relevant and exactly why"],` +
+      `"relevant_past_perf":["the TYPES of past performance / experience this solicitation values most, and why — derived from the RFP itself, NOT the offeror's actual record"],` +
       `"technical_themes":["3-5 key themes to run through all volumes based on what the government values most"],` +
       `"risks":["risks and mitigations"],` +
       `"notes":"any other critical insights for proposal writers"}\n\nReturn ONLY JSON, no markdown.`
@@ -5935,37 +6287,8 @@ async function runGeneration() {
     setProgress(10, allSteps);
     showStatus('info', 'Reading documents...', 'Extracting all requirements and metadata from your RFP bundle.', true);
 
-    const briefController = new AbortController();
-    const briefTimeout = setTimeout(() => briefController.abort(), 300000); // 5 min for briefing
-    let briefResp;
-    try {
-      briefResp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: briefController.signal,
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
-          messages: [{ role: 'user', content: docContent }] })
-      });
-      clearTimeout(briefTimeout);
-    } catch(e) {
-      clearTimeout(briefTimeout);
-      if (e.name === 'AbortError')
-        throw new Error('Document reading timed out after 5 minutes. Your RFP bundle may still be too large — try keeping only the main PWS/SOW document (ideally under 500KB) and run again.');
-      if (e.message === 'Failed to fetch')
-        throw new Error('Failed to fetch — the request was too large for your browser to send. Remove larger files from Step 4 and try again. Keep only the core PWS/SOW and primary RFP document.');
-      throw new Error(`Network error: ${e.message}. Check your internet connection and try again.`);
-    }
-
-    if (!briefResp.ok) throw new Error(`Document reading failed (${briefResp.status}): ${await briefResp.text()}`);
-    const briefData = await briefResp.json();
-    let briefRaw = briefData.content.map(c => c.text||'').join('').trim()
-      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
-    if (!briefRaw.endsWith('}')) { const lb=briefRaw.lastIndexOf('}'); if(lb>0){briefRaw=briefRaw.substring(0,lb+1); const ob=(briefRaw.match(/\[/g)||[]).length-(briefRaw.match(/\]/g)||[]).length; for(let i=0;i<ob;i++) briefRaw+=']'; briefRaw+='}'; } }
-
-    let briefing = {};
-    try { briefing = JSON.parse(briefRaw); }
-    catch(e) { const m=briefRaw.match(/\{[\s\S]+\}/); if(m) briefing=JSON.parse(m[0]); else throw new Error('Could not parse briefing: '+briefRaw.substring(0,200)); }
+    // Briefing extraction — retries once on a network/parse failure (see callClaudeForJson).
+    let briefing = await callClaudeForJson(apiKey, docContent, 4000, 300000, 'Document reading');
 
     cachedBriefing = briefing;
     allSteps[0].status = 'done'; allSteps[1].status = 'done'; allSteps[2].status = 'active';
@@ -5982,12 +6305,20 @@ async function runGeneration() {
       agency_name: briefing.agency_name, agency_address: briefing.agency_address,
       agency_poc: briefing.agency_poc, agency_poc_email: briefing.agency_poc_email,
       agency_poc_phone: briefing.agency_poc_phone,
-      // Submission date = one day before RFP due date (gives review buffer)
+      // Submission date = one day before the RFP due date (gives a review buffer).
+      // We extract ONLY the "Month DD, YYYY" portion and drop any time/timezone suffix
+      // (e.g. "June 16, 2026 at 12:00 PM ET") — otherwise the date won't parse (so the
+      // -1-day buffer silently fails) and the stray time doubles up in headers that
+      // already append their own time text.
       submission_date: (() => {
-        const raw = briefing.submission_date;
+        const raw = String(briefing.submission_date || '').trim();
         if (!raw) return '';
-        const d = new Date(raw);
-        if (isNaN(d.getTime())) return raw; // can't parse — return as-is
+        const MONTHS = '(?:January|February|March|April|May|June|July|August|September|October|November|December)';
+        const m = raw.match(new RegExp(MONTHS + '\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s+\\d{4}', 'i'));
+        let d = null;
+        if (m) d = new Date(m[0].replace(/(\d)(?:st|nd|rd|th)/i, '$1'));
+        if (!d || isNaN(d.getTime())) { const t = new Date(raw); if (!isNaN(t.getTime())) d = t; }
+        if (!d || isNaN(d.getTime())) return raw.replace(/\s+at\s+.*$/i, '').trim(); // unparseable — at least strip the time
         d.setDate(d.getDate() - 1);
         return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       })(),
@@ -6030,7 +6361,7 @@ async function runGeneration() {
       toneGuidance = await extractToneProfile(apiKey);
     }
 
-    const briefingText =
+    let briefingText =
       `VERIFIED PROPOSAL BRIEFING (extracted from RFP documents):\n` +
       `Sol: ${briefing.solicitation_number} | ${briefing.requirement_title}\n` +
       `Agency: ${briefing.agency_name} | ${briefing.agency_address}\n` +
@@ -6083,7 +6414,7 @@ async function runGeneration() {
 
       `PWS TASK AREAS:\n${(briefing.pws_task_areas||[]).map(t=>`  - ${t}`).join('\n')}\n\n` +
       `KEY REQUIREMENTS:\n${(briefing.key_requirements||[]).map(r=>`  - ${r}`).join('\n')}\n\n` +
-      `MOST RELEVANT PAST PERFORMANCE:\n${(briefing.relevant_past_perf||[]).map(r=>`  - ${r}`).join('\n')}\n\n` +
+      `PAST-PERFORMANCE THEMES THE RFP VALUES (from the solicitation — match these to the documented company strengths below, never to invented experience):\n${(briefing.relevant_past_perf||[]).map(r=>`  - ${r}`).join('\n')}\n\n` +
       `TECHNICAL THEMES:\n${(briefing.technical_themes||[]).map(t=>`  - ${t}`).join('\n')}\n\n` +
       `RISKS & MITIGATIONS:\n${(briefing.risks||[]).map(r=>`  - ${r}`).join('\n')}\n\n` +
       `ADDITIONAL NOTES: ${briefing.notes || ''}\n\n` +
@@ -6092,6 +6423,25 @@ async function runGeneration() {
           shallsList.map((r,i) => `${i+1}. ${r}`).join('\n') + '\n\n'
         : '') +
       companyCtx + toneGuidance;
+
+    // Read the company documents ONCE, here, to get both the past-performance
+    // references (for Vol II) and a grounded strengths digest. Inject the digest into
+    // the shared briefing so EVERY company-aware volume — Technical, Management, Key
+    // Personnel, Executive Summary — writes to the company's real, proven experience.
+    let companyProfile = { capability_digest: '', references: [] };
+    window._companyProfile = companyProfile;   // reset each run (no stale references)
+    if (companyDocContent.length > 0) {
+      showStatus('info', 'Reading your company documents...', 'Pulling your proven past performance and strengths so the whole proposal is written to them — not generic claims.', true);
+      setProgress(38, allSteps);
+      companyProfile = await extractCompanyProfile(apiKey, companyDocContent, briefingText);
+      window._companyProfile = companyProfile;
+      if (companyProfile.capability_digest) {
+        briefingText +=
+          `\n\nCOMPANY STRENGTHS & PROVEN EXPERIENCE — WRITE TO THESE (grounded in ${CLIENT_CONFIG.companyShortName}'s actual documents):\n` +
+          `Substantiate the Technical Approach, Management Approach, Key Personnel, and Executive Summary with this real, documented evidence — when you make a capability claim, tie it to this proven experience. Do NOT invent or embellish beyond what appears here or in the opportunity documents.\n` +
+          companyProfile.capability_digest + `\n`;
+      }
+    }
 
     // Helper: make a single API call for one section, with timeout
     async function writeSection(sectionPrompt, maxTok) {
@@ -6107,7 +6457,7 @@ async function runGeneration() {
           signal: controller.signal,
           headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
             'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: maxTok || 8000,
+          body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTok || 8000,
             messages: [{ role: 'user', content: [
               { type: 'text', text: briefingText },
               { type: 'text', text: sectionPrompt }
@@ -6246,61 +6596,42 @@ async function runGeneration() {
         volData = { ...sec1, ...sec2, ...sec3 };
 
       } else if (vol === '2') {
-        showStatus('info', 'Writing Volume II — Past Performance...', `Volume ${volsDone} of ${totalVols} (reading company documents…)`, true);
+        showStatus('info', 'Writing Volume II — Past Performance...', `Volume ${volsDone} of ${totalVols}`, true);
 
-        // Vol II gets company documents directly for accurate contact info and narratives
-        const vol2Content = [...companyDocContent];
-        vol2Content.push({ type: 'text', text: briefingText });
-        vol2Content.push({ type: 'text', text:
-          `You are writing the PAST PERFORMANCE volume of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
-          `ABSOLUTE RULE — NO FABRICATION: You may ONLY describe past performance that is explicitly documented in the attached company documents. ` +
-          `You must NEVER invent, assume, or approximate ANY of the following: client/agency names, contract numbers, contact names, phone numbers, emails, contract values, periods of performance, or program descriptions. ` +
-          `If the attached documents do not contain real past performance data, DO NOT make up a reference (for example, do NOT invent a DEA, DoD, or any other agency engagement that is not in the documents).\n\n` +
-          `HANDLING MISSING DATA: For any field you cannot find in the documents, output the literal placeholder text "[PROVIDE: <field name>]" — for example "[PROVIDE: Contract Number]" or "[PROVIDE: PM Phone]". For narrative fields with no source data, output "[PROVIDE: describe this past performance engagement - no source document found]". This makes gaps obvious to the proposal reviewer instead of fabricating content.\n\n` +
-          `If the documents contain N real references, return exactly N references — do not pad to 3 with invented ones. If they contain zero, return a single reference object with all fields set to the appropriate [PROVIDE: ...] placeholder.\n\n` +
-          `For references that ARE in the documents, write detailed narratives that explicitly map to THIS solicitation's requirements.\n\n` +
-          `Return ONLY JSON:\n{"references": [` +
-          `{"program_name":"exact name from documents or [PROVIDE: Program Name]","contract_number":"exact or [PROVIDE: Contract Number]","pm_name":"exact or [PROVIDE: PM Name]","pm_phone":"exact or [PROVIDE: PM Phone]","pm_email":"exact or [PROVIDE: PM Email]","co_name":"exact or [PROVIDE: CO Name]","co_phone":"exact or [PROVIDE: CO Phone]","co_email":"exact or [PROVIDE: CO Email]","cor_name":"exact or [PROVIDE: COR Name]","cor_phone":"exact or [PROVIDE: COR Phone]","cor_email":"exact or [PROVIDE: COR Email]","contract_type":"exact or [PROVIDE: Contract Type]","period_of_performance":"exact or [PROVIDE: Period of Performance]","total_value":"exact or [PROVIDE: Contract Value]","prime_or_sub":"Prime or Subcontractor or [PROVIDE: Prime/Sub]",` +
-          `"overview":"MINIMUM 3 paragraphs IF documented. Describe what was performed, scope, operational environment, and outcomes. Use specifics only from the documents.",` +
-          `"relevance":"MINIMUM 2 paragraphs explicitly mapping to THIS solicitation PWS task areas and evaluation factors.",` +
-          `"similarity":"5-8 specific bullet points: size/scope/complexity/agency type/contract type/technical domain similarities. Plain text, one per line, prefix each with a hyphen."}]}`
-        });
-
-        // Make this call directly (not via writeSection which only uses briefingText)
-        const vol2Controller = new AbortController();
-        const vol2Timeout = setTimeout(() => vol2Controller.abort(), 360000); // 6 min for Vol II
-        try {
-          const vol2Resp = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST', signal: vol2Controller.signal,
-            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
-              'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 8000,
-              messages: [{ role: 'user', content: vol2Content }] })
-          });
-          clearTimeout(vol2Timeout);
-          if (!vol2Resp.ok) throw new Error(`Vol II API error ${vol2Resp.status}`);
-          const v2d = await vol2Resp.json();
-          let v2r = v2d.content.map(c=>c.text||'').join('').trim()
-            .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
-          if (!v2r.endsWith('}')) { const lb=v2r.lastIndexOf('}'); if(lb>0){v2r=v2r.substring(0,lb+1); const ob=(v2r.match(/\[/g)||[]).length-(v2r.match(/\]/g)||[]).length; for(let j=0;j<ob;j++) v2r+=']'; v2r+='}'; } }
-          try { volData = JSON.parse(v2r); }
-          catch(e) { const m=v2r.match(/\{[\s\S]+\}/); volData = m ? JSON.parse(m[0]) : {}; }
-        } catch(e) {
-          clearTimeout(vol2Timeout);
-          if (e.name === 'AbortError') throw new Error('Vol II writing timed out. Company document bundle may be too large.');
-          throw e;
+        // References were already extracted up front, from the SAME company-document
+        // read that grounds the Technical/Executive volumes — so we reuse them here
+        // and never send the documents twice.
+        volData = { references: (window._companyProfile && window._companyProfile.references) || [] };
+        if (!volData.references.length) {
+          showStatus('warn', 'Past performance needs attention', 'No past-performance references were found in your company documents — Volume II will use [PROVIDE: ...] placeholders for you to complete.');
         }
 
       } else if (vol === '3') {
         showStatus('info', 'Writing Volume III — Price Narrative...', `Volume ${volsDone} of ${totalVols}`, true);
 
+        // If a pricing model was built on the Pricing tab, write to the real numbers;
+        // otherwise fall back to placeholders the proposal manager fills in later.
+        const pricingCtx = (typeof buildPricingContextForVol3 === 'function') ? buildPricingContextForVol3() : '';
+        const priceGuidance = pricingCtx
+          ? `A real pricing model is provided below — use its ACTUAL rates, hours, and totals. Do NOT use placeholders for any figure that appears in the model; cite the real dollar amounts and hours, and structure the volume to the required methodology stated in the model.${pricingCtx}\n\n`
+          : `Use [RATE], [LCAT], [HOURS], [TOTAL] as placeholders for dollar figures and numbers the proposal manager will fill in from the pricing Excel.\n\n`;
+        const boeGuidance = pricingCtx
+          ? `"boe_narrative":"MINIMUM 3 paragraphs. Basis of Estimate using the REAL hours and labor categories from the pricing model: justify the hours allocated to each PWS task, the labor mix, and how the staffing approach supports them. Reference the actual figures.",`
+          : `"boe_narrative":"MINIMUM 3 paragraphs. Basis of Estimate narrative explaining how hours were derived for each PWS task area, labor category assumptions, and rationale. Use [LCAT] and [RATE] placeholders.",`;
+        const totalGuidance = pricingCtx
+          ? `"total_price_narrative":"MINIMUM 2 paragraphs summarizing the total price using the REAL base-year and option-year totals and grand total from the pricing model.",`
+          : `"total_price_narrative":"MINIMUM 2 paragraphs summarizing total price, base year and option year breakdown. Use [BASE YEAR TOTAL] and [GRAND TOTAL] placeholders.",`;
+        const wrapGuidance = pricingCtx
+          ? `"wrap_rate_narrative":"MINIMUM 2 paragraphs explaining the wrap-rate buildup using the ACTUAL fringe, overhead, G&A, and fee percentages and the resulting wrap factor from the pricing model. Explain DCAA compliance and audit-readiness.",`
+          : `"wrap_rate_narrative":"MINIMUM 2 paragraphs explaining wrap rate components: fringe benefits, overhead, G&A, and profit/fee. Explain DCAA compliance and audit-readiness.",`;
+
         volData = await writeSection(
           `You are writing the PRICE/COST NARRATIVE volume of a government proposal for ${CLIENT_CONFIG.companyShortName}.\n\n` +
-          `Use [RATE], [LCAT], [HOURS], [TOTAL] as placeholders for dollar figures and numbers the proposal manager will fill in from the pricing Excel.\n\n` +
+          priceGuidance +
           `Return ONLY JSON:\n{"pricing_philosophy":"MINIMUM 2 paragraphs on pricing approach, value proposition, and cost realism strategy tailored to this agency and contract type.",` +
-          `"boe_narrative":"MINIMUM 3 paragraphs. Basis of Estimate narrative explaining how hours were derived for each PWS task area, labor category assumptions, and rationale. Use [LCAT] and [RATE] placeholders.",` +
-          `"wrap_rate_narrative":"MINIMUM 2 paragraphs explaining wrap rate components: fringe benefits, overhead, G&A, and profit/fee. Explain DCAA compliance and audit-readiness.",` +
-          `"total_price_narrative":"MINIMUM 2 paragraphs summarizing total price, base year and option year breakdown. Use [BASE YEAR TOTAL] and [GRAND TOTAL] placeholders.",` +
+          boeGuidance +
+          wrapGuidance +
+          totalGuidance +
           `"compliance_additional":"List all solicitation-specific pricing compliance requirements found in the RFP — representations, certifications, pricing formats required."}`,
           8000
         );
@@ -6514,7 +6845,18 @@ function textToWordParas(text, rprXml) {
   const rpr = rprXml || defaultRpr;
   return text.split('\n')
     .filter(l => l.trim())
-    .map(line => `<w:p>${_runsFromLine(line, rpr)}</w:p>`)
+    .map(line => {
+      const t = line.trim();
+      // Bullet line (starts with •, -, *, –): render as a proper hanging-indent
+      // bullet — glyph + tab, text aligned, wrapped lines hang under the text.
+      const bm = t.match(/^[\u2022\u2013\-\*]\s+(.*)$/);
+      if (bm && bm[1].trim()) {
+        const pPr = '<w:pPr><w:spacing w:after="80"/><w:ind w:left="720" w:hanging="360"/></w:pPr>';
+        const bullet = `<w:r>${rpr}<w:t xml:space="preserve">\u2022</w:t></w:r><w:r>${rpr}<w:tab/></w:r>`;
+        return `<w:p>${pPr}${bullet}${_runsFromLine(bm[1].trim(), rpr)}</w:p>`;
+      }
+      return `<w:p>${_runsFromLine(line, rpr)}</w:p>`;
+    })
     .join('');
 }
 
@@ -6525,6 +6867,17 @@ function replaceMeta(xml, placeholder, value) {
   if (xml.includes(esc))         return xml.split(esc).join(escXml(val));
   if (xml.includes(placeholder)) return xml.split(placeholder).join(escXml(val));
   return xml;
+}
+
+// Remove the entire table row (<w:tr>) that contains a given placeholder. Used to
+// collapse optional past-performance contact rows when there's no data for them.
+function removeTableRowContaining(xml, placeholder) {
+  for (const target of [escXml(placeholder), placeholder]) {
+    const re = new RegExp('<w:tr\\b(?:(?!</w:tr>)[\\s\\S])*?' + escRegex(target) + '(?:(?!</w:tr>)[\\s\\S])*?</w:tr>', 'g');
+    if (re.test(xml)) return xml.replace(re, '');
+  }
+  // No row found (placeholder not inside a table) — fall back to clearing it inline.
+  return replaceMeta(xml, placeholder, '');
 }
 
 // For CONTENT: replace the entire containing <w:p> with proper paragraph XML
@@ -6693,6 +7046,11 @@ function injectContentIntoXml(xml, data, vol) {
       'CO_NAME':'CO Name','CO_PHONE':'CO Phone','CO_EMAIL':'CO Email',
       'COR_NAME':'COR Name','COR_PHONE':'COR Phone','COR_EMAIL':'COR Email',
     };
+    // Core contract-identity fields keep a [PROVIDE: ...] flag when missing. The
+    // contact rows (PM/CO/COR name/phone/email) are optional — if empty, the whole
+    // table row is removed so the document reads as finished rather than littered
+    // with placeholders.
+    const CORE_SUFFIXES = ['PROGRAM', 'CONTRACT', 'TYPE', 'PERIOD', 'VALUE', 'PRIME_SUB'];
     for (let i = 0; i < 3; i++) {
       const r = refs[i] || {};
       const n = i + 1;
@@ -6704,13 +7062,18 @@ function injectContentIntoXml(xml, data, vol) {
         ['CO_NAME', 'co_name'], ['CO_PHONE', 'co_phone'], ['CO_EMAIL', 'co_email'],
         ['COR_NAME', 'cor_name'], ['COR_PHONE', 'cor_phone'], ['COR_EMAIL', 'cor_email'],
       ]) {
-        let val = r[field] || '';
-        // If empty or whitespace, insert a clear placeholder so reviewer sees the gap
-        if (!val.trim()) val = `[PROVIDE: ${fieldLabels[suffix]}]`;
-        xml = replaceMeta(xml, `{{REF${n}_${suffix}}}`, val);
+        const ph = `{{REF${n}_${suffix}}}`;
+        const val = (r[field] || '').trim();
+        if (val) {
+          xml = replaceMeta(xml, ph, val);
+        } else if (CORE_SUFFIXES.includes(suffix)) {
+          xml = replaceMeta(xml, ph, `[PROVIDE: ${fieldLabels[suffix]}]`);  // flag core gaps
+        } else {
+          xml = removeTableRowContaining(xml, ph);                          // drop empty contact rows
+        }
       }
       // Narrative fields — full paragraph replacement
-      xml = replaceContent(xml, `{{REF${n}_OVERVIEW}}`,    r.overview    || (refs[i] ? '' : ''));
+      xml = replaceContent(xml, `{{REF${n}_OVERVIEW}}`,    r.overview    || '');
       xml = replaceContent(xml, `{{REF${n}_RELEVANCE}}`,   r.relevance   || '');
       // Similarity: convert to bulleted list, not a wall of text
       let sim = r.similarity || '';
@@ -6980,6 +7343,382 @@ function renderDownloads(docs) {
 // ═══════════════════════════════════════════════════════════════════════════
 // TAB NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// PRICING TAB — one LCAT × PWS-task hours matrix that feeds every methodology
+// and Volume III. All money is computed live from base rates × the Settings wrap.
+// ═══════════════════════════════════════════════════════════════════════════
+let pricingModel = {
+  methodology: 'lcat',
+  tasks: [],                       // [{ id, code, name }]
+  lcats: [],                       // [{ id, name, baseRate, hpf, advertised }]
+  hours: {},                       // hours[lcatId][taskId] = number
+  mask:  {},                       // mask[lcatId][taskId] = false => locked (role may not bill it)
+  periods: [{ id: 'p_base', name: 'Base Year', escalation: 0 }],
+  statedFteTotal: null,            // number if the PWS stated it
+  fteSource: 'estimated',          // 'stated' | 'estimated'
+};
+const PRICING_KEY = 'srfed_pricing_model';
+let _prSeq = 1;
+function _prId(p) { return p + Date.now().toString(36) + (_prSeq++); }
+function pricingEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function defaultHpf() { return (CLIENT_CONFIG.pricing && parseFloat(CLIENT_CONFIG.pricing.hoursPerFte)) || 1912; }
+
+function pricingSave() { try { localStorage.setItem(PRICING_KEY, JSON.stringify(pricingModel)); } catch (e) {} }
+function pricingLoadStored() {
+  try { const s = localStorage.getItem(PRICING_KEY); if (s) { const m = JSON.parse(s); if (m && typeof m === 'object') pricingModel = Object.assign(pricingModel, m); } } catch (e) {}
+  if (!pricingModel.periods || !pricingModel.periods.length) pricingModel.periods = [{ id: 'p_base', name: 'Base Year', escalation: 0 }];
+}
+
+// ── computations ──────────────────────────────────────────────────────────
+function pricingWrapFactor() { return computeWrapFactor(CLIENT_CONFIG.pricing); }
+function pricingWrapModeLabel() { return ((CLIENT_CONFIG.pricing && CLIENT_CONFIG.pricing.wrapMode) === 'additive') ? 'additive' : 'multiplicative (compounded)'; }
+function pricingHpf(l) { const v = parseFloat(l.hpf); return (v && v > 0) ? v : defaultHpf(); }
+function pricingLoadedRate(l) { return (parseFloat(l.baseRate) || 0) * pricingWrapFactor(); }
+function pricingCell(lid, tid) {
+  if (pricingModel.mask[lid] && pricingModel.mask[lid][tid] === false) return 0;     // locked
+  return (pricingModel.hours[lid] && parseFloat(pricingModel.hours[lid][tid])) || 0;
+}
+function pricingRowHours(lid) { return pricingModel.tasks.reduce((s, t) => s + pricingCell(lid, t.id), 0); }
+function pricingColHours(tid) { return pricingModel.lcats.reduce((s, l) => s + pricingCell(l.id, tid), 0); }
+function pricingTotalHours() { return pricingModel.lcats.reduce((s, l) => s + pricingRowHours(l.id), 0); }
+function pricingRowCost(l) { return pricingRowHours(l.id) * pricingLoadedRate(l); }
+function pricingColCost(tid) { return pricingModel.lcats.reduce((s, l) => s + pricingCell(l.id, tid) * pricingLoadedRate(l), 0); }
+function pricingBaseTotal() { return pricingModel.lcats.reduce((s, l) => s + pricingRowCost(l), 0); }
+function pricingMultipliers() { const out = []; let m = 1; pricingModel.periods.forEach((p, i) => { if (i > 0) m = m * (1 + (parseFloat(p.escalation) || 0) / 100); out.push(m); }); return out; }
+function pricingGrandTotal() { const b = pricingBaseTotal(); return pricingMultipliers().reduce((s, m) => s + b * m, 0); }
+function pricingRowFte(l) { return pricingRowHours(l.id) / pricingHpf(l); }
+function pricingFmt(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+function pricingFmtC(n) { return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+// ── mutations ───────────────────────────────────────────────────────────────
+function pricingAddTask() { pricingModel.tasks.push({ id: _prId('t_'), code: '', name: '' }); pricingRenderAll(); }
+function pricingRemoveTask(id) { pricingModel.tasks = pricingModel.tasks.filter(t => t.id !== id); pricingModel.lcats.forEach(l => { if (pricingModel.hours[l.id]) delete pricingModel.hours[l.id][id]; if (pricingModel.mask[l.id]) delete pricingModel.mask[l.id][id]; }); pricingRenderAll(); }
+function pricingSetTask(id, field, val) { const t = pricingModel.tasks.find(x => x.id === id); if (t) { t[field] = val; pricingRenderAll(); } }
+function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '' }); pricingRenderAll(); }
+function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
+function pricingSetLcat(id, field, val) { const l = pricingModel.lcats.find(x => x.id === id); if (l) { l[field] = val; pricingRenderAll(); } }
+function pricingSetHours(lid, tid, val) {
+  if (!pricingModel.hours[lid]) pricingModel.hours[lid] = {};
+  pricingModel.hours[lid][tid] = (val === '' ? '' : Math.max(0, parseFloat(val) || 0));
+  pricingRecalc();                 // targeted update — does NOT rebuild inputs (preserves typing)
+}
+function pricingToggleMask(lid, tid) {
+  if (!pricingModel.mask[lid]) pricingModel.mask[lid] = {};
+  const cur = pricingModel.mask[lid][tid];
+  pricingModel.mask[lid][tid] = (cur === false) ? true : false;   // toggle locked state
+  pricingRenderAll();
+}
+function pricingAddPeriod() { const n = pricingModel.periods.length; pricingModel.periods.push({ id: _prId('p_'), name: 'Option Year ' + n, escalation: 3 }); pricingRenderAll(); }
+function pricingRemovePeriod(id) { pricingModel.periods = pricingModel.periods.filter(p => p.id !== id); if (!pricingModel.periods.length) pricingModel.periods = [{ id: 'p_base', name: 'Base Year', escalation: 0 }]; pricingRenderAll(); }
+function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(x => x.id === id); if (p) { p[field] = val; pricingRenderAll(); } }
+function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
+function pricingResetModel() {
+  if (!confirm('Reset the entire pricing model? This clears tasks, labor categories, hours, and periods for this opportunity.')) return;
+  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0 }], statedFteTotal: null, fteSource: 'estimated' };
+  pricingRenderAll();
+}
+
+// ── pull opportunity context from the (shared, cached) briefing ──────────────
+async function pricingPullBriefing() {
+  const btn = document.getElementById('pricingPullBtn');
+  let b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) ? cachedBriefing : null;
+  if (!b) {
+    if (!rfpFiles || rfpFiles.length === 0) { showStatus('warn', 'No RFP loaded', 'Add your RFP/PWS documents on the Proposal tab (Step 3), then click Pull again — or add tasks manually below.'); return; }
+    const apiKey = getApiKey();
+    if (!apiKey) { showStatus('warn', 'API key needed', 'Enter your Anthropic API key on the Proposal tab (Step 1) to read the PWS, or add tasks manually.'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Reading PWS…'; }
+    try { b = await ensureBriefing(apiKey); }
+    catch (e) { showStatus('warn', 'Could not read the PWS', e.message); if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull from RFP analysis'; } return; }
+    if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull from RFP analysis'; }
+  }
+  pricingApplyBriefing(b);
+}
+
+function pricingApplyBriefing(b) {
+  if (!b) return;
+  // Methodology
+  const m = (b.pricing_methodology || '').toLowerCase().trim();
+  if (['lcat', 'pws_task', 'product', 'simple'].includes(m)) { pricingModel.methodology = m; const sel = document.getElementById('pricingMethodology'); if (sel) sel.value = m; }
+  // FTE provenance
+  const fteRaw = String(b.estimated_ftes || '');
+  const fteNum = (fteRaw.match(/(\d+(?:\.\d+)?)/) || [])[1];
+  if (fteNum && !/not\s+specified|tbd|unknown|n\/?a/i.test(fteRaw)) { pricingModel.fteSource = 'stated'; pricingModel.statedFteTotal = parseFloat(fteNum); }
+  else { pricingModel.fteSource = 'estimated'; pricingModel.statedFteTotal = null; }
+  // Tasks (columns)
+  const tasks = Array.isArray(b.pws_task_areas) ? b.pws_task_areas.filter(Boolean) : [];
+  if (tasks.length) {
+    const doReplace = !pricingModel.tasks.length || confirm('Replace the current PWS task columns with the ' + tasks.length + ' tasks from the analysis? This clears the hours matrix.');
+    if (doReplace) {
+      pricingModel.tasks = tasks.map(t => {
+        const str = String(t);
+        const cm = str.match(/^\s*([\d.]+)\s*[:\-–]\s*(.+)$/);
+        return cm ? { id: _prId('t_'), code: cm[1], name: cm[2].trim() } : { id: _prId('t_'), code: '', name: str.trim() };
+      });
+      pricingModel.hours = {}; pricingModel.mask = {};
+    }
+  }
+  // Periods from period_structure (best-effort)
+  const ps = String(b.period_structure || b.period_of_performance || '');
+  const optMatch = ps.match(/(\d+)\s*(?:one[-\s]?year\s*)?option/i);
+  if (optMatch) {
+    const nOpt = Math.min(parseInt(optMatch[1]) || 0, 10);
+    pricingModel.periods = [{ id: 'p_base', name: 'Base Year', escalation: 0 }];
+    for (let i = 1; i <= nOpt; i++) pricingModel.periods.push({ id: _prId('p_'), name: 'Option Year ' + i, escalation: 3 });
+  }
+  window._pricingBriefingMeta = {
+    title: b.requirement_title || '', sol: b.solicitation_number || '',
+    contractType: b.contract_type || '', period: b.period_of_performance || '',
+    instructions: b.pricing_instructions || '', ftes: b.estimated_ftes || '',
+  };
+  pricingRenderAll();
+  showStatus('success', 'Opportunity loaded into Pricing', 'PWS tasks, FTE basis, period structure, and the requested methodology were pulled in. Review and adjust, then enter hours.');
+}
+
+// ── render ────────────────────────────────────────────────────────────────
+function pricingRenderAll() {
+  const sel = document.getElementById('pricingMethodology'); if (sel) sel.value = pricingModel.methodology;
+  pricingRenderContext();
+  pricingRenderMethodologyNote();
+  pricingRenderTasks();
+  pricingRenderLcats();
+  pricingRenderMatrix();
+  pricingRenderPeriods();
+  pricingRenderFteBar();
+  pricingRenderSummary();
+  pricingRenderWarnings();
+  pricingRenderFeedStatus();
+  pricingSave();
+}
+
+function pricingRenderContext() {
+  const el = document.getElementById('pricingContextBox'); if (!el) return;
+  const meta = window._pricingBriefingMeta;
+  if (!meta) { el.innerHTML = 'No opportunity loaded. Click <strong>Pull from RFP analysis</strong> to bring in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
+  el.innerHTML =
+    (meta.title ? `<div><strong>${pricingEsc(meta.title)}</strong>${meta.sol ? ' · ' + pricingEsc(meta.sol) : ''}</div>` : '') +
+    `<div style="margin-top:4px">Contract type: ${pricingEsc(meta.contractType || '—')} · Period: ${pricingEsc(meta.period || '—')} · Stated FTEs: ${pricingEsc(meta.ftes || 'not stated')}</div>` +
+    (meta.instructions ? `<div style="margin-top:6px;padding:8px 10px;background:white;border:1px solid var(--border);border-radius:6px"><strong>Government pricing instructions:</strong> ${pricingEsc(meta.instructions)}</div>` : '');
+}
+
+function pricingRenderMethodologyNote() {
+  const el = document.getElementById('pricingMethodologyNote'); if (!el) return;
+  const notes = {
+    lcat: 'Roll-up across rows: price = each labor category’s loaded rate × its total hours. The matrix sums by row.',
+    pws_task: 'Roll-up down columns: each PWS task is priced from the hours all labor categories charge to it. The matrix sums by column.',
+    product: 'Map tasks to deliverables/CLINs and price each. Use the task columns as your CLIN/deliverable lines.',
+    simple: 'One bottom-line labor figure: total hours × loaded rates, plus wrap. The breakdown still exists underneath for cost realism.',
+  };
+  el.textContent = notes[pricingModel.methodology] || '';
+}
+
+function pricingRenderTasks() {
+  const el = document.getElementById('pricingTasksList'); if (!el) return;
+  if (!pricingModel.tasks.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No tasks yet. These <strong>auto-fill</strong> when you click <strong>Pull from RFP analysis</strong> above — or add them manually with <strong>+ Add Task</strong>.</div>'; return; }
+  el.innerHTML = pricingModel.tasks.map(t => `
+    <div style="display:flex;gap:8px;align-items:center">
+      <input value="${pricingEsc(t.code)}" onchange="pricingSetTask('${t.id}','code',this.value)" placeholder="1.1" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+      <input value="${pricingEsc(t.name)}" onchange="pricingSetTask('${t.id}','name',this.value)" placeholder="Task description" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+      <button onclick="pricingRemoveTask('${t.id}')" title="Remove task" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button>
+    </div>`).join('');
+}
+
+function pricingRenderLcats() {
+  const el = document.getElementById('pricingLcatsList'); if (!el) return;
+  if (!pricingModel.lcats.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No labor categories yet. <strong>You define these</strong> — pulling the PWS does not add them, because the Government rarely specifies your labor mix or rates. Add each role and its base hourly rate here. <em>(AI-assisted suggestions for the mix and allocation are coming in a later step.)</em></div>'; return; }
+  el.innerHTML = pricingModel.lcats.map(l => `
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+      <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (e.g. Registered Nurse)" style="flex:2;min-width:170px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)">Base $/hr</span><input type="number" min="0" step="0.01" value="${l.baseRate}" onchange="pricingSetLcat('${l.id}','baseRate',this.value)" style="width:84px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)">Adv. FTE</span><input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" style="width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)" title="Override billable hours/FTE for this role; blank = company default">Hrs/FTE</span><input type="number" min="0" step="1" value="${l.hpf}" onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" style="width:68px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">${pricingFmtC(pricingLoadedRate(l))}/hr loaded · ${pricingRowFte(l).toFixed(2)} FTE</span>
+      <button onclick="pricingRemoveLcat('${l.id}')" title="Remove labor category" style="margin-left:auto;background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button>
+    </div>`).join('');
+}
+
+function pricingRenderMatrix() {
+  const el = document.getElementById('pricingMatrix'); if (!el) return;
+  if (!pricingModel.lcats.length || !pricingModel.tasks.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px">Add at least one labor category and one PWS task to build the matrix.</div>';
+    return;
+  }
+  const th = (txt, bg) => `<th style="padding:6px 8px;border:1px solid var(--border);background:${bg};font-size:11px">${txt}</th>`;
+  let h = '<table style="border-collapse:collapse;font-size:12px"><thead><tr>';
+  h += `<th style="text-align:left;padding:6px 8px;border:1px solid var(--border);background:#f1f5f9;position:sticky;left:0;z-index:1">Labor Category \\ Task</th>`;
+  pricingModel.tasks.forEach(t => { h += th(pricingEsc(t.code || t.name || '—'), '#f1f5f9'); });
+  h += th('Hours', '#e0f2fe') + th('FTE', '#e0f2fe') + th('Cost', '#e0f2fe');
+  h += '</tr></thead><tbody>';
+  pricingModel.lcats.forEach(l => {
+    h += '<tr>';
+    h += `<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:white;z-index:1"><div style="font-weight:600">${pricingEsc(l.name || '(unnamed)')}</div><div style="font-size:10px;color:var(--muted)">${pricingFmtC(pricingLoadedRate(l))}/hr</div></td>`;
+    pricingModel.tasks.forEach(t => {
+      const locked = pricingModel.mask[l.id] && pricingModel.mask[l.id][t.id] === false;
+      if (locked) {
+        h += `<td onclick="pricingToggleMask('${l.id}','${t.id}')" title="Locked — this role may not bill this task. Click to allow." style="padding:4px;border:1px solid var(--border);background:#eef2f7;text-align:center;color:var(--muted);cursor:pointer">🔒</td>`;
+      } else {
+        const v = (pricingModel.hours[l.id] && pricingModel.hours[l.id][t.id]);
+        h += `<td style="padding:2px;border:1px solid var(--border)"><div style="display:flex;align-items:center;gap:2px">` +
+          `<input type="number" min="0" step="1" value="${v != null ? v : ''}" oninput="pricingSetHours('${l.id}','${t.id}',this.value)" style="width:58px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;text-align:right"/>` +
+          `<span onclick="pricingToggleMask('${l.id}','${t.id}')" title="Lock this cell (role may not bill this task)" style="cursor:pointer;font-size:10px;opacity:.3">🔓</span></div></td>`;
+      }
+    });
+    h += `<td id="prt-hours-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:right;background:#f0f9ff;font-weight:600">${pricingRowHours(l.id).toLocaleString()}</td>`;
+    h += `<td id="prt-fte-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:right;background:#f0f9ff">${pricingRowFte(l).toFixed(2)}</td>`;
+    h += `<td id="prt-cost-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:right;background:#f0f9ff">${pricingFmt(pricingRowCost(l))}</td>`;
+    h += '</tr>';
+  });
+  // totals
+  h += `<tr style="font-weight:700"><td style="padding:6px 8px;border:1px solid var(--border);position:sticky;left:0;background:#e0f2fe;z-index:1">Total (base year)</td>`;
+  pricingModel.tasks.forEach(t => { h += `<td id="pct-hours-${t.id}" style="padding:6px 8px;border:1px solid var(--border);text-align:right;background:#e0f2fe">${pricingColHours(t.id).toLocaleString()}</td>`; });
+  h += `<td id="pgt-hours" style="padding:6px 8px;border:1px solid var(--border);text-align:right;background:#bae6fd">${pricingTotalHours().toLocaleString()}</td>`;
+  h += `<td id="pgt-fte" style="padding:6px 8px;border:1px solid var(--border);text-align:right;background:#bae6fd">${(pricingTotalHours() / defaultHpf()).toFixed(2)}</td>`;
+  h += `<td id="pgt-cost" style="padding:6px 8px;border:1px solid var(--border);text-align:right;background:#bae6fd">${pricingFmt(pricingBaseTotal())}</td></tr>`;
+  // cost by task
+  h += `<tr><td style="padding:5px 8px;border:1px solid var(--border);position:sticky;left:0;background:#f8fafc;z-index:1;font-size:11px;color:var(--muted)">Cost by task (base)</td>`;
+  pricingModel.tasks.forEach(t => { h += `<td id="pct-cost-${t.id}" style="padding:5px 8px;border:1px solid var(--border);text-align:right;font-size:11px;color:var(--muted)">${pricingFmt(pricingColCost(t.id))}</td>`; });
+  h += `<td colspan="3" style="border:1px solid var(--border);background:#f8fafc"></td></tr>`;
+  h += '</tbody></table>';
+  el.innerHTML = h;
+}
+
+// Targeted recompute used while typing in matrix cells (no structural rebuild → keeps focus).
+function pricingRecalc() {
+  pricingModel.lcats.forEach(l => {
+    const a = document.getElementById('prt-hours-' + l.id); if (a) a.textContent = pricingRowHours(l.id).toLocaleString();
+    const b = document.getElementById('prt-fte-' + l.id); if (b) b.textContent = pricingRowFte(l).toFixed(2);
+    const c = document.getElementById('prt-cost-' + l.id); if (c) c.textContent = pricingFmt(pricingRowCost(l));
+  });
+  pricingModel.tasks.forEach(t => {
+    const a = document.getElementById('pct-hours-' + t.id); if (a) a.textContent = pricingColHours(t.id).toLocaleString();
+    const c = document.getElementById('pct-cost-' + t.id); if (c) c.textContent = pricingFmt(pricingColCost(t.id));
+  });
+  const gh = document.getElementById('pgt-hours'); if (gh) gh.textContent = pricingTotalHours().toLocaleString();
+  const gf = document.getElementById('pgt-fte'); if (gf) gf.textContent = (pricingTotalHours() / defaultHpf()).toFixed(2);
+  const gc = document.getElementById('pgt-cost'); if (gc) gc.textContent = pricingFmt(pricingBaseTotal());
+  pricingRenderFteBar();
+  pricingRenderSummary();
+  pricingRenderWarnings();
+  pricingRenderFeedStatus();
+  pricingSave();
+}
+
+function pricingRenderPeriods() {
+  const el = document.getElementById('pricingPeriodsList'); if (!el) return;
+  el.innerHTML = pricingModel.periods.map((p, i) => `
+    <div style="display:flex;gap:8px;align-items:center">
+      <input value="${pricingEsc(p.name)}" onchange="pricingSetPeriod('${p.id}','name',this.value)" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+      ${i === 0
+        ? '<span style="font-size:11px;color:var(--muted);width:150px;text-align:right">priced by the matrix above</span>'
+        : `<div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)">Escalation</span><input type="number" step="0.1" value="${p.escalation}" onchange="pricingSetPeriod('${p.id}','escalation',this.value)" style="width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/><span style="font-size:12px;color:var(--muted)">%</span></div>`}
+      ${i === 0 ? '<span style="width:18px"></span>' : `<button onclick="pricingRemovePeriod('${p.id}')" title="Remove" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button>`}
+    </div>`).join('') +
+    (pricingModel.periods.length <= 1
+      ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">No option years yet. Click <strong>+ Add Option Year</strong> to add annual escalation (typically ~3% per year); each option year you add gets its own editable escalation field.</div>`
+      : '');
+}
+
+function pricingRenderFteBar() {
+  const el = document.getElementById('pricingFteBar'); if (!el) return;
+  if (!pricingModel.lcats.length) { el.innerHTML = ''; return; }
+  const allocated = pricingTotalHours() / defaultHpf();
+  const advTotal = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
+  const src = pricingModel.fteSource === 'stated'
+    ? `Government-stated: <strong>${pricingModel.statedFteTotal != null ? pricingModel.statedFteTotal : '—'} FTE</strong>`
+    : `<strong>You are sizing the effort</strong> (PWS didn't state FTEs)`;
+  const card = (label, val) => `<div style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:white"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:15px;font-weight:800;margin-top:2px">${val}</div></div>`;
+  el.innerHTML = card('FTE basis', src) + card('Advertised FTE (sum of roles)', advTotal.toFixed(2)) + card('Allocated FTE (from hours)', allocated.toFixed(2));
+}
+
+function pricingRenderSummary() {
+  const el = document.getElementById('pricingSummary'); if (!el) return;
+  if (!pricingModel.lcats.length || !pricingModel.tasks.length) { el.innerHTML = ''; return; }
+  const base = pricingBaseTotal();
+  const mults = pricingMultipliers();
+  const grand = pricingGrandTotal();
+  let methodHtml = '';
+  if (pricingModel.methodology === 'pws_task' || pricingModel.methodology === 'product') {
+    const lbl = pricingModel.methodology === 'product' ? 'deliverable / CLIN' : 'PWS task';
+    methodHtml = `<div style="font-size:12px;font-weight:700;margin:4px 0 4px">Base-year price by ${lbl}</div><table style="width:100%;border-collapse:collapse;font-size:12px">` +
+      pricingModel.tasks.map(t => `<tr><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9">${pricingEsc(t.code || t.name || '—')}</td><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9;text-align:right">${pricingFmt(pricingColCost(t.id))}</td></tr>`).join('') + '</table>';
+  } else {
+    methodHtml = `<div style="font-size:12px;font-weight:700;margin:4px 0 4px">Base-year price by labor category</div><table style="width:100%;border-collapse:collapse;font-size:12px">` +
+      pricingModel.lcats.map(l => `<tr><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9">${pricingEsc(l.name || '(unnamed)')} <span style="color:var(--muted)">(${pricingFmtC(pricingLoadedRate(l))}/hr × ${pricingRowHours(l.id).toLocaleString()} hrs)</span></td><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9;text-align:right">${pricingFmt(pricingRowCost(l))}</td></tr>`).join('') + '</table>';
+  }
+  const periodsHtml = pricingModel.periods.map((p, i) => `<tr><td style="padding:4px 10px;border-bottom:1px solid #eee">${pricingEsc(p.name)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${i === 0 ? '—' : '+' + (parseFloat(p.escalation) || 0) + '%'}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${pricingFmt(base * mults[i])}</td></tr>`).join('');
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#f0fdf4">
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px">💰 Pricing Summary</div>
+    ${methodHtml}
+    <div style="font-size:12px;font-weight:700;margin:12px 0 4px">Total contract value (all periods)</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px 10px">Period</th><th style="text-align:right;padding:4px 10px">Escalation</th><th style="text-align:right;padding:4px 10px">Price</th></tr></thead><tbody>${periodsHtml}</tbody></table>
+    <div style="margin-top:10px;padding-top:10px;border-top:2px solid #86efac;display:flex;justify-content:space-between;font-weight:800;font-size:15px"><span>Grand Total</span><span>${pricingFmt(grand)}</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">Wrap factor ${pricingWrapFactor().toFixed(4)} (${pricingWrapModeLabel()}) · ${pricingModel.lcats.length} labor categories · ${pricingTotalHours().toLocaleString()} base-year hours. Edit wrap components in Settings → Pricing Defaults.</div>
+  </div>`;
+}
+
+function pricingRenderWarnings() {
+  const el = document.getElementById('pricingWarnings'); if (!el) return;
+  if (!pricingModel.lcats.length || !pricingModel.tasks.length) { el.innerHTML = ''; return; }
+  const w = [];
+  const total = pricingTotalHours();
+  pricingModel.tasks.forEach(t => {
+    const h = pricingColHours(t.id);
+    if (h === 0) w.push({ s: 'warn', m: `Task “${pricingEsc(t.code || t.name)}” has no hours allocated — it will read as unpriced.` });
+    else if (total > 0 && h < 0.02 * total) w.push({ s: 'info', m: `Task “${pricingEsc(t.code || t.name)}” is very thin (${h} hrs, ${(100 * h / total).toFixed(1)}% of effort) — confirm that's intended.` });
+  });
+  pricingModel.lcats.forEach(l => pricingModel.tasks.forEach(t => {
+    if (pricingModel.mask[l.id] && pricingModel.mask[l.id][t.id] === false) {
+      const raw = (pricingModel.hours[l.id] && parseFloat(pricingModel.hours[l.id][t.id])) || 0;
+      if (raw > 0) w.push({ s: 'warn', m: `“${pricingEsc(l.name)}” has ${raw} hrs on the locked task “${pricingEsc(t.code || t.name)}” — those hours are excluded from totals.` });
+    }
+  }));
+  pricingModel.lcats.forEach(l => {
+    if (l.advertised !== '' && l.advertised != null) {
+      const adv = parseFloat(l.advertised) || 0, got = pricingRowFte(l);
+      if (Math.abs(got - adv) > 0.1) w.push({ s: 'warn', m: `“${pricingEsc(l.name)}”: advertising ${adv} FTE but the allocation totals ${got.toFixed(2)} FTE (${Math.round(pricingRowHours(l.id)).toLocaleString()} hrs). Reconcile the hours or the advertised count.` });
+      if (pricingModel.fteSource === 'estimated' && adv > 0 && Math.abs(adv - Math.round(adv)) > 0.001) w.push({ s: 'info', m: `“${pricingEsc(l.name)}” is advertised as a fractional ${adv} FTE. The PWS didn't state FTEs, so a whole number is the safer default unless a partial role is intended.` });
+    }
+  });
+  if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) {
+    const advTotal = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
+    if (advTotal > 0 && Math.abs(advTotal - pricingModel.statedFteTotal) > 0.1) w.push({ s: 'warn', m: `The PWS states ${pricingModel.statedFteTotal} FTE, but you're advertising ${advTotal.toFixed(1)} FTE across all roles.` });
+  }
+  pricingModel.lcats.forEach(l => { if ((parseFloat(l.baseRate) || 0) <= 0 && pricingRowHours(l.id) > 0) w.push({ s: 'warn', m: `“${pricingEsc(l.name)}” has hours but no base rate — its cost is $0.` }); });
+  if (!w.length) { el.innerHTML = `<div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#166534">✅ No pricing issues detected — every task is covered and the hours reconcile to the advertised FTEs.</div>`; return; }
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">🔎 Checks &amp; Warnings</div>` +
+    w.map(x => `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12px"><span>${x.s === 'warn' ? '⚠️' : 'ℹ️'}</span><span style="color:${x.s === 'warn' ? '#92400e' : 'var(--muted)'}">${x.m}</span></div>`).join('') + `</div>`;
+}
+
+function pricingRenderFeedStatus() {
+  const el = document.getElementById('pricingFeedStatus'); if (!el) return;
+  const ready = pricingModel.lcats.length && pricingModel.tasks.length && pricingBaseTotal() > 0;
+  el.innerHTML = ready
+    ? `✅ This pricing model feeds <strong>Volume III</strong> automatically — grand total ${pricingFmt(pricingGrandTotal())} across ${pricingModel.periods.length} period(s).`
+    : `Build the matrix above; once it has priced hours it will feed Volume III automatically.`;
+}
+
+// Structured pricing context handed to the Volume III writer (null if nothing priced).
+function buildPricingContextForVol3() {
+  if (!pricingModel.lcats.length || !pricingModel.tasks.length || pricingBaseTotal() <= 0) return '';
+  const wf = pricingWrapFactor();
+  const p = CLIENT_CONFIG.pricing || {};
+  const mults = pricingMultipliers();
+  const base = pricingBaseTotal();
+  const methLabel = { lcat: 'by labor category (fully burdened rates)', pws_task: 'by PWS task/section', product: 'by product/deliverable/CLIN', simple: 'total labor + wrap' }[pricingModel.methodology];
+  let s = `\n\nACTUAL PRICING MODEL — write Volume III to THESE real numbers (do not invent figures, do not use placeholders for anything below):\n`;
+  s += `Required pricing methodology: ${methLabel}.\n`;
+  s += `Wrap factor: ${wf.toFixed(4)} (${pricingWrapModeLabel()}), from fringe ${p.fringe || 0}%, overhead ${p.overhead || 0}%, G&A ${p.ga || 0}%, fee/profit ${p.fee || 0}%. Explain this buildup in the wrap-rate narrative.\n`;
+  s += `FTE basis: ${pricingModel.fteSource === 'stated' ? ('Government-stated ' + pricingModel.statedFteTotal + ' FTE') : 'contractor-sized (PWS did not state FTEs)'}; default ${defaultHpf()} billable hours per FTE.\n\n`;
+  s += `LABOR CATEGORIES (base / loaded rate, hours, FTE):\n`;
+  pricingModel.lcats.forEach(l => { s += `  - ${l.name || '(unnamed)'}: base ${pricingFmtC(parseFloat(l.baseRate) || 0)}/hr, loaded ${pricingFmtC(pricingLoadedRate(l))}/hr, ${Math.round(pricingRowHours(l.id)).toLocaleString()} hrs (${pricingRowFte(l).toFixed(2)} FTE), base-year cost ${pricingFmt(pricingRowCost(l))}.\n`; });
+  s += `\nBASE-YEAR COST BY PWS TASK:\n`;
+  pricingModel.tasks.forEach(t => { s += `  - ${t.code ? t.code + ' ' : ''}${t.name || ''}: ${Math.round(pricingColHours(t.id)).toLocaleString()} hrs, ${pricingFmt(pricingColCost(t.id))}.\n`; });
+  s += `\nPERIOD TOTALS:\n`;
+  pricingModel.periods.forEach((pp, i) => { s += `  - ${pp.name}${i === 0 ? '' : ' (+' + (parseFloat(pp.escalation) || 0) + '% escalation)'}: ${pricingFmt(base * mults[i])}.\n`; });
+  s += `  - GRAND TOTAL (all periods): ${pricingFmt(pricingGrandTotal())}.\n`;
+  s += `Structure the BoE narrative to match the required methodology above, justify the hours per task, explain cost realism, and tie the labor mix to the staffing approach.\n`;
+  return s;
+}
+
 function switchTab(name) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -6989,6 +7728,9 @@ function switchTab(name) {
   if (btn)  btn.classList.add('active');
   if (name === 'compliance' && typeof updateCmpSessionStatus === 'function') {
     updateCmpSessionStatus();
+  }
+  if (name === 'pricing' && typeof pricingRenderAll === 'function') {
+    pricingRenderAll();
   }
   sessionStorage.setItem('srfed_active_tab', name);
 }
@@ -7080,6 +7822,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initBnaWeights();
   renderWeightEditor(); // editor starts expanded — render immediately
   updateStepLocks();
+  pricingLoadStored();  // restore any saved pricing model for this opportunity
   restoreSession();
   const savedTab = sessionStorage.getItem('srfed_active_tab');
   switchTab(savedTab || 'bidnobid');
@@ -7418,9 +8161,11 @@ function evaluateBnaGates(opp, cap) {
   const val = _parseMoney(opp.estimated_value), maxVal = _parseMoney(cap.maxPrimeValue);
   if (val && maxVal && val > maxVal) primeBlockers.push(`value (${opp.estimated_value}) exceeds your prime cap`);
   // DCAA-approved/adequate accounting system is required to be eligible for award of a
-  // cost-reimbursement (and typically T&M) contract — FAR 16.301-3. Prime-eligibility gate.
-  if (opp.required_dcaa === true && !cap.dcaaApproved) {
-    primeBlockers.push(`requires a DCAA-approved accounting system to prime — ${co} doesn't have one`);
+  // cost-reimbursement contract (FAR 16.301-3). Only block when the contract is cost-type
+  // AND the company has EXPLICITLY indicated it has no such system (avoids false blocks
+  // when the field is simply unset/unknown).
+  if (opp.required_dcaa === true && cap.dcaaApproved === false) {
+    primeBlockers.push(`cost-reimbursement award requires a DCAA-approved accounting system — ${co} has indicated it doesn't have one`);
   }
 
   // ---- Performance gates (flow down to subs too) ----
@@ -7644,7 +8389,7 @@ async function findPrimePartners() {
     const mr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 3000, temperature: 0, messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 3000, temperature: 0, messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
     });
     if (!mr.ok) throw new Error(`Claude API error ${mr.status}`);
     const md = await mr.json();
@@ -7693,7 +8438,21 @@ function onScopeCoverageChange(val) {
 function renderBnaDecisionPanel() {
   const panel = document.getElementById('bnaDecisionPanel');
   if (!panel) return;
-  if (!window._bnaOpp && bna_tier1_scores && Object.keys(bna_tier1_scores).length === 0) { panel.style.display = 'none'; return; }
+  const hasAnalysis = (window._bnaOpp && Object.keys(window._bnaOpp).length > 0) ||
+                      (bna_tier1_scores && Object.keys(bna_tier1_scores).length > 0);
+  if (!hasAnalysis) { panel.style.display = 'none'; return; }
+
+  // Hold the verdict until the user has set their Tier-2 slider values and clicked
+  // Confirm — the decision must never appear based on default inputs.
+  if (!window._bnaConfirmed) {
+    panel.style.display = 'block';
+    panel.innerHTML =
+      `<div style="border:1px dashed var(--border);border-radius:10px;background:#f8fafc;padding:18px 20px;text-align:center">` +
+        `<div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:4px">Almost there — set your inputs</div>` +
+        `<div style="font-size:13px;color:var(--muted);line-height:1.6">Adjust the manual sliders below to reflect your team, pricing, and resources, then click <strong>Confirm Entries &amp; Calculate Score</strong> to generate your prime / subcontract verdict.</div>` +
+      `</div>`;
+    return;
+  }
 
   const v = computeDecisiveVerdict();
   const canPrime = v.gates.canPrime;
@@ -8047,13 +8806,13 @@ async function runBidNoBid() {
       `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
       `- fte_count: number of FTEs/positions if stated (digits only, e.g. "45"), else ""\n` +
       `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated".\n` +
-      `- required_dcaa: true if award requires a DCAA-approved/adequate accounting system (typically any cost-reimbursement / cost-plus / T&M contract type), else false.\n` +
+      `- required_dcaa: true ONLY if the award is a COST-REIMBURSEMENT contract type (cost-plus / CPFF / CPIF / CPAF / cost-sharing), OR the solicitation EXPLICITLY requires a "DCAA-approved" or "adequate accounting system." Set FALSE for Firm-Fixed-Price, Time-and-Materials (T&M), or Labor-Hour awards. A cost-reimbursable TRAVEL or ODC line alone does NOT make this true (travel is reimbursed per travel regulations). If the contract type is not stated, set false.\n` +
       `- prime_eligible: true or false. Can ${CLIENT_CONFIG.companyShortName} legally and practically compete as the PRIME on this? Weigh EVERY dimension below against the CAPACITY facts in the company profile, and set FALSE if ANY is a hard barrier:\n` +
       `    • Set-aside: operative set-aside is one the company does NOT hold (e.g. 8(a)/HUBZone set-aside when not 8(a)/HUBZone certified).\n` +
       `    • Business size: the requirement is restricted to small business and the company is not Small.\n` +
       `    • Facility clearance: the work requires a higher FACILITY clearance than the company holds (a prime must hold the facility clearance).\n` +
       `    • Contract vehicle: it requires holding a specific CLOSED IDIQ/vehicle the company does not hold.\n` +
-      `    • DCAA: required_dcaa is true but the company has NO DCAA-approved accounting system.\n` +
+      `    • DCAA: it is a COST-REIMBURSEMENT contract (required_dcaa true) but the company has NO DCAA-approved accounting system. (T&M/Labor-Hour/FFP do NOT trigger this.)\n` +
       `    • Max prime FTE: the FTE count exceeds the max FTEs the company can prime.\n` +
       `    • Max prime value: the contract value exceeds the max single-award value the company can prime.\n` +
       `   If none of these is a hard barrier, set TRUE. When an explicit barrier the company lacks is stated, you MUST set FALSE.\n` +
@@ -8079,7 +8838,7 @@ async function runBidNoBid() {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: CLAUDE_MODEL,
         max_tokens: 4000,
         temperature: 0,
         messages: [
@@ -8246,9 +9005,11 @@ async function runBidNoBid() {
     }
 
     // Set up Tier 2 inputs with defaults — user will confirm to get final score
+    window._bnaConfirmed = false;   // hide the verdict until the user confirms inputs
     renderTier2Inputs();
 
-    // Show the decisive prime/sub verdict immediately (refines as sliders move)
+    // Show the input prompt where the verdict will appear (verdict stays hidden
+    // until the user sets sliders and clicks Confirm).
     renderBnaDecisionPanel();
 
     const confEl = document.getElementById('bnaDataConfidence');
@@ -8310,6 +9071,7 @@ async function runBidNoBid() {
   }
 }
 function confirmBnaScore() {
+  window._bnaConfirmed = true;   // unlock the verdict panel
   updateBnaLiveScore();
   const scoreBreakdown  = document.getElementById('bnaScoreBreakdown');
   if (scoreBreakdown) scoreBreakdown.style.display  = 'block';
@@ -8386,7 +9148,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
         temperature: 0,
         messages: [{ role: 'user', content }] })
     });
@@ -8798,7 +9560,7 @@ async function runSectionEdit() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
         messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
@@ -8865,7 +9627,17 @@ function loadCapacityIntoUI(cap) {
   set('s_cap_cmmc',      cap.cmmcLevel);
   set('s_cap_maxfte',    cap.maxPrimeFTE);
   set('s_cap_maxvalue',  cap.maxPrimeValue);
-  const dcaaCb = document.getElementById('s_cap_dcaa'); if (dcaaCb) dcaaCb.checked = !!cap.dcaaApproved;
+  // DCAA Yes/No. If unset (e.g. settings saved before this field existed), migrate from the
+  // free-text "DCAA Status" field so existing users aren't falsely shown as lacking it.
+  const dcaaSel = document.getElementById('s_cap_dcaa');
+  if (dcaaSel) {
+    if (cap.dcaaApproved === true) dcaaSel.value = 'Yes';
+    else if (cap.dcaaApproved === false) dcaaSel.value = 'No';
+    else {
+      const freeText = (document.getElementById('s_dcaa')?.value || CLIENT_CONFIG.dcaa || '');
+      dcaaSel.value = (/dcaa/i.test(freeText) && /(approv|complian|adequat|audit)/i.test(freeText)) ? 'Yes' : '';
+    }
+  }
   const mv = document.getElementById('s_cap_maxvalue'); if (mv && mv.value) formatMoneyInput(mv);
   // Set-aside checkboxes (+ other)
   const held = (cap.setAsides || []).map(s => s.toLowerCase());
@@ -8897,7 +9669,7 @@ function readCapacityFromUI() {
     cmmcLevel:         document.getElementById('s_cap_cmmc')?.value || '',
     maxPrimeFTE:       document.getElementById('s_cap_maxfte')?.value || '',
     maxPrimeValue:     document.getElementById('s_cap_maxvalue')?.value.trim() || '',
-    dcaaApproved:      !!document.getElementById('s_cap_dcaa')?.checked,
+    dcaaApproved:      (function(){ const v = document.getElementById('s_cap_dcaa')?.value; return v === 'Yes' ? true : v === 'No' ? false : null; })(),
     setAsides, isoCerts,
     contractVehicles:  [..._capVehicles],
   };
@@ -8914,6 +9686,41 @@ function checkCapacityProfile() {
   if (!cap.setAsides || cap.setAsides.length === 0) missing.push('At least one set-aside certification (or "Small Business")');
   // ISO, vehicles, and max value are optional for completeness
   return { complete: missing.length === 0, missing };
+}
+
+// ── Logo: URL or uploaded image (staged until Save) ─────────────────────────
+let _stagedLogoData = '';   // data: URL of an uploaded logo, pending Save
+function updateLogoPreview() {
+  const img = document.getElementById('s_logoPreview');
+  const empty = document.getElementById('s_logoPreviewEmpty');
+  if (!img) return;
+  let src = '';
+  if (_stagedLogoData) src = _stagedLogoData;
+  else { const u = document.getElementById('s_logoUrl')?.value.trim(); if (u) src = u; }
+  if (!src) {
+    if (CLIENT_CONFIG.logoBase64) src = CLIENT_CONFIG.logoBase64.startsWith('data:') ? CLIENT_CONFIG.logoBase64 : ('data:image/png;base64,' + CLIENT_CONFIG.logoBase64);
+    else if (CLIENT_CONFIG.logoUrl) src = CLIENT_CONFIG.logoUrl;
+  }
+  if (src) { img.src = src; img.style.display = ''; if (empty) empty.style.display = 'none'; }
+  else { img.removeAttribute('src'); img.style.display = 'none'; if (empty) empty.style.display = ''; }
+}
+function onLogoUrlInput() { _stagedLogoData = ''; updateLogoPreview(); }
+function onLogoFileChosen(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  if (file.size > 1024 * 1024) { alert('That image is larger than 1 MB. Please use a smaller logo (it is embedded directly into the app).'); e.target.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = () => { _stagedLogoData = reader.result; const u = document.getElementById('s_logoUrl'); if (u) u.value = ''; updateLogoPreview(); };
+  reader.onerror = () => alert('Could not read that image file.');
+  reader.readAsDataURL(file);
+}
+function clearLogo() {
+  _stagedLogoData = '';
+  const u = document.getElementById('s_logoUrl'); if (u) u.value = '';
+  const f = document.getElementById('s_logoFile'); if (f) f.value = '';
+  try { const o = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); delete o.logoBase64; delete o.logoUrl; localStorage.setItem(SETTINGS_KEY, JSON.stringify(o)); } catch (_) {}
+  delete CLIENT_CONFIG.logoUrl;   // fall back to whatever base64 default the build ships with (none, for retail)
+  updateLogoPreview();
 }
 
 function loadSettingsIntoUI() {
@@ -8937,6 +9744,7 @@ function loadSettingsIntoUI() {
     s_appTitle: cfg.appTitle,
     s_primaryColor: cfg.primaryColor,
     s_secondaryColor: cfg.secondaryColor,
+    s_logoUrl: (saved && JSON.parse(saved).logoUrl) || '',
     s_azureClientId: cfg.azureClientId,
     s_azureTenantId: cfg.azureTenantId,
     s_authorizedDomain: cfg.authorizedDomain,
@@ -8954,6 +9762,102 @@ function loadSettingsIntoUI() {
     if (cpEl) cpEl.value = rawOverride;
   } catch(e) {}
   loadCapacityIntoUI(cfg.capacity || {});
+  // Pricing defaults
+  const pr = cfg.pricing || {};
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== '') el.value = v; };
+  setVal('s_pr_fringe',   pr.fringe);
+  setVal('s_pr_overhead', pr.overhead);
+  setVal('s_pr_ga',       pr.ga);
+  setVal('s_pr_fee',      pr.fee);
+  setVal('s_pr_hpf',      pr.hoursPerFte);
+  const wm = document.getElementById('s_pr_wrapmode'); if (wm && pr.wrapMode) wm.value = pr.wrapMode;
+  updateWrapPreview();
+  // Logo: stage a previously-uploaded image (stored as a data URL) so it previews,
+  // then render whichever source is active (upload > URL > build default).
+  try { const sv = saved ? JSON.parse(saved) : {}; _stagedLogoData = (sv.logoBase64 && String(sv.logoBase64).startsWith('data:')) ? sv.logoBase64 : ''; } catch (_) { _stagedLogoData = ''; }
+  updateLogoPreview();
+  loadModelsIntoDropdown();   // populate the AI-model dropdown (live list from Anthropic)
+}
+
+// Live preview of the resulting wrap factor as the user edits the components.
+function updateWrapPreview() {
+  const el = document.getElementById('s_wrap_preview');
+  if (!el) return;
+  const p = {
+    fringe:   document.getElementById('s_pr_fringe')?.value,
+    overhead: document.getElementById('s_pr_overhead')?.value,
+    ga:       document.getElementById('s_pr_ga')?.value,
+    fee:      document.getElementById('s_pr_fee')?.value,
+    wrapMode: document.getElementById('s_pr_wrapmode')?.value || 'compounded',
+  };
+  const factor = computeWrapFactor(p);
+  const add = computeWrapFactor({ ...p, wrapMode: 'additive' });
+  const comp = computeWrapFactor({ ...p, wrapMode: 'compounded' });
+  el.innerHTML = `Resulting wrap factor: <strong>${factor.toFixed(4)}</strong> ` +
+    `<span style="color:var(--muted)">— a $100.00 base hourly rate becomes <strong>$${(100*factor).toFixed(2)}</strong> fully loaded.</span><br>` +
+    `<span style="color:var(--muted);font-size:11px">For reference: additive = ${add.toFixed(4)}, multiplicative (compounded) = ${comp.toFixed(4)}. They differ because compounding nests each rate on the running subtotal.</span>`;
+}
+
+// Populate the Settings model dropdown from Anthropic's live models API, so the
+// choices always reflect models that actually exist and that the key can use.
+// forceRefresh is passed when the user clicks the Refresh button.
+async function loadModelsIntoDropdown(forceRefresh) {
+  const sel    = document.getElementById('s_model');
+  const status = document.getElementById('s_model_status');
+  if (!sel) return;
+
+  // The model the user has saved (survives even if the live list can't load).
+  let stored = (CLIENT_CONFIG.model || '').trim();
+  try { const s = localStorage.getItem(SETTINGS_KEY); if (s) { const o = JSON.parse(s); if (o.model) stored = o.model; } } catch(_) {}
+  if (!stored) stored = 'claude-sonnet-4-5';
+
+  const render = (models, note, warn) => {
+    sel.innerHTML = '';
+    let hasStored = false;
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id; opt.textContent = m.label || m.id;
+      if (m.id === stored) { opt.selected = true; hasStored = true; }
+      sel.appendChild(opt);
+    });
+    // Keep the saved model selectable even if it's no longer in the live list.
+    if (stored && !hasStored) {
+      const opt = document.createElement('option');
+      opt.value = stored; opt.textContent = stored + ' — saved (not in current list)';
+      opt.selected = true;
+      sel.insertBefore(opt, sel.firstChild);
+    }
+    if (status) {
+      status.textContent = note + ((stored && !hasStored)
+        ? '  ⚠️ Your saved model isn\u2019t in the live list — it may be retired. If generation starts failing, pick a current model here and Save.'
+        : '');
+      status.style.color = (warn || (stored && !hasStored)) ? '#b45309' : 'var(--muted)';
+    }
+  };
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    render([{ id: stored, label: stored }], 'Enter your Anthropic API key on the Proposal tab (Step 1), then click Refresh to load the live model list.', true);
+    return;
+  }
+
+  if (status) { status.textContent = 'Loading models from Anthropic…'; status.style.color = 'var(--muted)'; }
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/models?limit=100', {
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    // Newest first; only Claude models. Label with the friendly display name + id.
+    const models = (data.data || [])
+      .filter(m => /claude/i.test(m.id))
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+      .map(m => ({ id: m.id, label: m.display_name ? `${m.display_name}  (${m.id})` : m.id }));
+    if (!models.length) throw new Error('no models returned');
+    render(models, `Live list from your account — ${models.length} model${models.length > 1 ? 's' : ''}, newest first.`);
+  } catch(e) {
+    render([{ id: stored, label: stored }], `Couldn't load the live list (${e.message}). Showing your saved model — check your API key and click Refresh.`, true);
+  }
 }
 
 function saveSettings() {
@@ -8978,6 +9882,7 @@ function saveSettings() {
     cmmc:             document.getElementById('s_cmmc')?.value.trim(),
     dcaa:             document.getElementById('s_dcaa')?.value.trim(),
     appTitle:         document.getElementById('s_appTitle')?.value.trim(),
+    model:            document.getElementById('s_model')?.value.trim(),
     primaryColor:     document.getElementById('s_primaryColor')?.value.trim(),
     secondaryColor:   document.getElementById('s_secondaryColor')?.value.trim(),
     conversionProxyUrl: document.getElementById('s_conversionProxyUrl')?.value.trim(),
@@ -8992,6 +9897,20 @@ function saveSettings() {
   Object.keys(overrides).forEach(k => { if (!overrides[k] && !allowEmpty.has(k)) delete overrides[k]; });
   // Capacity profile is a structured object — always persisted whole.
   overrides.capacity = readCapacityFromUI();
+  // Pricing defaults — structured object, always persisted whole.
+  overrides.pricing = {
+    fringe:      parseFloat(document.getElementById('s_pr_fringe')?.value)   || 0,
+    overhead:    parseFloat(document.getElementById('s_pr_overhead')?.value) || 0,
+    ga:          parseFloat(document.getElementById('s_pr_ga')?.value)       || 0,
+    fee:         parseFloat(document.getElementById('s_pr_fee')?.value)      || 0,
+    wrapMode:    document.getElementById('s_pr_wrapmode')?.value || 'compounded',
+    hoursPerFte: parseFloat(document.getElementById('s_pr_hpf')?.value)      || 1912,
+  };
+  // Logo: persist an uploaded image (data URL) or a URL. Leaving both blank keeps
+  // whatever default the build ships with (so SRFed's embedded logo is preserved).
+  if (_stagedLogoData) overrides.logoBase64 = _stagedLogoData;
+  const _logoUrlVal = document.getElementById('s_logoUrl')?.value.trim();
+  if (_logoUrlVal) overrides.logoUrl = _logoUrlVal;
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(overrides));
 
   // Apply immediately to CLIENT_CONFIG
