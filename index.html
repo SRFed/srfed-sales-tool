@@ -47,27 +47,29 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; padding-left: 212px; }
 
   .app-header {
     background: #005FD5;
     color: white;
-    padding: 0 32px;
+    padding: 18px 14px;
     display: flex;
-    align-items: center;
-    height: 80px;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    position: sticky;
-    top: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.18);
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 212px;
+    overflow-y: auto;
     z-index: 200;
   }
   .app-header .logo-img { height: 44px; width: auto; max-width: 120px; flex-shrink: 0; image-rendering: -webkit-optimize-contrast; }
   @keyframes pulseOnce { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0)} 30%{box-shadow:0 0 0 5px rgba(59,130,246,0.45)} }
   .pulse-once { animation: pulseOnce 1.1s ease-in-out 3; }
   .locked-section { opacity: 0.4; pointer-events: none; filter: grayscale(0.4); user-select: none; }
-  .app-header .logo-text { font-size: 22px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
-  .header-left { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .app-header .logo-text { font-size: 18px; font-weight: 700; letter-spacing: .3px; white-space: normal; line-height: 1.2; }
+  .header-left { order: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; flex-shrink: 0; }
 
   /* ── MS LOGIN PILL ── */
   .ms-login-btn {
@@ -83,12 +85,14 @@
   .ms-login-btn:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
   .ms-login-btn .ms-icon { width: 18px; height: 18px; flex-shrink: 0; }
   .ms-signed-in {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     background: rgba(255,255,255,0.12);
     border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 6px; padding: 5px 12px;
-    font-size: 13px; white-space: nowrap; flex-shrink: 0;
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 12px; flex-shrink: 0;
   }
+  .ms-signed-in > div { min-width: 0; flex: 1; }
+  .ms-signed-in .ms-name, #msEmail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
   .ms-signed-in .ms-avatar {
     width: 26px; height: 26px; border-radius: 50%;
     background: var(--teal); color: #005FD5;
@@ -548,18 +552,19 @@
 
   /* ── TABS ── */
   .tab-nav {
-    display: flex; gap: 6px; align-items: center;
-    margin: 0 auto; flex: 1; justify-content: center;
+    display: flex; flex-direction: column; gap: 8px; align-items: stretch;
+    margin: 0; width: 100%; order: 3;
   }
+  #msSignedInArea { order: 2; margin-left: 0 !important; }
   .tab-btn {
     background: linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%);
     border: 1px solid rgba(255,255,255,0.25);
     border-bottom: 2px solid rgba(0,0,0,0.15);
     color: var(--tab-text); opacity: 0.92;
-    padding: 12px 0; border-radius: 8px;
+    padding: 11px 14px; border-radius: 8px;
     font-size: 15px; font-weight: 600; cursor: pointer;
     transition: all 0.15s; letter-spacing: 0.2px;
-    min-width: 160px; width: 160px; text-align: center;
+    min-width: 0; width: 100%; text-align: left;
     font-family: inherit; white-space: nowrap;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
   }
@@ -571,9 +576,9 @@
   }
   /* Tab data-flow families (persistent at-rest grouping) + connected highlight on hover.
      Colors are derived from the brand primary at runtime (see applyTabFamilyColors). */
-  .tab-btn[data-fam="decide"] { border-bottom: 3px solid var(--fam-decide, #2aa79b); }
-  .tab-btn[data-fam="build"]  { border-bottom: 3px solid var(--fam-build,  #8a93e8); }
-  .tab-btn[data-fam="config"] { border-bottom: 3px solid var(--fam-neutral, rgba(255,255,255,0.45)); }
+  .tab-btn[data-fam="decide"] { border-left: 4px solid var(--fam-decide, #2aa79b); }
+  .tab-btn[data-fam="build"]  { border-left: 4px solid var(--fam-build,  #8a93e8); }
+  .tab-btn[data-fam="config"] { border-left: 4px solid var(--fam-neutral, rgba(255,255,255,0.45)); }
   .tab-flow-legend {
     display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
     padding: 8px 14px; font-size: 11.5px; color: #475569;
@@ -587,16 +592,15 @@
     background: linear-gradient(160deg, #ffffff 0%, #e8f0ff 100%);
     color: var(--blue);
     border: 2px solid white;
-    border-bottom: 2px solid #c8d8f8;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2), inset 0 -2px 0 #b0c8f0;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
     font-weight: 700;
-    transform: translateY(-1px);
+    transform: translateX(2px);
   }
-  /* Keep the family color on the underline even when a tab is selected — the grouping color
+  /* Keep the family color on the left bar even when a tab is selected — the grouping color
      must not change on click (higher specificity than .tab-btn.active so it wins). */
-  .tab-btn.active[data-fam="decide"] { border-bottom: 3px solid var(--fam-decide, #2aa79b); }
-  .tab-btn.active[data-fam="build"]  { border-bottom: 3px solid var(--fam-build,  #8a93e8); }
-  .tab-btn.active[data-fam="config"] { border-bottom: 3px solid var(--fam-neutral, #cbd5e1); }
+  .tab-btn.active[data-fam="decide"] { border-left: 4px solid var(--fam-decide, #2aa79b); }
+  .tab-btn.active[data-fam="build"]  { border-left: 4px solid var(--fam-build,  #8a93e8); }
+  .tab-btn.active[data-fam="config"] { border-left: 4px solid var(--fam-neutral, #cbd5e1); }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
   /* ── SETTINGS UI ── */
@@ -672,7 +676,7 @@
      bar — which pushes .container down — never covers it. -->
 
 <!-- ══ GLOBAL STICKY STATUS / PROGRESS BAR (under header, all tabs) ══════ -->
-<div id="globalStatusBar" style="display:none;position:fixed;top:80px;left:0;right:0;z-index:150;background:white;border-bottom:2px solid var(--light-blue);box-shadow:0 2px 8px rgba(0,95,213,0.12);transition:all 0.2s">
+<div id="globalStatusBar" style="display:none;position:fixed;top:0;left:212px;right:0;z-index:150;background:white;border-bottom:2px solid var(--light-blue);box-shadow:0 2px 8px rgba(0,95,213,0.12);transition:all 0.2s">
   <div style="max-width:1100px;margin:0 auto;padding:8px 24px">
     <!-- Minimized strip: just title + ETA on one line -->
     <div id="gsbMinimized" style="display:none;align-items:center;gap:10px;cursor:pointer" onclick="_gsbExpand()" title="Click to expand">
@@ -10780,7 +10784,7 @@ function renderVehicleTags() {
   const wrap = document.getElementById('s_cap_vehicles');
   if (!wrap) return;
   wrap.innerHTML = _capVehicles.map((v, i) =>
-    `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;font-size:12px;font-weight:600;color:#1e40af">${escHtml(v)}<span onclick="removeVehicleTag(${i})" style="cursor:pointer;font-weight:700;color:#64748b">×</span></span>`
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:#eff6ff;border:1px dashed var(--mid-blue);border-radius:12px;font-size:12px;font-weight:600;color:#1e40af">${escHtml(v)}<span onclick="removeVehicleTag(${i})" style="cursor:pointer;font-weight:700;color:#64748b">×</span></span>`
   ).join('');
 }
 function addVehicleTag(val) {
