@@ -47,7 +47,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; padding-left: 212px; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; padding-left: 250px; }
 
   .app-header {
     background: #005FD5;
@@ -60,7 +60,7 @@
     box-shadow: 2px 0 8px rgba(0,0,0,0.18);
     position: fixed;
     left: 0; top: 0; bottom: 0;
-    width: 212px;
+    width: 250px;
     overflow-y: auto;
     z-index: 200;
   }
@@ -102,13 +102,13 @@
   .ms-signed-in .ms-signout { font-size: 11px; color: #475569; cursor: pointer; margin-left: 4px; padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; text-decoration: none; }
   .ms-signed-in .ms-signout:hover { background: #f1f5f9; color: #1e293b; }
   .sidebar-legend { order: 5; margin: 16px 10px 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 11px 11px 12px; }
-  .sidebar-legend .sl-title { font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 9px; letter-spacing: 0.2px; }
+  .sidebar-legend .sl-title { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 9px; letter-spacing: 0.2px; }
   .sidebar-legend .sl-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 9px; }
   .sidebar-legend .sl-row:last-child { margin-bottom: 0; }
-  .sidebar-legend .sl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.5); }
+  .sidebar-legend .sl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.5); }
   .sidebar-legend .sl-txt { display: flex; flex-direction: column; gap: 1px; }
-  .sidebar-legend .sl-txt b { font-size: 11px; font-weight: 700; color: #fff; line-height: 1.25; }
-  .sidebar-legend .sl-txt span { font-size: 10.5px; color: rgba(255,255,255,0.78); line-height: 1.3; }
+  .sidebar-legend .sl-txt b { font-size: 12.5px; font-weight: 700; color: #fff; line-height: 1.25; }
+  .sidebar-legend .sl-txt span { font-size: 11.5px; color: rgba(255,255,255,0.78); line-height: 1.3; }
 
   /* ── LAYOUT ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
@@ -571,17 +571,17 @@
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    position: sticky; top: 0; z-index: 50;
   }
   .top-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
   .top-brand .top-logo-text { font-size: 25px; font-weight: 800; color: var(--blue); letter-spacing: .2px; line-height: 1.1; }
   .sidebar-logo {
-    align-self: flex-start;
     background: #ffffff;
     border-radius: 10px;
-    padding: 9px 12px;
-    margin: 0 0 10px;
+    padding: 11px 12px;
+    margin: 0 0 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.14);
-    max-width: 100%;
+    display: flex; align-items: center; justify-content: center;
   }
   .sidebar-logo .sidebar-logo-img { max-width: 152px; max-height: 60px; width: auto; height: auto; object-fit: contain; display: block; }
   .sidebar-logo.logo-bg-dark { background: #1e293b; box-shadow: 0 1px 4px rgba(0,0,0,0.28); }
@@ -590,8 +590,8 @@
     border: 1px solid rgba(255,255,255,0.25);
     border-bottom: 2px solid rgba(0,0,0,0.15);
     color: var(--tab-text); opacity: 0.92;
-    padding: 11px 14px; border-radius: 8px;
-    font-size: 15px; font-weight: 600; cursor: pointer;
+    padding: 13px 16px; border-radius: 8px;
+    font-size: 16px; font-weight: 600; cursor: pointer;
     transition: all 0.15s; letter-spacing: 0.2px;
     min-width: 0; width: 100%; text-align: left;
     font-family: inherit; white-space: nowrap;
@@ -605,9 +605,10 @@
   }
   /* Tab data-flow families (persistent at-rest grouping) + connected highlight on hover.
      Colors are derived from the brand primary at runtime (see applyTabFamilyColors). */
-  .tab-btn[data-fam="decide"] { border-left: 4px solid var(--fam-decide, #2aa79b); }
-  .tab-btn[data-fam="build"]  { border-left: 4px solid var(--fam-build,  #8a93e8); }
-  .tab-btn[data-fam="config"] { border-left: 4px solid var(--fam-neutral, rgba(255,255,255,0.45)); }
+  .tab-btn[data-fam="decide"] { border-left: 8px solid var(--fam-decide, #2aa79b); }
+  .tab-btn[data-fam="build"]  { border-left: 8px solid var(--fam-build,  #8a93e8); }
+  .tab-btn[data-fam="edit"]   { border-left: 8px solid var(--fam-edit,   #e0894a); }
+  .tab-btn[data-fam="config"] { border-left: 8px solid var(--fam-neutral, rgba(255,255,255,0.45)); }
   .tab-flow-legend {
     display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
     padding: 8px 14px; font-size: 11.5px; color: #475569;
@@ -627,9 +628,10 @@
   }
   /* Keep the family color on the left bar even when a tab is selected — the grouping color
      must not change on click (higher specificity than .tab-btn.active so it wins). */
-  .tab-btn.active[data-fam="decide"] { border-left: 4px solid var(--fam-decide, #2aa79b); }
-  .tab-btn.active[data-fam="build"]  { border-left: 4px solid var(--fam-build,  #8a93e8); }
-  .tab-btn.active[data-fam="config"] { border-left: 4px solid var(--fam-neutral, #cbd5e1); }
+  .tab-btn.active[data-fam="decide"] { border-left: 8px solid var(--fam-decide, #2aa79b); }
+  .tab-btn.active[data-fam="build"]  { border-left: 8px solid var(--fam-build,  #8a93e8); }
+  .tab-btn.active[data-fam="edit"]   { border-left: 8px solid var(--fam-edit,   #e0894a); }
+  .tab-btn.active[data-fam="config"] { border-left: 8px solid var(--fam-neutral, #cbd5e1); }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
   /* ── SETTINGS UI ── */
@@ -682,7 +684,7 @@
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn" data-fam="decide" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" data-fam="decide" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
-    <button class="tab-btn" data-fam="config" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
+    <button class="tab-btn" data-fam="edit" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
@@ -692,7 +694,7 @@
     <div class="sl-title">🔗 How tabs connect</div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Partners</b><span>teaming — your CRM feeds the partner finder</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
-    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1)"></span><div class="sl-txt"><b>Section Editor · Settings</b><span>standalone — don't feed other tabs</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1);margin-left:-3px"></span><div class="sl-txt"><b>Section Editor · Settings</b><span>standalone — don't feed other tabs</span></div></div>
   </div>
 </header>
 
@@ -1596,7 +1598,7 @@
       </div>
     </div>
     <div class="card-body" id="bnaIntelBody">
-      <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Extracting opportunity details…</div>
+      <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><span class="spinner-dark" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Extracting opportunity details…</div>
     </div>
   </div>
 
@@ -1834,8 +1836,14 @@
         <div id="pricingPeriodsList" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
 
+      <!-- Travel / ODCs -->
+      <div id="pricingTravel" style="margin-bottom:16px"></div>
+
       <!-- Live summary -->
       <div id="pricingSummary" style="margin-bottom:16px"></div>
+
+      <!-- Export to Excel -->
+      <div id="pricingExportRow" style="margin-bottom:16px"></div>
 
       <!-- Warnings -->
       <div id="pricingWarnings" style="margin-bottom:16px"></div>
@@ -2182,7 +2190,7 @@ const CLIENT_CONFIG = {
     contractVehicles:  ['GSA MAS'],                 // free-text vehicle tags HELD
     dcaaApproved:      true,                        // DCAA-approved/adequate accounting system (required to prime cost-reimbursement contracts)
     maxPrimeFTE:       20,                          // largest team size realistically primeable
-    maxPrimeValue:     '',                          // optional $ ceiling for prime; '' = no cap
+    maxPrimeValue:     '$25M',                      // $ ceiling for prime (total award value); editable in capacity profile
   },
 
   // ── Primary Contact (for cover letters and doc footers) ───────────────────
@@ -2486,10 +2494,12 @@ function applyTabFamilyColors() {
   const decide  = `hsl(${(((h - 50) % 360) + 360) % 360}, 68%, 55%)`;  // analogous accent A (teal/green for a blue primary)
   const build   = `hsl(${(h + 45) % 360}, 60%, 60%)`;                   // analogous accent B (light purple for a blue primary)
   const neutral = `hsl(${h}, 12%, 70%)`;                                // desaturated brand-grey for standalone tabs
+  const edit    = `hsl(${(h + 165) % 360}, 64%, 56%)`;                  // distinct warm accent for Section Editor (its own color, never grey)
   const r = document.documentElement.style;
   r.setProperty('--fam-decide', decide);
   r.setProperty('--fam-build', build);
   r.setProperty('--fam-neutral', neutral);
+  r.setProperty('--fam-edit', edit);
 }
 
 // Hex -> HSL (returns {h,s,l} in degrees/percent, or null if the hex is malformed).
@@ -4720,7 +4730,7 @@ async function ensureBriefing(apiKey) {
     `"base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026), count the months (=9); if a month count is stated, use it; if a full base year with no other length is indicated, use 12; use 0 only if you truly cannot tell",` +
     `"option_period_count":"number of option periods/years as a number; 0 if none",` +
     `"option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown",` +
-    `"sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies to it; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed",` +
+    `"sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies to it; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
     `"pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated",` +
     `"estimated_ftes":"the number of FTEs/labor the solicitation REQUIRES if stated; '' or 'not specified' if it does not state one",` +
     `"estimated_value":"",` +
@@ -5251,15 +5261,34 @@ function initDropZone(zoneId, inputId, fileArray, listId) {
   });
 }
 
+// Accurately count pages in a PDF (used to warn only about genuinely oversized files).
+// Returns 0 if pdf.js is unavailable or the file can't be parsed (encrypted, corrupt) so no false warning fires.
+async function checkPdfPageCount(file) {
+  try {
+    if (typeof pdfjsLib === 'undefined') return 0;
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const n = pdf.numPages || 0;
+    try { pdf.destroy(); } catch (e) {}
+    return n;
+  } catch (e) {
+    return 0;
+  }
+}
+
 function addFilesToArray(newFiles, arr, listId) {
   let added = 0;
   newFiles.forEach(f => {
     if (!arr.find(x => x.name === f.name && x.size === f.size)) { arr.push(f); added++; }
-    // Warn about large PDFs that may hit the 100-page API limit
-    if (f.name.toLowerCase().endsWith('.pdf') && f.size > 350000 &&
+    // Warn only when a PDF actually exceeds the 100-page API limit (counted, not guessed from file size)
+    if (f.name.toLowerCase().endsWith('.pdf') &&
         typeof bnaFiles !== 'undefined' && (arr === bnaFiles || arr === bnaCompanyFiles)) {
-      showStatus('warn', 'Large PDF detected',
-        `"${f.name}" is large and may exceed the 100-page PDF limit. If analysis fails: split the file, or convert to Word (.docx) which has no page limit.`);
+      checkPdfPageCount(f).then(pages => {
+        if (pages > 100) {
+          showStatus('warn', 'Large PDF detected',
+            `"${f.name}" has ${pages} pages, which exceeds the 100-page limit for direct PDF analysis. If analysis fails: split the file, or convert to Word (.docx) which has no page limit.`);
+        }
+      }).catch(() => {});
     }
   });
   renderFileListById(arr, listId);
@@ -7084,6 +7113,17 @@ async function runGeneration() {
     allSteps[3].status = 'done';
     setProgress(100, allSteps);
     showStatus('success', 'Proposal ready!', 'Your proposal volumes are ready to download. Review all content before submission.');
+    try {
+      if (typeof pricingBuildWorkbook === 'function' && typeof XLSX !== 'undefined') {
+        const _wb = pricingBuildWorkbook();
+        if (_wb) {
+          const _pfx = proposalData.output_prefix || (CLIENT_CONFIG.companyShortName + '_Proposal');
+          const _buf = XLSX.write(_wb, { type: 'array', bookType: 'xlsx' });
+          const _url = URL.createObjectURL(new Blob([_buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+          docs['xlsx'] = { label: 'Pricing Workbook (Excel)', filename: `${_pfx}_Pricing_Workbook.xlsx`, url: _url };
+        }
+      }
+    } catch (e) { console.error('pricing workbook bundle failed:', e); }
     renderDownloads(docs);
     setRunning(false);
     // Reset the approve button if generation was started from the outline panel
@@ -7459,7 +7499,9 @@ function buildPricingTotalTableOoxml() {
       const mid = gsa ? ('Year ' + pricingGsaScheduleYearForPeriod(i)) : (i === 0 ? '\u2014' : ((parseFloat(pp.escalation) || 0) + '%'));
       r3 += _pxRow([pp.name || ('Period ' + (i + 1)), String(pricingPeriodMonths(pp)), mid, fmt(pricingPeriodCost(i))], w3);
     });
-    r3 += _pxRow(['Total Evaluated Price', '', '', fmt(pricingGrandTotal())], w3, { bold: true, fill: 'EDF2FB' });
+    const _tt2 = (typeof pricingTravelTotal === 'function') ? pricingTravelTotal() : { total: 0 };
+    if (_tt2.total > 0) r3 += _pxRow(['Travel / ODCs', '', '', fmt(_tt2.total)], w3);
+    r3 += _pxRow(['Total Evaluated Price', '', '', fmt(pricingGrandTotal() + _tt2.total)], w3, { bold: true, fill: 'EDF2FB' });
     out += _pxTable(w3, r3);
     return out + '<w:p/>';
   } catch (e) { console.error('buildPricingTotalTableOoxml failed:', e); return ''; }
@@ -7836,6 +7878,15 @@ function renderPageComplianceTable() {
   );
 }
 
+function applyDownloadName(linkId, val) {
+  const a = document.getElementById(linkId); if (!a) return;
+  let v = String(val || '').trim().replace(/[\\/:*?"<>|]/g, '-');
+  if (!v) return;
+  const ext = a.getAttribute('data-ext') || '';
+  if (ext && !v.toLowerCase().endsWith(ext.toLowerCase())) v += ext;
+  a.download = v;
+}
+
 function renderDownloads(docs) {
   const card = document.getElementById('downloadCard');
   const list = document.getElementById('downloadList');
@@ -7857,20 +7908,24 @@ function renderDownloads(docs) {
     '2': 'Past Performance References',
     '3': 'Pricing Narrative (add your numbers from Excel)',
     '4': 'Cover Letter, OCI, Clearances, CMMC',
+    'xlsx': 'Line-item detail + 4 rollup views (pivot-ready)',
   };
+  volIcons['xlsx'] = String.fromCodePoint(0x1F4CA);
 
   entries.forEach(([vol, doc]) => {
     const item = document.createElement('div');
     item.className = 'download-item';
+    const dlId = 'dl_' + vol;
     item.innerHTML = `
       <div class="download-left">
         <div class="download-icon">${volIcons[vol] || '📄'}</div>
-        <div>
+        <div style="min-width:0;flex:1">
           <div class="download-name">${doc.label}</div>
           <div class="download-desc">${volDescs[vol] || ''}</div>
+          <input type="text" value="${doc.filename}" onchange="applyDownloadName('${dlId}', this.value)" title="Rename this file before downloading" style="margin-top:5px;width:100%;max-width:380px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text)" />
         </div>
       </div>
-      <a href="${doc.url}" download="${doc.filename}" class="btn btn-secondary btn-sm">⬇ Download</a>`;
+      <a id="${dlId}" data-ext="${doc.filename.slice(doc.filename.lastIndexOf('.'))}" href="${doc.url}" download="${doc.filename}" class="btn btn-secondary btn-sm">⬇ Download</a>`;
     list.appendChild(item);
   });
 
@@ -7911,6 +7966,7 @@ let pricingModel = {
   gsaScheduleYears: 5,             // number of priced years on the schedule
   gsaPopStart: '',                 // 'YYYY-MM-DD' — this opportunity's period-of-performance start (selects the schedule year)
   sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] },  // Service Contract Act / Wage Determination. covered: null=unknown|true|false. hw=$/hr H&W. rates=[{id,code,title,wage}]
+  travel: { mode: 'none', method: 'perdiem', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' },  // Travel / ODCs. mode: none|nte|open; method: perdiem|flat; markup: passthrough|markup
 };
 let pricingWdFiles = [];           // uploaded Wage Determination file(s)
 let pricingGsaFiles = [];          // the uploaded GSA MAS schedule file(s)
@@ -8073,7 +8129,7 @@ function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(
 function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
 function pricingResetModel() {
   if (!confirm('Reset the entire pricing model? This clears the GSA Schedule choice, tasks, labor categories, hours, and periods for this opportunity.')) return;
-  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], statedFteTotal: null, fteSource: 'estimated', gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] } };
+  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], statedFteTotal: null, fteSource: 'estimated', gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'perdiem', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' } };
   pricingGsaFiles = [];
   pricingRenderAll();
 }
@@ -8148,6 +8204,18 @@ function pricingApplyBriefing(b) {
   // SCA / Service Contract Act coverage — set the Step-2 radio when the briefing detected it.
   const _scaCov = String(b.sca_coverage || '').toLowerCase().trim();
   if (_scaCov === 'yes' || _scaCov === 'no') { pricingModel.sca = pricingModel.sca || {}; pricingModel.sca.covered = (_scaCov === 'yes'); }
+  const _trav = String(b.travel_required || '').toLowerCase().trim();
+  const _travNte = String(b.travel_nte || '').trim();
+  pricingModel.travel = pricingModel.travel || { mode: 'none', method: 'perdiem', nte: '' };
+  if (_trav === 'yes' || _travNte) {
+    if (!pricingModel.travel.mode || pricingModel.travel.mode === 'none') {
+      pricingModel.travel.mode = _travNte ? 'nte' : 'open';
+      Object.keys(PRICING_TRAVEL_DEFAULTS).forEach(k => { if (!String(pricingModel.travel[k] == null ? '' : pricingModel.travel[k]).trim()) pricingModel.travel[k] = PRICING_TRAVEL_DEFAULTS[k]; });
+    }
+    if (_travNte) pricingModel.travel.nte = _travNte;
+  } else if (_trav === 'no') {
+    pricingModel.travel.mode = 'none';
+  }
   window._pricingBriefingMeta = {
     title: b.requirement_title || '', sol: b.solicitation_number || '',
     contractType: b.contract_type || '', period: b.period_of_performance || '',
@@ -8337,7 +8405,7 @@ function pricingRenderGate() {
 
   if (d == null) {
     el.innerHTML = `<div style="border:2px solid var(--mid-blue);border-radius:10px;padding:16px;background:#eff6ff">
-      <div style="font-weight:700;font-size:14px;color:var(--blue)">📑 Step 1 — GSA Schedule <span style="font-size:10px;font-weight:700;background:var(--error);color:#fff;border-radius:10px;padding:2px 8px;vertical-align:middle">* REQUIRED</span></div>
+      <div style="font-weight:700;font-size:14px;color:var(--blue)">📑 Step 1 — GSA Schedule </div>
       <div style="font-size:12.5px;color:var(--muted);margin:6px 0 12px">Many solicitations require labor rates to come from your GSA MAS Schedule. Drop your Schedule here so the tool can pull the <strong>exact awarded rates</strong> — or mark it not applicable. Everything below stays locked until you choose.</div>
       ${dropZone}
       ${pricingGsaFiles.length ? `<div style="margin-top:8px">${filesHtml}</div><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule()" style="margin-top:10px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button>` : ''}
@@ -8611,8 +8679,10 @@ function pricingRenderAll() {
   pricingRenderLcats();
   pricingRenderMatrix();
   pricingRenderPeriods();
+  pricingRenderTravel();
   pricingRenderFteBar();
   pricingRenderSummary();
+  pricingRenderExport();
   pricingRenderWarnings();
   pricingRenderFeedStatus();
   pricingSave();
@@ -8802,10 +8872,213 @@ function pricingRenderFteBar() {
   el.innerHTML = card('FTE basis', src) + card('Advertised FTE (sum of roles)', advTotal.toFixed(2)) + card('Allocated FTE (from hours)', allocated.toFixed(2));
 }
 
+// ───────────────────────── Travel / ODCs (pass-through, no G&A markup) ─────────────────────────
+// GSA standard CONUS per-diem starting points (editable per opportunity).
+const PRICING_TRAVEL_DEFAULTS = { travelers: '1', tripsPerYear: '4', nightsPerTrip: '2', airfare: '500', lodgingRate: '110', mieRate: '68', localTransport: '75', flatPerTrip: '1500', gaPct: '10' };
+
+function pricingTravel() {
+  if (!pricingModel.travel) pricingModel.travel = { mode: 'none', method: 'perdiem', markup: 'passthrough', gaPct: '', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', notes: '' };
+  if (!pricingModel.travel.markup) pricingModel.travel.markup = 'passthrough';
+  return pricingModel.travel;
+}
+function pricingSetTravelMode(mode) {
+  const t = pricingTravel();
+  t.mode = mode;
+  if (mode !== 'none') Object.keys(PRICING_TRAVEL_DEFAULTS).forEach(k => { if (!String(t[k] == null ? '' : t[k]).trim()) t[k] = PRICING_TRAVEL_DEFAULTS[k]; });
+  pricingRenderAll();
+}
+function pricingSetTravel(field, val) { pricingTravel()[field] = val; pricingRenderAll(); }
+
+// Cost of one trip for one traveler under the chosen method.
+function pricingTravelPerTrip() {
+  const t = pricingTravel();
+  if (t.method === 'flat') return parseFloat(t.flatPerTrip) || 0;
+  const nights = parseFloat(t.nightsPerTrip) || 0;
+  const air = parseFloat(t.airfare) || 0;
+  const lodge = (parseFloat(t.lodgingRate) || 0) * nights;
+  // GSA M&IE: full days plus the two travel days at ~75% (approximated as nights + 0.5 full days).
+  const mie = (parseFloat(t.mieRate) || 0) * (nights + 0.5);
+  const local = parseFloat(t.localTransport) || 0;
+  return air + lodge + mie + local;
+}
+// One full year of travel across all trips and travelers (pre-markup).
+function pricingTravelAnnual() {
+  const t = pricingTravel();
+  if (t.mode === 'none') return 0;
+  return (parseFloat(t.tripsPerYear) || 0) * (parseFloat(t.travelers) || 1) * pricingTravelPerTrip();
+}
+// Travel across every period (scaled by term). G&A markup applied if chosen, then the NTE cap.
+function pricingTravelTotal() {
+  const t = pricingTravel();
+  if (t.mode === 'none') return { raw: 0, estimate: 0, total: 0, annual: 0, capped: false, nte: 0, ga: 0, markup: false };
+  const annual = pricingTravelAnnual();
+  const years = pricingModel.periods.reduce((s, p) => s + pricingPeriodFraction(p), 0);
+  const raw = annual * years;
+  const markup = (t.markup === 'markup');
+  const ga = markup ? (parseFloat(t.gaPct) || 0) : 0;
+  const estimate = raw * (1 + ga / 100);
+  const nte = _parseMoney(t.nte) || 0;
+  let total = estimate, capped = false;
+  if (t.mode === 'nte' && nte > 0 && estimate > nte) { total = nte; capped = true; }
+  return { raw, estimate, total, annual, capped, nte, ga, markup };
+}
+
+function pricingRenderTravel() {
+  const el = document.getElementById('pricingTravel'); if (!el) return;
+  if (!pricingModel.lcats.length || !pricingModel.tasks.length) { el.innerHTML = ''; return; }
+  const t = pricingTravel();
+  const radio = (val, lbl) => `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;margin-right:16px"><input type="radio" name="pTravelMode" ${t.mode === val ? 'checked' : ''} onchange="pricingSetTravelMode('${val}')" style="width:auto"/> ${lbl}</label>`;
+  const mradio = (val, lbl) => `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;margin-right:16px"><input type="radio" name="pTravelMethod" ${t.method === val ? 'checked' : ''} onchange="pricingSetTravel('method','${val}')" style="width:auto"/> ${lbl}</label>`;
+  const gradio = (val, lbl) => `<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;margin-right:16px"><input type="radio" name="pTravelMarkup" ${(t.markup || 'passthrough') === val ? 'checked' : ''} onchange="pricingSetTravel('markup','${val}')" style="width:auto"/> ${lbl}</label>`;
+  const num = (field, lbl, prefix) => `<div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:11px;color:var(--muted)">${lbl}</label><div style="display:flex;align-items:center;gap:3px">${prefix ? `<span style="font-size:12px;color:var(--muted)">${prefix}</span>` : ''}<input type="number" min="0" step="any" value="${pricingEsc(String(t[field] == null ? '' : t[field]))}" onchange="pricingSetTravel('${field}',this.value)" style="width:88px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div></div>`;
+  let body;
+  if (t.mode !== 'none') {
+    const calc = pricingTravelTotal();
+    const perTrip = pricingTravelPerTrip();
+    let inputs = `<div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px">${num('tripsPerYear', 'Trips / year')}${num('travelers', 'Travelers / trip')}`;
+    if (t.method === 'perdiem') {
+      inputs += `${num('nightsPerTrip', 'Nights / trip')}${num('airfare', 'Airfare (RT)', '$')}${num('lodgingRate', 'Lodging / night', '$')}${num('mieRate', 'M&IE / day', '$')}${num('localTransport', 'Local transp. / trip', '$')}`;
+    } else {
+      inputs += num('flatPerTrip', 'Flat $ / trip', '$');
+    }
+    inputs += `</div>`;
+    const nteRow = t.mode === 'nte' ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin:4px 0">${num('nte', 'Travel NTE (total)', '$')}</div>` : '';
+    const markupRow = `<div style="font-size:12px;margin:8px 0 2px">Markup: ${gradio('passthrough', 'Pass-through (no markup)')}${gradio('markup', 'Apply G&amp;A')}</div>${calc.markup ? `<div style="display:flex;gap:14px;flex-wrap:wrap;margin:4px 0">${num('gaPct', 'G&amp;A %', '')}</div>` : ''}`;
+    const cappedNote = calc.capped ? `<div style="font-size:11px;color:var(--warn);margin-top:6px">Estimate ${pricingFmt(calc.estimate)} exceeds the NTE &mdash; capped at ${pricingFmt(calc.nte)}.</div>` : '';
+    const gaTotalsNote = calc.markup ? ` <span style="color:var(--muted)">(raw ${pricingFmt(calc.raw)} + ${calc.ga}% G&amp;A)</span>` : '';
+    body = `<div style="font-size:12px;margin:8px 0 2px">Estimation method: ${mradio('perdiem', 'GSA per-diem build-up')}${mradio('flat', 'Flat per-trip allowance')}</div>${inputs}${nteRow}${markupRow}<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;display:flex;flex-wrap:wrap;gap:6px 22px"><span>Per trip: <strong>${pricingFmt(perTrip)}</strong></span><span>Annual: <strong>${pricingFmt(calc.annual)}</strong></span><span>All periods: <strong>${pricingFmt(calc.total)}</strong>${gaTotalsNote}</span></div>${cappedNote}<div style="font-size:11px;color:var(--muted);margin-top:6px">${calc.markup ? 'G&amp;A markup applied to travel.' : 'Pass-through cost &mdash; no markup applied.'} ${t.method === 'perdiem' ? 'Rates pre-filled with GSA standard CONUS per-diem; edit per opportunity.' : 'Flat allowance per traveler per trip.'}</div>`;
+  } else {
+    body = `<div style="font-size:11px;color:var(--muted);margin-top:4px">No travel CLIN on this opportunity. Switch to NTE or Open to add an estimated travel/ODC line to the total.</div>`;
+  }
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff"><div style="font-weight:700;font-size:13px;margin-bottom:6px">✈️ Travel / ODCs</div><div style="font-size:12px">${radio('none', 'None')}${radio('nte', 'NTE (estimate, capped)')}${radio('open', 'Open (estimate)')}</div>${body}</div>`;
+}
+
+function pricingWorkbookName() {
+  const base = (typeof CLIENT_CONFIG === 'object' && CLIENT_CONFIG.companyShortName) ? (CLIENT_CONFIG.companyShortName + '_Pricing_Workbook') : 'Pricing_Workbook';
+  return base.replace(/[\\/:*?"<>|]/g, '-');
+}
+
+// Build the 5-tab pricing workbook with SheetJS. Tab 1 is the fully drilled-down line-item
+// "database" (one row per labor category x task/CLIN x period); tabs 2-5 are rollups whose
+// totals tie exactly to the live price model. Returns the workbook, or null if nothing to export.
+function pricingBuildWorkbook() {
+  if (typeof XLSX === 'undefined') return null;
+  const M = pricingModel;
+  if (!M || !M.lcats.length || !M.tasks.length || pricingBaseTotal() <= 0) return null;
+  const gsa = pricingIsGsa();
+  const P = M.periods;
+  const mult = pricingMultipliers();
+  const r2 = x => Math.round((x || 0) * 100) / 100;
+  const frac = i => pricingPeriodFraction(P[i]);
+  const cellH = (lid, tid) => pricingCell(lid, tid);
+  // Effective per-period loaded rate: GSA bakes escalation into the year's rate; build-up applies it via the period multiplier.
+  const effRate = (l, i) => gsa ? pricingLoadedRate(l, i) : pricingLoadedRate(l, 0) * (mult[i] || 1);
+  const cellCost = (l, tid, i) => cellH(l.id, tid) * effRate(l, i) * frac(i);
+  const pNames = P.map((p, i) => p.name || ('Period ' + (i + 1)));
+  const wb = XLSX.utils.book_new();
+
+  // ---- TAB 1: Line-Item Detail (most granular; pivot off this) ----
+  const det = [['Labor Category', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Task / CLIN Code', 'Task / CLIN Name', 'Period', 'Term (mo)', 'Hours', 'Loaded Rate ($/hr)', (gsa ? 'GSA Year' : 'Wrap Factor'), 'Cost ($)']];
+  M.lcats.forEach(l => {
+    M.tasks.forEach(t => {
+      const h = cellH(l.id, t.id);
+      if (h <= 0) return;
+      P.forEach((p, i) => {
+        det.push([
+          l.name || '(unnamed)',
+          gsa ? (l.gsaLcat || l.name || '') : r2(parseFloat(l.baseRate) || 0),
+          t.code || '',
+          t.name || '',
+          pNames[i],
+          pricingPeriodMonths(p),
+          r2(h * frac(i)),
+          r2(effRate(l, i)),
+          gsa ? pricingGsaScheduleYearForPeriod(i) : r2(pricingEffectiveWrapFactor(l)),
+          r2(h * effRate(l, i) * frac(i))
+        ]);
+      });
+    });
+  });
+  const wsDet = XLSX.utils.aoa_to_sheet(det);
+  wsDet['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 32 }, { wch: 16 }, { wch: 9 }, { wch: 11 }, { wch: 16 }, { wch: 12 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsDet, 'Line-Item Detail');
+
+  // ---- TAB 2: By Labor Category ----
+  const bl = [['Labor Category', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Total Hours', 'FTE', 'Loaded Rate base yr ($/hr)', ...pNames, 'Total all periods ($)']];
+  M.lcats.forEach(l => {
+    const per = P.map((p, i) => r2(pricingRowHours(l.id) * effRate(l, i) * frac(i)));
+    bl.push([l.name || '(unnamed)', gsa ? (l.gsaLcat || l.name || '') : r2(parseFloat(l.baseRate) || 0), Math.round(pricingRowHours(l.id)), r2(pricingRowFte(l)), r2(pricingLoadedRate(l, 0)), ...per, r2(per.reduce((s, x) => s + x, 0))]);
+  });
+  bl.push(['TOTAL', '', Math.round(pricingTotalHours()), '', '', ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
+  const wsBL = XLSX.utils.aoa_to_sheet(bl);
+  wsBL['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 20 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
+  XLSX.utils.book_append_sheet(wb, wsBL, 'By Labor Category');
+
+  // ---- TABS 3 & 4: by the column dimension (PWS task / CLIN) ----
+  function colSheet(codeHdr, nameHdr) {
+    const rows = [[codeHdr, nameHdr, 'Total Hours', ...pNames, 'Total all periods ($)']];
+    M.tasks.forEach(t => {
+      const per = P.map((p, i) => {
+        if (gsa) { let c = 0; M.lcats.forEach(l => { c += cellCost(l, t.id, i); }); return r2(c); }
+        return r2(pricingColCost(t.id) * (mult[i] || 1) * frac(i));
+      });
+      rows.push([t.code || '', t.name || '', Math.round(pricingColHours(t.id)), ...per, r2(per.reduce((s, x) => s + x, 0))]);
+    });
+    rows.push(['TOTAL', '', Math.round(pricingTotalHours()), ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 14 }, { wch: 34 }, { wch: 12 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
+    return ws;
+  }
+  XLSX.utils.book_append_sheet(wb, colSheet('PWS Task', 'Task / Section Name'), 'By PWS Task');
+  XLSX.utils.book_append_sheet(wb, colSheet('CLIN', 'Product / Deliverable'), 'By CLIN');
+
+  // ---- TAB 5: Total Labor + Wrap ----
+  const pc = (CLIENT_CONFIG && CLIENT_CONFIG.pricing) || {};
+  const baseLabor = M.lcats.reduce((s, l) => s + pricingRowHours(l.id) * (parseFloat(l.baseRate) || 0), 0);
+  const loadedBase = pricingBaseTotal();
+  const tt = (typeof pricingTravelTotal === 'function') ? pricingTravelTotal() : { total: 0, markup: false, ga: 0, capped: false };
+  const lw = [['Cost Element', 'Basis', 'Amount ($)']];
+  if (gsa) {
+    const disc = Math.max(0, parseFloat(M.gsaDiscount) || 0);
+    lw.push(['Loaded labor (base year)', 'GSA Schedule ceiling less ' + disc + '% discount (fully burdened; wrap not applied)', r2(loadedBase)]);
+  } else {
+    lw.push(['Direct labor (unburdened)', 'sum of hours x base rate', r2(baseLabor)]);
+    lw.push(['Wrap / indirects + fee', 'fringe ' + (pc.fringe || 0) + '%, overhead ' + (pc.overhead || 0) + '%, G&A ' + (pc.ga || 0) + '%, fee ' + (pc.fee || 0) + '% (factor ' + pricingWrapFactor().toFixed(3) + ')', r2(loadedBase - baseLabor)]);
+    lw.push(['Loaded labor (base year)', 'direct labor x wrap factor', r2(loadedBase)]);
+  }
+  lw.push(['', '', '']);
+  P.forEach((p, i) => lw.push([(i === 0 ? 'Base period' : (p.name || ('Option ' + i))), pricingPeriodMonths(p) + '-month term' + (gsa ? (', GSA Yr ' + pricingGsaScheduleYearForPeriod(i)) : (i === 0 ? '' : ', +' + (parseFloat(p.escalation) || 0) + '% escalation')), r2(pricingPeriodCost(i))]));
+  lw.push(['Labor subtotal (all periods)', '', r2(pricingGrandTotal())]);
+  if (tt.total > 0) lw.push(['Travel / ODCs', (tt.markup ? ('incl. ' + tt.ga + '% G&A') : 'pass-through') + (tt.capped ? ', NTE-capped' : ''), r2(tt.total)]);
+  lw.push(['TOTAL CONTRACT VALUE', '', r2(pricingGrandTotal() + (tt.total || 0))]);
+  const wsLW = XLSX.utils.aoa_to_sheet(lw);
+  wsLW['!cols'] = [{ wch: 34 }, { wch: 54 }, { wch: 18 }];
+  XLSX.utils.book_append_sheet(wb, wsLW, 'Labor + Wrap');
+
+  return wb;
+}
+
+function pricingExportWorkbook() {
+  if (typeof XLSX === 'undefined') { if (typeof showStatus === 'function') showStatus('error', 'Excel library not loaded', 'Refresh the page (Ctrl+Shift+R) and try again.'); return; }
+  const wb = pricingBuildWorkbook();
+  if (!wb) { if (typeof showStatus === 'function') showStatus('warn', 'Nothing to export', 'Build the price model first (add labor categories, tasks, and rates).'); return; }
+  XLSX.writeFile(wb, pricingWorkbookName() + '.xlsx');
+}
+
+function pricingRenderExport() {
+  const el = document.getElementById('pricingExportRow'); if (!el) return;
+  if (!pricingModel.lcats.length || !pricingModel.tasks.length || pricingBaseTotal() <= 0) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button onclick="pricingExportWorkbook()" style="padding:9px 16px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">⬇ Export pricing workbook (.xlsx)</button><span style="font-size:11.5px;color:var(--muted)">5 tabs &mdash; line-item detail (pivot-ready) plus rollups by labor category, PWS task, CLIN, and labor + wrap.</span></div>`;
+}
+
 function pricingRenderSummary() {
   const el = document.getElementById('pricingSummary'); if (!el) return;
   if (!pricingModel.lcats.length || !pricingModel.tasks.length) { el.innerHTML = ''; return; }
   const grand = pricingGrandTotal();
+  const tcalc = pricingTravelTotal();
+  const totalBlock = tcalc.total > 0
+    ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #86efac;display:flex;justify-content:space-between;font-size:13px"><span>Labor subtotal (all periods)</span><span>${pricingFmt(grand)}</span></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-top:3px"><span>Travel / ODCs (${tcalc.markup ? 'incl. ' + tcalc.ga + '% G&amp;A' : 'pass-through'})${tcalc.capped ? ' &mdash; NTE-capped' : ''}</span><span>${pricingFmt(tcalc.total)}</span></div><div style="margin-top:8px;padding-top:8px;border-top:2px solid #86efac;display:flex;justify-content:space-between;font-weight:800;font-size:15px"><span>Total contract value</span><span>${pricingFmt(grand + tcalc.total)}</span></div>`
+    : `<div style="margin-top:10px;padding-top:10px;border-top:2px solid #86efac;display:flex;justify-content:space-between;font-weight:800;font-size:15px"><span>Grand Total</span><span>${pricingFmt(grand)}</span></div>`;
   let methodHtml = '';
   if (pricingModel.methodology === 'pws_task' || pricingModel.methodology === 'product') {
     const lbl = pricingModel.methodology === 'product' ? 'deliverable / CLIN' : 'PWS task';
@@ -8821,7 +9094,7 @@ function pricingRenderSummary() {
     ${methodHtml}
     <div style="font-size:12px;font-weight:700;margin:12px 0 4px">Total contract value (all periods)</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px 10px">Period</th><th style="text-align:right;padding:4px 10px">Term</th><th style="text-align:right;padding:4px 10px">Escalation</th><th style="text-align:right;padding:4px 10px">Price</th></tr></thead><tbody>${periodsHtml}</tbody></table>
-    <div style="margin-top:10px;padding-top:10px;border-top:2px solid #86efac;display:flex;justify-content:space-between;font-weight:800;font-size:15px"><span>Grand Total</span><span>${pricingFmt(grand)}</span></div>
+    ${totalBlock}
     <div style="font-size:11px;color:var(--muted);margin-top:6px">${pricingIsGsa() ? `GSA Schedule rates − ${Math.max(0, parseFloat(pricingModel.gsaDiscount) || 0)}% discount (fully burdened; wrap not applied)` : `Wrap factor ${pricingWrapFactor().toFixed(2)} (${pricingWrapModeLabel()})`} · ${pricingModel.lcats.length} labor categories · ${pricingTotalHours().toLocaleString()} full-year hours.${pricingIsGsa() ? '' : ' Edit wrap components in Settings → Pricing Defaults.'}</div>
   </div>`;
 }
@@ -8917,6 +9190,11 @@ function buildPricingContextForVol3() {
   });
   s += `  - GRAND TOTAL (all periods): ${pricingFmt(pricingGrandTotal())}.\n`;
   s += `Structure the BoE narrative to match the required methodology above, justify the hours per task, explain cost realism, and tie the labor mix to the staffing approach.\n`;
+  const _tt = pricingTravelTotal();
+  if (_tt.total > 0) {
+    const _tv = pricingTravel();
+    s += `\nTRAVEL / ODCs: This effort includes ${_tv.mode === 'nte' ? 'a not-to-exceed travel CLIN' : 'reimbursable travel'}. Estimated travel is ${pricingFmt(_tt.total)} across all periods (${pricingFmt(_tt.annual)} per year), based on ${_tv.tripsPerYear || '0'} trip(s)/year for ${_tv.travelers || '1'} traveler(s)${_tv.method === 'perdiem' ? ` using GSA CONUS per-diem (lodging ${pricingFmtC(parseFloat(_tv.lodgingRate)||0)}/night, M&IE ${pricingFmtC(parseFloat(_tv.mieRate)||0)}/day, airfare ${pricingFmtC(parseFloat(_tv.airfare)||0)}/round-trip)` : ` at a flat ${pricingFmtC(parseFloat(_tv.flatPerTrip)||0)}/trip`}. ${_tt.markup ? `Travel is burdened with ${_tt.ga}% G&A (raw ${pricingFmt(_tt.raw)} plus G&A markup).` : `Travel is billed as a pass-through cost with no markup.`}${_tt.capped ? ` The estimate is capped at the stated NTE of ${pricingFmt(_tt.nte)}.` : ''} The Total Contract Value including travel is ${pricingFmt(pricingGrandTotal() + _tt.total)}. Present travel as a separate CLIN/line from labor and provide this basis of estimate in the price narrative.\n`;
+  }
   return s;
 }
 
@@ -10016,7 +10294,7 @@ async function runBnaCombined() {
   const intelCard = document.getElementById('bnaIntelCard');
   const intelBody = document.getElementById('bnaIntelBody');
   if (intelCard) { intelCard.style.display = 'block'; intelCard.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  if (intelBody) intelBody.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Extracting opportunity details…</div>';
+  if (intelBody) intelBody.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><span class="spinner-dark" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Extracting opportunity details…</div>';
   // 1) Opportunity details — renders into the card above as soon as it returns.
   try { await runOpportunityIntel(); } catch (e) { console.error('Opportunity intel failed', e); }
   // 2) Scoring analysis — renders the decision matrix below.
@@ -10111,7 +10389,7 @@ async function runBidNoBid() {
       (someSolUnreadable
         ? `WARNING: One or more solicitation files could not be read (marked UNREADABLE above). Base your analysis ONLY on readable content. Do NOT guess the set-aside type, NAICS, value, clearance, or scope from an unreadable file.\n\n`
         : '') +
-      `ABSOLUTE RULE — NO FABRICATION: Only state facts that appear in the readable solicitation text. NEVER invent or assume the set-aside type, NAICS code, contract value, place of performance, clearance level, or incumbent. If the solicitation does not state something, say so explicitly in the rationale (e.g. "set-aside not stated in available documents") rather than guessing. A Sources Sought notice often has NO set-aside determined yet — do not assume SDVOSB or any other set-aside unless it is explicitly written.\n\n` +
+      `ABSOLUTE RULE — NO FABRICATION: Only state facts that appear in the readable solicitation text. NEVER invent or assume the set-aside type, NAICS code, place of performance, clearance level, or incumbent (these are factual and must be taken from the documents). EXCEPTION - contract SIZE: you MAY give a reasoned order-of-magnitude ESTIMATE of the contract VALUE for prime-capacity sizing, but it MUST be clearly labeled with a "~est " prefix and never presented as a stated figure. If the solicitation does not state something, say so explicitly in the rationale (e.g. "set-aside not stated in available documents") rather than guessing. A Sources Sought notice often has NO set-aside determined yet — do not assume SDVOSB or any other set-aside unless it is explicitly written.\n\n` +
       `TASK: Read the solicitation carefully, then (A) extract key opportunity facts, (B) estimate how much of the work ${CLIENT_CONFIG.companyShortName} can self-perform, and (C) score 6 fit factors from 0 to 10.\n\n` +
       `SCORING SCALE — USE THE FULL 0-10 RANGE AND SPREAD YOUR SCORES. Clustering everything at 5-7 is a failure mode: most factors should land below 4 or above 7. Score genuine strengths high and genuine weaknesses low even when the evidence is mixed.\n` +
       `  0-2 = severe deficiency / near-disqualifying weakness\n` +
@@ -10144,7 +10422,7 @@ async function runBidNoBid() {
       `- prime_ineligibility_reason: if prime_eligible is false, ONE sentence naming the SPECIFIC barrier(s) (e.g. "8(a) set-aside; company holds SDVOSB/VOSB, not 8(a)" or "requires Top Secret FCL; company holds Secret"). Else "".\n` +
       `- contract_vehicle: required contract vehicle/IDIQ if any (e.g. "SeaPort-NxG"), else ""\n` +
       `- vehicle_is_open: true if this is open-market / full-and-open / a Schedule anyone can get on; false if it requires holding a specific closed IDIQ/vehicle\n` +
-      `- estimated_value: total contract value if stated (e.g. "$12M"), else ""\n` +
+      `- estimated_value: total contract value across the FULL period of performance. If a dollar figure is stated, use it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE prefixed with "~est " (e.g. "~est $80M-$160M"), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, and agency size, so the size can be sanity-checked against prime capacity. Only use "" if there is genuinely nothing to reason from.\n` +
       `- required_cmmc: CMMC level required (1/2/3) if stated, else ""\n` +
       `- required_iso: ISO standard(s) required of performers (e.g. "9001"), else ""\n\n` +
       `SCOPE COVERAGE — scope_coverage: an integer 0-100 estimating the percentage of the PWS/required scope ${CLIENT_CONFIG.companyShortName} can credibly SELF-PERFORM, based on its profile/capabilities vs. the task areas. Be realistic: a broad multi-discipline scope where the company covers only part should score lower. This drives the subcontract decision.\n\n` +
@@ -10470,7 +10748,8 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `7. For is_sca: set to true ONLY if the solicitation explicitly states this position falls under the Service Contract Act or references a Wage Determination for it. Set to false if no SCA language applies.\n` +
     `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
     `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName || 'the company'}${CLIENT_CONFIG.businessType ? ' (a ' + CLIENT_CONFIG.businessType + ')' : ''} and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - the set-aside aligns directly with the company's certifications and the NAICS matches core capabilities."\n\n` +
-    `Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
+    `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from.
+Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
     `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
