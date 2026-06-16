@@ -85,23 +85,30 @@
   .ms-login-btn:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
   .ms-login-btn .ms-icon { width: 18px; height: 18px; flex-shrink: 0; }
   .ms-signed-in {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 6px; padding: 8px 10px;
-    font-size: 12px; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 9px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 999px; padding: 5px 9px 5px 7px;
+    font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    white-space: nowrap; text-align: left;
   }
-  .ms-signed-in > div { min-width: 0; flex: 1; }
-  .ms-signed-in .ms-name, #msEmail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
   .ms-signed-in .ms-avatar {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: var(--teal); color: #005FD5;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #2563eb; color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 12px; flex-shrink: 0;
   }
-  .ms-signed-in .ms-name { font-weight: 600; color: white; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
-  .ms-signed-in .ms-signout { font-size: 11px; color: rgba(255,255,255,0.6); cursor: pointer; margin-left: 4px; text-decoration: underline; }
-  .ms-signed-in .ms-signout:hover { color: white; }
+  .ms-signed-in .ms-name { font-weight: 700; color: #14532d; line-height: 1.15; }
+  .ms-signed-in .ms-signout { font-size: 11px; color: #475569; cursor: pointer; margin-left: 4px; padding: 3px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; text-decoration: none; }
+  .ms-signed-in .ms-signout:hover { background: #f1f5f9; color: #1e293b; }
+  .sidebar-legend { order: 5; margin: 16px 10px 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 11px 11px 12px; }
+  .sidebar-legend .sl-title { font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 9px; letter-spacing: 0.2px; }
+  .sidebar-legend .sl-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 9px; }
+  .sidebar-legend .sl-row:last-child { margin-bottom: 0; }
+  .sidebar-legend .sl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.5); }
+  .sidebar-legend .sl-txt { display: flex; flex-direction: column; gap: 1px; }
+  .sidebar-legend .sl-txt b { font-size: 11px; font-weight: 700; color: #fff; line-height: 1.25; }
+  .sidebar-legend .sl-txt span { font-size: 10.5px; color: rgba(255,255,255,0.78); line-height: 1.3; }
 
   /* ── LAYOUT ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
@@ -555,7 +562,29 @@
     display: flex; flex-direction: column; gap: 8px; align-items: stretch;
     margin: 0; width: 100%; order: 3;
   }
-  #msSignedInArea { order: 2; margin-left: 0 !important; }
+  #msSignedInArea { text-align: right; }
+  .top-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    background: #ffffff;
+    padding: 12px 22px;
+    margin-bottom: 22px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .top-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .top-brand .top-logo-text { font-size: 25px; font-weight: 800; color: var(--blue); letter-spacing: .2px; line-height: 1.1; }
+  .sidebar-logo {
+    align-self: flex-start;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin: 0 0 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+    max-width: 100%;
+  }
+  .sidebar-logo .sidebar-logo-img { max-width: 152px; max-height: 60px; width: auto; height: auto; object-fit: contain; display: block; }
+  .sidebar-logo.logo-bg-dark { background: #1e293b; box-shadow: 0 1px 4px rgba(0,0,0,0.28); }
   .tab-btn {
     background: linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%);
     border: 1px solid rgba(255,255,255,0.25);
@@ -646,9 +675,8 @@
 <body>
 
 <header class="app-header">
-  <div class="header-left">
-    <img class="logo-img" id="appLogo" src="" alt="Logo"/>
-    <div class="logo-text" id="appTitle">Proposal Tool</div>
+  <div class="sidebar-logo">
+    <img class="sidebar-logo-img" id="appLogo" src="" alt="Logo"/>
   </div>
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
@@ -660,15 +688,11 @@
     <button class="tab-btn" data-fam="build" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
     <button class="tab-btn" data-fam="config" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
-  <div id="msSignedInArea" style="display:none;margin-left:16px">
-    <div class="ms-signed-in">
-      <div class="ms-avatar" id="msAvatar">?</div>
-      <div>
-        <div class="ms-name" id="msName">—</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.55)" id="msEmail">—</div>
-      </div>
-      <span class="ms-signout" onclick="msLogout()">Sign out</span>
-    </div>
+  <div class="sidebar-legend">
+    <div class="sl-title">🔗 How tabs connect</div>
+    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Partners</b><span>teaming — your CRM feeds the partner finder</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1)"></span><div class="sl-txt"><b>Section Editor · Settings</b><span>standalone — don't feed other tabs</span></div></div>
   </div>
 </header>
 
@@ -722,14 +746,32 @@
 
 <div class="container">
 
-<!-- How the tabs connect (data flow) — sits at the top of the content so the fixed status bar pushes it down with the rest, never over it -->
-<div class="tab-flow-legend" id="tabFlowLegend">
-  <span style="font-weight:700;color:#334155">🔗 How tabs connect:</span>
-  <span class="tfl-item"><span class="tfl-dot" style="background:var(--fam-decide,#2aa79b)"></span><span class="tfl-label">Bid/No-Bid ↔ Partners</span> — teaming: your CRM feeds the partner finder</span>
-  <span class="tfl-item"><span class="tfl-dot" style="background:var(--fam-build,#8a93e8)"></span><span class="tfl-label">Proposal ↔ Pricing ↔ Compliance</span> — shared RFP; pricing flows into Volume III</span>
-  <span class="tfl-item"><span class="tfl-dot" style="background:var(--fam-neutral,#cbd5e1)"></span><span class="tfl-label">Section Editor · Settings</span> — standalone (don't feed other tabs)</span>
-  <span style="color:#94a3b8">· hover a tab for details</span>
+<div class="top-header">
+  <div class="top-brand">
+    <div class="top-logo-text" id="appTitle">Proposal Tool</div>
+  </div>
+  <div id="msSignedInArea">
+  <button id="msTopSignIn" class="ms-login-btn" onclick="msLogin()" style="display:inline-flex;padding:7px 14px;font-size:12.5px">
+    <svg class="ms-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+      <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+      <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+    </svg>
+    Sign in with Microsoft
+  </button>
+  <div class="ms-signed-in" id="msTopSignedIn" style="display:none">
+    <div class="ms-avatar" id="msAvatar">?</div>
+    <div>
+      <div class="ms-name" id="msName">—</div>
+      <div style="font-size:11px;color:#64748b" id="msEmail">—</div>
+    </div>
+    <span class="ms-signout" onclick="msLogout()">Sign out</span>
+  </div>
 </div>
+</div>
+
+
 
 <!-- ══════════════════════════ PROPOSAL TAB ══════════════════════════════ -->
 <div class="tab-pane" id="pane-proposal">
@@ -1515,7 +1557,7 @@
     <div class="card-body">
       <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Drop solicitation documents in Step 1 to unlock</span></div>
 
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Adjust how much each factor contributes to the final score. All weights must total exactly 100%.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Adjust how much each factor contributes to the final score (weights must total exactly 100%). Clicking <strong>Analyze</strong> first extracts the opportunity details, then scores the opportunity below.</p>
 
       <div style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🤖 Automated Tier — Scored by Claude</div>
@@ -1537,14 +1579,28 @@
       <div id="bnaWeightError" style="display:none;margin-top:10px;padding:8px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;font-size:12px;font-weight:600;color:var(--error)"></div>
       <div id="bnaCapacityWarning" style="display:none;margin-top:10px;padding:10px 14px;background:#fffbeb;border:1px solid #fde047;border-radius:8px;font-size:13px;color:#92400e"></div>
 
-      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBidNoBid()" disabled style="opacity:0.45;margin-top:12px;font-size:15px;padding:14px">
+      <button class="btn btn-primary btn-block" id="bnaRunBtn" onclick="runBnaCombined()" disabled style="opacity:0.45;margin-top:12px;font-size:15px;padding:14px">
         🎯 Analyze Opportunity
       </button>
     </div>
   </div>
 
 
-  <div id="bnaResults" style="display:none">
+    <!-- Opportunity Details: extracted first (above the scoring); one click runs both -->
+  <div class="card" id="bnaIntelCard" style="display:none;margin-bottom:24px">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="icon">📊</span> Opportunity Details</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:11px;font-weight:600;padding:3px 8px;background:#fef9c3;border:1px solid #fde047;border-radius:10px;color:#92400e">🔶 Amber = Inferred</span>
+        <button onclick="copyOpportunityIntel()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
+      </div>
+    </div>
+    <div class="card-body" id="bnaIntelBody">
+      <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Extracting opportunity details…</div>
+    </div>
+  </div>
+
+<div id="bnaResults" style="display:none">
     <!-- ── Hybrid Scoring Matrix ─────────────────────────────────────────── -->
     <div class="card" style="margin-bottom:24px">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
@@ -1628,26 +1684,7 @@
       </div>
     </div>
 
-    <!-- Opportunity Intelligence Card -->
-    <div class="card" style="margin-bottom:24px">
-      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-        <span><span class="icon">📊</span> Step 3: Opportunity Intelligence</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span style="font-size:11px;font-weight:600;padding:3px 8px;background:#fef9c3;border:1px solid #fde047;border-radius:10px;color:#92400e">🔶 Amber = Inferred</span>
-          <button onclick="copyOpportunityIntel()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
-        </div>
-      </div>
-      <div class="card-body" id="bnaIntelBody">
-        <div style="text-align:center;padding:20px">
-          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Extract detailed opportunity information from the solicitation documents — agency, contract details, NAICS, period of performance, set-aside, KO/COR, and more.</p>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:14px">⚠️ This makes a separate API call and may take 30–60 seconds depending on document size.</p>
-          <button onclick="runOpportunityIntel()" id="bnaIntelBtn"
-            style="padding:10px 24px;font-size:13px;font-weight:600;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer">
-            📊 Extract Opportunity Details
-          </button>
-        </div>
-      </div>
-    </div>
+
   </div>
 </div>
 
@@ -1714,7 +1751,7 @@
         <div style="font-size:12.5px;color:var(--muted);max-width:540px">Pull the PWS tasks, period of performance, FTE basis, and the required pricing methodology straight from your RFP analysis — or add tasks by hand below.</div>
         <button class="btn btn-primary" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull from RFP analysis</button>
       </div>
-      <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull from RFP analysis</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
+      <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull from RFP analysis</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
       <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
         <div style="flex:1;min-width:220px">
           <label style="display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Pricing Methodology <span style="color:var(--muted);font-weight:400">(how the Government wants it)</span></label>
@@ -1847,7 +1884,6 @@
           <div class="settings-field"><label>Clearances</label><input type="text" id="s_clearances" placeholder="Active SECRET FCL, personnel up to TS/SCI"/></div>
           <div class="settings-field"><label>CMMC Level</label><input type="text" id="s_cmmc" placeholder="CMMC Level 2 Compliant"/></div>
           <div class="settings-field"><label>DCAA Status</label><input type="text" id="s_dcaa" placeholder="DCAA-approved accounting system"/></div>
-          <div class="settings-field"><label>App Title</label><input type="text" id="s_appTitle" placeholder="SRFed Proposal Tool"/></div>
         </div>
       </div>
 
@@ -1983,8 +2019,8 @@
       <div class="settings-section">
         <h3>🎨 Branding</h3>
         <div class="settings-grid">
-          <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5"/></div>
-          <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872"/></div>
+          <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5" onblur="forceHashColor(this)"/></div>
+          <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872" onblur="forceHashColor(this)"/></div>
           <div class="settings-field" style="grid-column:1/-1">
             <label>Logo</label>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
@@ -2001,6 +2037,15 @@
                 <div style="font-size:11px;color:var(--muted);margin-top:4px">Paste a URL <em>or</em> upload an image — an uploaded logo is embedded directly, so it needs no hosting. Click Save to apply.</div>
               </div>
             </div>
+          </div>
+          <div class="settings-field">
+            <label>Logo Background</label>
+            <select id="s_logoBg" onchange="CLIENT_CONFIG.logoBg=this.value; applyLogoBadgeBg();">
+              <option value="auto">Auto (detect from logo)</option>
+              <option value="light">Light (white badge)</option>
+              <option value="dark">Dark badge</option>
+            </select>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">For light/knockout logos meant for dark backgrounds, choose Dark. Auto inspects the image.</div>
           </div>
         </div>
       </div>
@@ -2108,7 +2153,8 @@ const CLIENT_CONFIG = {
   accentColor:    '#3EB6F4',   // light highlights
   // Logo: base64 PNG string. To update, convert new logo to base64 and paste here.
   // Quick converter: https://www.base64-image.de/
-  logoBase64:     null,        // set below — kept separate for readability
+  logoBase64:     null,
+  logoBg:         'auto',        // set below — kept separate for readability
 
   // ── Company Identity ──────────────────────────────────────────────────────
   companyFullName:  'South River Federal Solutions LLC',
@@ -2340,9 +2386,59 @@ function deriveBusinessType(cap) {
   return isSmall ? 'Small Business' : (sz ? 'Other than small business' : '');
 }
 
+// Force a leading "#" on hex color values. Bare hex like "FFA500" is invalid as a CSS
+// color (so the theme silently fails to apply); this prepends the "#". Named CSS colors
+// (e.g. "red") and other non-hex input are left untouched.
+function normalizeHexColor(v) {
+  v = (v || '').trim();
+  if (!v) return '';
+  const bare = v.replace(/^#+/, '');
+  if (/^([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(bare)) return '#' + bare;
+  return v;
+}
+function forceHashColor(el) { if (el) el.value = normalizeHexColor(el.value); }
+
+function detectLogoNeedsDarkBadge(src, cb) {
+  try {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = function () {
+      try {
+        const W = 40, H = 40;
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(im, 0, 0, W, H);
+        const d = ctx.getImageData(0, 0, W, H).data;
+        const lum = (i) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+        const corners = [0, (W - 1), (H - 1) * W, (W * H - 1)].map(p => p * 4);
+        let ca = 0, cl = 0;
+        corners.forEach(i => { ca += d[i + 3]; cl += lum(i); });
+        ca /= corners.length; cl /= corners.length;
+        if (ca > 40) { cb(cl < 110); return; }              // opaque background: dark bg -> dark badge
+        let sum = 0, n = 0;
+        for (let p = 0; p < d.length; p += 4) { if (d[p + 3] > 60) { sum += lum(p); n++; } }
+        cb(n ? (sum / n) > 150 : false);                    // transparent bg: light content -> dark badge
+      } catch (e) { cb(false); }                             // tainted canvas (cross-origin) -> default light
+    };
+    im.onerror = function () { cb(false); };
+    im.src = src;
+  } catch (e) { cb(false); }
+}
+
+function applyLogoBadgeBg() {
+  const box = document.querySelector('.sidebar-logo');
+  if (!box) return;
+  const img = document.getElementById('appLogo');
+  const mode = (CLIENT_CONFIG.logoBg || 'auto');
+  if (mode === 'dark')  { box.classList.add('logo-bg-dark'); return; }
+  if (mode === 'light') { box.classList.remove('logo-bg-dark'); return; }
+  if (!img || !img.getAttribute('src') || img.style.display === 'none') { box.classList.remove('logo-bg-dark'); return; }
+  detectLogoNeedsDarkBadge(img.src, (needsDark) => { box.classList.toggle('logo-bg-dark', !!needsDark); });
+}
+
 function applyClientConfig() {
   // Title
-  document.title = CLIENT_CONFIG.appTitle;
+  document.title = ((CLIENT_CONFIG.companyShortName || '').trim() ? CLIENT_CONFIG.companyShortName.trim() + ' ' : '') + 'Proposal Tool';
   // Business type is no longer a free-text field — derive a readable descriptor from the
   // structured capacity profile (set-asides + size) so generation/BNA prose stays accurate.
   CLIENT_CONFIG.businessType = deriveBusinessType(CLIENT_CONFIG.capacity);
@@ -2355,12 +2451,14 @@ function applyClientConfig() {
     let src = '';
     if (CLIENT_CONFIG.logoBase64) src = String(CLIENT_CONFIG.logoBase64).startsWith('data:') ? CLIENT_CONFIG.logoBase64 : ('data:image/png;base64,' + CLIENT_CONFIG.logoBase64);
     else if (CLIENT_CONFIG.logoUrl) src = CLIENT_CONFIG.logoUrl;
-    if (src) { logoEl.src = src; logoEl.style.display = ''; }
-    else { logoEl.removeAttribute('src'); logoEl.style.display = 'none'; }
+    const logoBox = logoEl.closest('.sidebar-logo');
+    if (src) { logoEl.src = src; logoEl.style.display = ''; if (logoBox) logoBox.style.display = ''; }
+    else { logoEl.removeAttribute('src'); logoEl.style.display = 'none'; if (logoBox) logoBox.style.display = 'none'; }
   }
-  // App title text
-  const titleEl = document.querySelector('.logo-text');
-  if (titleEl) titleEl.textContent = CLIENT_CONFIG.appTitle;
+  applyLogoBadgeBg();
+  // App title text — derived from the company short name: "<Short> Proposal Tool".
+  const titleEl = document.getElementById('appTitle');
+  if (titleEl) titleEl.textContent = ((CLIENT_CONFIG.companyShortName || '').trim() ? CLIENT_CONFIG.companyShortName.trim() + ' ' : '') + 'Proposal Tool';
   // Colors
   document.documentElement.style.setProperty('--blue',     CLIENT_CONFIG.primaryColor);
   document.documentElement.style.setProperty('--mid-blue', CLIENT_CONFIG.secondaryColor);
@@ -2414,6 +2512,15 @@ function hexToHsl(hex) {
 
 async function initMsal() {
   try {
+    // If this page load is the Microsoft sign-in popup returning from login, do NOT run MSAL's
+    // redirect handling here. The opener window's loginPopup() reads the auth response straight from
+    // this popup's URL and then closes it; calling handleRedirectPromise() would consume that response
+    // (clear the URL hash), which hangs the login and leaves the popup showing the app instead.
+    if (window.opener && window.opener !== window &&
+        /[?&#](code|error|state|session_state)=/.test((window.location.search || '') + (window.location.hash || ''))) {
+      try { document.documentElement.style.visibility = 'hidden'; } catch (e) {}
+      return;
+    }
     if (typeof msal === 'undefined') {
       setTimeout(initMsal, 300);
       return;
@@ -2464,9 +2571,13 @@ function renderMsState() {
   const signedIn = !!msAccount;
   const email = msAccount ? (msAccount.username || '') : '';
 
-  // Header signed-in pill
+  // Top-right: Sign-in button when signed out, account pill when signed in.
   const signedInArea = document.getElementById('msSignedInArea');
-  if (signedInArea) signedInArea.style.display = signedIn ? 'block' : 'none';
+  if (signedInArea) signedInArea.style.display = 'block';
+  const topSignIn   = document.getElementById('msTopSignIn');
+  const topSignedIn = document.getElementById('msTopSignedIn');
+  if (topSignIn)   topSignIn.style.display   = signedIn ? 'none' : 'inline-flex';
+  if (topSignedIn) topSignedIn.style.display = signedIn ? 'inline-flex' : 'none';
 
   // Step 1 signed-in/out states
   const s1out = document.getElementById('step1SignedOut');
@@ -4592,7 +4703,7 @@ async function extractCompanyProfile(apiKey, companyDocContent, briefingContext)
 // same cachedBriefing, so there's a single source of truth.
 async function ensureBriefing(apiKey) {
   if (typeof cachedBriefing !== 'undefined' && cachedBriefing) return cachedBriefing;
-  if (!rfpFiles || rfpFiles.length === 0) throw new Error('No RFP/PWS documents are loaded. Add them on the Proposal tab (Step 3).');
+  if (!rfpFiles || rfpFiles.length === 0) throw new Error('No RFP/PWS documents are loaded. Add them on the Proposal tab (Step 4).');
   const blocks = [];
   let toks = 0;
   for (const f of [...rfpFiles].sort((a, b) => a.size - b.size)) {
@@ -4606,6 +4717,10 @@ async function ensureBriefing(apiKey) {
     `You are reading a U.S. government solicitation. Extract a concise JSON briefing focused on scope and pricing. Return ONLY JSON:\n` +
     `{"solicitation_number":"","requirement_title":"","agency_name":"","contract_type":"","period_of_performance":"",` +
     `"period_structure":"base + option breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
+    `"base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026), count the months (=9); if a month count is stated, use it; if a full base year with no other length is indicated, use 12; use 0 only if you truly cannot tell",` +
+    `"option_period_count":"number of option periods/years as a number; 0 if none",` +
+    `"option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown",` +
+    `"sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies to it; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed",` +
     `"pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated",` +
     `"estimated_ftes":"the number of FTEs/labor the solicitation REQUIRES if stated; '' or 'not specified' if it does not state one",` +
     `"estimated_value":"",` +
@@ -7968,9 +8083,9 @@ async function pricingPullBriefing() {
   const btn = document.getElementById('pricingPullBtn');
   let b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) ? cachedBriefing : null;
   if (!b) {
-    if (!rfpFiles || rfpFiles.length === 0) { showStatus('warn', 'No RFP loaded', 'Add your RFP/PWS documents on the Proposal tab (Step 3), then click Pull again — or add tasks manually below.'); return; }
+    if (!rfpFiles || rfpFiles.length === 0) { showStatus('warn', 'No RFP loaded', 'Add your RFP/PWS documents on the Proposal tab (Step 4), then click Pull again — or add tasks manually below.'); return; }
     const apiKey = getApiKey();
-    if (!apiKey) { showStatus('warn', 'API key needed', 'Enter your Anthropic API key on the Proposal tab (Step 1) to read the PWS, or add tasks manually.'); return; }
+    if (!apiKey) { showStatus('warn', 'API key needed', 'Enter your Anthropic API key on the Proposal tab (Step 2) to read the PWS, or add tasks manually.'); return; }
     if (btn) { btn.disabled = true; btn.textContent = 'Reading PWS…'; }
     try { b = await ensureBriefing(apiKey); }
     catch (e) { showStatus('warn', 'Could not read the PWS', e.message); if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull from RFP analysis'; } return; }
@@ -8007,20 +8122,32 @@ function pricingApplyBriefing(b) {
       pricingModel.hours = {}; pricingModel.mask = {};
     }
   }
-  // Periods from period_structure (best-effort)
+  // Periods — prefer the briefing's structured numeric fields (Claude computes these even from a
+  // date range or partial period); fall back to text-pattern matching on the period_structure string.
   const ps = String(b.period_structure || b.period_of_performance || '');
   const optMatch = ps.match(/(\d+)\s*(?:one[-\s]?year\s*)?option/i);
-  // Detect a partial base period, e.g. "6-month base", "3 month base period", "base period of 6 months".
   const baseMoMatch = ps.match(/(\d+)\s*[-\s]?month[s]?\s+base/i) || ps.match(/base\s+(?:period\s+)?(?:of\s+)?(\d+)\s*[-\s]?month/i);
-  const baseMonths = baseMoMatch ? Math.min(parseInt(baseMoMatch[1]) || 12, 60) : 12;
-  // Detect a uniform partial option length, e.g. "6-month option".
   const optMoMatch = ps.match(/(\d+)\s*[-\s]?month[s]?\s+option/i);
-  const optMonths = optMoMatch ? Math.min(parseInt(optMoMatch[1]) || 12, 60) : 12;
-  if (optMatch || baseMoMatch) {
-    const nOpt = optMatch ? Math.min(parseInt(optMatch[1]) || 0, 10) : 0;
-    pricingModel.periods = [{ id: 'p_base', name: 'Base Year', escalation: 0, months: baseMonths }];
-    for (let i = 1; i <= nOpt; i++) pricingModel.periods.push({ id: _prId('p_'), name: 'Option Year ' + i, escalation: 3, months: optMonths });
+  const baseMoNum = parseInt(b.base_period_months);
+  const optCntNum = parseInt(b.option_period_count);
+  const optMoNum  = parseInt(b.option_period_months);
+  const haveStructured = (!isNaN(baseMoNum) && baseMoNum > 0) || (!isNaN(optCntNum) && optCntNum > 0);
+  const baseMonths = (!isNaN(baseMoNum) && baseMoNum > 0) ? Math.min(baseMoNum, 120)
+                   : (baseMoMatch ? Math.min(parseInt(baseMoMatch[1]) || 12, 60) : 12);
+  const optMonths  = (!isNaN(optMoNum) && optMoNum > 0) ? Math.min(optMoNum, 120)
+                   : (optMoMatch ? Math.min(parseInt(optMoMatch[1]) || 12, 60) : 12);
+  const nOpt = haveStructured
+             ? ((!isNaN(optCntNum) && optCntNum > 0) ? Math.min(optCntNum, 12) : 0)
+             : (optMatch ? Math.min(parseInt(optMatch[1]) || 0, 10) : 0);
+  if (haveStructured || optMatch || baseMoMatch) {
+    const baseName = (baseMonths === 12) ? 'Base Year' : 'Base Period';
+    const optName  = (optMonths === 12) ? 'Option Year ' : 'Option Period ';
+    pricingModel.periods = [{ id: 'p_base', name: baseName, escalation: 0, months: baseMonths }];
+    for (let i = 1; i <= nOpt; i++) pricingModel.periods.push({ id: _prId('p_'), name: optName + i, escalation: 3, months: optMonths });
   }
+  // SCA / Service Contract Act coverage — set the Step-2 radio when the briefing detected it.
+  const _scaCov = String(b.sca_coverage || '').toLowerCase().trim();
+  if (_scaCov === 'yes' || _scaCov === 'no') { pricingModel.sca = pricingModel.sca || {}; pricingModel.sca.covered = (_scaCov === 'yes'); }
   window._pricingBriefingMeta = {
     title: b.requirement_title || '', sol: b.solicitation_number || '',
     contractType: b.contract_type || '', period: b.period_of_performance || '',
@@ -8154,7 +8281,7 @@ function pricingAddRateCardRow() { const n = Math.max(1, parseInt(pricingModel.g
 function pricingSetRateCard(id, field, val, yearIdx) {
   const r = pricingModel.gsaRateCard.find(x => x.id === id); if (!r) return;
   if (field === 'lcat') r.lcat = val;
-  else if (field === 'rate') { if (!Array.isArray(r.rates)) r.rates = []; r.rates[yearIdx] = val; }
+  else if (field === 'rate') { if (!Array.isArray(r.rates)) r.rates = []; const _n = String(val).replace(/[^0-9.]/g, ''); r.rates[yearIdx] = (_n === '' ? '' : (parseFloat(_n) || 0)); }
   pricingRenderAll();
 }
 function pricingRemoveRateCardRow(id) { pricingModel.gsaRateCard = pricingModel.gsaRateCard.filter(r => r.id !== id); pricingRenderAll(); }
@@ -8234,7 +8361,7 @@ function pricingRenderGate() {
   const applYear = pricingGsaScheduleYearForPeriod(0);   // year that applies to the base period
   const yrHead = Array.from({ length: nY }, (_, k) => `<th style="padding:4px 6px;font-weight:600;font-size:11px;${k + 1 === applYear ? 'background:#fde68a;border-radius:5px' : 'color:var(--muted)'}">Yr ${k + 1}</th>`).join('');
   const cardRows = card.map(r => {
-    const cells = Array.from({ length: nY }, (_, k) => `<td style="padding:2px 3px;${k + 1 === applYear ? 'background:#fef9c3' : ''}"><input type="number" min="0" step="0.01" value="${(r.rates && r.rates[k] != null) ? r.rates[k] : ''}" onchange="pricingSetRateCard('${r.id}','rate',this.value,${k})" style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;text-align:right"/></td>`).join('');
+  const cells = Array.from({ length: nY }, (_, k) => { const _rv = (r.rates && r.rates[k] != null && r.rates[k] !== '' && !isNaN(r.rates[k])) ? Number(r.rates[k]).toFixed(2) : ''; return `<td style="padding:2px 3px;${k + 1 === applYear ? 'background:#fef9c3' : ''}"><span style="position:relative;display:inline-block"><span style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none">$</span><input type="text" inputmode="decimal" value="${_rv}" onchange="pricingSetRateCard('${r.id}','rate',this.value,${k})" style="width:84px;padding:4px 6px 4px 17px;border:1px solid var(--border);border-radius:5px;font-size:11px;text-align:right"/></span></td>`; }).join('');
     return `<tr><td style="padding:2px 3px"><input value="${pricingEsc(r.lcat)}" onchange="pricingSetRateCard('${r.id}','lcat',this.value)" placeholder="Labor category" style="min-width:170px;width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px"/></td>${cells}<td style="padding:2px 3px;text-align:center"><button onclick="pricingRemoveRateCardRow('${r.id}')" title="Remove" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:14px">✕</button></td></tr>`;
   }).join('');
   const cardTable = card.length
@@ -8249,6 +8376,11 @@ function pricingRenderGate() {
       <button onclick="pricingSetGsaDecision('na')" style="padding:5px 11px;font-size:11px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer">Mark not applicable</button>
     </div>
     <div style="font-size:11px;color:var(--muted);margin:4px 0 10px">Schedule rates are <strong>fully burdened</strong> — your Settings wrap is <strong>not</strong> applied on top. The Government discount below reduces them, and the <strong>year</strong> is chosen by the opportunity's period of performance.</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d1fae5">
+      <span style="font-size:12px;font-weight:700">Discount offered to the Government</span>
+      <input type="number" min="0" step="0.1" value="${pricingModel.gsaDiscount}" onchange="pricingSetDiscount(this.value)" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/>
+      <span style="font-size:12px;color:var(--muted)">% — applied to every Schedule rate. <strong>Suggested 1%</strong>; editable, case-by-case.</span>
+    </div>
     ${dropZone}
     ${pricingGsaFiles.length ? `<div style="margin-top:8px">${filesHtml}</div><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule()" style="margin-top:8px;padding:6px 13px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button>` : ''}
     <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -8259,11 +8391,7 @@ function pricingRenderGate() {
     <div style="margin-top:12px;font-weight:700;font-size:12px">Schedule rate card ${card.length ? `(${card.length} LCATs × ${nY} yrs)` : ''} <span style="font-weight:400;color:var(--muted)">— extracted from your schedule; review &amp; edit. Highlighted column = applicable year.</span></div>
     ${cardTable}
     <button onclick="pricingAddRateCardRow()" style="margin-top:6px;padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer">+ Add LCAT manually</button>
-    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #d1fae5">
-      <span style="font-size:12px;font-weight:700">Discount offered to the Government</span>
-      <input type="number" min="0" step="0.1" value="${pricingModel.gsaDiscount}" onchange="pricingSetDiscount(this.value)" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/>
-      <span style="font-size:12px;color:var(--muted)">% — applied to every Schedule rate. <strong>Suggested 1%</strong>; editable, case-by-case.</span>
-    </div>
+
   </div>`;
 }
 
@@ -8493,7 +8621,7 @@ function pricingRenderAll() {
 function pricingRenderContext() {
   const el = document.getElementById('pricingContextBox'); if (!el) return;
   const meta = window._pricingBriefingMeta;
-  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull from RFP analysis</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
+  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull from RFP analysis</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
   el.innerHTML =
     `<div style="font-size:11px;color:var(--success);font-weight:600;margin-bottom:3px">⤵ Pulled from your Proposal-tab RFP analysis</div>` +
     (meta.title ? `<div><strong>${pricingEsc(meta.title)}</strong>${meta.sol ? ' · ' + pricingEsc(meta.sol) : ''}</div>` : '') +
@@ -9877,6 +10005,24 @@ async function bnaCondenseSources(apiKey, blocks) {
   return `CONDENSED SOURCE DIGEST \u2014 the documents were too large to send whole, so these are the bid/no-bid-relevant facts extracted from the full text. Treat this as the solicitation + company evidence:\n\n` + digests.join('\n\n---\n\n');
 }
 
+async function runBnaCombined() {
+  // One click: extract opportunity details first (shown above), then run scoring (below).
+  const bnaText0 = (document.getElementById('bnaTextInput')?.value || '').trim();
+  if (bnaFiles.length === 0 && bnaText0.length < 30) {
+    showBnaStatus('warn', 'No solicitation loaded', 'Drop your RFP/PWS documents (or paste the opportunity text) in Step 1 first.');
+    return;
+  }
+  // Reveal the Opportunity Details card and show it working before the scoring runs.
+  const intelCard = document.getElementById('bnaIntelCard');
+  const intelBody = document.getElementById('bnaIntelBody');
+  if (intelCard) { intelCard.style.display = 'block'; intelCard.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (intelBody) intelBody.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Extracting opportunity details…</div>';
+  // 1) Opportunity details — renders into the card above as soon as it returns.
+  try { await runOpportunityIntel(); } catch (e) { console.error('Opportunity intel failed', e); }
+  // 2) Scoring analysis — renders the decision matrix below.
+  await runBidNoBid();
+}
+
 async function runBidNoBid() {
   const bnaText = (document.getElementById('bnaTextInput')?.value || '').trim();
   if (bnaFiles.length === 0 && bnaText.length < 30) return;
@@ -10278,11 +10424,15 @@ function confirmBnaScore() {
 async function runOpportunityIntel() {
   const btn = document.getElementById('bnaIntelBtn');
   const body = document.getElementById('bnaIntelBody');
-  const content = window._lastBnaContent;
   const apiKey  = window._lastBnaApiKey || getApiKey();
 
-  if (!content || !content.length) {
-    if (body) body.innerHTML = '<div style="padding:14px;font-size:13px;color:var(--error)">Run the Bid/No-Bid analysis first.</div>';
+  const _hasBnaText = (document.getElementById('bnaTextInput')?.value || '').trim().length >= 30;
+  if ((!bnaFiles || !bnaFiles.length) && !_hasBnaText) {
+    if (body) body.innerHTML = '<div style="padding:14px;font-size:13px;color:var(--muted)">Add solicitation documents in Step 1 first.</div>';
+    return;
+  }
+  if (!apiKey) {
+    if (body) body.innerHTML = '<div style="padding:14px;font-size:13px;color:var(--error)">Enter your Anthropic API key on the Proposal tab (Step 2) first.</div>';
     return;
   }
 
@@ -10922,10 +11072,10 @@ function loadSettingsIntoUI() {
     s_clearances: cfg.clearances,
     s_cmmc: cfg.cmmc,
     s_dcaa: cfg.dcaa,
-    s_appTitle: cfg.appTitle,
     s_primaryColor: cfg.primaryColor,
     s_secondaryColor: cfg.secondaryColor,
     s_logoUrl: (saved && JSON.parse(saved).logoUrl) || '',
+    s_logoBg: cfg.logoBg || 'auto',
     s_azureClientId: cfg.azureClientId,
     s_azureTenantId: cfg.azureTenantId,
     s_authorizedDomain: cfg.authorizedDomain,
@@ -11043,7 +11193,7 @@ async function loadModelsIntoDropdown(forceRefresh) {
 
   const apiKey = getApiKey();
   if (!apiKey) {
-    render([{ id: stored, label: stored }], 'Enter your Anthropic API key on the Proposal tab (Step 1), then click Refresh to load the live model list.', true);
+    render([{ id: stored, label: stored }], 'Enter your Anthropic API key on the Proposal tab (Step 2), then click Refresh to load the live model list.', true);
     return;
   }
 
@@ -11088,8 +11238,9 @@ function saveSettings() {
     dcaa:             document.getElementById('s_dcaa')?.value.trim(),
     appTitle:         document.getElementById('s_appTitle')?.value.trim(),
     model:            document.getElementById('s_model')?.value.trim(),
-    primaryColor:     document.getElementById('s_primaryColor')?.value.trim(),
-    secondaryColor:   document.getElementById('s_secondaryColor')?.value.trim(),
+    primaryColor:     normalizeHexColor(document.getElementById('s_primaryColor')?.value),
+    logoBg:           document.getElementById('s_logoBg')?.value || 'auto',
+    secondaryColor:   normalizeHexColor(document.getElementById('s_secondaryColor')?.value),
     conversionProxyUrl: document.getElementById('s_conversionProxyUrl')?.value.trim(),
     azureClientId:    document.getElementById('s_azureClientId')?.value.trim(),
     azureTenantId:    document.getElementById('s_azureTenantId')?.value.trim(),
