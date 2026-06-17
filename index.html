@@ -610,6 +610,15 @@
   .tab-btn[data-fam="build"]  { border-left: 8px solid var(--fam-build,  #8a93e8); }
   .tab-btn[data-fam="edit"]   { border-left: 8px solid var(--fam-edit,   #e0894a); }
   .tab-btn[data-fam="config"] { border-left: 8px solid var(--fam-neutral, rgba(255,255,255,0.45)); }
+  /* Dual-family tabs (Bid/No-Bid + Proposal) belong to BOTH decide (green) and build (purple).
+     The left stripe is a sharp diagonal — green over purple — painted as a background layer so it
+     survives the white "active" state cleanly (no per-side border math). */
+  .tab-btn[data-fam="decide-build"] {
+    border-left: 8px solid transparent;
+    background:
+      linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 50%, var(--fam-build, #8a93e8) 50% 100%) left / 8px 100% no-repeat,
+      linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%);
+  }
   .tab-flow-legend {
     display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
     padding: 8px 14px; font-size: 11.5px; color: #475569;
@@ -633,6 +642,12 @@
   .tab-btn.active[data-fam="build"]  { border-left: 8px solid var(--fam-build,  #8a93e8); }
   .tab-btn.active[data-fam="edit"]   { border-left: 8px solid var(--fam-edit,   #e0894a); }
   .tab-btn.active[data-fam="config"] { border-left: 8px solid var(--fam-neutral, #cbd5e1); }
+  .tab-btn.active[data-fam="decide-build"] {
+    border-left: 8px solid transparent;
+    background:
+      linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 50%, var(--fam-build, #8a93e8) 50% 100%) left / 8px 100% no-repeat,
+      linear-gradient(160deg, #ffffff 0%, #e8f0ff 100%);
+  }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
   /* ── SETTINGS UI ── */
@@ -684,9 +699,9 @@
   <div class="sidebar-divider"></div>
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
-    <button class="tab-btn" data-fam="decide" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
+    <button class="tab-btn" data-fam="decide-build" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" data-fam="decide" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
-    <button class="tab-btn" data-fam="build" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
+    <button class="tab-btn" data-fam="decide-build" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
     <button class="tab-btn" data-fam="edit" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
@@ -695,6 +710,7 @@
   <div class="sidebar-legend">
     <div class="sl-title">🔗 How tabs connect</div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Partners</b><span>teaming — your CRM feeds the partner finder</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 50%,var(--fam-build,#8a93e8) 50%)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Proposal</b><span>the RFP you analyze carries into the proposal</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1);margin-left:-3px"></span><div class="sl-txt"><b>Section Editor · Settings</b><span>standalone — don't feed other tabs</span></div></div>
   </div>
@@ -955,6 +971,7 @@
             <div class="dz-sub">SOW, PWS, RFP, amendments · PDF, Word, Excel</div>
           </div>
           <div class="file-list" id="fileListRFP"></div>
+          <button onclick="proposalPullRfpFromBna()" id="proposalPullRfpBtn" style="margin-top:8px;padding:6px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--mid-blue);border-radius:6px;cursor:pointer;white-space:nowrap">⤵ Pull RFP Files from Bid/No-Bid tab</button>
         </div>
 
         <!-- Right: Company / past performance documents -->
@@ -1608,7 +1625,7 @@
     <!-- ── Hybrid Scoring Matrix ─────────────────────────────────────────── -->
     <div class="card" style="margin-bottom:24px">
       <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-        <span><span class="icon">🎯</span> Bid/No-Bid Decision Matrix</span>
+        <span><span class="icon">🎯</span> Step 3: Bid/No-Bid Decision Matrix</span>
         <div style="display:flex;gap:8px">
           <button onclick="copyBnaResults()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:rgba(255,255,255,0.15);cursor:pointer;color:white">⎘ Copy</button>
           <button onclick="switchTab('proposal')" style="padding:4px 10px;font-size:11px;font-weight:600;background:white;color:var(--blue);border:none;border-radius:6px;cursor:pointer">→ Proposal</button>
@@ -1651,26 +1668,49 @@
         <!-- Fit derivation — explains the fit score shown in the decision panel above -->
         <div id="bnaScoreBreakdown" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px">
           <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📐 How the fit score is derived</div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
-            <div style="text-align:center;flex:1;min-width:100px">
-              <div id="fitBaseScore" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div style="font-size:11px;color:var(--muted)">weighted avg of fit factors</div>
+
+          <!-- Step 1: weighted average of fit factors -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid #eef2f7">
+            <div style="font-size:12px;color:var(--text)"><span style="display:inline-block;width:18px;color:var(--muted);font-weight:700">1</span>Weighted average of fit factors</div>
+            <div id="fitStepBase" style="font-size:15px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums">—</div>
+          </div>
+
+          <!-- Step 2: decisive blend with weakest critical factor -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid #eef2f7">
+            <div style="font-size:12px;color:var(--text)">
+              <span style="display:inline-block;width:18px;color:var(--muted);font-weight:700">2</span>Blended with weakest critical factor (<span id="fitStepMinLabel">—</span>)
+              <div style="font-size:10px;color:var(--muted);margin-left:18px">0.55 × base + 0.45 × weakest critical</div>
             </div>
-            <div style="text-align:center;color:var(--muted);font-size:14px;display:flex;align-items:center;font-weight:700">blended<br>with</div>
-            <div style="text-align:center;flex:1;min-width:100px">
-              <div id="fitMinCritical" style="font-size:24px;font-weight:800;color:var(--blue)">—</div>
-              <div style="font-size:11px;color:var(--muted)">weakest critical factor</div>
+            <div id="fitStepBlend" style="font-size:15px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums">—</div>
+          </div>
+
+          <!-- Step 3: weakest-link ceiling -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid #eef2f7">
+            <div style="font-size:12px;color:var(--text)">
+              <span style="display:inline-block;width:18px;color:var(--muted);font-weight:700">3</span>Weakest-link ceiling <span id="fitStepCeilingTag" style="font-size:10px;font-weight:700;color:var(--muted)"></span>
+              <div style="font-size:10px;color:var(--muted);margin-left:18px">capped at weakest critical + 1.5</div>
             </div>
-            <div style="text-align:center;color:var(--muted);font-size:20px;display:flex;align-items:center">→</div>
-            <div style="text-align:center;flex:1;min-width:100px">
-              <div id="totalWeightedScore" style="font-size:28px;font-weight:900;color:var(--text)">—</div>
-              <div style="font-size:11px;color:var(--muted)">fit / 10</div>
+            <div id="fitStepCeiling" style="font-size:15px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums">—</div>
+          </div>
+
+          <!-- Step 4: spread calibration (skipped when the ceiling is binding) -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid #eef2f7">
+            <div style="font-size:12px;color:var(--text)">
+              <span style="display:inline-block;width:18px;color:var(--muted);font-weight:700">4</span>Spread calibration
+              <div id="fitStepSpreadNote" style="font-size:10px;color:var(--muted);margin-left:18px">pushes the score toward a clear decision</div>
             </div>
+            <div id="fitStepSpread" style="font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums">—</div>
+          </div>
+
+          <!-- Final fit score -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 8px">
+            <div style="font-size:13px;font-weight:800;color:var(--text)">Fit score</div>
+            <div><span id="totalWeightedScore" style="font-size:26px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums">—</span><span style="font-size:13px;color:var(--muted);font-weight:700"> / 10</span></div>
           </div>
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
             <div id="bnaScoreBar" style="height:100%;width:0%;border-radius:4px;transition:width 0.4s,background 0.4s"></div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">A weak critical factor (technical capability, past performance, scope clarity) <strong>caps</strong> the fit — one real gap is decisive, not averaged away. The blended score is then calibrated to spread toward a clear decision, so marginal opportunities don't all hover near the middle. <strong>Eligibility is a prime/sub gate, not averaged in</strong>, and the final verdict above also weighs how much scope you can self-perform.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">A weak critical factor (technical capability, past performance, scope clarity) <strong>caps</strong> the fit — one real gap is decisive, not averaged away. When that ceiling is <strong>binding</strong>, the score stops there: spread calibration is skipped so a genuine gap isn’t penalized twice. Otherwise the blended score is spread-calibrated so marginal opportunities don’t all hover near the middle. <strong>Eligibility is a prime/sub gate, not averaged in</strong>, and the final verdict above also weighs how much scope you can self-perform.</div>
         </div><!-- end bnaScoreBreakdown -->
 
         <!-- Risks and strategy -->
@@ -1753,9 +1793,9 @@
       <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 1 to unlock</span></div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div style="font-size:12.5px;color:var(--muted);max-width:540px">Pull the PWS tasks, period of performance, FTE basis, and the required pricing methodology straight from your RFP analysis — or add tasks by hand below.</div>
-        <button class="btn btn-primary" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull from RFP analysis</button>
+        <button class="btn btn-primary" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull RFP Files from Proposal tab</button>
       </div>
-      <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull from RFP analysis</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
+      <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull RFP Files from Proposal tab</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
       <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
         <div style="flex:1;min-width:220px">
           <label style="display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Pricing Methodology <span style="color:var(--muted);font-weight:400">(how the Government wants it)</span></label>
@@ -1797,7 +1837,7 @@
       <!-- PWS tasks (columns) -->
       <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-weight:700;font-size:13px">🧱 PWS Tasks <span style="color:var(--muted);font-weight:400;font-size:11px">— the columns of your matrix · auto-filled when you Pull from RFP analysis</span></div>
+          <div style="font-weight:700;font-size:13px">🧱 PWS Tasks <span style="color:var(--muted);font-weight:400;font-size:11px">— the columns of your matrix · auto-filled when you Pull RFP Files from Proposal tab</span></div>
           <button onclick="pricingAddTask()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Task</button>
         </div>
         <div id="pricingTasksList" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -3179,6 +3219,7 @@ async function runHsExtract() {
       `Extract teaming partner matching criteria from this solicitation. ` +
       `CRITICAL: Only use information actually present in the documents above. If a document is marked UNREADABLE, do not guess its contents. ` +
       `For any field you cannot determine from the readable text, use the exact value "Not stated in available documents" — never invent or infer a set-aside type, value, clearance, or place of performance that is not explicitly written.\n` +
+      `SET-ASIDE DISAMBIGUATION: The set-aside type is the solicitation's operative designation (the SAM.gov notice Set-Aside Type, the \"Set-Aside:\" field, or the FAR clause: 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a), 52.219-6 = total small business). SDVOSB (service-disabled veteran-owned), WOSB (women-owned), EDWOSB, HUBZone, and 8(a) are DISTINCT categories - never substitute one for another. Cross-check against the required certifications: if offerors must hold a particular certification (for example an SDVOSB or VOSB certification), the set_aside MUST match that certification.\n` +
       `Return ONLY a JSON object. Plain ASCII only, no em-dashes.\n` +
       `{"opportunity_title":"","solicitation_number":"","agency":"","naics_code":"","naics_description":"",` +
       `"set_aside":"exact set-aside if stated, else 'Not stated in available documents'","place_of_performance":"city, state or 'Not stated in available documents'",` +
@@ -3383,7 +3424,7 @@ async function runHsMatch() {
       `${opp}\n\n` +
       `CRM COMPANIES (${summaries.length} total - one per line):\n` +
       summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
-      `TASK: Identify the top 8 companies best suited as teaming partners for this specific pursuit.\n\n` +
+      `TASK: Identify the companies (up to 8) genuinely suited as teaming partners for this specific pursuit. Quality over quantity - do not pad the list with poor fits.\n\n` +
       (isLowFte ? `CRITICAL - LOW FTE COUNT: This opportunity is for only ${fteCount} FTE(s). With 2 or fewer positions, splitting work between teaming companies is typically not viable and adds overhead without value. Your overall_take MUST open with a clear, prominent discouragement of teaming for this specific reason.\n\n` : '') +
       (isSpecificSetAside
         ? `SET-ASIDE FILTER (HARD REQUIREMENT): This is a ${setAside} set-aside. You MUST only include companies that have the ${setAside} certification in their CRM record. Companies without this certification are INELIGIBLE regardless of capability — exclude them entirely from your ranked list.\n\n`
@@ -3396,6 +3437,8 @@ async function runHsMatch() {
       `3. Contract vehicle alignment — MEDIUM weight (~20%)\n` +
       `4. Clearance level and geographic proximity — MEDIUM weight (~10%)\n` +
       `5. Relationship quality and prior contact from CRM notes — LOW weight (~5%) — relevant but not a primary factor\n\n` +
+      `DOMAIN-RELEVANCE HONESTY (this governs the capability weight above): "Capability match" means demonstrated experience in THIS opportunity's CORE service domain. Read what the work actually is from the title, NAICS/PSC, key capabilities, and description (for example clinical/medical staffing, cybersecurity, logistics, financial management) - the assigned NAICS alone can be misleading, so weigh the actual scope. A company strong in an UNRELATED domain (for example IT or general management consulting) is NOT a capability match for clinical/medical work merely because it is an eligible SDVOSB. Score such a company LOW (Possible or Weak Match) and state plainly in "concerns" that it lacks the core domain capability.\n` +
+      `QUALITY GATE: Only include companies with at least plausible domain relevance; if fewer than 8 are plausible, return fewer. If NONE of the CRM companies have demonstrated capability in this opportunity's core domain, you may still list the closest eligible companies but you MUST score them Weak/Possible Match, and "overall_take" MUST state clearly that the CRM has no partner with the required core capability and that one should be sourced from outside the CRM. Never inflate a score to fill a slot.\n\n` +
       `Also provide a partner landscape assessment covering: bench strength, whether top matches warrant immediate outreach, and whether teaming makes sense for this contract structure. ` +
       (isLowFte ? `Given the low FTE count, lead with a clear statement discouraging teaming. ` : '') +
       `Do not comment on ${CLIENT_CONFIG.companyShortName || 'the prime'}'s own pursuit decision.\n\n` +
@@ -5412,6 +5455,26 @@ function addFilesToArray(newFiles, arr, listId) {
   }
 }
 
+// Pull the RFP/PWS/solicitation documents already uploaded on the Bid/No-Bid tab into the
+// Proposal tab's RFP set, so the same files don't have to be dropped twice. (Mirror of the
+// Pricing tab's "Pull RFP Files from Proposal tab", which pulls the derived analysis.)
+function proposalPullRfpFromBna() {
+  if (typeof bnaFiles === 'undefined' || !bnaFiles.length) {
+    showStatus('warn', 'No RFP files on the Bid/No-Bid tab',
+      'Upload your RFP / PWS / solicitation documents on the Bid/No-Bid tab first, then pull them here \u2014 or drop them in the box above.');
+    return;
+  }
+  const before = rfpFiles.length;
+  addFilesToArray(bnaFiles.slice(), rfpFiles, 'fileListRFP');
+  const added = rfpFiles.length - before;
+  if (added > 0) {
+    showStatus('success', 'RFP files pulled',
+      added + ' file' + (added > 1 ? 's' : '') + ' copied from the Bid/No-Bid tab into Step 4.');
+  } else {
+    showStatus('warn', 'Already loaded', 'Those Bid/No-Bid RFP files are already in Step 4.');
+  }
+}
+
 // Remove a SharePoint-loaded company document from the generation set (X button).
 // SharePoint files live in both companyFiles (used for generation) and spFiles.
 function removeSpCompanyFile(name, el) {
@@ -5717,7 +5780,7 @@ function measureAndRerender(arr, listId) {
   todo.forEach(f => { f._measuring = true; });
   Promise.all(todo.map(f =>
     measureFileTokens(f).catch(() => {}).then(() => { delete f._measuring; })
-  )).then(() => { renderFileListById(arr, listId); updateTokenMeter(); });
+  )).then(() => { renderFileListById(arr, listId); updateTokenMeter(); if (typeof updateStepLocks === 'function') updateStepLocks(); });
 }
 
 function preflightCheck(rfpArr, companyArr) {
@@ -8249,8 +8312,8 @@ async function pricingPullBriefing() {
     if (!apiKey) { showStatus('warn', 'API key needed', 'Enter your Anthropic API key on the Proposal tab (Step 2) to read the PWS, or add tasks manually.'); return; }
     if (btn) { btn.disabled = true; btn.textContent = 'Reading PWS…'; }
     try { b = await ensureBriefing(apiKey); }
-    catch (e) { showStatus('warn', 'Could not read the PWS', e.message); if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull from RFP analysis'; } return; }
-    if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull from RFP analysis'; }
+    catch (e) { showStatus('warn', 'Could not read the PWS', e.message); if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull RFP Files from Proposal tab'; } return; }
+    if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull RFP Files from Proposal tab'; }
   }
   pricingApplyBriefing(b);
 }
@@ -8549,22 +8612,22 @@ function pricingRenderGate() {
       <button onclick="pricingSetGsaDecision('na')" style="padding:5px 11px;font-size:11px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer">Mark not applicable</button>
     </div>
     <div style="font-size:11px;color:var(--muted);margin:4px 0 10px">Schedule rates are <strong>fully burdened</strong> — your Settings wrap is <strong>not</strong> applied on top. The Government discount below reduces them, and the <strong>year</strong> is chosen by the opportunity's period of performance.</div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d1fae5">
-      <span style="font-size:12px;font-weight:700">Discount offered to the Government</span>
-      <input type="number" min="0" step="0.1" value="${pricingModel.gsaDiscount}" onchange="pricingSetDiscount(this.value)" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/>
-      <span style="font-size:12px;color:var(--muted)">% — applied to every Schedule rate. <strong>Suggested 1%</strong>; editable, case-by-case.</span>
-    </div>
     ${dropZone}
-    ${pricingGsaFiles.length ? `<div style="margin-top:8px">${filesHtml}</div><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule()" style="margin-top:8px;padding:6px 13px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button>` : ''}
-    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    ${pricingGsaFiles.length ? `<div style="margin-top:8px">${filesHtml}</div>` : ''}
+    <div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:12px;font-weight:700">Schedule period start (defines Year 1)</span>
       <input type="date" value="${pricingModel.gsaScheduleStart}" onchange="pricingSetScheduleStart(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>
       <span style="font-size:11px;color:var(--muted)">${nY} priced years · ${startInfo}</span>
     </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid #d1fae5">
+      <span style="font-size:12px;font-weight:700">Discount offered to the Government</span>
+      <input type="number" min="0" step="0.1" value="${pricingModel.gsaDiscount}" onchange="pricingSetDiscount(this.value)" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/>
+      <span style="font-size:12px;color:var(--muted)">% — applied to every Schedule rate. <strong>Suggested 1%</strong>; editable, case-by-case.</span>
+    </div>
     <div style="margin-top:12px;font-weight:700;font-size:12px">Schedule rate card ${card.length ? `(${card.length} LCATs × ${nY} yrs)` : ''} <span style="font-weight:400;color:var(--muted)">— extracted from your schedule; review &amp; edit. Highlighted column = applicable year.</span></div>
     ${cardTable}
     <button onclick="pricingAddRateCardRow()" style="margin-top:6px;padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer">+ Add LCAT manually</button>
-
+    ${pricingGsaFiles.length ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #d1fae5"><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule()" style="padding:7px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button> <span style="font-size:11px;color:var(--muted)">re-reads your schedule and replaces the rate card above.</span></div>` : ''}
   </div>`;
 }
 
@@ -8585,7 +8648,7 @@ async function pricingAutoBuildStructure() {
     if (!briefing && typeof ensureBriefing === 'function' && typeof rfpFiles !== 'undefined' && rfpFiles && rfpFiles.length) {
       try { briefing = await ensureBriefing(apiKey); } catch (e) {}
     }
-    if (!pricingModel.tasks.length && !briefing) { setBusy(false); alert('Add your RFP on the Proposal tab (then Pull from RFP analysis in Step 2), or add at least one PWS task, so there is scope to build from.'); return; }
+    if (!pricingModel.tasks.length && !briefing) { setBusy(false); alert('Add your RFP on the Proposal tab (then Pull RFP Files from Proposal tab in Step 2), or add at least one PWS task, so there is scope to build from.'); return; }
 
     const tasks = pricingModel.tasks.slice();
     const taskList = tasks.length
@@ -8796,7 +8859,7 @@ function pricingRenderAll() {
 function pricingRenderContext() {
   const el = document.getElementById('pricingContextBox'); if (!el) return;
   const meta = window._pricingBriefingMeta;
-  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull from RFP analysis</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
+  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull RFP Files from Proposal tab</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
   el.innerHTML =
     `<div style="font-size:11px;color:var(--success);font-weight:600;margin-bottom:3px">⤵ Pulled from your Proposal-tab RFP analysis</div>` +
     (meta.title ? `<div><strong>${pricingEsc(meta.title)}</strong>${meta.sol ? ' · ' + pricingEsc(meta.sol) : ''}</div>` : '') +
@@ -8817,7 +8880,7 @@ function pricingRenderMethodologyNote() {
 
 function pricingRenderTasks() {
   const el = document.getElementById('pricingTasksList'); if (!el) return;
-  if (!pricingModel.tasks.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No tasks yet. These <strong>auto-fill</strong> when you click <strong>Pull from RFP analysis</strong> above — or add them manually with <strong>+ Add Task</strong>.</div>'; return; }
+  if (!pricingModel.tasks.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No tasks yet. These <strong>auto-fill</strong> when you click <strong>Pull RFP Files from Proposal tab</strong> above — or add them manually with <strong>+ Add Task</strong>.</div>'; return; }
   el.innerHTML = pricingModel.tasks.map(t => `
     <div style="display:flex;gap:8px;align-items:center">
       <input value="${pricingEsc(t.code)}" onchange="pricingSetTask('${t.id}','code',this.value)" placeholder="1.1" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
@@ -9517,13 +9580,38 @@ function updateBnaLiveScore() {
   const fitVal = dv ? dv.fit : total;
   const color = fitVal >= 8 ? 'var(--success)' : fitVal >= 6.5 ? '#16a34a' : fitVal >= 5 ? '#b45309' : 'var(--error)';
 
-  const fitBaseEl = document.getElementById('fitBaseScore');
-  const fitMinEl  = document.getElementById('fitMinCritical');
-  const totalEl   = document.getElementById('totalWeightedScore');
-  const barEl     = document.getElementById('bnaScoreBar');
+  const stepBaseEl     = document.getElementById('fitStepBase');
+  const stepMinEl      = document.getElementById('fitStepMinLabel');
+  const stepBlendEl    = document.getElementById('fitStepBlend');
+  const stepCeilEl     = document.getElementById('fitStepCeiling');
+  const stepCeilTagEl  = document.getElementById('fitStepCeilingTag');
+  const stepSpreadEl   = document.getElementById('fitStepSpread');
+  const stepSpreadNote = document.getElementById('fitStepSpreadNote');
+  const totalEl        = document.getElementById('totalWeightedScore');
+  const barEl          = document.getElementById('bnaScoreBar');
 
-  if (fitBaseEl && dv) fitBaseEl.textContent = dv.base.toFixed(1);
-  if (fitMinEl && dv)  fitMinEl.textContent  = Number(dv.minCritical).toFixed(1);
+  if (dv) {
+    if (stepBaseEl)  stepBaseEl.textContent  = dv.base.toFixed(1);
+    if (stepMinEl)   stepMinEl.textContent   = Number(dv.minCritical).toFixed(1);
+    if (stepBlendEl) stepBlendEl.textContent = dv.blended.toFixed(1);
+    if (stepCeilEl) {
+      stepCeilEl.textContent = dv.ceiling.toFixed(1);
+      stepCeilEl.style.color = dv.ceilingBinding ? 'var(--error)' : 'var(--muted)';
+    }
+    if (stepCeilTagEl) {
+      stepCeilTagEl.textContent = dv.ceilingBinding ? '• binding' : '• not binding';
+      stepCeilTagEl.style.color = dv.ceilingBinding ? 'var(--error)' : 'var(--muted)';
+    }
+    if (stepSpreadEl) {
+      stepSpreadEl.textContent = dv.spreadApplied ? fitVal.toFixed(1) : 'skipped';
+      stepSpreadEl.style.color = dv.spreadApplied ? 'var(--blue)' : 'var(--muted)';
+    }
+    if (stepSpreadNote) {
+      stepSpreadNote.textContent = dv.spreadApplied
+        ? 'pushes the score toward a clear decision'
+        : 'skipped — the ceiling already makes this decisive (no double compression)';
+    }
+  }
   if (totalEl)  { totalEl.textContent = fitVal.toFixed(1); totalEl.style.color = color; }
   if (barEl)    { barEl.style.width = Math.min((fitVal/10)*100, 100)+'%'; barEl.style.background = color; }
 
@@ -9817,9 +9905,15 @@ function computeDecisiveVerdict() {
   const criticalKeys = ['technical_capability', 'past_performance', 'scope_clarity'];
   const criticalScores = criticalKeys.map(k => bna_tier1_scores[k]).filter(v => v != null);
   const minCritical = criticalScores.length ? Math.min(...criticalScores) : base;
-  let fit = 0.55 * base + 0.45 * minCritical;       // decisive blend
-  fit = Math.min(fit, minCritical + 1.5);           // weakest-link CEILING — one genuinely weak critical factor caps the upside
-  fit = bnaSpreadScore(fit);                         // calibrate: push scores away from the muddy middle toward a clear decision
+  const blended = 0.55 * base + 0.45 * minCritical; // decisive blend
+  const ceiling = minCritical + 1.5;                // weakest-link cap: one genuinely weak critical factor caps the upside
+  const ceilingBinding = blended > ceiling;         // true when the cap (not the blend) is what limits the score
+  let fit = Math.min(blended, ceiling);             // apply the weakest-link ceiling
+  // Spread calibration pushes muddy-middle scores toward a clear decision. Skip it when the
+  // ceiling is binding: a ceiling-capped score is ALREADY decisive, and re-spreading it would
+  // compress the same critical-factor gap a second time and over-penalize the displayed number.
+  const spreadApplied = !ceilingBinding;
+  if (spreadApplied) fit = bnaSpreadScore(fit);
   fit = Math.max(0, Math.min(10, fit));
 
   // Scope coverage drives the subcontract calculus.
@@ -9884,7 +9978,9 @@ function computeDecisiveVerdict() {
   }
 
   return { code, label, color, detail, fit: parseFloat(fit.toFixed(1)), base: parseFloat(base.toFixed(1)),
-    minCritical, scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside,
+    minCritical, blended: parseFloat(blended.toFixed(1)), ceiling: parseFloat(ceiling.toFixed(1)),
+    ceilingBinding, spreadApplied,
+    scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside,
     fteNum,
     gates, blockers, constraints };
 }
@@ -10522,7 +10618,7 @@ async function runBidNoBid() {
       `OPPORTUNITY FACTS — extract these verbatim where stated, else "" (empty). These drive prime/sub eligibility:\n` +
       `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
       `- fte_count: number of FTEs/positions if stated (digits only, e.g. "45"), else ""\n` +
-      `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated".\n` +
+      `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated". SDVOSB (52.219-27, service-disabled veteran-owned), WOSB (52.219-30, women-owned), EDWOSB (52.219-29), HUBZone (52.219-3), and 8(a) (52.219-18) are DISTINCT - never substitute one for another. Cross-check your answer against the required certifications: if offerors must be certified SDVOSB / VOSB / WOSB / 8(a) / HUBZone, the set_aside MUST match that certification.\n` +
       `- required_dcaa: true ONLY if the award is a COST-REIMBURSEMENT contract type (cost-plus / CPFF / CPIF / CPAF / cost-sharing), OR the solicitation EXPLICITLY requires a "DCAA-approved" or "adequate accounting system." Set FALSE for Firm-Fixed-Price, Time-and-Materials (T&M), or Labor-Hour awards. A cost-reimbursable TRAVEL or ODC line alone does NOT make this true (travel is reimbursed per travel regulations). If the contract type is not stated, set false.\n` +
       `- prime_eligible: true or false. Can ${CLIENT_CONFIG.companyShortName} legally and practically compete as the PRIME on this? Weigh EVERY dimension below against the CAPACITY facts in the company profile, and set FALSE if ANY is a hard barrier:\n` +
       `    • Set-aside: operative set-aside is one the company does NOT hold (e.g. 8(a)/HUBZone set-aside when not 8(a)/HUBZone certified).\n` +
@@ -10927,9 +11023,18 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
         if ((_uncertain || _recompete) && (intel.requirement_name || intel.id_number)) {
           lookupIncumbentViaWeb(intel, apiKey).then(function (found) {
             if (found && found.incumbent) {
-              intel.incumbent = found.incumbent;
-              intel.incumbent_source_url = found.source_url || '';
-              intel.incumbent_source_name = found.source_name || '';
+              var _weak = !found.source_url || _isWeakIncumbentSource(found.source_url);
+              if (_weak) {
+                // No stable, authoritative source (e.g. only a job posting): show the name as a
+                // labeled inference rather than a blue link to an unreliable / expiring page.
+                intel.incumbent = '[Inferred] ' + found.incumbent;
+                intel.incumbent_source_url = '';
+                intel.incumbent_source_name = '';
+              } else {
+                intel.incumbent = found.incumbent;
+                intel.incumbent_source_url = found.source_url;
+                intel.incumbent_source_name = found.source_name || '';
+              }
               window._lastBnaIntel = intel;
               renderOpportunityIntel(intel, body);
             }
@@ -11037,6 +11142,13 @@ function extractIntelFields(jsonStr) {
 
 // Live web lookup for the incumbent contractor using the Messages API web_search tool. Returns
 // {incumbent, source_url, source_name} when a credible source is found, otherwise null. Fails soft.
+// A source URL that does not reliably establish federal incumbency: job boards, recruiting / ATS
+// pages, or a raw search results page. These expire (causing dead links) and a job posting does not
+// prove who holds the contract. Such results are kept as a labeled inference, never a blue link.
+function _isWeakIncumbentSource(url) {
+  return /paylocity|indeed\.com|linkedin\.com\/jobs|glassdoor|ziprecruiter|greenhouse\.io|lever\.co|myworkdayjobs|workday|icims|smartrecruiters|jobvite|recruiting\.|careers?\.|\/jobs?\/|google\.com\/search|bing\.com\/search|duckduckgo/i.test(String(url || ''));
+}
+
 async function lookupIncumbentViaWeb(intel, apiKey) {
   try {
     if (!apiKey) return null;
@@ -11046,7 +11158,8 @@ async function lookupIncumbentViaWeb(intel, apiKey) {
     if (!title && !idnum) return null;
     const q = 'Find the INCUMBENT contractor for this U.S. federal opportunity. ' +
       'Title: "' + title + '". ' + (idnum ? ('Solicitation/ID: ' + idnum + '. ') : '') + (agency ? ('Agency: ' + agency + '. ') : '') +
-      'Search USASpending.gov, FPDS, SAM.gov, GovTribe, HigherGov, or credible agency/news pages to identify the company currently performing (or most recently awarded) this work. ' +
+      'Determine incumbency ONLY from federal award/contract records. Prioritize USASpending.gov, FPDS.gov, and SAM.gov, then reputable GovCon trackers such as GovTribe and HigherGov. Base the answer on who holds or most recently held the contract, not on hiring activity. ' +
+      'Do NOT cite job boards, recruiting pages, or applicant-tracking systems (for example Paylocity, Indeed, LinkedIn jobs, Greenhouse, Lever, Workday, iCIMS) as the source, and do NOT infer incumbency from a company posting similar jobs - those pages are unreliable and expire. The source_url must be a stable page that actually documents the award. ' +
       'Respond with ONLY a raw JSON object, no markdown, no backticks: {"incumbent":"company name, or empty string if you cannot find a credible source","source_url":"the exact URL of the page where you found it, or empty","source_name":"the website name or domain (for example USASpending.gov), or empty","confidence":"high|medium|low"}.';
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -11101,7 +11214,6 @@ function renderOpportunityIntel(intel, container) {
     { key:'contract_type',               label:'Contract Type' },
     { key:'certifications_required',      label:'Certifications Required' },
     { key:'labor_categories',             label:'Labor Categories (LCATs)' },
-    { key:'pursuit_recommendation',       label:'Pursuit Recommendation' },
   ];
 
   container.innerHTML = FIELDS.map(f => {
