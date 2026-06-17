@@ -578,13 +578,14 @@
   .sidebar-logo {
     background: #ffffff;
     border-radius: 10px;
-    padding: 11px 12px;
-    margin: 0 0 12px;
+    padding: 9px 10px;
+    margin: 0 0 11px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.14);
     display: flex; align-items: center; justify-content: center;
   }
-  .sidebar-logo .sidebar-logo-img { max-width: 152px; max-height: 60px; width: auto; height: auto; object-fit: contain; display: block; }
+  .sidebar-logo .sidebar-logo-img { max-width: 190px; max-height: 72px; width: auto; height: auto; object-fit: contain; display: block; }
   .sidebar-logo.logo-bg-dark { background: #1e293b; box-shadow: 0 1px 4px rgba(0,0,0,0.28); }
+  .sidebar-divider { order: 1; height: 0; border: 0; border-top: 1px solid rgba(0,0,0,0.5); margin: 0 2px 11px; }
   .tab-btn {
     background: linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%);
     border: 1px solid rgba(255,255,255,0.25);
@@ -680,14 +681,15 @@
   <div class="sidebar-logo">
     <img class="sidebar-logo-img" id="appLogo" src="" alt="Logo"/>
   </div>
+  <div class="sidebar-divider"></div>
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn" data-fam="decide" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" data-fam="decide" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
-    <button class="tab-btn" data-fam="edit" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
+    <button class="tab-btn" data-fam="edit" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn" data-fam="config" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
   <div class="sidebar-legend">
@@ -2406,6 +2408,54 @@ function normalizeHexColor(v) {
 }
 function forceHashColor(el) { if (el) el.value = normalizeHexColor(el.value); }
 
+// Auto-crop a logo: trim surrounding transparency / near-white / corner-colored margins so the
+// mark sits close to the badge edges. Calls cb with a cropped data URL, or the original src on failure.
+function autoCropLogo(src, cb) {
+  try {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = function () {
+      try {
+        const W = im.naturalWidth, H = im.naturalHeight;
+        if (!W || !H) { cb(src); return; }
+        const scale = Math.min(1, 600 / Math.max(W, H));
+        const cw = Math.max(1, Math.round(W * scale)), ch = Math.max(1, Math.round(H * scale));
+        const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(im, 0, 0, cw, ch);
+        const d = ctx.getImageData(0, 0, cw, ch).data;
+        const bg = { r: d[0], g: d[1], b: d[2], a: d[3] };
+        const isBg = (i) => {
+          const a = d[i + 3];
+          if (a < 16) return true;
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          if (r > 244 && g > 244 && b > 244) return true;
+          if (bg.a > 16 && Math.abs(r - bg.r) < 12 && Math.abs(g - bg.g) < 12 && Math.abs(b - bg.b) < 12) return true;
+          return false;
+        };
+        let minX = cw, minY = ch, maxX = -1, maxY = -1;
+        for (let y = 0; y < ch; y++) {
+          for (let x = 0; x < cw; x++) {
+            const i = (y * cw + x) * 4;
+            if (!isBg(i)) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+          }
+        }
+        if (maxX < minX || maxY < minY) { cb(src); return; }
+        const bw = maxX - minX + 1, bh = maxY - minY + 1;
+        const padX = Math.round(bw * 0.04) + 1, padY = Math.round(bh * 0.04) + 1;
+        const sx = Math.max(0, minX - padX), sy = Math.max(0, minY - padY);
+        const sw = Math.min(cw - sx, bw + padX * 2), sh = Math.min(ch - sy, bh + padY * 2);
+        if (sw >= cw - 2 && sh >= ch - 2) { cb(src); return; }
+        const out = document.createElement('canvas'); out.width = sw; out.height = sh;
+        out.getContext('2d').drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh);
+        cb(out.toDataURL('image/png'));
+      } catch (e) { cb(src); }
+    };
+    im.onerror = function () { cb(src); };
+    im.src = src;
+  } catch (e) { cb(src); }
+}
+
 function detectLogoNeedsDarkBadge(src, cb) {
   try {
     const im = new Image();
@@ -2460,7 +2510,7 @@ function applyClientConfig() {
     if (CLIENT_CONFIG.logoBase64) src = String(CLIENT_CONFIG.logoBase64).startsWith('data:') ? CLIENT_CONFIG.logoBase64 : ('data:image/png;base64,' + CLIENT_CONFIG.logoBase64);
     else if (CLIENT_CONFIG.logoUrl) src = CLIENT_CONFIG.logoUrl;
     const logoBox = logoEl.closest('.sidebar-logo');
-    if (src) { logoEl.src = src; logoEl.style.display = ''; if (logoBox) logoBox.style.display = ''; }
+    if (src) { logoEl.src = src; logoEl.style.display = ''; if (logoBox) logoBox.style.display = ''; autoCropLogo(src, function (cropped) { if (cropped && cropped !== src) logoEl.src = cropped; applyLogoBadgeBg(); }); }
     else { logoEl.removeAttribute('src'); logoEl.style.display = 'none'; if (logoBox) logoBox.style.display = 'none'; }
   }
   applyLogoBadgeBg();
@@ -3389,6 +3439,50 @@ async function runHsMatch() {
       if (!arr) throw new Error('No results in response');
       matches = JSON.parse(arr[0]);
     }
+    // HARD eligibility gates (deterministic backstop to the prompt) — mirror the BNA prime gates
+    // that also apply to a teaming partner: set-aside (must hold the cert), required clearance, and a
+    // required (non-open) contract vehicle. Capacity / FTE / value / DCAA gates are prime-specific and
+    // intentionally not applied to partners. Set-aside fails closed; clearance and vehicle fail OPEN on
+    // missing CRM data (only exclude when the recorded value actually conflicts with the requirement).
+    const _gateExcl = [];
+    {
+      const _find = (nm) => {
+        const n = String(nm || '').trim().toLowerCase(); if (!n) return null;
+        return companies.find(c => String((c.properties || {}).name || '').trim().toLowerCase() === n)
+          || companies.find(c => { const cn = String((c.properties || {}).name || '').trim().toLowerCase(); return cn && (cn.includes(n) || n.includes(cn)); }) || null;
+      };
+      const _saMatch = isSpecificSetAside ? partnerSetAsideMatcher(setAside) : null;
+      const _oppClr = (document.getElementById('hsAttr_clearance_required') && document.getElementById('hsAttr_clearance_required').value) || hsExtractedAttrs.clearance_required || '';
+      const _oppClrRank = _clearanceRank(_oppClr);
+      const _oppVeh = (document.getElementById('hsAttr_contract_vehicle') && document.getElementById('hsAttr_contract_vehicle').value) || hsExtractedAttrs.contract_vehicle || '';
+      const _vehReq = _oppVeh && !/unrestricted|open competition|not stated|none|n\/a|any\b/i.test(_oppVeh);
+      const _kept = [];
+      matches.forEach(m => {
+        const c = _find(m.company_name);
+        const p = c ? (c.properties || {}) : {};
+        let reason = '';
+        if (!reason && _saMatch) {
+          const certs = String(p.disadvantaged_business_certifications || '').trim();
+          const hay = certs || (String(p.description || '') + ' ' + String(p.name || ''));
+          if (!_saMatch.re.test(hay)) reason = 'no ' + _saMatch.label + ' certification';
+        }
+        if (!reason && _oppClrRank > 0) {
+          const pc = String(p.clearance_level || '').trim();
+          if (pc && _clearanceRank(pc) < _oppClrRank) reason = 'clearance ' + pc + ' below required ' + _oppClr;
+        }
+        if (!reason && _vehReq) {
+          const pv = String(p.contract_vehicles || '').trim();
+          if (pv && !pv.split(/[,;|]/).some(v => _vehicleMatch(v, _oppVeh))) reason = 'not on the ' + _oppVeh + ' vehicle';
+        }
+        if (reason) _gateExcl.push(m.company_name + ' (' + reason + ')'); else _kept.push(m);
+      });
+      matches = _kept;
+      matches.forEach((m, i) => { m.rank = i + 1; });
+      if (_gateExcl.length) {
+        const _note = _gateExcl.length + ' ' + (_gateExcl.length === 1 ? 'company was' : 'companies were') + ' hard-excluded for failing an eligibility gate: ' + _gateExcl.slice(0, 6).join('; ') + (_gateExcl.length > 6 ? '; and others' : '') + '.';
+        overallTake = _note + (overallTake ? ' ' + overallTake : '');
+      }
+    }
     window._hsLastMatches  = matches;
     window._hsOverallTake  = overallTake;
     renderHsResults(matches, summaries.length, overallTake);
@@ -3403,6 +3497,17 @@ async function runHsMatch() {
     btn.innerHTML = '🤝 Find Partner Matches in HubSpot';
     updateHsMatchBtn();
   }
+}
+
+function partnerSetAsideMatcher(setAside) {
+  const s = String(setAside || '').toLowerCase();
+  if (/sdvosb|service.?disabled.?veteran/.test(s)) return { label: 'SDVOSB', re: /sdvosb|service.?disabled.?veteran/i };
+  if (/edwosb|economically.?disadvantaged.?women/.test(s)) return { label: 'EDWOSB', re: /edwosb|economically.?disadvantaged.?women/i };
+  if (/hubzone/.test(s)) return { label: 'HUBZone', re: /hubzone/i };
+  if (/8\s*\(?\s*a\s*\)?/.test(s)) return { label: '8(a)', re: /8\s*\(?\s*a\s*\)?|8a\b/i };
+  if (/wosb|women.?owned/.test(s)) return { label: 'WOSB', re: /wosb|women.?owned/i };
+  if (/vosb|veteran.?owned/.test(s)) return { label: 'VOSB', re: /\bvosb\b|veteran.?owned/i };
+  return null;
 }
 
 function renderHsResults(matches, total, overallTake) {
@@ -10295,10 +10400,19 @@ async function runBnaCombined() {
   const intelBody = document.getElementById('bnaIntelBody');
   if (intelCard) { intelCard.style.display = 'block'; intelCard.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   if (intelBody) intelBody.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><span class="spinner-dark" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Extracting opportunity details…</div>';
-  // 1) Opportunity details — renders into the card above as soon as it returns.
-  try { await runOpportunityIntel(); } catch (e) { console.error('Opportunity intel failed', e); }
-  // 2) Scoring analysis — renders the decision matrix below.
-  await runBidNoBid();
+  // Put the Analyze button into a loading state for the WHOLE run (extraction + scoring),
+  // not just the scoring phase — otherwise it looks idle while details are being extracted.
+  const _runBtn = document.getElementById('bnaRunBtn');
+  const _runBtnHtml = _runBtn ? _runBtn.innerHTML : '';
+  if (_runBtn) { _runBtn.disabled = true; _runBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Analyzing…'; }
+  try {
+    // 1) Opportunity details — renders into the card above as soon as it returns.
+    try { await runOpportunityIntel(); } catch (e) { console.error('Opportunity intel failed', e); }
+    // 2) Scoring analysis — renders the decision matrix below.
+    await runBidNoBid();
+  } finally {
+    if (_runBtn) { _runBtn.disabled = false; _runBtn.innerHTML = _runBtnHtml; }
+  }
 }
 
 async function runBidNoBid() {
@@ -10749,6 +10863,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
     `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName || 'the company'}${CLIENT_CONFIG.businessType ? ' (a ' + CLIENT_CONFIG.businessType + ')' : ''} and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - the set-aside aligns directly with the company's certifications and the NAICS matches core capabilities."\n\n` +
     `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from.
+11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
     `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
@@ -10802,6 +10917,26 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
     }
     window._lastBnaIntel = intel;
     renderOpportunityIntel(intel, body);
+    // Live incumbent lookup (non-blocking): when the documents do not clearly name the incumbent,
+    // search the web and, if a source is found, re-render it as a blue linked value.
+    (function () {
+      try {
+        const _inc = String(intel.incumbent || '').trim();
+        const _uncertain = !_inc || /^not stated|^\[inferred\]|^unknown/i.test(_inc);
+        const _recompete = /recompete|re-compete|follow.?on/i.test(String(intel.new_or_recompete || ''));
+        if ((_uncertain || _recompete) && (intel.requirement_name || intel.id_number)) {
+          lookupIncumbentViaWeb(intel, apiKey).then(function (found) {
+            if (found && found.incumbent) {
+              intel.incumbent = found.incumbent;
+              intel.incumbent_source_url = found.source_url || '';
+              intel.incumbent_source_name = found.source_name || '';
+              window._lastBnaIntel = intel;
+              renderOpportunityIntel(intel, body);
+            }
+          }).catch(function (e) { console.warn('incumbent web lookup failed', e); });
+        }
+      } catch (e) { console.warn('incumbent lookup trigger error', e); }
+    })();
     stopBnaEta();
     showBnaStatus('success', 'Intelligence extracted', '31 fields extracted from the solicitation. Review below.');
   } catch(e) {
@@ -10898,6 +11033,40 @@ function extractIntelFields(jsonStr) {
     labor_categories:              laborCats(),
     pursuit_recommendation:        str('pursuit_recommendation'),
   };
+}
+
+// Live web lookup for the incumbent contractor using the Messages API web_search tool. Returns
+// {incumbent, source_url, source_name} when a credible source is found, otherwise null. Fails soft.
+async function lookupIncumbentViaWeb(intel, apiKey) {
+  try {
+    if (!apiKey) return null;
+    const title = String(intel.requirement_name || '').trim();
+    const idnum = String(intel.id_number || '').trim();
+    const agency = String(intel.customer_agency || '').trim();
+    if (!title && !idnum) return null;
+    const q = 'Find the INCUMBENT contractor for this U.S. federal opportunity. ' +
+      'Title: "' + title + '". ' + (idnum ? ('Solicitation/ID: ' + idnum + '. ') : '') + (agency ? ('Agency: ' + agency + '. ') : '') +
+      'Search USASpending.gov, FPDS, SAM.gov, GovTribe, HigherGov, or credible agency/news pages to identify the company currently performing (or most recently awarded) this work. ' +
+      'Respond with ONLY a raw JSON object, no markdown, no backticks: {"incumbent":"company name, or empty string if you cannot find a credible source","source_url":"the exact URL of the page where you found it, or empty","source_name":"the website name or domain (for example USASpending.gov), or empty","confidence":"high|medium|low"}.';
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1200, messages: [{ role: 'user', content: q }], tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }] })
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const text = (d.content || []).map(c => (c && c.type === 'text') ? (c.text || '') : '').join('').trim();
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    let parsed;
+    try { parsed = JSON.parse(m[0]); } catch (e) { return null; }
+    if (!parsed || !parsed.incumbent || !String(parsed.incumbent).trim()) return null;
+    parsed.incumbent = String(parsed.incumbent).replace(/^\[inferred\]\s*/i, '').trim();
+    if (!parsed.source_name && parsed.source_url) {
+      try { parsed.source_name = String(parsed.source_url).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0]; } catch (e) {}
+    }
+    return parsed;
+  } catch (e) { return null; }
 }
 
 function renderOpportunityIntel(intel, container) {
@@ -11052,7 +11221,14 @@ function renderOpportunityIntel(intel, container) {
       const valContent = isUrl
         ? `<a href="${escHtml(displayVal)}" target="_blank" style="color:var(--blue)">${escHtml(displayVal)}</a>`
         : `<span style="${valStyle}">${escHtml(displayVal)}</span>`;
-      displayHtml = valContent + badge;
+      if (f.key === 'incumbent' && intel && intel.incumbent_source_url && !isMissing) {
+        const _su = escHtml(intel.incumbent_source_url);
+        const _sn = escHtml(intel.incumbent_source_name || String(intel.incumbent_source_url).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] || 'web');
+        displayHtml = '<a href="' + _su + '" target="_blank" style="color:var(--blue);font-weight:700">' + escHtml(displayVal) + '</a>' +
+          '<a href="' + _su + '" target="_blank" style="text-decoration:none"><span style="font-size:10px;font-weight:700;background:#eff6ff;border:1px solid var(--mid-blue);border-radius:8px;padding:1px 6px;color:#1e40af;margin-left:6px">Found on ' + _sn + '</span></a>';
+      } else {
+        displayHtml = valContent + badge;
+      }
     }
 
     const rowBg = f.key === 'pursuit_recommendation' ? 'background:#eff6ff;border-left:3px solid var(--blue);padding:10px 12px;' : 'border-bottom:1px solid #f1f5f9;';
