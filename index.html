@@ -988,7 +988,7 @@
             <div class="dz-sub">SOW, PWS, RFP, amendments · PDF, Word, Excel</div>
           </div>
           <div class="file-list" id="fileListRFP"></div>
-          <button onclick="proposalPullRfpFromBna()" id="proposalPullRfpBtn" style="margin-top:8px;padding:6px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--mid-blue);border-radius:6px;cursor:pointer;white-space:nowrap">⤵ Pull RFP Files from Bid/No-Bid tab</button>
+          <button onclick="proposalPullRfpFromBna()" id="proposalPullRfpBtn" style="margin-top:8px;padding:6px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--mid-blue);border-radius:6px;cursor:pointer;white-space:nowrap">⤵ Pull RFP &amp; company files from Bid/No-Bid tab</button>
         </div>
 
         <!-- Right: Company / past performance documents -->
@@ -1901,6 +1901,8 @@
 
       <!-- Travel / ODCs -->
       <div id="pricingTravel" style="margin-bottom:16px"></div>
+      <div id="pricingMaterials" style="margin-bottom:16px"></div>
+      <div id="pricingClin" style="margin-bottom:16px"></div>
 
       <!-- Live summary -->
       <div id="pricingSummary" style="margin-bottom:16px"></div>
@@ -2923,12 +2925,9 @@ async function runOutlinePreview() {
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
     const d = await resp.json();
-    let raw = d.content.map(c=>c.text||'').join('').trim()
-      .replace(/^```json\s*/i,'').replace(/\s*```$/,'').trim();
-    if (!raw.endsWith('}')) { const lb=raw.lastIndexOf('}'); if(lb>0){raw=raw.substring(0,lb+1);const op=(raw.match(/\[/g)||[]).length-(raw.match(/\]/g)||[]).length;for(let i=0;i<op;i++) raw+=']';raw+='}';} }
-    let result;
-    try { result = JSON.parse(raw); }
-    catch(e) { const m=raw.match(/\{[\s\S]+\}/); if(m){try{result=JSON.parse(m[0]);}catch(_){}}  if(!result) throw new Error('Outline parse failed — try again. Detail: '+e.message); }
+    const raw = d.content.map(c=>c.text||'').join('');
+    const result = parseLooseJson(raw);
+    if (!result) throw new Error('Outline parse failed — try again.');
 
     // Store the approved outline so generation can use it as binding structure
     window._approvedOutline = result;
@@ -4896,6 +4895,24 @@ async function extractToneProfile(apiKey) {
 // This is the single company-document read that powers every company-aware volume,
 // so the docs are never sent twice. briefingContext gives the model the opportunity
 // so both the digest and the reference narratives map to THIS solicitation.
+// Configured past-performance records (CLIENT_CONFIG.pastPerformance) rendered as grounded text, so
+// Vol II can fill a reference's structured contract metadata from real company data when an uploaded
+// narrative omits it. This is the intended fallback for the PP contract fields.
+function _pastPerfRecordsText() {
+  const pp = (typeof CLIENT_CONFIG === 'object' && Array.isArray(CLIENT_CONFIG.pastPerformance)) ? CLIENT_CONFIG.pastPerformance : [];
+  if (!pp.length) return '';
+  const poc = (lbl, o) => (o && (o.name || o.phone || o.email)) ? `  ${lbl}: ${[o.name, o.phone, o.email].filter(Boolean).join(', ')}` : '';
+  return pp.map(r => [
+    `- Program: ${r.programName || ''}`,
+    r.contractNumber ? `  Contract number: ${r.contractNumber}` : '',
+    r.contractType ? `  Contract type: ${r.contractType}` : '',
+    r.period ? `  Period of performance: ${r.period}` : '',
+    r.value ? `  Total value: ${r.value}` : '',
+    r.customer ? `  Customer / prime: ${r.customer}` : '',
+    r.work ? `  Scope: ${r.work}` : '',
+    poc('PM', r.pm), poc('CO', r.co), poc('COR', r.cor)
+  ].filter(Boolean).join('\n')).join('\n\n');
+}
 async function extractCompanyProfile(apiKey, companyDocContent, briefingContext) {
   const empty = { capability_digest: '', references: [] };
   if (!companyDocContent || companyDocContent.length === 0) return empty;
@@ -4906,12 +4923,15 @@ async function extractCompanyProfile(apiKey, companyDocContent, briefingContext)
     `Using ONLY what is actually in these documents, return a JSON object with two parts.\n\n` +
     `PART 1 — "capability_digest": a concise prose briefing (250-450 words) the proposal writers will use to ground the Technical, Management, Key Personnel, and Executive Summary volumes in ${co}'s REAL, DEMONSTRATED strengths, written toward THIS opportunity. Where documented, cover: the most relevant prior engagements (what was performed, for which customer/agency, and measurable outcomes); core competencies and differentiators that map to this requirement's PWS task areas and evaluation factors; key personnel and their directly relevant qualifications, certifications, and clearances; and proven tools, methodologies, and processes. This is EVIDENCE later volumes will cite to substantiate claims. ABSOLUTE RULE: never invent or embellish — no made-up customers, engagements, outcomes, personnel, tools, or numbers. If the documents are thin, keep it short and state only what is supported.\n\n` +
     `PART 2 — "references": the past-performance records, under the SAME no-fabrication rules. You may ONLY describe past performance explicitly documented above. NEVER invent client/agency names, contract numbers, contact names, phone numbers, emails, contract values, periods of performance, or program descriptions. For any field not found, output the literal "[PROVIDE: <field name>]" (e.g. "[PROVIDE: Contract Number]"). For a narrative with no source, output "[PROVIDE: describe this past performance engagement - no source document found]". If the documents contain N real references, return exactly N — never pad to 3 with invented ones; if zero, return a single reference object with every field set to its [PROVIDE: ...] placeholder.\n\n` +
+`Aggressively EXTRACT the structured contract metadata for EACH reference \u2014 contract/task-order number, contract type (FFP/CPFF/T&M/IDIQ/etc.), period of performance, total value or ceiling, and Prime vs Subcontractor. These often appear in document headers, summary tables, CPARS, or the opening paragraph \u2014 capture them precisely. If a documented reference ALSO appears in the KNOWN CONTRACT RECORDS block (same program/customer), use that record's contract number, type, period, value, prime/sub, and POC details to fill those fields. Output a [PROVIDE: <field>] placeholder ONLY when a value is genuinely in neither the documents nor the known contract records.\n\n` +
     `Return ONLY JSON:\n{"capability_digest":"...","references":[` +
     `{"program_name":"exact or [PROVIDE: Program Name]","contract_number":"exact or [PROVIDE: Contract Number]","pm_name":"exact or [PROVIDE: PM Name]","pm_phone":"exact or [PROVIDE: PM Phone]","pm_email":"exact or [PROVIDE: PM Email]","co_name":"exact or [PROVIDE: CO Name]","co_phone":"exact or [PROVIDE: CO Phone]","co_email":"exact or [PROVIDE: CO Email]","cor_name":"exact or [PROVIDE: COR Name]","cor_phone":"exact or [PROVIDE: COR Phone]","cor_email":"exact or [PROVIDE: COR Email]","contract_type":"exact or [PROVIDE: Contract Type]","period_of_performance":"exact or [PROVIDE: Period of Performance]","total_value":"exact or [PROVIDE: Contract Value]","prime_or_sub":"Prime or Subcontractor or [PROVIDE: Prime/Sub]",` +
     `"overview":"MINIMUM 3 paragraphs IF documented. What was performed, scope, operational environment, outcomes. Specifics only from the documents.",` +
     `"relevance":"MINIMUM 2 paragraphs explicitly mapping to THIS solicitation's PWS task areas and evaluation factors.",` +
     `"similarity":"5-8 specific bullet points: size/scope/complexity/agency type/contract type/technical domain similarities. Plain text, one per line, prefix each with a hyphen."}]}`;
-  const content = [...companyDocContent, { type: 'text', text: briefingContext || '' }, { type: 'text', text: prompt }];
+  const ppRecords = (typeof _pastPerfRecordsText === 'function') ? _pastPerfRecordsText() : '';
+  const ppBlock = ppRecords ? [{ type: 'text', text: 'KNOWN CONTRACT RECORDS for ' + co + ' (authoritative company data from configuration \u2014 use ONLY to fill the structured contract metadata of a reference that MATCHES one of these by program/customer; this is real company data, not fabrication):\n\n' + ppRecords }] : [];
+  const content = [...companyDocContent, ...ppBlock, { type: 'text', text: briefingContext || '' }, { type: 'text', text: prompt }];
   try {
     const result = await callClaudeForJson(apiKey, content, 12000, 360000, 'Reading company documents');
     return {
@@ -5530,20 +5550,29 @@ function addFilesToArray(newFiles, arr, listId) {
 // Proposal tab's RFP set, so the same files don't have to be dropped twice. (Mirror of the
 // Pricing tab's "Pull RFP Analysis from Proposal tab", which pulls the derived analysis.)
 function proposalPullRfpFromBna() {
-  if (typeof bnaFiles === 'undefined' || !bnaFiles.length) {
-    showStatus('warn', 'No RFP files on the Bid/No-Bid tab',
-      'Upload your RFP / PWS / solicitation documents on the Bid/No-Bid tab first, then pull them here \u2014 or drop them in the box above.');
+  const haveRfp = typeof bnaFiles !== 'undefined' && bnaFiles.length;
+  const haveCo  = typeof bnaCompanyFiles !== 'undefined' && bnaCompanyFiles.length;
+  if (!haveRfp && !haveCo) {
+    showStatus('warn', 'Nothing on the Bid/No-Bid tab yet',
+      'Upload your RFP / PWS / solicitation documents (and any company or past-performance docs) on the Bid/No-Bid tab first, then pull them here - or drop them in the boxes above.');
     return;
   }
-  const before = rfpFiles.length;
-  addFilesToArray(bnaFiles.slice(), rfpFiles, 'fileListRFP');
-  const added = rfpFiles.length - before;
-  if (added > 0) {
-    showStatus('success', 'RFP files pulled',
-      added + ' file' + (added > 1 ? 's' : '') + ' copied from the Bid/No-Bid tab into Step 4.');
+  const beforeRfp = rfpFiles.length;
+  if (haveRfp) addFilesToArray(bnaFiles.slice(), rfpFiles, 'fileListRFP');
+  const addedRfp = rfpFiles.length - beforeRfp;
+  const beforeCo = companyFiles.length;
+  if (haveCo) addFilesToArray(bnaCompanyFiles.slice(), companyFiles, 'fileListCompany');
+  const addedCo = companyFiles.length - beforeCo;
+  if (addedRfp || addedCo) {
+    const parts = [];
+    if (addedRfp) parts.push(addedRfp + ' RFP file' + (addedRfp > 1 ? 's' : ''));
+    if (addedCo)  parts.push(addedCo + ' company / past-performance file' + (addedCo > 1 ? 's' : ''));
+    showStatus('success', 'Pulled from Bid/No-Bid',
+      parts.join(' and ') + ' copied into Step 4. Company documents feed your Past Performance references and ground the Technical volume.');
   } else {
-    showStatus('warn', 'Already loaded', 'Those Bid/No-Bid RFP files are already in Step 4.');
+    showStatus('warn', 'Already loaded', 'Those Bid/No-Bid files are already in Step 4.');
   }
+  if (typeof updateProposalPricingGate === 'function') updateProposalPricingGate();
 }
 
 // Remove a SharePoint-loaded company document from the generation set (X button).
@@ -6727,6 +6756,31 @@ function buildClarifyingContext() {
 // on a network error, an HTTP error, or an empty/unparseable response — the same
 // resilience writeSection() has — then returns the parsed object (or throws so the
 // caller can decide how to recover). label is used in user-facing error messages.
+// Robust-ish JSON parse for model output. Strict parse first; ONLY on failure does it apply safe
+// repairs (code fences, trailing commas, missing commas between adjacent complete tokens) and
+// truncation bracket-balancing. Returns a parsed object/array, or null if nothing usable remains.
+function parseLooseJson(raw) {
+  if (raw == null) return null;
+  let s = String(raw).trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+  const tryP = x => { try { const p = JSON.parse(x); return (p && typeof p === 'object') ? p : null; } catch (_) { return null; } };
+  let p = tryP(s); if (p) return p;
+  const first = s.search(/[\{\[]/); if (first > 0) s = s.slice(first);
+  const lastClose = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+  let core = lastClose > 0 ? s.slice(0, lastClose + 1) : s;
+  p = tryP(core); if (p) return p;
+  const repair = x => x
+    .replace(/,\s*([}\]])/g, '$1')
+    .replace(/("(?:[^"\\]|\\.)*")(\s+)(?=["{\[])/g, '$1,$2')
+    .replace(/([}\]])(\s+)(?=["{\[])/g, '$1,$2')
+    .replace(/((?:true|false|null|-?\d(?:\.\d+)?(?:[eE][+-]?\d+)?))(\s*\n\s*)(?=["{\[]|true|false|null|-?\d)/g, '$1,$2');
+  p = tryP(repair(core)); if (p) return p;
+  let b = repair(core);
+  let nb = (b.split('{').length - 1) - (b.split('}').length - 1);
+  let na = (b.split('[').length - 1) - (b.split(']').length - 1);
+  while (na-- > 0) b += ']'; while (nb-- > 0) b += '}';
+  p = tryP(b); if (p) return p;
+  return null;
+}
 async function callClaudeForJson(apiKey, content, maxTok, timeoutMs, label) {
   let lastErr = null;
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -6742,15 +6796,8 @@ async function callClaudeForJson(apiKey, content, maxTok, timeoutMs, label) {
       clearTimeout(timer);
       if (!resp.ok) throw new Error(`${label} failed (${resp.status}): ${(await resp.text().catch(()=>'')) .substring(0,200)}`);
       const d = await resp.json();
-      let raw = d.content.map(c => c.text || '').join('').trim()
-        .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim();
-      if (!raw.endsWith('}')) {
-        const lb = raw.lastIndexOf('}');
-        if (lb > 0) { raw = raw.substring(0, lb+1); const ob=(raw.match(/\[/g)||[]).length-(raw.match(/\]/g)||[]).length; for(let i=0;i<ob;i++) raw+=']'; raw+='}'; }
-      }
-      let parsed = null;
-      try { parsed = JSON.parse(raw); }
-      catch(_) { const mm = raw.match(/\{[\s\S]+\}/); if (mm) { try { parsed = JSON.parse(mm[0]); } catch(__){} } }
+      const raw = d.content.map(c => c.text || '').join('');
+      const parsed = parseLooseJson(raw);
       if (parsed && typeof parsed === 'object' && Object.keys(parsed).length) return parsed;
       lastErr = new Error(`${label}: the response was empty or could not be parsed.`);
       if (attempt === 0) { console.warn(lastErr.message + ' Retrying once.'); continue; }
@@ -6936,20 +6983,30 @@ async function runGeneration() {
     // COMPANY_BUDGET is a module-level constant (shared with the token meter).
     const companyDocContent = [];
     let companyTokensSent = 0;
-    const sortedCompany = [...companyFiles].sort((a,b) => a.size - b.size);
+    // All uploaded company docs feed Vol II — drag-dropped + SharePoint (already merged into companyFiles)
+    // PLUS company docs added on the Bid/No-Bid tab (deduped), so files loaded anywhere this session reach
+    // Past Performance / Technical.
+    const _allCompany = [...companyFiles];
+    if (typeof bnaCompanyFiles !== 'undefined' && Array.isArray(bnaCompanyFiles)) bnaCompanyFiles.forEach(f => { if (!_allCompany.find(x => x.name === f.name && x.size === f.size)) _allCompany.push(f); });
+    const sortedCompany = _allCompany.sort((a,b) => a.size - b.size);
+    const _genSkippedDocs = [];
+    let _genReadDocs = 0;
     for (const file of sortedCompany) {
       const est = estimateTokens(file);
-      if (companyTokensSent + est > COMPANY_BUDGET) continue;
+      if (companyTokensSent + est > COMPANY_BUDGET) { _genSkippedDocs.push(file); continue; }
       const block = await fileToContentBlock(file);
-      if (block) { companyDocContent.push(block); companyTokensSent += est; }
+      if (block) { companyDocContent.push(block); companyTokensSent += est; _genReadDocs++; }
+      else { _genSkippedDocs.push(file); }
     }
+    window._genCompanyDocStats = { read: _genReadDocs, total: _allCompany.length,
+      skipped: _genSkippedDocs.map(f => ({ name: f.name, kb: Math.round((f.size || 0) / 1024) })) };
 
     docContent.push({ type: 'text', text:
       `You are an expert government proposal writer for ${CLIENT_CONFIG.companyFullName}.\n\n` +
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
-      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"",` +
+      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
       `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
@@ -7340,7 +7397,14 @@ async function runGeneration() {
     const docs = await generateDocsClientSide(proposalData, genVols);
     allSteps[3].status = 'done';
     setProgress(100, allSteps);
-    showStatus('success', 'Proposal ready!', 'Your proposal volumes are ready to download. Review all content before submission.');
+    const _cds = window._genCompanyDocStats;
+    if (_cds && _cds.skipped && _cds.skipped.length) {
+      const _names = _cds.skipped.map(s => `${s.name} (${s.kb}KB)`).join(', ');
+      showStatus('warn', `Proposal ready \u2014 but ${_cds.skipped.length} company document${_cds.skipped.length > 1 ? 's were' : ' was'} skipped`,
+        `Your volumes are ready to download. To stay within the model's size limit, only ${_cds.read} of ${_cds.total} company documents were read \u2014 so Past Performance may be missing details from the rest: ${_names}. If one of these holds contract metadata you need, remove the others from Step 4 (or load it on its own) and regenerate, or split it into a smaller file.`);
+    } else {
+      showStatus('success', 'Proposal ready!', 'Your proposal volumes are ready to download. Review all content before submission.');
+    }
     try {
       if (typeof pricingBuildWorkbook === 'function' && typeof XLSX !== 'undefined') {
         const _wb = pricingBuildWorkbook();
@@ -8396,6 +8460,120 @@ function pricingPeriodCellHours(lid, tid, i) {
 }
 function pricingPeriodRowHours(lid, i) { return pricingModel.tasks.reduce((s, t) => s + pricingPeriodCellHours(lid, t.id, i), 0); }
 function pricingPeriodTotalFte(i) { return pricingModel.lcats.reduce((s, l) => s + pricingPeriodRoleFte(l, i), 0); }
+
+// ── Materials / direct-material costs ─────────────────────────────────────────
+// A modeled cost stream parallel to Travel/ODC (its own per-period dollars), so Materials can be
+// priced as its own CLIN and shown as its own line — distinct from Travel/ODC.
+function pricingMaterials() { if (!pricingModel.materials) pricingModel.materials = { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }; return pricingModel.materials; }
+function pricingMaterialsByPeriod() {
+  const m = pricingMaterials(); const P = pricingModel.periods || [];
+  if (!m || !m.mode || m.mode === 'none') return P.map(() => 0);
+  const amt = parseFloat(m.amount) || 0;
+  const ga = 1 + (parseFloat(m.gaPct) || 0) / 100;
+  const base = (m.basis === 'total') ? P.map(() => (P.length ? amt / P.length : 0)) : P.map(() => amt);
+  return base.map(x => x * ga);
+}
+function pricingMaterialsTotal() { const bp = pricingMaterialsByPeriod(); return { total: bp.reduce((s, x) => s + x, 0), byPeriod: bp }; }
+
+// ── CLIN layer ────────────────────────────────────────────────────────────────
+// A mapping layer over the labor matrix + travel/ODC. OFF by default (exports unchanged).
+// CLIN lines are user-defined scopes (all labor / specific PWS tasks / travel & ODC) that expand
+// across periods with standard period-prefixed numbering (0001 / 1001 / 2001 ...), optionally adding
+// a 6-month FAR 52.217-8 extension priced at the final option's rates.
+function pricingClin() {
+  if (!pricingModel.clins) pricingModel.clins = { enabled: false, unitBasis: 'period', farExtension: false, lines: [] };
+  if (!Array.isArray(pricingModel.clins.lines)) pricingModel.clins.lines = [];
+  return pricingModel.clins;
+}
+function pricingClinDefaultLines() {
+  const lines = [{ id: _prId('clin_'), title: 'Services', scope: 'labor', type: 'FFP', taskIds: [] }];
+  const tt = (typeof pricingTravelTotal === 'function') ? pricingTravelTotal() : { total: 0 };
+  if (tt && tt.total > 0) lines.push({ id: _prId('clin_'), title: ((pricingModel.travel && pricingModel.travel.odcCategory) || 'Travel & ODC'), scope: 'travelodc', type: 'cost', taskIds: [] });
+  const mt = (typeof pricingMaterialsTotal === 'function') ? pricingMaterialsTotal() : { total: 0 };
+  if (mt && mt.total > 0) lines.push({ id: _prId('clin_'), title: 'Materials', scope: 'materials', type: 'cost', taskIds: [] });
+  return lines;
+}
+function pricingClinEnsureLines() { const c = pricingClin(); if (c.enabled && !c.lines.length) c.lines = pricingClinDefaultLines(); }
+function pricingClinPeriods() {
+  const P = pricingModel.periods || [];
+  const out = P.map((p, i) => ({ name: p.name || ('Period ' + (i + 1)), months: pricingPeriodMonths(p), srcIdx: i, isExt: false, prefix: i }));
+  const c = pricingClin();
+  if (c.farExtension && P.length) {
+    const last = P.length - 1, lm = pricingPeriodMonths(P[last]) || 12;
+    out.push({ name: 'Option to Extend Services (FAR 52.217-8)', months: 6, srcIdx: last, isExt: true, prefix: P.length, extFactor: 6 / lm });
+  }
+  return out;
+}
+// Period-aware cost for a CLIN scope. taskIds null/empty = ALL labor (reconciles exactly to pricingPeriodCost).
+function pricingClinPeriodCost(taskIds, i) {
+  const M = pricingModel;
+  if (!taskIds || !taskIds.length) return pricingPeriodCost(i);
+  const frac = pricingPeriodFraction(M.periods[i]);
+  const mult = pricingIsGsa() ? 1 : (pricingMultipliers()[i] || 1);
+  let c = 0;
+  M.lcats.forEach(l => { const rate = pricingLoadedRate(l, i); M.tasks.forEach(t => { if (taskIds.includes(t.id)) c += pricingPeriodCellHours(l.id, t.id, i) * rate * frac * mult; }); });
+  return c;
+}
+function pricingClinPeriodHours(taskIds, i) {
+  const M = pricingModel; const all = !taskIds || !taskIds.length; let h = 0;
+  M.lcats.forEach(l => M.tasks.forEach(t => { if (all || taskIds.includes(t.id)) h += pricingPeriodCellHours(l.id, t.id, i); }));
+  return h;
+}
+function pricingClinLineAmount(line, pd) {
+  if (line.scope === 'custom') {
+    if (pd.isExt) return 0;                                            // fixed CLINs don't extend with services
+    const camt = parseFloat(line.amount) || 0;
+    if ((line.placement || 'base') === 'base') return (pd.srcIdx === 0) ? camt : 0;   // one-time: base period only
+    return camt;                                                       // recurring: full amount each period (flat, not prorated)
+  }
+  let amt;
+  if (line.scope === 'travelodc') { const tp = (typeof pricingTravelByPeriod === 'function') ? pricingTravelByPeriod() : []; amt = tp[pd.srcIdx] || 0; }
+  else if (line.scope === 'materials') { const mp = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod() : []; amt = mp[pd.srcIdx] || 0; }
+  else amt = pricingClinPeriodCost(line.scope === 'tasks' ? (line.taskIds || []) : null, pd.srcIdx);
+  return pd.isExt ? amt * (pd.extFactor || 1) : amt;
+}
+function pricingClinLineHours(line, pd) {
+  if (line.scope === 'travelodc' || line.scope === 'custom' || line.scope === 'materials') return 0;
+  const h = pricingClinPeriodHours(line.scope === 'tasks' ? (line.taskIds || []) : null, pd.srcIdx);
+  return pd.isExt ? h * (pd.extFactor || 1) : h;
+}
+function pricingClinNumber(lineIdx, prefix) { return String(prefix * 1000 + (lineIdx + 1)).padStart(4, '0'); }
+function pricingClinScheduleRows() {
+  pricingClinEnsureLines();
+  const c = pricingClin(), pds = pricingClinPeriods(), monthly = (c.unitBasis === 'monthly');
+  const rows = [];
+  const emitPeriod = (pd) => {
+    let pTot = 0;
+    c.lines.forEach((line, li) => {
+      const amt = pricingClinLineAmount(line, pd), hrs = pricingClinLineHours(line, pd), type = (line.type || 'FFP').toUpperCase();
+      if (line.scope === 'custom' && amt === 0) return;                 // one-time custom: omit periods where it does not apply
+      let qty, unit, unitPrice;
+      if (line.scope === 'custom') { qty = 1; unit = 'Lot'; unitPrice = amt; }
+      else if (type === 'T&M' && line.scope !== 'travelodc' && line.scope !== 'materials' && hrs > 0) { qty = Math.round(hrs); unit = 'Hour'; unitPrice = amt / hrs; }
+      else if (type === 'COST') { qty = 1; unit = 'Lot'; unitPrice = amt; }
+      else if (monthly) { qty = pd.months; unit = 'Month'; unitPrice = pd.months ? amt / pd.months : amt; }
+      else { qty = 1; unit = (pd.months === 12 ? 'Year' : 'Lot'); unitPrice = amt; }
+      rows.push({ clin: pricingClinNumber(li, pd.prefix), desc: line.title || 'Line item', period: pd.name, type: (type === 'COST' ? 'Cost/NTE' : type), qty, unit, unitPrice, total: amt, isExt: pd.isExt });
+      pTot += amt;
+    });
+    rows.push({ subtotal: true, period: pd.name, total: pTot, isExt: pd.isExt });
+    return pTot;
+  };
+  // Base + option periods make up the contract value. The FAR 52.217-8 extension (if shown) is kept
+  // OUT of that total and presented separately for evaluation only.
+  let grand = 0;
+  pds.filter(pd => !pd.isExt).forEach(pd => { grand += emitPeriod(pd); });
+  rows.push({ grand: true, total: grand });
+  const exts = pds.filter(pd => pd.isExt);
+  if (exts.length) {
+    rows.push({ extHeader: true });
+    let extTot = 0;
+    exts.forEach(pd => { extTot += emitPeriod(pd); });
+    rows.push({ grandWithExt: true, total: grand + extTot, ext: extTot });
+  }
+  return rows;
+}
+function pricingClinGrandTotal() { const g = pricingClinScheduleRows().find(x => x.grand); return g ? g.total : 0; }
 function pricingFmt(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
 function pricingFmtC(n) { return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -8433,7 +8611,7 @@ function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(
 function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
 function pricingResetModel() {
   if (!confirm('Reset the entire pricing model? This clears the GSA Schedule choice, tasks, labor categories, hours, and periods for this opportunity.')) return;
-  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' } };
+  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
   pricingGsaFiles = [];
   pricingRenderAll();
 }
@@ -8877,7 +9055,7 @@ Rules:
 - If the RFP explicitly directs a level of effort, hours, or staffing for any task (e.g. "the contractor shall provide X hours" or a staffing/manning table), USE those numbers exactly instead of proposing your own, and record what you honored in directed_hours_note.
 ${pricingScaActive() ? '- For SCA-covered roles the direct wage must meet or exceed the Wage Determination minimum; treat the WD minimum plus H&W as the cost floor and flag any role whose pricing falls below it.\n' : ''}- Treat market figures as ESTIMATES to be verified against GSA CALC+, BLS OES, and SCA wage determinations \u2014 not authoritative.`;
 
-    const parsed = await callClaudeForJson(apiKey, [{ type: 'text', text: prompt }], 6000, 120000, 'Auto-building structure');
+    const parsed = await callClaudeForJson(apiKey, [{ type: 'text', text: prompt }], 10000, 120000, 'Auto-building structure');
     if (!parsed || !Array.isArray(parsed.labor_mix) || !parsed.labor_mix.length) throw new Error('The model did not return a usable labor mix. Try again, or pull the RFP / add tasks first.');
     pricingApplyAutoBuild(parsed);
     pricingAutoBuildLast = parsed;
@@ -9092,6 +9270,8 @@ function pricingRenderAll() {
   pricingRenderPeriods();
   pricingRenderPerPeriodFte();
   pricingRenderTravel();
+  pricingRenderMaterials();
+  pricingRenderClin();
   pricingRenderFteBar();
   pricingRenderSummary();
   pricingRenderExport();
@@ -9303,6 +9483,100 @@ function pricingTogglePerPeriodFte(on) { pricingModel.perPeriodFte = !!on; if (o
 function pricingSetPeriodFte(pid, lid, val) { if (!pricingModel.periodFte) pricingModel.periodFte = {}; if (!pricingModel.periodFte[pid]) pricingModel.periodFte[pid] = {}; pricingModel.periodFte[pid][lid] = (val === '' ? '' : Math.max(0, parseFloat(val) || 0)); pricingRenderAll(); }
 function pricingResetPerPeriodFte() { pricingModel.periodFte = {}; pricingRenderAll(); }
 
+// ── Materials UI ──────────────────────────────────────────────────────────────
+function pricingRenderMaterials() {
+  const el = document.getElementById('pricingMaterials');
+  if (!el) return;
+  const M = pricingModel;
+  if (!M.lcats.length && !M.tasks.length) { el.innerHTML = ''; return; }
+  const m = pricingMaterials();
+  const calc = pricingMaterialsTotal();
+  const modeBtn = (val, label) => '<label style="font-size:13px;margin-right:14px;cursor:pointer"><input type="radio" name="matMode" ' + (m.mode === val ? 'checked' : '') + ' onchange="pricingSetMaterials(\'mode\',\'' + val + '\')"> ' + label + '</label>';
+  let h = '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff">' +
+    '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Materials / direct material costs</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">A separate cost stream from Travel/ODC, modeled with its own per-period dollars so it can be its own CLIN and its own line in the schedule. Leave as None unless the solicitation calls for materials.</div>' +
+    '<div style="margin-bottom:6px">' + modeBtn('none', 'None') + modeBtn('nte', 'Not-to-exceed (ceiling)') + modeBtn('open', 'Estimated (open)') + '</div>';
+  if (m.mode && m.mode !== 'none') {
+    h += '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-top:8px">' +
+      '<div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:11px;color:var(--muted)">Amount ($)</label><input type="number" min="0" step="100" value="' + (m.amount != null ? pricingEsc(m.amount) : '') + '" onchange="pricingSetMaterials(\'amount\',this.value)" style="width:140px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"></div>' +
+      '<div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:11px;color:var(--muted)">Applied</label><select onchange="pricingSetMaterials(\'basis\',this.value)" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff"><option value="perPeriod" ' + (m.basis !== 'total' ? 'selected' : '') + '>Per period</option><option value="total" ' + (m.basis === 'total' ? 'selected' : '') + '>Total (split evenly)</option></select></div>' +
+      '<div style="display:flex;flex-direction:column;gap:2px"><label style="font-size:11px;color:var(--muted)">G&amp;A / handling %</label><input type="number" min="0" step="0.1" value="' + (m.gaPct != null ? pricingEsc(m.gaPct) : '') + '" onchange="pricingSetMaterials(\'gaPct\',this.value)" placeholder="0" style="width:96px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"></div></div>' +
+      '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px">All periods: <strong>' + pricingFmt(calc.total) + '</strong>' + (m.basis === 'total' ? ' (split evenly across periods)' : ' (per period)') + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:6px">Shows as its own <strong>Materials</strong> line per period in the workbook, and as a Materials CLIN when the CLIN layer is on.</div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+function pricingSetMaterials(field, val) { const m = pricingMaterials(); m[field] = val; pricingRenderMaterials(); if (typeof pricingRenderClin === 'function') pricingRenderClin(); }
+
+// ── CLIN layer UI ─────────────────────────────────────────────────────────────
+function pricingRenderClin() {
+  const el = document.getElementById('pricingClin');
+  if (!el) return;
+  const M = pricingModel;
+  if (!M.lcats.length || !M.tasks.length) { el.innerHTML = ''; return; }
+  const c = pricingClin();
+  let h = '<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff">' +
+    '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;font-size:14px">' +
+    '<input type="checkbox" ' + (c.enabled ? 'checked' : '') + ' onchange="pricingToggleClin()" style="width:16px;height:16px"> Organize pricing into CLINs (Section B schedule)</label>' +
+    '<div style="font-size:12px;color:var(--muted);margin-top:6px">Groups labor and travel/ODC into numbered contract line items (0001 / 1001 / 2001 ...) and builds a ready-to-submit pricing schedule. Off by default; nothing else changes when off.</div>';
+  if (c.enabled) {
+    pricingClinEnsureLines();
+    h += '<div style="display:flex;gap:28px;flex-wrap:wrap;margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--border)">' +
+      '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Unit basis</div>' +
+      '<label style="font-size:13px;margin-right:14px;cursor:pointer"><input type="radio" name="clinBasis" ' + (c.unitBasis !== 'monthly' ? 'checked' : '') + ' onchange="pricingSetClinBasis(\'period\')"> Per period (Lot / Year)</label>' +
+      '<label style="font-size:13px;cursor:pointer"><input type="radio" name="clinBasis" ' + (c.unitBasis === 'monthly' ? 'checked' : '') + ' onchange="pricingSetClinBasis(\'monthly\')"> Per month</label></div>' +
+      '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Option to extend</div>' +
+      '<label style="font-size:13px;cursor:pointer"><input type="checkbox" ' + (c.farExtension ? 'checked' : '') + ' onchange="pricingToggleFarExt()"> Show 6-month FAR 52.217-8 extension (evaluation only, at final-year rates)</label></div></div>';
+    h += '<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">CLIN line items (each repeats per period)</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:var(--muted);font-size:11px"><th style="padding:4px 6px">Title</th><th style="padding:4px 6px">Scope</th><th style="padding:4px 6px">Type</th><th style="padding:4px 6px"></th></tr></thead><tbody>';
+    c.lines.forEach(line => {
+      const scopeSel = [['labor','All labor'],['tasks','Specific PWS tasks'],['travelodc','Travel & ODC'],['materials','Materials'],['custom','Custom fixed amount']].map(o => '<option value="' + o[0] + '" ' + (line.scope === o[0] ? 'selected' : '') + '>' + o[1] + '</option>').join('');
+      const typeSel = [['FFP','FFP'],['T&M','T&M'],['cost','Cost / NTE']].map(o => '<option value="' + o[0] + '" ' + ((line.type || 'FFP') === o[0] ? 'selected' : '') + '>' + o[1] + '</option>').join('');
+      h += '<tr style="border-top:1px solid var(--border)">' +
+        '<td style="padding:5px 6px"><input value="' + pricingEsc(line.title || '') + '" oninput="pricingSetClinLine(\'' + line.id + '\',\'title\',this.value)" style="width:100%;padding:5px 7px;border:1px solid var(--border);border-radius:6px;font-size:13px"></td>' +
+        '<td style="padding:5px 6px"><select onchange="pricingSetClinLine(\'' + line.id + '\',\'scope\',this.value)" style="padding:5px 7px;border:1px solid var(--border);border-radius:6px;font-size:13px">' + scopeSel + '</select></td>' +
+        '<td style="padding:5px 6px"><select onchange="pricingSetClinLine(\'' + line.id + '\',\'type\',this.value)" style="padding:5px 7px;border:1px solid var(--border);border-radius:6px;font-size:13px">' + typeSel + '</select></td>' +
+        '<td style="padding:5px 6px;text-align:right"><button onclick="pricingRemoveClinLine(\'' + line.id + '\')" title="Remove" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">&times;</button></td></tr>';
+      if (line.scope === 'tasks') {
+        const chks = M.tasks.map(t => '<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 12px 2px 0;font-size:12px;cursor:pointer"><input type="checkbox" ' + ((line.taskIds || []).includes(t.id) ? 'checked' : '') + ' onchange="pricingToggleClinTask(\'' + line.id + '\',\'' + t.id + '\')"> ' + escHtml((t.code ? t.code + ' ' : '') + (t.name || '')) + '</label>').join('');
+        h += '<tr><td colspan="4" style="padding:2px 6px 8px 18px;background:#f8fafc">' + (chks || '<span style="color:var(--muted);font-size:12px">No PWS tasks defined.</span>') + '</td></tr>';
+      }
+      if (line.scope === 'custom') {
+        const placeSel = [['base','One-time (base period only)'],['all','Recurring (each period)']].map(o => '<option value="' + o[0] + '" ' + ((line.placement || 'base') === o[0] ? 'selected' : '') + '>' + o[1] + '</option>').join('');
+        h += '<tr><td colspan="4" style="padding:2px 6px 8px 18px;background:#f8fafc;font-size:12px">Amount&nbsp; $ <input type="number" min="0" step="100" value="' + (line.amount != null ? pricingEsc(line.amount) : '') + '" onchange="pricingSetClinLine(\'' + line.id + '\',\'amount\',this.value)" style="width:120px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;font-size:12px"> <select onchange="pricingSetClinLine(\'' + line.id + '\',\'placement\',this.value)" style="margin-left:8px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;font-size:12px">' + placeSel + '</select> <span style="color:var(--muted);margin-left:8px">e.g. phase-in, surge, materials, separately-priced ODCs</span></td></tr>';
+      }
+    });
+    h += '</tbody></table><button onclick="pricingAddClinLine()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--mid-blue);border-radius:6px;cursor:pointer">+ Add CLIN line</button></div>';
+    const rows = pricingClinScheduleRows();
+    h += '<div style="margin-top:14px;overflow-x:auto"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Schedule preview</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="background:#f1f5f9;text-align:left">' +
+      '<th style="padding:5px 8px">CLIN</th><th style="padding:5px 8px">Description</th><th style="padding:5px 8px">Period</th><th style="padding:5px 8px">Type</th><th style="padding:5px 8px;text-align:right">Qty</th><th style="padding:5px 8px">Unit</th><th style="padding:5px 8px;text-align:right">Unit Price</th><th style="padding:5px 8px;text-align:right">Extended</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      if (r.grand) h += '<tr style="border-top:2px solid #1e293b;font-weight:800"><td colspan="7" style="padding:6px 8px">TOTAL CONTRACT VALUE (base + options)</td><td style="padding:6px 8px;text-align:right">' + pricingFmt(r.total) + '</td></tr>';
+      else if (r.extHeader) h += '<tr><td colspan="8" style="padding:8px;background:#faf5ff;color:#6b21a8;font-size:11.5px">Option to Extend Services (FAR 52.217-8) &mdash; shown for evaluation only, at the final option-year rates. Exercised later if needed; not part of the contract value above.</td></tr>';
+      else if (r.grandWithExt) h += '<tr style="border-top:1px solid #c4b5fd;font-weight:700;color:#6b21a8"><td colspan="7" style="padding:6px 8px">Total evaluated price incl. 6-month extension</td><td style="padding:6px 8px;text-align:right">' + pricingFmt(r.total) + '</td></tr>';
+      else if (r.subtotal) h += '<tr style="background:' + (r.isExt ? '#faf5ff' : '#f8fafc') + ';font-weight:700"><td colspan="7" style="padding:5px 8px">' + escHtml(r.period) + ' subtotal</td><td style="padding:5px 8px;text-align:right">' + pricingFmt(r.total) + '</td></tr>';
+      else h += '<tr style="border-top:1px solid var(--border)"><td style="padding:5px 8px;font-variant-numeric:tabular-nums">' + r.clin + '</td><td style="padding:5px 8px">' + escHtml(r.desc) + '</td><td style="padding:5px 8px">' + escHtml(r.period) + '</td><td style="padding:5px 8px">' + escHtml(r.type) + '</td><td style="padding:5px 8px;text-align:right">' + r.qty + '</td><td style="padding:5px 8px">' + escHtml(r.unit) + '</td><td style="padding:5px 8px;text-align:right">' + pricingFmtC(r.unitPrice) + '</td><td style="padding:5px 8px;text-align:right">' + pricingFmtC(r.total) + '</td></tr>';
+    });
+    h += '</tbody></table>';
+    const pds = pricingClinPeriods();
+    let clinLaborSum = 0; c.lines.forEach(line => { if (line.scope === 'labor' || line.scope === 'tasks') pds.forEach(pd => { clinLaborSum += pricingClinLineAmount(line, pd); }); });
+    const modelLabor = pds.reduce((s, pd) => s + (pd.isExt ? pricingPeriodCost(pd.srcIdx) * (pd.extFactor || 1) : pricingPeriodCost(pd.srcIdx)), 0);
+    if (Math.abs(clinLaborSum - modelLabor) > 1) h += '<div style="margin-top:8px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde047;border-radius:6px;padding:7px 10px">&#9888; Your CLIN labor scopes total ' + pricingFmt(clinLaborSum) + ', but the priced labor is ' + pricingFmt(modelLabor) + ' (off by ' + pricingFmt(Math.abs(clinLaborSum - modelLabor)) + '). If you split labor across task-based CLINs, make sure every PWS task is covered exactly once.</div>';
+    h += '</div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+function pricingToggleClin() { const c = pricingClin(); c.enabled = !c.enabled; if (c.enabled) pricingClinEnsureLines(); pricingRenderClin(); }
+function pricingSetClinBasis(v) { pricingClin().unitBasis = v; pricingRenderClin(); }
+function pricingToggleFarExt() { const c = pricingClin(); c.farExtension = !c.farExtension; pricingRenderClin(); }
+function pricingAddClinLine() { pricingClin().lines.push({ id: _prId('clin_'), title: 'New CLIN', scope: 'labor', type: 'FFP', taskIds: [] }); pricingRenderClin(); }
+function pricingRemoveClinLine(id) { const c = pricingClin(); c.lines = c.lines.filter(l => l.id !== id); pricingRenderClin(); }
+function pricingSetClinLine(id, field, val) { const l = pricingClin().lines.find(x => x.id === id); if (!l) return; l[field] = val; if (field === 'scope') { if (val !== 'tasks') l.taskIds = []; if (val === 'custom') { if (l.amount == null) l.amount = ''; if (!l.placement) l.placement = 'base'; } } if (field === 'title') return; pricingRenderClin(); }
+function pricingToggleClinTask(id, taskId) { const l = pricingClin().lines.find(x => x.id === id); if (!l) return; l.taskIds = l.taskIds || []; const i = l.taskIds.indexOf(taskId); if (i >= 0) l.taskIds.splice(i, 1); else l.taskIds.push(taskId); pricingRenderClin(); }
+
 function pricingRenderFteBar() {
   const el = document.getElementById('pricingFteBar'); if (!el) return;
   if (!pricingModel.lcats.length) { el.innerHTML = ''; return; }
@@ -9508,34 +9782,99 @@ function pricingBuildWorkbook() {
 
   // ---- TAB 0: Instructions (first sheet; company name pulled from config so retail stays generic) ----
   const _coName = (typeof CLIENT_CONFIG === 'object' && CLIENT_CONFIG.companyShortName) ? (CLIENT_CONFIG.companyShortName + ' ') : '';
+  const _headingTexts = ['Tabs in this workbook', 'The Line-Item Detail tab is an Excel Table', 'Build any view the Government wants (PivotTable)', 'Notes'];
   const _instr = [
-    [_coName + 'Pricing Workbook \u2014 how to use'],
+    [_coName + 'Pricing Workbook — how to use'],
     [''],
     ['Tabs in this workbook'],
-    ['\u2022  Line-Item Detail (green tab)  \u2014  the master dataset: one row per labor category \u00d7 task \u00d7 period, plus Travel/ODC rows. The single source for any breakout.'],
-    ['\u2022  By Labor Category / By PWS Task  \u2014  pre-built reference views with totals.'],
-    ['\u2022  Hours by Task / FTE by Task  \u2014  base-year matrices.'],
-    ['\u2022  Labor + Wrap  \u2014  the contract-value summary.'],
+    ['•  Price Summary  —  the bottom line: total evaluated price per period and overall. Start here.'],
+    ['•  Line-Item Detail (green tab)  —  the master dataset: one row per labor category × task × period, plus Travel/ODC rows. The single source for any custom breakout.'],
+    ['•  By Labor Category / By PWS Task  —  pre-built dollar rollups with per-period totals.'],
+    ['•  Loaded Rate Table  —  fully-burdened hourly rate per labor category, for each period.'],
+    ['•  Hours by Task / FTE by Task  —  effort matrices (labor category × task).'],
+    ['•  Labor + Wrap  —  the cost build-up (direct labor → fringe / overhead / G&A / fee → loaded → travel → total).'],
     [''],
     ['The Line-Item Detail tab is an Excel Table'],
     ['Click any cell in it, then use the header filter arrows to sort or filter, or the Table Design ribbon to restyle. Nothing is locked.'],
     [''],
-    ['Build a custom view (PivotTable) the way the Government wants it'],
+    ['Build any view the Government wants (PivotTable)'],
     ['1.  Click any cell inside the Line-Item Detail table.'],
-    ['2.  Insert  \u25b8  PivotTable  \u25b8  OK   (the table is already selected as the source).'],
-    ['3.  Drag fields into Rows / Columns / Values \u2014 e.g. Category or Labor Category into Rows, Period into Columns, Price into Values. Drag Hours or FTE into Values to total effort instead of dollars.'],
+    ['2.  Insert  ▸  PivotTable  ▸  OK   (the table is already selected as the source).'],
+    ['3.  Drag fields into Rows / Columns / Values. Common cuts:'],
+    ['        •  Price by CLIN / task, per year:    Task / CLIN Code → Rows,    Period → Columns,    Price → Values'],
+    ['        •  Price by labor category:             Labor Category → Rows,    Period → Columns,    Price → Values'],
+    ['        •  Hours or FTE by category:            Labor Category → Rows,    Task / CLIN Code → Columns,    Hours (or FTE) → Values'],
+    ['        •  Cost by type (labor vs travel/ODC):  Category → Rows,    Period → Columns,    Price → Values'],
     [''],
     ['The "Category" column tags every row Labor, Travel, ODC, or Materials, so you can show or hide whole cost types in any breakout.'],
     [''],
     ['Notes'],
-    ['\u2022  Hours and FTE are full-year-equivalent; partial periods are already term-scaled in the Price column.'],
-    ['\u2022  Travel/ODC rows carry no hours \u2014 they are dollar lines tagged with their cost category.'],
-    ['\u2022  Figures are estimates for proposal pricing \u2014 verify rates against GSA CALC+, BLS OES, and applicable wage determinations before relying on them.']
+    ['•  Hours and FTE are full-year-equivalent; partial periods are already term-scaled in the Price column.'],
+    ['•  Travel/ODC rows carry no hours — they are dollar lines tagged with their cost category.'],
+    ['•  Figures are estimates for proposal pricing — verify rates against GSA CALC+, BLS OES, and applicable wage determinations before relying on them.']
   ];
   const wsInstr = XLSX.utils.aoa_to_sheet(_instr);
-  wsInstr['!cols'] = [{ wch: 118 }];
-  ['A1', 'A3', 'A9', 'A12', 'A19'].forEach(a => { if (wsInstr[a]) wsInstr[a].s = { font: { bold: true, sz: (a === 'A1' ? 13 : 11), color: { rgb: '1F4E79' } } }; });
+  wsInstr['!cols'] = [{ wch: 124 }];
+  _instr.forEach((row, r) => {
+    const isTitle = (r === 0);
+    if (isTitle || _headingTexts.includes(row[0])) {
+      const a = XLSX.utils.encode_cell({ r, c: 0 });
+      if (wsInstr[a]) wsInstr[a].s = { font: { bold: true, sz: (isTitle ? 13 : 11), color: { rgb: '1F4E79' } } };
+    }
+  });
   XLSX.utils.book_append_sheet(wb, wsInstr, 'Instructions');
+
+  // ---- Price Summary by Period (headline: Total Evaluated Price; no pivoting needed) ----
+  const _travPer = (typeof pricingTravelByPeriod === 'function') ? pricingTravelByPeriod() : P.map(() => 0);
+  const _travTot = _travPer.reduce((s, x) => s + x, 0);
+  const _odcLabel = (M.travel && M.travel.odcCategory) || 'Travel & ODC';
+  const _matPer = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod() : P.map(() => 0);
+  const _matTot = _matPer.reduce((s, x) => s + x, 0);
+  const _laborPer = P.map((p, i) => r2(pricingPeriodCost(i)));
+  const _laborTot = r2(pricingGrandTotal());
+  const ps = [['Price Element'].concat(pNames).concat(['Total ($)'])];
+  ps.push([(gsa ? 'Loaded labor (GSA ceiling less discount)' : 'Loaded labor (fully burdened)')].concat(_laborPer).concat([_laborTot]));
+  if (_travTot > 0) ps.push([_odcLabel].concat(_travPer.map(r2)).concat([r2(_travTot)]));
+  if (_matTot > 0) ps.push(['Materials'].concat(_matPer.map(r2)).concat([r2(_matTot)]));
+  ps.push(['TOTAL EVALUATED PRICE'].concat(P.map((p, i) => r2(pricingPeriodCost(i) + (_travPer[i] || 0) + (_matPer[i] || 0)))).concat([r2(_laborTot + _travTot + _matTot)]));
+  const wsPS = XLSX.utils.aoa_to_sheet(ps);
+  wsPS['!cols'] = [{ wch: 36 }].concat(pNames.map(() => ({ wch: 16 }))).concat([{ wch: 18 }]);
+  pxStyle(wsPS, { money: pNames.map((_, i) => 1 + i).concat([1 + pNames.length]) });
+  [0, ps.length - 1].forEach(rr => { for (let c = 0; c < ps[0].length; c++) { const a = XLSX.utils.encode_cell({ r: rr, c }); if (wsPS[a]) wsPS[a].s = Object.assign({}, wsPS[a].s, { font: { bold: true } }); } });
+  XLSX.utils.book_append_sheet(wb, wsPS, 'Price Summary');
+
+  // ---- CLIN Schedule + CLIN Summary (only when the CLIN layer is enabled) ----
+  if (M.clins && M.clins.enabled && typeof pricingClinScheduleRows === 'function') {
+    const _clinRows = pricingClinScheduleRows();
+    const cs = [['CLIN', 'Description', 'Period', 'Type', 'Qty', 'Unit', 'Unit Price ($)', 'Extended Price ($)']];
+    _clinRows.forEach(r => {
+      if (r.grand) cs.push(['', 'TOTAL CONTRACT VALUE (base + options)', '', '', '', '', '', r2(r.total)]);
+      else if (r.extHeader) cs.push(['', 'Option to Extend Services (FAR 52.217-8) - evaluation only, at final option-year rates; not part of the contract value above', '', '', '', '', '', '']);
+      else if (r.grandWithExt) cs.push(['', 'Total evaluated price incl. 6-month extension', '', '', '', '', '', r2(r.total)]);
+      else if (r.subtotal) cs.push(['', r.period + ' subtotal', '', '', '', '', '', r2(r.total)]);
+      else cs.push([r.clin, r.desc, r.period, r.type, r.qty, r.unit, r2(r.unitPrice), r2(r.total)]);
+    });
+    const wsCS = XLSX.utils.aoa_to_sheet(cs);
+    wsCS['!cols'] = [{ wch: 8 }, { wch: 36 }, { wch: 24 }, { wch: 10 }, { wch: 9 }, { wch: 8 }, { wch: 16 }, { wch: 18 }];
+    pxStyle(wsCS, { money: [6, 7] });
+    cs.forEach((row, ri) => { if (ri === 0 || /subtotal|TOTAL CONTRACT|Total evaluated price/.test(String(row[1]))) { for (let c = 0; c < row.length; c++) { const a = XLSX.utils.encode_cell({ r: ri, c }); if (wsCS[a]) wsCS[a].s = Object.assign({}, wsCS[a].s, { font: { bold: true } }); } } });
+    XLSX.utils.book_append_sheet(wb, wsCS, 'CLIN Schedule');
+
+    const _pds = pricingClinPeriods().filter(p => !p.isExt);
+    const sm = [['CLIN Line'].concat(_pds.map(p => p.name)).concat(['Total ($)'])];
+    M.clins.lines.forEach(line => {
+      const per = _pds.map(pd => r2(pricingClinLineAmount(line, pd)));
+      sm.push([line.title || 'Line item'].concat(per).concat([r2(per.reduce((s, x) => s + x, 0))]));
+    });
+    const _smTot = ['TOTAL'].concat(_pds.map(pd => r2(M.clins.lines.reduce((s, line) => s + pricingClinLineAmount(line, pd), 0))));
+    _smTot.push(r2(_smTot.slice(1).reduce((s, x) => s + x, 0)));
+    sm.push(_smTot);
+    const wsSM = XLSX.utils.aoa_to_sheet(sm);
+    wsSM['!cols'] = [{ wch: 26 }].concat(_pds.map(() => ({ wch: 16 }))).concat([{ wch: 18 }]);
+    pxStyle(wsSM, { money: _pds.map((_, i) => 1 + i).concat([1 + _pds.length]) });
+    for (let c = 0; c < sm[0].length; c++) { const a0 = XLSX.utils.encode_cell({ r: 0, c }); if (wsSM[a0]) wsSM[a0].s = Object.assign({}, wsSM[a0].s, { font: { bold: true } }); const aT = XLSX.utils.encode_cell({ r: sm.length - 1, c }); if (wsSM[aT]) wsSM[aT].s = Object.assign({}, wsSM[aT].s, { font: { bold: true } }); }
+    XLSX.utils.book_append_sheet(wb, wsSM, 'CLIN Summary');
+  }
 
   // ---- TAB 1: Line-Item Detail (most granular; pivot off this) ----
   const det = [['Category', 'Labor Category / Item', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Task / CLIN Code', 'Task / CLIN Name', 'Period', 'Term (mo)', 'Hours', 'FTE', 'Loaded Rate ($/hr)', (gsa ? 'GSA Year' : 'Wrap Factor'), 'Price ($)']];
@@ -9569,6 +9908,8 @@ function pricingBuildWorkbook() {
     const amt = _odcByP[i] || 0; if (amt <= 0) return;
     det.push([_odcCat, _odcCat, '', '(n/a)', _odcCat + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', r2(amt)]);
   });
+  const _matByP = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod() : [];
+  P.forEach((p, i) => { const amt = _matByP[i] || 0; if (amt <= 0) return; det.push(['Materials', 'Materials', '', '(n/a)', 'Materials (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', r2(amt)]); });
   const wsDet = XLSX.utils.aoa_to_sheet(det);
   wsDet['!cols'] = [{ wch: 13 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 32 }, { wch: 16 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 16 }, { wch: 12 }, { wch: 14 }];
   pxStyle(wsDet, { money: gsa ? [9, 11] : [2, 9, 11], hours: [7], fte: [8] });
@@ -9585,6 +9926,17 @@ function pricingBuildWorkbook() {
   wsBL['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 20 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
   pxStyle(wsBL, { money: (gsa ? [4] : [1, 4]).concat(P.map((_, i) => 5 + i)).concat([5 + P.length]), hours: [2], fte: [3] });
   XLSX.utils.book_append_sheet(wb, wsBL, 'By Labor Category');
+
+  // ---- Loaded Rate Table (fully-burdened hourly rate per labor category, per period) ----
+  const rt = [['Labor Category', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)')].concat(pNames.map(nm => nm + ' ($/hr)'))];
+  M.lcats.forEach(l => {
+    rt.push([l.name || '(unnamed)', gsa ? (l.gsaLcat || l.name || '') : r2(parseFloat(l.baseRate) || 0)].concat(P.map((p, i) => r2(effRate(l, i)))));
+  });
+  const wsRT = XLSX.utils.aoa_to_sheet(rt);
+  wsRT['!cols'] = [{ wch: 26 }, { wch: 18 }].concat(pNames.map(() => ({ wch: 14 })));
+  pxStyle(wsRT, { money: (gsa ? [] : [1]).concat(pNames.map((_, i) => 2 + i)) });
+  for (let c = 0; c < rt[0].length; c++) { const a = XLSX.utils.encode_cell({ r: 0, c }); if (wsRT[a]) wsRT[a].s = Object.assign({}, wsRT[a].s, { font: { bold: true } }); }
+  XLSX.utils.book_append_sheet(wb, wsRT, 'Loaded Rate Table');
 
   // ---- TABS 3 & 4: by the column dimension (PWS task / CLIN) ----
   function colSheet(codeHdr, nameHdr) {
@@ -9673,10 +10025,11 @@ function pricingBuildWorkbook() {
 
   // Tab colors (Instructions + master data stand out; rollups a muted blue) and the one Excel Table.
   wb._tabColors = {
-    'Instructions': 'FFF59E0B', 'Line-Item Detail': 'FF16A34A',
-    'By Labor Category': 'FF93C5FD', 'By PWS Task': 'FF93C5FD', 'By CLIN': 'FF93C5FD',
+    'Instructions': 'FFF59E0B', 'Price Summary': 'FF14B8A6', 'Line-Item Detail': 'FF16A34A',
+    'By Labor Category': 'FF93C5FD', 'Loaded Rate Table': 'FF93C5FD', 'By PWS Task': 'FF93C5FD', 'By CLIN': 'FF93C5FD',
     'Hours by Task': 'FF93C5FD', 'FTE by Task': 'FF93C5FD', 'Labor + Wrap': 'FF93C5FD'
   };
+  if (M.clins && M.clins.enabled) { wb._tabColors['CLIN Schedule'] = 'FF8B5CF6'; wb._tabColors['CLIN Summary'] = 'FF93C5FD'; }
   wb._tableSpecs = [{ sheet: 'Line-Item Detail', name: 'LineItemDetail', ref: wsDet['!ref'], headers: det[0] }];
   return wb;
 }
@@ -9775,7 +10128,7 @@ async function injectTablesAndColors(zip, tableSpecs, tabColors) {
 function pricingRenderExport() {
   const el = document.getElementById('pricingExportRow'); if (!el) return;
   if (!pricingModel.lcats.length || !pricingModel.tasks.length || pricingBaseTotal() <= 0) { el.innerHTML = ''; return; }
-  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button onclick="pricingExportWorkbook()" style="padding:9px 16px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">⬇ Export pricing workbook (.xlsx)</button><span style="font-size:11.5px;color:var(--muted)">Opens to a colored <strong>Instructions</strong> tab. The <strong>Line-Item Detail</strong> tab (green) is a native Excel Table &mdash; sort, filter, or <em>Insert &#9656; PivotTable</em> to slice it any way the Government asks (by Category, LCAT, task, or period). Pre-built rollups (by labor category, by task, hours, FTE) and the labor + wrap summary are included too; dollar cells are currency-formatted.</span></div>`;
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button onclick="pricingExportWorkbook()" style="padding:9px 16px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">⬇ Export pricing workbook (.xlsx)</button><span style="font-size:11.5px;color:var(--muted)">Opens to an <strong>Instructions</strong> tab, then a <strong>Price Summary</strong> (total evaluated price by period). The green <strong>Line-Item Detail</strong> tab is a native Excel Table &mdash; sort, filter, or <em>Insert &#9656; PivotTable</em> to slice it any way the Government asks (by CLIN/task, LCAT, period, or cost type; the Instructions tab lists ready-made pivot recipes). Pre-built views &mdash; Price Summary, a per-period loaded <strong>rate table</strong>, by-labor-category and by-task rollups, hours/FTE matrices, and the labor + wrap build-up &mdash; are all included; dollar cells are currency-formatted.</span></div>`;
 }
 
 function pricingRenderSummary() {
