@@ -8346,6 +8346,7 @@ let pricingModel = {
   periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }],   // months: term length (e.g. 3 or 6 for partial periods)
   statedFteTotal: null,            // number if the PWS stated it
   fteSource: 'estimated',          // 'stated' | 'estimated'
+  directedLabor: false,            // true when the Government directed exact labor categories AND counts (locked verbatim)
   gsaDecision: null,               // null (undecided → locks the rest) | 'schedule' | 'na'
   gsaDiscount: 1,                  // % discount offered to the Government off GSA rates (suggested 1, editable)
   gsaRateCard: [],                 // [{ id, lcat, rates:[y1..yN] }] from the uploaded GSA MAS schedule (fully-burdened ceiling rates per option year)
@@ -8688,7 +8689,7 @@ function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(
 function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
 function pricingResetModel() {
   if (!confirm('Reset the entire pricing model? This clears the GSA Schedule choice, tasks, labor categories, hours, and periods for this opportunity.')) return;
-  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
+  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', directedLabor: false, gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
   pricingGsaFiles = [];
   pricingRenderAll();
 }
@@ -9106,6 +9107,7 @@ Return ONLY JSON, no prose:
 {
  "fte_basis":"1-2 sentences on how you sized the team",
  "directed_hours_note":"if the RFP explicitly mandates hours/LOE/staffing for any task, state what you used as-is; '' if none",
+ "directed_labor":[{"lcat":"position / labor-category title EXACTLY as the Government wrote it","count": <integer 1+>}],
  ${tasks.length ? '' : '"proposed_tasks":[{"code":"1.1","name":"..."}],'}
  "labor_mix":[
    {"role_name":"role as it will appear in the proposal",
@@ -9130,6 +9132,7 @@ Rules:
 - Per-year staffing is CONSTANT by default. ONLY if the solicitation explicitly specifies different staffing by ordering period (a manning/staffing table that changes year to year, or wording like "base year: N FTE; option years: M FTE") provide "fte_by_period" for each affected role, aligned in order to the ${pricingModel.periods.length} period(s). If staffing does not change by year, OMIT fte_by_period for every role.
 - ${gsa ? 'Map by EDUCATION, EXPERIENCE, and SCOPE \u2014 never by title alone. If the closest Schedule LCAT does not reasonably meet what the Government requires, set gsa_lcat=null, match_confidence="none", and list it under "unmatched". Be honest; do not force a poor match.' : 'Do not invent specific dollar rates for our cost; market_low/high are rough reference ranges only.'}
 - If the RFP explicitly directs a level of effort, hours, or staffing for any task (e.g. "the contractor shall provide X hours" or a staffing/manning table), USE those numbers exactly instead of proposing your own, and record what you honored in directed_hours_note.
+- DIRECTED LABOR TABLE OVERRIDES TASK-DERIVED STAFFING. If the solicitation explicitly specifies the required labor categories AND their quantities (a staffing/manning table, or wording such as "the contractor shall provide 1 Project Manager, 2 Data Analysts, and 3 Risk Managers"), then (1) list them in "directed_labor" with the EXACT titles and counts, and (2) make "labor_mix" consist of EXACTLY those categories at EXACTLY those headcounts - same titles, same counts, no additions, no substitutions, no merging, no splitting - no matter how many PWS task areas are listed. The PWS tasks then only govern how each role's hours spread across tasks, never which roles exist or how many. Never add a role just to cover a task the directed table does not staff. If the Government does NOT direct a specific labor mix, return "directed_labor":[] and size the team from scope.
 ${pricingScaActive() ? '- For SCA-covered roles the direct wage must meet or exceed the Wage Determination minimum; treat the WD minimum plus H&W as the cost floor and flag any role whose pricing falls below it.\n' : ''}- Treat market figures as ESTIMATES to be verified against GSA CALC+, BLS OES, and SCA wage determinations \u2014 not authoritative.`;
 
     const parsed = await callClaudeForJson(apiKey, [{ type: 'text', text: prompt }], 10000, 120000, 'Auto-building structure');
@@ -9230,6 +9233,37 @@ function pricingApplyAutoBuild(a) {
     const allowed = Array.isArray(m.allowed_tasks) ? m.allowed_tasks.map(_pxMatchTaskId).filter(Boolean) : [];
     if (allowed.length) { mask[id] = {}; pricingModel.tasks.forEach(t => { mask[id][t.id] = allowed.includes(t.id); }); }
   });
+  // DIRECTED LABOR TABLE (authoritative): when the Government specifies exact labor categories AND
+  // counts, the bid MUST field exactly those roles at exactly those headcounts, regardless of how many
+  // PWS task areas exist. Rebuild the mix verbatim from the directed table, carrying over any rate / GSA
+  // / SCA / hours detail the model worked out for a role whose title matches; PWS tasks survive only as
+  // the columns each role's hours are spread across. statedFteTotal is set to the table's own sum, so a
+  // separately-stated total can never override the explicit per-category counts.
+  let _directed = Array.isArray(a.directed_labor)
+    ? a.directed_labor.map(d => ({ lcat: String((d && d.lcat) || '').trim(), count: Math.max(0, parseInt(d && d.count) || 0) })).filter(d => d.lcat && d.count > 0)
+    : [];
+  if (_directed.length) {
+    const _merged = [], _seen = {};
+    _directed.forEach(d => { const k = d.lcat.toLowerCase(); if (_seen[k] != null) _merged[_seen[k]].count += d.count; else { _seen[k] = _merged.length; _merged.push({ lcat: d.lcat, count: d.count }); } });
+    _directed = _merged;
+    const _norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const _nl = [], _nh = {}, _nm = {};
+    _directed.forEach(d => {
+      const src = lcats.find(l => _norm(l.name) === _norm(d.lcat)) || null;
+      const id = src ? src.id : _prId('l_');
+      _nl.push({ id, name: d.lcat, baseRate: src ? src.baseRate : '', hpf: src ? src.hpf : '', advertised: d.count, gsaLcat: src ? src.gsaLcat : '', scaCovered: src ? !!src.scaCovered : false, wdWage: src ? src.wdWage : '' });
+      _nh[id] = src ? (hours[id] || {}) : {};
+      if (src && mask[id]) _nm[id] = mask[id];
+    });
+    lcats.length = 0; Array.prototype.push.apply(lcats, _nl);
+    Object.keys(hours).forEach(k => delete hours[k]); Object.assign(hours, _nh);
+    Object.keys(mask).forEach(k => delete mask[k]); Object.assign(mask, _nm);
+    pricingModel.statedFteTotal = _directed.reduce((s, d) => s + d.count, 0);
+    pricingModel.fteSource = 'stated';
+    pricingModel.directedLabor = true;
+  } else {
+    pricingModel.directedLabor = false;
+  }
   // Coverage backstop: a PWS task should never end up with zero labor. If the model's role rules
   // (masks) don't reach every task — and the task isn't a declared non-labor (pure travel/ODC) line —
   // add it to the most-generalist role's allowed set, so the FTE reconciliation spreads hours onto it.
@@ -9253,11 +9287,11 @@ function pricingApplyAutoBuild(a) {
   })();
   if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && pricingModel.tasks.length) {
     pricingReconcileStatedFte(lcats, hours, mask, pricingModel.tasks, Math.round(pricingModel.statedFteTotal), defaultHpf());
-    (a.labor_mix || []).forEach((m, i) => { if (lcats[i]) m.headcount = lcats[i].advertised; });
+    if (!pricingModel.directedLabor) (a.labor_mix || []).forEach((m, i) => { if (lcats[i]) m.headcount = lcats[i].advertised; });
   }
   // Auto-populate per-year staffing when the solicitation specified different FTEs by ordering period.
   (function applyPerYearFte() {
-    if (pricingModel.periods.length < 2) return;
+    if (pricingModel.periods.length < 2 || pricingModel.directedLabor) return;
     const pf = {}; let varies = false;
     (a.labor_mix || []).forEach((m, idx) => {
       const arr = Array.isArray(m.fte_by_period) ? m.fte_by_period.map(x => parseFloat(x)) : null;
@@ -9660,7 +9694,9 @@ function pricingRenderFteBar() {
   const allocated = pricingTotalHours() / defaultHpf();
   const advTotal = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
   const stated = (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) ? Math.round(pricingModel.statedFteTotal) : null;
-  const src = pricingModel.fteSource === 'stated'
+  const src = pricingModel.directedLabor
+    ? `Government-<strong>directed</strong> labor table (<strong>${stated != null ? stated : '—'} FTE</strong>, exact categories &amp; counts)`
+    : pricingModel.fteSource === 'stated'
     ? `Government-stated: <strong>${stated != null ? stated : '—'} FTE</strong>`
     : `<strong>You are sizing the effort</strong> (PWS didn't state FTEs)`;
   const advOk = stated == null ? null : Math.abs(advTotal - stated) < 0.5;
@@ -9668,8 +9704,11 @@ function pricingRenderFteBar() {
   const card = (label, val, ok) => `<div style="flex:1;min-width:150px;border:1px solid ${ok === false ? '#fca5a5' : 'var(--border)'};border-radius:8px;padding:10px 12px;background:${ok === false ? '#fef2f2' : 'white'}"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:15px;font-weight:800;margin-top:2px">${val}</div></div>`;
   let badge = '';
   if (stated != null) {
+    const _okMsg = pricingModel.directedLabor
+      ? '✓ Locked to the Government-directed labor table — exactly these ' + stated + ' FTE in the directed categories. PWS tasks only spread the hours.'
+      : '✓ Staffing matches the Government-stated ' + stated + ' FTE — headcount and hours both reconcile.';
     badge = (advOk && allocOk)
-      ? `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#065f46;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:8px 12px">✓ Staffing matches the Government-stated ${stated} FTE — headcount and hours both reconcile.</div>`
+      ? `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#065f46;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:8px 12px">${_okMsg}</div>`
       : `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px">⚠ Does NOT match the Government-stated ${stated} FTE (advertised ${advTotal.toFixed(2)}, allocated ${allocated.toFixed(2)}). Deviating from the stated FTE can be disqualifying — adjust headcount/hours to hit ${stated}.</div>`;
   }
   el.innerHTML = badge + card('FTE basis', src) + card('Advertised FTE (sum of roles)', advTotal.toFixed(2), advOk) + card('Allocated FTE (from hours)', allocated.toFixed(2), allocOk);
