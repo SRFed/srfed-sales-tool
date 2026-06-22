@@ -1484,11 +1484,17 @@
           <p style="font-size:12px;color:var(--muted);margin:0 0 6px">For early-stage opportunities — paste details from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. Usable alone or with uploaded documents.</p>
           <textarea id="hsTextInput" rows="6" oninput="onHsRfpInputChange()" placeholder="Paste opportunity summary, required capabilities, agency, NAICS, set-aside, clearance, place of performance, estimated value, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
         </div>
-        <button id="hsExtractBtn" onclick="runHsExtract()"
-          style="padding:11px 22px;font-size:15px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;opacity:0.45" disabled>
-          🤝 Find Teaming Partners
-        </button>
-        <p class="tip" style="margin-top:8px">One click reads the opportunity, extracts its attributes, and matches them against your HubSpot companies.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="hsFindSubsBtn" onclick="findPartners('subs')"
+            style="flex:1;min-width:210px;padding:11px 18px;font-size:14px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;opacity:0.45" disabled>
+            🏗️ Find subs &mdash; we prime
+          </button>
+          <button id="hsFindPrimesBtn" onclick="findPartners('primes')"
+            style="flex:1;min-width:210px;padding:11px 18px;font-size:14px;font-weight:700;background:#fff;color:var(--blue);border:2px solid var(--blue);border-radius:8px;cursor:pointer;opacity:0.45" disabled>
+            🤝 Find a prime &mdash; we sub
+          </button>
+        </div>
+        <p class="tip" style="margin-top:8px"><strong>Find subs</strong> &mdash; companies that could subcontract to you on a bid you prime. <strong>Find a prime</strong> &mdash; companies that could lead the bid with you subbing. Either way, one click reads the opportunity and scores your HubSpot companies for that role.</p>
       </div>
     </div>
   </div>
@@ -3227,8 +3233,10 @@ function initHsDropZone() {
 function onHsRfpInputChange() {
   const txt = (document.getElementById('hsTextInput')?.value || '').trim();
   const ok = hsRfpFiles.length > 0 || txt.length >= 30;
-  const btn = document.getElementById('hsExtractBtn');
-  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.45'; }
+  ['hsFindSubsBtn', 'hsFindPrimesBtn'].forEach(function (id) {
+    const btn = document.getElementById(id);
+    if (btn && !btn.dataset.label) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.45'; }
+  });
 }
 
 function addHsFiles(files) {
@@ -3267,10 +3275,44 @@ function renderHsFileList() {
   }).join('');
 }
 
+function _suggestedHsDir() {
+  try {
+    if (window._bnaPathView === 'prime') return 'subs';
+    if (window._bnaPathView === 'sub') return 'primes';
+    if (typeof computeDecisiveVerdict === 'function' && window._bnaOpp) {
+      const v = computeDecisiveVerdict();
+      if (v && v.code === 'sub') return 'primes';
+      if (v && (v.code === 'prime' || v.code === 'gaps')) return 'subs';
+    }
+  } catch (_) {}
+  return 'subs';
+}
+
+// Both Partners-tab buttons route here: lock in the direction, extract the opportunity once if needed,
+// then score. runHsExtract auto-runs the match, which reads window._hsSearchDir.
+async function findPartners(direction) {
+  window._hsSearchDir = (direction === 'primes') ? 'primes' : 'subs';
+  const haveAttrs = hsExtractedAttrs && Object.keys(hsExtractedAttrs).length > 0;
+  if (haveAttrs) { await runHsMatch(); } else { await runHsExtract(); }
+}
+
+function _hsSetFindBtnsBusy(busy, busyLabel) {
+  ['hsFindSubsBtn', 'hsFindPrimesBtn'].forEach(function (id) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    if (busy) {
+      if (!b.dataset.label) b.dataset.label = b.innerHTML;
+      b.disabled = true; b.style.opacity = '0.6';
+      b.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> ' + (busyLabel || 'Working…');
+    } else {
+      if (b.dataset.label) { b.innerHTML = b.dataset.label; delete b.dataset.label; }
+      b.disabled = false; b.style.opacity = '1';
+    }
+  });
+}
+
 async function runHsExtract() {
-  const btn = document.getElementById('hsExtractBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> Extracting…';
+  _hsSetFindBtnsBusy(true, 'Reading…');
   showStatus('info', 'Extracting opportunity attributes…', 'Reading solicitation documents. ~30 seconds.', true);
   setProgress(5, [{ text: 'Reading solicitation documents', status: 'active' }, { text: 'Extracting attributes', status: '' }]);
   _startEtaTimer(35);
@@ -3323,8 +3365,8 @@ async function runHsExtract() {
   } catch(e) {
     showStatus('error', 'Extraction failed', e.message);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '🤝 Find Teaming Partners';
+    _hsSetFindBtnsBusy(false);
+    onHsRfpInputChange();
   }
 }
 
@@ -3366,6 +3408,11 @@ function renderHsAttributes(attrs) {
 }
 
 async function runHsMatch() {
+  const direction = (window._hsSearchDir === 'primes') ? 'primes' : (window._hsSearchDir === 'subs' ? 'subs' : _suggestedHsDir());
+  window._hsSearchDir = direction;
+  const _co = CLIENT_CONFIG.companyShortName || 'we';
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  _hsSetFindBtnsBusy(true, 'Scoring…');
   const btn = document.getElementById('hsMatchBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span> Querying CRM…';
@@ -3489,35 +3536,54 @@ async function runHsMatch() {
     const fteNum = parseFloat(fteCount.replace(/[^0-9.]/g, '')) || null;
     const isLowFte = fteNum !== null && fteNum <= 2;
 
+    const _isSubs = direction === 'subs';
+    const _ourProfile = `${_co}'S OWN PROFILE (for size and eligibility relativity): business size ${cap.businessSize || 'small business (SDVOSB)'}, set-asides held: ${(cap.setAsides || []).join(', ') || 'SDVOSB'}, contract vehicles held: ${(cap.contractVehicles || []).join(', ') || 'none recorded'}, facility clearance ${cap.facilityClearance || 'None'}, max prime FTE ${cap.maxPrimeFTE || '?'}.`;
+    const _roleTask = _isSubs
+      ? `TASK: ${_co} intends to PRIME this opportunity and needs SUBCONTRACTORS to cover the scope it cannot self-perform. Identify up to 8 companies best suited to SUBCONTRACT TO ${_co}. Quality over quantity - do not pad the list with poor fits.`
+      : `TASK: ${_co} intends to bid as a SUBCONTRACTOR and needs a PRIME to lead this opportunity. Identify up to 8 companies best suited to PRIME this with ${_co} subbing. Quality over quantity - do not pad the list with poor fits.`;
+    const _teamingRealism = _isSubs
+      ? `TEAMING DIRECTION (assess for every company and put the verdict in teaming_rationale): how realistic and beneficial is it for THEM to sub to ${_co}? (a) SIZE - a subcontractor to a small-business prime is usually similar-sized or smaller; a much larger firm rarely subs under a small SDVOSB unless the scope is narrow and specialized, so weight an oversized firm down. (b) COMPLEMENT - they should cover scope ${_co} CANNOT self-perform, not duplicate its core. (c) SET-ASIDE - if this is a set-aside ${_co} holds, a subcontractor that is ALSO similarly situated (same small-business status as ${_co}) counts toward ${_co}'s 50% self-performance under the Limitations on Subcontracting (FAR 52.219-14); prefer similarly-situated subs and state whether each one is or is not. (d) RELATIONSHIP - prior contact in CRM notes.`
+      : `TEAMING DIRECTION (assess for every company and put the verdict in teaming_rationale): how realistic and beneficial is it for THEM to PRIME with ${_co} as a sub? (a) CAPABILITY AND SCALE - they must be able to lead the FULL scope and be large enough for the FTE and dollar value. (b) ELIGIBILITY - if this is a set-aside, the PRIME itself must hold the qualifying certification; a prime lacking it cannot hold this award. (c) COMPLEMENT - they should bring the capability ${_co} lacks while ${_co} self-performs its share; if the prime is itself a small business that needs similarly-situated subs to satisfy the Limitations on Subcontracting, ${_co} being similarly situated is a selling point - note it. (d) VEHICLE - they should hold the required contract vehicle if one is mandated. (e) RELATIONSHIP - prior contact in CRM notes.`;
+    const _setAsideBlock = _isSubs
+      ? (isSpecificSetAside
+          ? `SET-ASIDE (subcontractor context): This is a ${setAside} set-aside that ${_co} would hold as the prime. A SUBCONTRACTOR does NOT need the ${setAside} certification to participate, so do NOT exclude companies that lack it. A sub that IS ${setAside}-certified ("similarly situated") counts toward ${_co}'s 50% self-performance under the Limitations on Subcontracting - treat that as a PLUS and call it out.`
+          : isTotalSmallBusiness
+          ? `SET-ASIDE NOTE: Total Small Business set-aside that ${_co} would prime. Subcontractors need not be small for ${_co} to stay compliant, but similarly-situated small-business subs help the self-performance math - a mild plus, never a filter.`
+          : `SET-ASIDE NOTE: Unrestricted or open competition. Small-business certifications are not a qualifying criterion for subcontractors; do not weight them.`)
+      : (isSpecificSetAside
+          ? `SET-ASIDE FILTER (HARD REQUIREMENT): This is a ${setAside} set-aside. The PRIME must independently hold the ${setAside} certification to be eligible. You MUST only include companies that have the ${setAside} certification in their CRM record; exclude all others entirely.`
+          : isTotalSmallBusiness
+          ? `SET-ASIDE NOTE: Total Small Business set-aside. The prime must qualify as a small business. All small-business types are eligible; specific certifications beyond small-business status are not required.`
+          : `SET-ASIDE NOTE: Unrestricted or open competition. Small-business certifications are not relevant to prime eligibility; do not weight them.`);
+    const _scoringWeights = _isSubs
+      ? `SCORING WEIGHTS (apply in this order):\n1. Covers scope ${_co} cannot self-perform (complementary capability in this opportunity's core domain) - HIGHEST (~40%)\n2. Realistic size to subcontract under a small-business prime - HIGH (~20%)\n3. Set-aside benefit (similarly situated counts toward the Limitations-on-Subcontracting math) - MEDIUM (~20%)\n4. Clearance and geographic fit for their portion - LOW (~10%)\n5. Relationship quality from CRM notes - LOW (~10%)`
+      : `SCORING WEIGHTS (apply in this order):\n1. Capability and scale to lead and prime the full scope - HIGHEST (~40%)\n2. Eligibility to hold the prime (set-aside certification and required vehicle) - HIGH (~25%)\n3. Complements ${_co}'s self-perform share rather than duplicating it - MEDIUM (~20%)\n4. Clearance level - LOW (~10%)\n5. Relationship quality from CRM notes - LOW (~5%)`;
+    const _roleHint = _isSubs ? `the specific scope they would subcontract to ${_co}` : `what they would prime and what ${_co} would subcontract`;
+    const _takeGuidance = _isSubs
+      ? `Assess whether ${_co} has a viable bench of subcontractors in its CRM to round out a bid it primes. Do not comment on ${_co}'s own pursuit decision.`
+      : `Assess whether a viable PRIME exists in the CRM for ${_co} to sub under. Do not comment on ${_co}'s own pursuit decision.`;
     const matchPrompt =
       `You are a senior BD analyst at ${CLIENT_CONFIG.companyFullName}, an SDVOSB. Give your honest, direct professional opinion.\n\n` +
       `${opp}\n\n` +
+      `${_ourProfile}\n\n` +
       `CRM COMPANIES (${summaries.length} total - one per line):\n` +
-      summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
-      `TASK: Identify the companies (up to 8) genuinely suited as teaming partners for this specific pursuit. Quality over quantity - do not pad the list with poor fits.\n\n` +
-      (isLowFte ? `CRITICAL - LOW FTE COUNT: This opportunity is for only ${fteCount} FTE(s). With 2 or fewer positions, splitting work between teaming companies is typically not viable and adds overhead without value. Your overall_take MUST open with a clear, prominent discouragement of teaming for this specific reason.\n\n` : '') +
-      (isSpecificSetAside
-        ? `SET-ASIDE FILTER (HARD REQUIREMENT): This is a ${setAside} set-aside. You MUST only include companies that have the ${setAside} certification in their CRM record. Companies without this certification are INELIGIBLE regardless of capability — exclude them entirely from your ranked list.\n\n`
-        : isTotalSmallBusiness
-        ? `SET-ASIDE NOTE: This is a Total Small Business set-aside. Partners must qualify as small businesses. All small business types (8(a), SDVOSB, HUBZone, WOSB, SB, etc.) are eligible — small business status is a qualifying factor but specific certifications beyond that are NOT required and should not be weighted.\n\n`
-        : `SET-ASIDE NOTE: This opportunity is unrestricted or open competition. Small business certifications (8(a), SDVOSB, HUBZone, etc.) are NOT relevant matching criteria. Do not mention them.\n\n`) +
-      `SCORING WEIGHTS (apply in this order of importance):\n` +
-      `1. Capability match to PWS requirements — HIGHEST weight (~40%)\n` +
-      `2. Set-aside/eligibility alignment — HIGH weight (~25%) — see set-aside note above\n` +
-      `3. Contract vehicle alignment — MEDIUM weight (~20%)\n` +
-      `4. Clearance level and geographic proximity — MEDIUM weight (~10%)\n` +
-      `5. Relationship quality and prior contact from CRM notes — LOW weight (~5%) — relevant but not a primary factor\n\n` +
-      `DOMAIN-RELEVANCE HONESTY (this governs the capability weight above): "Capability match" means demonstrated experience in THIS opportunity's CORE service domain. Read what the work actually is from the title, NAICS/PSC, key capabilities, and description (for example clinical/medical staffing, cybersecurity, logistics, financial management) - the assigned NAICS alone can be misleading, so weigh the actual scope. A company strong in an UNRELATED domain (for example IT or general management consulting) is NOT a capability match for clinical/medical work merely because it is an eligible SDVOSB. Score such a company LOW (Possible or Weak Match) and state plainly in "concerns" that it lacks the core domain capability.\n` +
-      `QUALITY GATE: Only include companies with at least plausible domain relevance; if fewer than 8 are plausible, return fewer. If NONE of the CRM companies have demonstrated capability in this opportunity's core domain, you may still list the closest eligible companies but you MUST score them Weak/Possible Match, and "overall_take" MUST state clearly that the CRM has no partner with the required core capability and that one should be sourced from outside the CRM. Never inflate a score to fill a slot.\n\n` +
-      `Also provide a partner landscape assessment covering: bench strength, whether top matches warrant immediate outreach, and whether teaming makes sense for this contract structure. ` +
-      (isLowFte ? `Given the low FTE count, lead with a clear statement discouraging teaming. ` : '') +
-      `Do not comment on ${CLIENT_CONFIG.companyShortName || 'the prime'}'s own pursuit decision.\n\n` +
+      summaries.map((s, i) => `${i + 1}. ${s}`).join('\n') + '\n\n' +
+      `${_roleTask}\n\n` +
+      (isLowFte ? `CRITICAL - LOW FTE COUNT: This opportunity is for only ${fteCount} FTE(s). With 2 or fewer positions, splitting work between companies is typically not viable and adds overhead without value. Your overall_take MUST open with a clear, prominent discouragement of teaming for this reason.\n\n` : '') +
+      `${_setAsideBlock}\n\n` +
+      `${_teamingRealism}\n\n` +
+      `${_scoringWeights}\n\n` +
+      `DOMAIN-RELEVANCE HONESTY (this governs the capability weight above): "Capability match" means demonstrated experience in THIS opportunity's CORE service domain. Read what the work actually is from the title, NAICS/PSC, key capabilities, and description (for example clinical/medical staffing, cybersecurity, logistics, financial management) - the assigned NAICS alone can mislead, so weigh the actual scope. A company strong in an UNRELATED domain is NOT a capability match merely because it is an eligible small business. Score it LOW and say so plainly in "concerns".\n` +
+      `QUALITY GATE: Only include companies with at least plausible domain relevance; if fewer than 8 are plausible, return fewer. If NONE have demonstrated capability in this opportunity's core domain, you may still list the closest candidates but you MUST score them Weak/Possible Match, and "overall_take" MUST state clearly that the CRM has no partner with the required core capability. Never inflate a score to fill a slot.\n\n` +
+      `${_takeGuidance}` +
+      (isLowFte ? ` Given the low FTE count, lead with a clear statement discouraging teaming.` : '') + `\n\n` +
       `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
       `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match",` +
-      `"why":"2-3 specific sentences citing their actual CRM properties and why they match this opportunity",` +
-      `"potential_role":"Specific contribution they would make to this proposal and contract",` +
+      `"why":"2-3 specific sentences citing their actual CRM properties and why they fit this role",` +
+      `"potential_role":"${_roleHint}",` +
+      `"teaming_rationale":"1-2 sentences on how realistic and beneficial this teaming direction is given their size vs ${_co}'s, set-aside posture, and any relationship",` +
       `"concerns":"Specific gaps or risks, or None"}],` +
-      `"overall_take":"3-5 sentences assessing the partner landscape only. Do not comment on the prime's pursuit decision."}` +
+      `"overall_take":"3-5 sentences assessing the partner landscape for this direction only."}` +
       `\nfit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match.`;
 
     const mr = await fetch('https://api.anthropic.com/v1/messages', {
@@ -3558,7 +3624,7 @@ async function runHsMatch() {
     // intentionally not applied to partners. Set-aside fails closed; clearance and vehicle fail OPEN on
     // missing CRM data (only exclude when the recorded value actually conflicts with the requirement).
     const _gateExcl = [];
-    {
+    if (direction === 'primes') {
       const _find = (nm) => {
         const n = String(nm || '').trim().toLowerCase(); if (!n) return null;
         return companies.find(c => String((c.properties || {}).name || '').trim().toLowerCase() === n)
@@ -3598,7 +3664,7 @@ async function runHsMatch() {
     }
     window._hsLastMatches  = matches;
     window._hsOverallTake  = overallTake;
-    renderHsResults(matches, summaries.length, overallTake);
+    renderHsResults(matches, summaries.length, overallTake, direction);
     document.getElementById('hsResultsCard').style.display = 'block';
     document.getElementById('hsResultsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     setProgress(100, [{ text: 'Fetching HubSpot companies', status: 'done' }, { text: 'Scoring with AI', status: 'done' }]);
@@ -3606,8 +3672,9 @@ async function runHsMatch() {
     showStatus('error', 'Partner matching failed', e.message);
     console.error(e);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '🤝 Find Partner Matches in HubSpot';
+    if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Re-run match with my edits'; }
+    _hsSetFindBtnsBusy(false);
+    onHsRfpInputChange();
     updateHsMatchBtn();
   }
 }
@@ -3623,7 +3690,9 @@ function partnerSetAsideMatcher(setAside) {
   return null;
 }
 
-function renderHsResults(matches, total, overallTake) {
+function renderHsResults(matches, total, overallTake, direction) {
+  direction = (direction === 'primes') ? 'primes' : (direction === 'subs' ? 'subs' : (window._hsSearchDir || 'subs'));
+  const _rIsSubs = direction === 'subs';
   const el = document.getElementById('hsResultsList');
   const takeEl = document.getElementById('hsOverallTake');
   if (!el) return;
@@ -3644,7 +3713,14 @@ function renderHsResults(matches, total, overallTake) {
     lbl.includes('Good')?'background:#eff6ff;border-color:#bfdbfe;color:#1e40af':
     lbl.includes('Possible')?'background:#fefce8;border-color:#fde047;color:#92400e':
     'background:#fef2f2;border-color:#fca5a5;color:var(--error)';
-  el.innerHTML = `<p style="font-size:12px;color:var(--muted);margin-bottom:16px">Ranked from ${total} companies in HubSpot.</p>` +    matches.map(m=>`
+  const _dirBtn = (key, label, active) =>
+    `<button onclick="findPartners('${key}')" style="flex:1;padding:8px 10px;border:none;border-radius:6px;font-size:12.5px;font-weight:700;cursor:pointer;background:${active ? 'white' : 'transparent'};color:${active ? 'var(--blue)' : 'var(--muted)'};box-shadow:${active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none'}">${label}</button>`;
+  const _dirToggle = `<div style="display:flex;gap:4px;background:#eef2f7;border-radius:8px;padding:4px;margin-bottom:12px;max-width:440px">` +
+    _dirBtn('subs', '🏗️ Subs (we prime)', _rIsSubs) + _dirBtn('primes', '🤝 Prime (we sub)', !_rIsSubs) + `</div>`;
+  const _dirHeader = _rIsSubs
+    ? `Ranked ${total} CRM companies as <strong>subcontractors</strong> to round out a bid you would prime.`
+    : `Ranked ${total} CRM companies as a <strong>prime</strong> to lead with you subbing.`;
+  el.innerHTML = _dirToggle + `<p style="font-size:12px;color:var(--muted);margin-bottom:16px">${_dirHeader}</p>` +    matches.map(m=>`
       <div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;background:white">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">
           <div style="display:flex;align-items:center;gap:12px;flex:1">
@@ -3660,6 +3736,7 @@ function renderHsResults(matches, total, overallTake) {
           </div>
         </div>
         <div style="font-size:13px;line-height:1.6;margin-bottom:10px">${escHtml(m.why)}</div>
+        ${m.teaming_rationale ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 10px;margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:3px">${_rIsSubs ? 'Fit as our subcontractor' : 'Fit as our prime'}</div><div style="font-size:12px">${escHtml(m.teaming_rationale)}</div></div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="background:#f8fafc;border-radius:6px;padding:8px 10px">
             <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Potential Role</div>
@@ -3680,7 +3757,7 @@ function copyHsResults() {
   const lines = [
     take ? `BD ANALYST TAKE:\n${take}\n` : '',
     'RECOMMENDED PARTNERS:',
-    ...m.map(r=>`#${r.rank} ${r.company_name} (${r.fit_label}, ${r.fit_score}/10)\nWhy: ${r.why}\nRole: ${r.potential_role}\nConsiderations: ${r.concerns||'None'}`)
+    ...m.map(r=>`#${r.rank} ${r.company_name} (${r.fit_label}, ${r.fit_score}/10)\nWhy: ${r.why}\nRole: ${r.potential_role}\nTeaming fit: ${r.teaming_rationale||'n/a'}\nConsiderations: ${r.concerns||'None'}`)
   ].filter(Boolean).join('\n\n');
   navigator.clipboard.writeText(lines).catch(()=>{ const ta=document.createElement('textarea');ta.value=lines;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta); });
 }
@@ -10848,6 +10925,18 @@ function computeDecisiveVerdict() {
   const selfPerformFloor = isSetAside ? LOS_SELF_PERFORM_MIN : PRIME_DEPENDENCY_MIN;
   const selfPerformOK = scopeCov >= selfPerformFloor;
 
+  // Subcontract calculus: as a SUB, a prime covers the specialized scope you can't, so the weakest-link
+  // ceiling (a PRIME concern) must NOT drag the sub decision. Judge "can you execute your own slice well"
+  // off the uncapped weighted average, and treat your self-performable share as a SEPARATE worth gate —
+  // a quarter of the work is a perfectly fine slice to sub for, it just has to be big enough to bother.
+  const SUB_CAP_MIN = 4.5;                                                // min execution fit to be a credible sub
+  const subCapability = base;                                            // uncapped — not penalized for scope the prime owns
+  const _shareScore = Math.max(0, Math.min(10, 4 + scopeCov / 12.5));    // 25%->6, 50%->8, 75%+->~10
+  const subWorth = scopeCov >= COV_MIN_SUB && subCapability >= SUB_CAP_MIN;
+  let subFit = 0.6 * subCapability + 0.4 * _shareScore;
+  if (!subWorth) subFit = Math.min(subFit, 4.5);                         // keep the displayed number coherent with a PASS
+  subFit = parseFloat(subFit.toFixed(1));
+
   if (scopeCov < 10) {
     code = 'pass'; label = '❌ PASS'; color = '#dc2626';
     detail = `${CLIENT_CONFIG.companyShortName} can't meaningfully perform this scope` +
@@ -10875,15 +10964,14 @@ function computeDecisiveVerdict() {
     code = 'pass'; label = '❌ PASS'; color = '#dc2626';
     detail = `${CLIENT_CONFIG.companyShortName} can't prime this (${blockers.join('; ')}), and because it's a single-FTE effort it can't be subcontracted either — you can't split one person, so it's a one-company award. With no prime path and no realistic sub path, this is a pass.`;
   } else {
-    const subFit = 0.5 * fit + 0.5 * (scopeCov / 10);
-    if (subFit >= FIT_GAPS && scopeCov >= COV_MIN_SUB) {
+    if (subWorth) {
       code = 'sub'; label = '🔵 PURSUE — SUBCONTRACT'; color = '#2563eb';
-      detail = `Can't prime (${blockers.join('; ')}), but a good teaming fit — you can self-perform about ${Math.round(scopeCov)}% of the scope.`;
+      detail = `Can't prime (${blockers.join('; ')}), but a viable teaming play — ${CLIENT_CONFIG.companyShortName} can self-perform ~${Math.round(scopeCov)}% of the scope, a meaningful slice to sub for. Line up a prime to cover the rest.`;
     } else {
       code = 'pass'; label = '❌ PASS'; color = '#dc2626';
       detail = scopeCov < COV_MIN_SUB
         ? `Prime is blocked and your self-performable share (~${Math.round(scopeCov)}%) is too small to be worth subbing.`
-        : `Prime is blocked and the fit is too weak to sub.`;
+        : `Prime is blocked, and even as a sub the ability to deliver your slice is too weak (execution fit ${subCapability.toFixed(1)}/10).`;
     }
   }
 
@@ -10891,6 +10979,7 @@ function computeDecisiveVerdict() {
     minCritical, blended: parseFloat(blended.toFixed(1)), ceiling: parseFloat(ceiling.toFixed(1)),
     ceilingBinding, spreadApplied,
     scopeCov: Math.round(scopeCov), selfPerformFloor, isSetAside,
+    subFit, subWorth, subCapability: parseFloat(subCapability.toFixed(1)),
     fteNum,
     gates, blockers, constraints };
 }
@@ -11097,16 +11186,15 @@ function renderBnaDecisionPanel() {
     } else {
       headLabel = v.code === 'prime' ? '🟢 PURSUE — PRIME' : v.code === 'gaps' ? '🟡 PURSUE IF GAPS CLOSED' : '🔴 PASS (as prime)';
       headColor = v.code === 'prime' ? '#16a34a' : v.code === 'gaps' ? '#b45309' : '#dc2626';
-      headDetail = v.detail;
+      headDetail = v.detail + ((v.code === 'pass' && v.subWorth) ? ` But ${co} can self-perform ~${v.scopeCov}% — switch to the Subcontractor view for a viable teaming play.` : '');
     }
   } else { // sub view
-    const subFit = 0.5 * v.fit + 0.5 * (v.scopeCov / 10);
-    const worth = subFit >= 5.0 && v.scopeCov >= 25;
+    const worth = v.subWorth;
     headLabel = worth ? '🔵 PURSUE — SUBCONTRACT' : '🔴 PASS (as sub)';
     headColor = worth ? '#2563eb' : '#dc2626';
     headDetail = worth
-      ? `Good teaming fit — ${co} can self-perform about ${v.scopeCov}% of the scope.` + (canPrime ? ' (Note: you are also prime-eligible — see Prime view.)' : '')
-      : (v.scopeCov < 25 ? `Self-performable share (~${v.scopeCov}%) is too small to be worth subbing.` : `Fit is too weak to sub.`);
+      ? `Viable teaming play — ${co} can self-perform about ${v.scopeCov}% of the scope and can execute that slice well (${v.subCapability.toFixed(1)}/10). Find a prime to cover the rest.` + (canPrime ? ' (You are also prime-eligible — see the Prime view.)' : '')
+      : (v.scopeCov < 25 ? `Self-performable share (~${v.scopeCov}%) is too small to be worth subbing.` : `Even as a sub, ${co}'s ability to deliver its slice is too weak right now (execution fit ${v.subCapability.toFixed(1)}/10).`);
   }
 
   const bg = headColor === '#16a34a' ? '#f0fdf4' : headColor === '#2563eb' ? '#eff6ff' : headColor === '#b45309' ? '#fffbeb' : headColor === '#dc2626' ? '#fef2f2' : '#f8fafc';
@@ -11148,8 +11236,8 @@ function renderBnaDecisionPanel() {
           `<div style="font-size:13px;line-height:1.6;color:var(--text)">${escHtml(headDetail)}</div>` +
         `</div>` +
         `<div style="text-align:center;min-width:80px">` +
-          `<div style="font-size:40px;font-weight:900;line-height:1;color:${headColor}">${v.fit.toFixed(1)}</div>` +
-          `<div style="font-size:10px;color:var(--muted)">fit / 10</div>` +
+          `<div style="font-size:40px;font-weight:900;line-height:1;color:${headColor}">${(view === 'sub' ? v.subFit : v.fit).toFixed(1)}</div>` +
+          `<div style="font-size:10px;color:var(--muted)">${view === 'sub' ? 'teaming fit / 10' : 'fit / 10'}</div>` +
         `</div>` +
       `</div>` +
       singleFteWarning +
@@ -11877,23 +11965,34 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
   const content = [...docContent, { type: 'text', text: prompt }];
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
-        temperature: 0,
-        messages: [{ role: 'user', content }] })
-    });
-    if (!resp.ok) throw new Error(`API ${resp.status}`);
-    const d = await resp.json();
-    let raw = d.content.map(c=>c.text||'').join('').trim()
-      .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
-      .replace(/^#+\s+[^\n]*\n/gm,'').trim();
-    const m = raw.match(/\{[\s\S]+\}/);
-    if (!m) throw new Error('No JSON in response');
-    let jsonStr = m[0];
-    if (!jsonStr.endsWith('}')) { const lb=jsonStr.lastIndexOf('}'); if(lb>0) jsonStr=jsonStr.substring(0,lb+1); }
+    // The model occasionally returns an empty / non-JSON reply; retry once before giving up (the scoring
+    // and section-generation calls already do this). Also tolerate a transient API/network error.
+    let jsonStr = '', lastErr = null;
+    for (let attempt = 0; attempt < 2 && !jsonStr; attempt++) {
+      let raw = '';
+      try {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 6000, temperature: 0,
+            messages: [{ role: 'user', content }] })
+        });
+        if (!resp.ok) throw new Error(`API ${resp.status}`);
+        const d = await resp.json();
+        raw = d.content.map(c=>c.text||'').join('').trim()
+          .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
+          .replace(/^#+\s+[^\n]*\n/gm,'').trim();
+      } catch (eFetch) {
+        lastErr = eFetch;
+        if (attempt === 0) { console.warn('Opportunity Details call failed \u2014 retrying once:', eFetch.message); continue; }
+        throw eFetch;
+      }
+      const m = raw.match(/\{[\s\S]+\}/);
+      if (!m) { lastErr = new Error('No JSON in response'); if (attempt === 0) { console.warn('Opportunity Details: response had no JSON \u2014 retrying once.'); continue; } throw lastErr; }
+      jsonStr = m[0];
+      if (!jsonStr.endsWith('}')) { const lb=jsonStr.lastIndexOf('}'); if(lb>0) jsonStr=jsonStr.substring(0,lb+1); }
+    }
 
     // ── Stage 1: Full sanitization ───────────────────────────────────────────
     jsonStr = jsonStr
@@ -11916,9 +12015,10 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
       try {
         intel = JSON.parse(repaired);
       } catch(e2) {
-        // ── Stage 4: Field-by-field extraction — works even on malformed JSON ──
-        console.warn('Intel JSON strict parse failed, using field extractor. Error:', e2.message);
-        intel = extractIntelFields(jsonStr);
+        // ── Stage 4: robust loose-JSON parse, then field-by-field extraction ──
+        const _lj = (typeof parseLooseJson === 'function') ? parseLooseJson(jsonStr) : null;
+        if (_lj && typeof _lj === 'object' && Object.keys(_lj).length) { intel = _lj; }
+        else { console.warn('Intel JSON strict parse failed, using field extractor. Error:', e2.message); intel = extractIntelFields(jsonStr); }
       }
     }
     window._lastBnaIntel = intel;
@@ -12104,40 +12204,58 @@ async function lookupIncumbentViaWeb(intel, apiKey) {
 }
 
 function renderOpportunityIntel(intel, container) {
-  const FIELDS = [
-    { key:'customer_agency',              label:'Customer and Agency' },
-    { key:'requirement_name',             label:'Requirement / Opportunity Name' },
-    { key:'id_number',                    label:'ID Number' },
-    { key:'stage',                        label:'Current Stage' },
-    { key:'next_due_date',                label:'Next Due Date' },
-    { key:'opportunity_url',              label:'Opportunity URL' },
-    { key:'description',                  label:'Description of Procurement' },
-    { key:'fte_count',                    label:'Number of FTEs' },
-    { key:'contract_years',               label:'Contract Duration (years)' },
-    { key:'place_of_performance',         label:'Place of Performance' },
-    { key:'work_setting',                 label:'In-Person / Remote / Hybrid' },
-    { key:'period_of_performance',        label:'Period of Performance' },
-    { key:'last_possible_performance_date',label:'Last Possible Performance Date' },
-    { key:'facility_clearance_required',  label:'Facility Clearance Required' },
-    { key:'personnel_clearance_required', label:'Personnel Clearance Required' },
-    { key:'set_aside',                    label:'Set-Aside' },
-    { key:'contract_vehicle',             label:'Contract Vehicle' },
-    { key:'ko_name_office',               label:'KO Name and Office' },
-    { key:'cor_name_office',              label:'COR Name and Office' },
-    { key:'naics_code',                   label:'NAICS Code' },
-    { key:'sin',                          label:'SIN' },
-    { key:'psc',                          label:'PSC' },
-    { key:'base_year_value',              label:'Base Year Value' },
-    { key:'total_contract_value',         label:'Total Contract Value' },
-    { key:'award_value_rationale',        label:'Award Value Rationale' },
-    { key:'new_or_recompete',             label:'New or Recompete' },
-    { key:'incumbent',                    label:'Incumbent' },
-    { key:'contract_type',               label:'Contract Type' },
-    { key:'certifications_required',      label:'Certifications Required' },
-    { key:'labor_categories',             label:'Labor Categories (LCATs)' },
+  const SECTIONS = [
+    { title:'Opportunity', fields:[
+      { key:'customer_agency',              label:'Customer and Agency' },
+      { key:'requirement_name',             label:'Requirement / Opportunity Name' },
+      { key:'id_number',                    label:'ID Number' },
+      { key:'stage',                        label:'Current Stage' },
+      { key:'opportunity_url',              label:'Opportunity URL' },
+      { key:'description',                  label:'Description of Procurement' },
+    ]},
+    { title:'Dates & Timeline', fields:[
+      { key:'next_due_date',                label:'Next Due Date' },
+      { key:'period_of_performance',        label:'Period of Performance' },
+      { key:'contract_years',               label:'Contract Duration (years)' },
+      { key:'last_possible_performance_date',label:'Last Possible Performance Date' },
+    ]},
+    { title:'Size & Value', fields:[
+      { key:'fte_count',                    label:'Number of FTEs' },
+      { key:'base_year_value',              label:'Base Year Value' },
+      { key:'total_contract_value',         label:'Total Contract Value' },
+      { key:'award_value_rationale',        label:'Award Value Rationale' },
+    ]},
+    { title:'Scope & Place of Performance', fields:[
+      { key:'place_of_performance',         label:'Place of Performance' },
+      { key:'work_setting',                 label:'In-Person / Remote / Hybrid' },
+    ]},
+    { title:'Acquisition & Codes', fields:[
+      { key:'set_aside',                    label:'Set-Aside' },
+      { key:'contract_vehicle',             label:'Contract Vehicle' },
+      { key:'contract_type',                label:'Contract Type' },
+      { key:'naics_code',                   label:'NAICS Code' },
+      { key:'sin',                          label:'SIN' },
+      { key:'psc',                          label:'PSC' },
+    ]},
+    { title:'Clearances', fields:[
+      { key:'facility_clearance_required',  label:'Facility Clearance Required' },
+      { key:'personnel_clearance_required', label:'Personnel Clearance Required' },
+    ]},
+    { title:'Points of Contact', fields:[
+      { key:'ko_name_office',               label:'KO Name and Office' },
+      { key:'cor_name_office',              label:'COR Name and Office' },
+    ]},
+    { title:'Competition', fields:[
+      { key:'new_or_recompete',             label:'New or Recompete' },
+      { key:'incumbent',                    label:'Incumbent' },
+    ]},
+    { title:'Requirements', fields:[
+      { key:'certifications_required',      label:'Certifications Required' },
+      { key:'labor_categories',             label:'Labor Categories (LCATs)' },
+    ]},
   ];
 
-  container.innerHTML = FIELDS.map(f => {
+  const renderField = (f) => {
     let raw = intel[f.key];
     if (raw === undefined || raw === null) raw = 'Not stated in documents';
 
@@ -12284,6 +12402,14 @@ function renderOpportunityIntel(intel, container) {
       <div style="min-width:220px;max-width:220px;font-size:12px;font-weight:700;color:var(--text);flex-shrink:0;text-align:right">${escHtml(f.label)}:</div>
       <div style="font-size:13px;flex:1;line-height:1.5">${displayHtml}</div>
     </div>`;
+  };
+
+  container.innerHTML = SECTIONS.map((sec, si) => {
+    const rowsHtml = sec.fields.map(renderField).join('');
+    if (!rowsHtml) return '';
+    return '<div style="margin-top:' + (si === 0 ? 2 : 16) + 'px">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);padding:2px 4px 6px;border-bottom:1px solid var(--border);margin-bottom:2px">' + escHtml(sec.title) + '</div>' +
+      rowsHtml + '</div>';
   }).join('');
 }
 
