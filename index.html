@@ -23,6 +23,7 @@
 </script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <script>document.addEventListener('DOMContentLoaded', function(){ if (typeof pdfjsLib !== 'undefined') { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } });</script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js" crossorigin="anonymous"></script>
@@ -635,6 +636,14 @@
       linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 50%, var(--fam-build, #8a93e8) 50% 100%) border-box left / 8px 100% no-repeat,
       linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%) border-box;
   }
+  .tab-btn[data-fam="present"] { border-left: 8px solid var(--fam-present, #a855f7); }
+  /* Proposal belongs to decide (green) + build (purple) + present (its third accent): three diagonal bands. */
+  .tab-btn[data-fam="decide-build-present"] {
+    border-left: 8px solid transparent;
+    background:
+      linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 33.33%, var(--fam-build, #8a93e8) 33.33% 66.66%, var(--fam-present, #a855f7) 66.66% 100%) border-box left / 8px 100% no-repeat,
+      linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%) border-box;
+  }
   .tab-flow-legend {
     display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
     padding: 8px 14px; font-size: 11.5px; color: #475569;
@@ -662,6 +671,13 @@
     border-left: 8px solid transparent;
     background:
       linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 50%, var(--fam-build, #8a93e8) 50% 100%) border-box left / 8px 100% no-repeat,
+      linear-gradient(160deg, #ffffff 0%, #e8f0ff 100%) border-box;
+  }
+  .tab-btn.active[data-fam="present"] { border-left: 8px solid var(--fam-present, #a855f7); }
+  .tab-btn.active[data-fam="decide-build-present"] {
+    border-left: 8px solid transparent;
+    background:
+      linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 33.33%, var(--fam-build, #8a93e8) 33.33% 66.66%, var(--fam-present, #a855f7) 66.66% 100%) border-box left / 8px 100% no-repeat,
       linear-gradient(160deg, #ffffff 0%, #e8f0ff 100%) border-box;
   }
   .tab-pane { display: none; }
@@ -717,17 +733,19 @@
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn" data-fam="decide-build" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" data-fam="decide" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
-    <button class="tab-btn" data-fam="decide-build" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
+    <button class="tab-btn" data-fam="decide-build-present" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
+    <button class="tab-btn" data-fam="present" onclick="switchTab('presentation')" id="tab-presentation">📊 Presentation</button>
     <button class="tab-btn" data-fam="edit" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
     <button class="tab-btn" data-fam="config" onclick="switchTab('settings')" id="tab-settings">⚙️ Settings</button>
   </nav>
   <div class="sidebar-legend">
     <div class="sl-title">🔗 How tabs connect</div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Partners</b><span>teaming — your CRM feeds the partner finder</span></div></div>
-    <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 50%,var(--fam-build,#8a93e8) 50%)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Proposal</b><span>the RFP you analyze carries into the proposal</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 33.33%,var(--fam-build,#8a93e8) 33.33% 66.66%,var(--fam-present,#a855f7) 66.66%)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Proposal</b><span>the RFP you analyze carries into the proposal</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-present,#a855f7)"></span><div class="sl-txt"><b>Proposal → Presentation</b><span>your finished proposal builds the oral deck</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Section Editor</b><span>standalone — doesn't feed other tabs</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1)"></span><div class="sl-txt"><b>Settings</b><span>standalone — doesn't feed other tabs</span></div></div>
   </div>
@@ -787,7 +805,7 @@
   <div class="top-brand">
     <div class="top-logo-text" id="appTitle">Proposal Tool</div>
   </div>
-  <div id="msSignedInArea">
+  <div id="msSignedInArea" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
   <button id="msTopSignIn" class="ms-login-btn" onclick="msLogin()" style="display:inline-flex;padding:7px 14px;font-size:12.5px">
     <svg class="ms-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
       <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
@@ -804,6 +822,19 @@
       <div style="font-size:11px;color:#64748b" id="msEmail">—</div>
     </div>
     <span class="ms-signout" onclick="msLogout()">Sign out</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;width:600px;max-width:84vw">
+    <span style="font-size:11px;color:#64748b;white-space:nowrap">Anthropic API key</span>
+    <input type="password" id="apiKeyInputTop" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false" oninput="saveApiKey(this.value, 'apiKeyInputTop')" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff"/>
+    <button type="button" onclick="toggleApiKeyVisibility('apiKeyInputTop')" title="Show/hide key" style="padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1">👁</button>
+    <span id="apiKeyTopStatus" title="Key saved for this session" style="display:none;color:var(--success);font-size:14px;font-weight:700">✓</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;width:600px;max-width:84vw">
+    <span style="font-size:11px;color:#64748b;white-space:nowrap">HubSpot key</span>
+    <input type="password" id="hsTokenInputTop" placeholder="pat-na1-..." autocomplete="off" spellcheck="false" oninput="syncHsToken('hsTokenInputTop')" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff"/>
+    <button type="button" onclick="toggleHsToken('hsTokenInputTop')" title="Show/hide token" style="padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1">👁</button>
+    <button type="button" id="hsSaveBtnTop" onclick="saveHsToken('hsTokenInputTop')" disabled title="Verify & connect to HubSpot" style="padding:6px 12px;border:none;border-radius:6px;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;opacity:0.45;white-space:nowrap">Connect</button>
+    <span id="hsTokenTopStatus" title="HubSpot connected for this session" style="display:none;color:var(--success);font-size:14px;font-weight:700">✓</span>
   </div>
 </div>
 </div>
@@ -857,7 +888,7 @@
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
             <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..."
               style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:monospace"
-              oninput="saveApiKey(this.value)"/>
+              oninput="saveApiKey(this.value, 'apiKeyInput')"/>
             <button onclick="toggleApiKeyVisibility()" id="apiKeyToggle"
               style="padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:16px"
               title="Show/hide key">👁</button>
@@ -1320,10 +1351,10 @@
       <div id="cmpModeExtract" style="display:none;margin-bottom:16px">
         <label style="font-size:12px;font-weight:700;color:var(--blue);display:block;margin-bottom:6px">📂 RFP / Solicitation Documents</label>
         <div class="drop-zone" id="dropZoneCmpRfp" style="margin-bottom:8px">
-          <input type="file" id="fileInputCmpRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
+          <input type="file" id="fileInputCmpRfp" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
           <div class="dz-icon">📄</div>
           <div class="dz-title">Drop RFP / PWS / SOW Here</div>
-          <div class="dz-sub">PDF or Word — keep to core sections (PWS, Section L, Section M)</div>
+          <div class="dz-sub">PDF, Word, Excel — keep to core sections (PWS, Section L, Section M)</div>
         </div>
         <div class="file-list" id="fileListCmpRfp" style="margin-bottom:10px"></div>
         <button id="cmpExtractBtn" onclick="runCmpExtraction()"
@@ -1450,7 +1481,7 @@
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
         <input type="password" id="hsTokenInput" placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
           style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:monospace"
-          oninput="updateHsBtn()"/>
+          oninput="syncHsToken('hsTokenInput')"/>
         <button id="hsToggleBtn" onclick="toggleHsToken()"
           style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:16px" title="Show/hide token">👁</button>
         <button id="hsSaveBtn" onclick="saveHsToken()" disabled
@@ -1472,10 +1503,10 @@
       <div id="hsRfpContent" style="display:none">
         <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Drop the RFP, PWS, or SOW. The tool will extract key opportunity attributes — NAICS code, set-aside type, required capabilities, clearance level, place of performance, and estimated value — to match against your CRM.</p>
         <div class="drop-zone" id="dropZoneHsRfp" style="margin-bottom:8px">
-          <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.txt"/>
+          <input type="file" id="fileInputHsRfp" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
           <div class="dz-icon">📄</div>
           <div class="dz-title">Drop RFP / PWS / SOW Here</div>
-          <div class="dz-sub">PDF or Word</div>
+          <div class="dz-sub">PDF, Word, Excel</div>
         </div>
         <div class="file-list" id="fileListHsRfp" style="margin-bottom:10px"></div>
         <div style="margin-bottom:12px"><button type="button" onclick="partnersPullRfpFromBna()" style="padding:7px 14px;font-size:12.5px;font-weight:600;background:#fff;border:1px solid var(--mid-blue);border-radius:7px;cursor:pointer;color:var(--blue)">⤵ Pull RFP Files from Bid/No-Bid tab</button> <span id="hsRfpPullStatus" style="font-size:11.5px;color:var(--muted);margin-left:8px"></span></div>
@@ -1551,7 +1582,7 @@
         <input type="file" id="fileInputBNA" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt"/>
         <div class="dz-icon">📂</div>
         <div class="dz-title">Drop Solicitation Documents Here</div>
-        <div class="dz-sub">RFP, PWS, SOW, amendment — PDF or Word</div>
+        <div class="dz-sub">RFP, PWS, SOW, amendment — PDF, Word, Excel</div>
       </div>
       <div class="file-list" id="fileListBNA" style="margin-bottom:10px"></div>
       <div style="margin-bottom:16px">
@@ -1674,6 +1705,11 @@
 
         <!-- Decisive verdict panel (prime/sub-aware) — rendered by updateBnaLiveScore -->
         <div id="bnaDecisionPanel" style="display:none;margin-bottom:16px"></div>
+        <!-- Download the completed BNA as a PDF — revealed once the verdict is confirmed -->
+        <div id="bnaPdfBtnWrap" style="display:none;text-align:center;margin:2px 0 18px">
+          <button onclick="downloadBnaPdf()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12)">📄 Download Bid/No-Bid PDF</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Opens your browser's print dialog — choose “Save as PDF.”</div>
+        </div>
         <!-- Prime-partner recommendations (shown when subcontract is recommended) -->
         <div id="bnaPrimePartnersPanel" style="display:none;margin-bottom:16px"></div>
 
@@ -1753,6 +1789,35 @@
     </div>
 
 
+  </div>
+</div>
+
+<!-- ══════════════════════════ PRESENTATION TAB ═════════════════════════ -->
+<div class="tab-pane" id="pane-presentation">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">📊</span> PowerPoint Presentation</div>
+    <div class="card-body">
+
+      <div id="pptLocked" style="text-align:center;padding:30px 12px">
+        <div style="font-size:42px;margin-bottom:12px">🔒</div>
+        <div style="font-weight:700;font-size:16px;color:var(--blue);margin-bottom:6px">Generate your proposal first</div>
+        <p style="font-size:13px;color:var(--muted);max-width:540px;margin:0 auto;line-height:1.6">Once you've generated a proposal on the <strong>Proposal</strong> tab, come back here to build a Government oral-presentation deck directly from it.</p>
+        <button onclick="switchTab('proposal')" style="margin-top:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;font-size:13px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">→ Go to Proposal</button>
+      </div>
+
+      <div id="pptUnlocked" style="display:none">
+        <p style="font-size:14px;color:var(--text);line-height:1.65;margin-bottom:18px">Build a <strong>professional oral presentation</strong> to the Government — pre-formatted in your brand colors and ready to present — generated directly from your completed proposal. The proposal is the only input required; add any specific guidance below.</p>
+
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Optional guidance for the presentation</label>
+        <textarea id="pptInstructions" rows="3" placeholder="e.g., keep it to ~10 slides; emphasize our FRA past performance; add a slide on our SDVOSB status; lead with the transition plan" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;line-height:1.5;resize:vertical;box-sizing:border-box"></textarea>
+
+        <button id="pptCreateBtn" onclick="createPresentation()" style="margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:12px 26px;font-size:15px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12)">📊 Create Presentation</button>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Generates a downloadable <strong>.pptx</strong> using your brand colors, with speaker notes. Takes ~20–40 seconds.</div>
+
+        <div id="pptResult" style="display:none;margin-top:18px"></div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -2612,6 +2677,200 @@ function applyClientConfig() {
 // color. Analogous hues (a rotation off the primary) read as complementary without clashing —
 // e.g. a blue primary yields a teal/green + a light-purple accent, never orange. Standalone tabs
 // (Section Editor, Settings) get a desaturated brand-grey so they read as "not part of a flow."
+// ─── POWERPOINT PRESENTATION (oral deck generated from the completed proposal) ───────
+// Show the create UI only once a proposal has actually been generated.
+function updatePresentationLock() {
+  const ready = !!(window._lastProposalData && Object.keys(window._lastProposalData).some(k => /^volume/.test(k)));
+  const locked = document.getElementById('pptLocked');
+  const unlocked = document.getElementById('pptUnlocked');
+  if (locked) locked.style.display = ready ? 'none' : 'block';
+  if (unlocked) unlocked.style.display = ready ? 'block' : 'none';
+}
+
+// Strip a hex color to bare RRGGBB for PptxGenJS (no leading #); fall back if malformed.
+function _pptHex(c, fallback) {
+  let m = String(c || '').trim().replace(/^#/, '');
+  if (m.length === 3) m = m.split('').map(x => x + x).join('');
+  return /^[0-9a-fA-F]{6}$/.test(m) ? m.toUpperCase() : (fallback || '005FD5');
+}
+
+// Compact text digest of the finished proposal for the deck-outline model.
+function _pptProposalDigest() {
+  const p = window._lastProposalData || {};
+  const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) || {};
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  const clip = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '...' : s; };
+  const winThemes = ['winTheme1','winTheme2','winTheme3'].map(id => (document.getElementById(id) || {}).value).filter(v => v && v.trim());
+  const discrim = ['discrim1','discrim2','discrim3','discrim4','discrim5'].map(id => (document.getElementById(id) || {}).value).filter(v => v && v.trim());
+  const L = [];
+  L.push('COMPANY: ' + (CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyName || CLIENT_CONFIG.companyShortName || '') + ' (' + (CLIENT_CONFIG.companyShortName || '') + ')');
+  const sa = (cap.setAsides || CLIENT_CONFIG.setAsides || []);
+  if (sa.length) L.push('STATUS / SET-ASIDES HELD: ' + sa.join(', '));
+  if (CLIENT_CONFIG.companyTagline) L.push('TAGLINE: ' + CLIENT_CONFIG.companyTagline);
+  L.push('OPPORTUNITY: ' + (b.requirement_title || p.requirement_title || '(untitled)'));
+  if (b.agency_name || p.agency_name) L.push('AGENCY: ' + (b.agency_name || p.agency_name));
+  if (b.solicitation_number || p.solicitation_number) L.push('SOLICITATION: ' + (b.solicitation_number || p.solicitation_number));
+  if (winThemes.length) L.push('WIN THEMES: ' + winThemes.join(' | '));
+  if (discrim.length) L.push('DISCRIMINATORS: ' + discrim.join(' | '));
+  L.push('');
+  L.push('PROPOSAL CONTENT:');
+  const v0 = p.volume0 || {}; if (v0.executive_summary) L.push('[Executive Summary] ' + clip(v0.executive_summary, 2500));
+  const v1 = p.volume1 || {};
+  if (v1.understanding_of_requirement) L.push('[Understanding of Requirement] ' + clip(v1.understanding_of_requirement, 2200));
+  if (v1.technical_approach) L.push('[Technical Approach] ' + clip(v1.technical_approach, 3000));
+  if (v1.integrated_methodology) L.push('[Integrated Methodology] ' + clip(v1.integrated_methodology, 1600));
+  if (v1.management_approach) L.push('[Management Approach] ' + clip(v1.management_approach, 2200));
+  if (v1.staffing_plan) L.push('[Staffing Plan] ' + clip(v1.staffing_plan, 1600));
+  if (v1.key_personnel_intro) L.push('[Key Personnel] ' + clip(v1.key_personnel_intro, 1400));
+  const v2 = p.volume2 || {};
+  if (Array.isArray(v2.references) && v2.references.length) {
+    L.push('[Past Performance]');
+    v2.references.slice(0, 6).forEach(r => { if (r && (r.program_name || r.overview)) L.push('  - ' + clip(r.program_name || 'Reference', 120) + ': ' + clip(r.overview || r.relevance || r.similarity || '', 500)); });
+  }
+  const v3 = p.volume3 || {};
+  if (v3.pricing_philosophy) L.push('[Pricing Philosophy] ' + clip(v3.pricing_philosophy, 1000));
+  if (v3.total_price_narrative) L.push('[Price Summary] ' + clip(v3.total_price_narrative, 1000));
+  return L.join('\n');
+}
+
+async function createPresentation() {
+  const btn = document.getElementById('pptCreateBtn');
+  if (typeof PptxGenJS === 'undefined') {
+    showStatus('error', 'Presentation library not loaded', 'A component (PptxGenJS) did not load. Disable any ad blocker for this site, hard-refresh (Ctrl+Shift+R), and try again.');
+    return;
+  }
+  const apiKey = getApiKey();
+  if (!apiKey) { showStatus('error', 'API key required', 'Enter your Anthropic API key (top of the page, or Proposal Step 2) first.'); return; }
+  if (!(window._lastProposalData && Object.keys(window._lastProposalData).some(k => /^volume/.test(k)))) {
+    showStatus('error', 'No proposal yet', 'Generate a proposal on the Proposal tab first.'); return;
+  }
+  const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) || {};
+  const co = CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyName || '';
+  const agency = b.agency_name || (window._lastProposalData && window._lastProposalData.agency_name) || 'the Government';
+  const userInstr = ((document.getElementById('pptInstructions') || {}).value || '').trim();
+  const digest = _pptProposalDigest();
+
+  if (btn) { btn.disabled = true; btn.dataset._t = btn.innerHTML; btn.innerHTML = '\u23F3 Building presentation...'; btn.style.opacity = '0.6'; }
+  showStatus('info', 'Building your presentation', 'Distilling the proposal into an oral-presentation deck...', true);
+  try {
+    const prompt =
+      'You are a senior capture/proposal lead building a PROFESSIONAL ORAL PRESENTATION deck for ' + co +
+      ' to deliver to ' + agency + ' during a Government source selection. Build the deck STRICTLY from the proposal content below - do not invent facts, numbers, names, or past performance that are not present in it.\n\n' +
+      'PROPOSAL:\n' + digest + '\n\n' +
+      (userInstr ? ('USER INSTRUCTIONS (follow these closely):\n' + userInstr + '\n\n') : '') +
+      'Produce a tight, confident oral-presentation deck (NOT a written document). Rules:\n' +
+      '- 9 to 13 content slides total unless the user instructions say otherwise.\n' +
+      '- A clear arc: agenda, understanding of the requirement, technical approach (1-2 slides), management & staffing, past performance, why ' + co + ' (win themes & discriminators), and a closing / questions slide. Include a brief pricing-philosophy slide ONLY if pricing content is present (never fabricate dollar figures).\n' +
+      '- Each slide: 3 to 6 bullets, each a SHORT spoken phrase (max ~12 words); no sub-bullets, no paragraphs.\n' +
+      '- Add concise speaker NOTES (2-4 sentences) per slide describing what the presenter would say aloud.\n' +
+      '- Professional tone suitable for a Government evaluation panel; use the company status (e.g. SDVOSB) where relevant.\n\n' +
+      'Return ONLY JSON (no markdown, no preamble) in EXACTLY this shape:\n' +
+      '{"deck_title":"short punchy title","subtitle":"e.g. Oral Presentation to ' + agency + '","slides":[{"title":"Slide Title","bullets":["point","point"],"notes":"what to say"}]}';
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+    });
+    if (!resp.ok) { const t = await resp.text().catch(() => ''); throw new Error('API error ' + resp.status + ': ' + t.slice(0, 160)); }
+    const d = await resp.json();
+    let raw = d.content.map(c => c.text || '').join('').trim()
+      .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+    if (!raw.endsWith('}')) { const lb = raw.lastIndexOf('}'); if (lb > 0) raw = raw.slice(0, lb + 1); }
+    let deck;
+    try { deck = JSON.parse(raw); } catch (e) { throw new Error('Could not parse the generated deck - please try again.'); }
+    if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) throw new Error('The generated deck was empty - please try again.');
+
+    _pptRenderDeck(deck, b);
+
+    const titles = deck.slides.map(s => s.title).filter(Boolean);
+    const res = document.getElementById('pptResult');
+    if (res) {
+      res.style.display = 'block';
+      res.innerHTML = '<div style="border:1px solid #86efac;background:var(--success-bg,#f0fdf4);border-radius:8px;padding:14px 16px">' +
+        '<div style="font-weight:700;color:var(--success);font-size:14px;margin-bottom:8px">\u2705 Presentation downloaded - ' + (titles.length + 1) + ' slides</div>' +
+        '<div style="font-size:12px;color:var(--text);line-height:1.7"><strong>Title:</strong> ' + escHtml(deck.deck_title || '(untitled)') + '<br>' +
+        '<strong>Slides:</strong> ' + escHtml(titles.join('  \u2022  ')) + '</div>' +
+        '<button onclick="createPresentation()" style="margin-top:12px;padding:7px 14px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;cursor:pointer">\u21BB Regenerate</button>' +
+        '</div>';
+    }
+    showStatus('success', 'Presentation ready', 'Your .pptx has been downloaded.');
+  } catch (e) {
+    console.error('Presentation error:', e);
+    showStatus('error', 'Presentation failed', e.message || String(e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = (btn.dataset && btn.dataset._t) || '\uD83D\uDCCA Create Presentation'; btn.style.opacity = '1'; }
+  }
+}
+
+// Render the deck spec into a styled .pptx and trigger a download (PptxGenJS; no template, no raw XML).
+function _pptRenderDeck(deck, briefing) {
+  briefing = briefing || {};
+  const pptx = new PptxGenJS();
+  pptx.layout = 'LAYOUT_WIDE';                 // 13.33 x 7.5 in
+  pptx.author = CLIENT_CONFIG.companyShortName || '';
+  pptx.company = CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyName || '';
+  pptx.title = deck.deck_title || briefing.requirement_title || 'Oral Presentation';
+
+  const ACCENT = _pptHex(CLIENT_CONFIG.primaryColor, '005FD5');
+  const DARK = '1F2937', GREY = '6B7280';
+  const FONT = 'Calibri';
+  const co = CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyName || '';
+  const footer = (CLIENT_CONFIG.companyFullName || co) + '  |  Proprietary & Confidential';
+
+  pptx.defineSlideMaster({
+    title: 'CONTENT',
+    background: { color: 'FFFFFF' },
+    objects: [
+      { rect: { x: 0, y: 0, w: '100%', h: 0.16, fill: { color: ACCENT } } },
+      { rect: { x: 0, y: 7.18, w: '100%', h: 0.02, fill: { color: ACCENT } } },
+      { text: { text: footer, options: { x: 0.5, y: 7.04, w: 9.5, h: 0.3, fontSize: 8, color: GREY, fontFace: FONT, align: 'left' } } }
+    ],
+    slideNumber: { x: 12.4, y: 7.02, w: 0.6, h: 0.3, fontSize: 8, color: GREY, fontFace: FONT, align: 'right' }
+  });
+
+  // Title slide
+  const t = pptx.addSlide();
+  t.background = { color: 'FFFFFF' };
+  t.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 3.4, fill: { color: ACCENT } });
+  t.addText(String(deck.deck_title || briefing.requirement_title || 'Oral Presentation'),
+    { x: 0.7, y: 0.9, w: 11.9, h: 1.7, fontSize: 34, bold: true, color: 'FFFFFF', fontFace: FONT, valign: 'middle' });
+  t.addText(String(deck.subtitle || ('Oral Presentation to ' + (briefing.agency_name || 'the Government'))),
+    { x: 0.72, y: 2.55, w: 11.9, h: 0.6, fontSize: 18, color: 'E8F0FF', fontFace: FONT });
+  t.addText(String(CLIENT_CONFIG.companyFullName || co),
+    { x: 0.7, y: 4.0, w: 11.9, h: 0.5, fontSize: 22, bold: true, color: ACCENT, fontFace: FONT });
+  if (CLIENT_CONFIG.companyTagline)
+    t.addText(String(CLIENT_CONFIG.companyTagline), { x: 0.72, y: 4.56, w: 11.9, h: 0.4, fontSize: 13, italic: true, color: GREY, fontFace: FONT });
+  const meta = [];
+  if (briefing.solicitation_number) meta.push('Solicitation ' + briefing.solicitation_number);
+  if (briefing.agency_name) meta.push(briefing.agency_name);
+  if (meta.length) t.addText(meta.join('   |   '), { x: 0.72, y: 5.12, w: 11.9, h: 0.4, fontSize: 12, color: DARK, fontFace: FONT });
+  const setAsides = (CLIENT_CONFIG.setAsides || []).join('  \u2022  ');
+  if (setAsides) t.addText(setAsides, { x: 0.72, y: 5.56, w: 11.9, h: 0.4, fontSize: 11, color: GREY, fontFace: FONT });
+  t.addText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    { x: 0.72, y: 6.12, w: 11.9, h: 0.4, fontSize: 11, color: GREY, fontFace: FONT });
+
+  // Content slides
+  (deck.slides || []).forEach(s => {
+    const slide = pptx.addSlide({ masterName: 'CONTENT' });
+    slide.addText(String(s.title || ''), { x: 0.5, y: 0.45, w: 12.3, h: 0.85, fontSize: 26, bold: true, color: ACCENT, fontFace: FONT, valign: 'middle' });
+    slide.addShape(pptx.ShapeType.line, { x: 0.55, y: 1.32, w: 3.2, h: 0, line: { color: ACCENT, width: 2 } });
+    const bullets = Array.isArray(s.bullets) ? s.bullets.filter(x => x && String(x).trim()) : [];
+    if (bullets.length) {
+      slide.addText(bullets.map(x => ({ text: String(x), options: { bullet: true } })),
+        { x: 0.7, y: 1.6, w: 12.0, h: 5.2, fontSize: 17, color: DARK, fontFace: FONT, valign: 'top', paraSpaceAfter: 10, lineSpacingMultiple: 1.05 });
+    }
+    if (s.notes && String(s.notes).trim()) slide.addNotes(String(s.notes));
+  });
+
+  const safe = String(deck.deck_title || briefing.requirement_title || 'Presentation')
+    .replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'Presentation';
+  const fname = (CLIENT_CONFIG.companyShortName || 'Proposal') + '_' + safe + '_Oral_Presentation.pptx';
+  return pptx.writeFile({ fileName: fname });
+}
+
 function applyTabFamilyColors() {
   const hsl = hexToHsl((CLIENT_CONFIG && CLIENT_CONFIG.primaryColor) || '#005FD5') || { h: 215 };
   const h = hsl.h;
@@ -2619,11 +2878,13 @@ function applyTabFamilyColors() {
   const build   = `hsl(${(h + 45) % 360}, 60%, 60%)`;                   // analogous accent B (light purple for a blue primary)
   const neutral = `hsl(${h}, 12%, 70%)`;                                // desaturated brand-grey for standalone tabs
   const edit    = `hsl(${(h + 165) % 360}, 64%, 56%)`;                  // distinct warm accent for Section Editor (its own color, never grey)
+  const present = `hsl(${(h + 90) % 360}, 62%, 56%)`;                   // analogous accent C (a clean hue off the primary) for the Presentation tab
   const r = document.documentElement.style;
   r.setProperty('--fam-decide', decide);
   r.setProperty('--fam-build', build);
   r.setProperty('--fam-neutral', neutral);
   r.setProperty('--fam-edit', edit);
+  r.setProperty('--fam-present', present);
 }
 
 // Hex -> HSL (returns {h,s,l} in degrees/percent, or null if the hex is malformed).
@@ -2995,23 +3256,34 @@ let hsExtractedAttrs = null;
 let _hsToken         = '';
 
 function updateHsBtn() {
-  const val = document.getElementById('hsTokenInput')?.value.trim() || '';
-  const btn = document.getElementById('hsSaveBtn');
-  if (btn) { btn.disabled = val.length < 10; btn.style.opacity = val.length >= 10 ? '1' : '0.45'; }
+  const val = ((document.getElementById('hsTokenInput') || {}).value || (document.getElementById('hsTokenInputTop') || {}).value || '').trim();
+  const ok = val.length >= 10;
+  ['hsSaveBtn', 'hsSaveBtnTop'].forEach(id => { const b = document.getElementById(id); if (b) { b.disabled = !ok; b.style.opacity = ok ? '1' : '0.45'; } });
 }
 
-function toggleHsToken() {
-  const inp = document.getElementById('hsTokenInput');
+// Keep the Partners HubSpot field and the top-of-page field in sync (one shared token). Skip the
+// field being typed in so the caret never jumps.
+function syncHsToken(sourceId) {
+  const src = document.getElementById(sourceId);
+  if (src) {
+    const otherId = sourceId === 'hsTokenInputTop' ? 'hsTokenInput' : 'hsTokenInputTop';
+    const other = document.getElementById(otherId);
+    if (other && other.value !== src.value) other.value = src.value;
+  }
+  updateHsBtn();
+}
+
+function toggleHsToken(id) {
+  const inp = document.getElementById(id || 'hsTokenInput');
   if (!inp) return;
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
 async function saveHsToken() {
-  const val = document.getElementById('hsTokenInput')?.value.trim() || '';
+  const val = ((document.getElementById('hsTokenInput') || {}).value || (document.getElementById('hsTokenInputTop') || {}).value || '').trim();
   if (!val) return;
-  const btn = document.getElementById('hsSaveBtn');
-  btn.disabled = true;
-  btn.textContent = 'Connecting…';
+  const _hsBtns = ['hsSaveBtn', 'hsSaveBtnTop'].map(id => document.getElementById(id)).filter(Boolean);
+  _hsBtns.forEach(b => { b.disabled = true; b.textContent = 'Connecting…'; });
 
   try {
     // Verify token and discover properties via proxy
@@ -3046,7 +3318,9 @@ async function saveHsToken() {
 
     _hsToken = val;
     sessionStorage.setItem('srfed_hs_token', val);
+    ['hsTokenInput', 'hsTokenInputTop'].forEach(id => { const el = document.getElementById(id); if (el && el.value !== val) el.value = val; });
     document.getElementById('hsConnectionBadge').style.display = 'block';
+    { const _ts = document.getElementById('hsTokenTopStatus'); if (_ts) _ts.style.display = 'inline'; }
     const discoveredCount = Object.keys(discovered).length;
     document.getElementById('hsTokenStatus').innerHTML =
       `✅ Connected. Discovered ${discoveredCount} matching CRM properties. Ready to query.`;
@@ -3059,10 +3333,10 @@ async function saveHsToken() {
   } catch(e) {
     document.getElementById('hsTokenStatus').textContent = '❌ ' + e.message;
     document.getElementById('hsTokenStatus').style.color = 'var(--error)';
+    { const _ts = document.getElementById('hsTokenTopStatus'); if (_ts) _ts.style.display = 'none'; }
     showStatus('error', 'HubSpot connection failed', e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Connect';
+    _hsBtns.forEach(b => { b.disabled = false; b.textContent = 'Connect'; });
     updateHsBtn();
   }
 }
@@ -3071,8 +3345,8 @@ function loadHsToken() {
   const saved = sessionStorage.getItem('srfed_hs_token');
   if (saved) {
     _hsToken = saved;
-    const inp = document.getElementById('hsTokenInput');
-    if (inp) inp.value = saved;
+    ['hsTokenInput', 'hsTokenInputTop'].forEach(id => { const el = document.getElementById(id); if (el) el.value = saved; });
+    { const _ts = document.getElementById('hsTokenTopStatus'); if (_ts) _ts.style.display = 'inline'; }
     const badge = document.getElementById('hsConnectionBadge');
     const status = document.getElementById('hsTokenStatus');
     if (badge) badge.style.display = 'block';
@@ -4216,6 +4490,30 @@ async function scorePastPerformanceRelevance() {
 // ═══════════════════════════════════════════════════════════════════════════
 // PROPOSAL CALENDAR
 // ═══════════════════════════════════════════════════════════════════════════
+// ── Date helpers (shared by the calendar and the proposal cover date) ──────────
+// Parse a date string WITHOUT the UTC-midnight trap: "2026-07-02" must mean July 2
+// LOCALLY, not the instant that renders as July 1 west of UTC. Handles ISO, US M/D/Y
+// (Government solicitations are US-format), and falls back to the engine parser.
+function parseDateLoose(str) {
+  if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+  const s = String(str == null ? '' : str).trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/);
+  if (m) { const d = new Date(+m[1], +m[2] - 1, +m[3]); return isNaN(d.getTime()) ? null : d; }
+  m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/);
+  if (m) { let y = +m[3]; if (y < 100) y += 2000; const mo = +m[1], da = +m[2]; if (mo >= 1 && mo <= 12 && da >= 1 && da <= 31) { const d = new Date(y, mo - 1, da); return isNaN(d.getTime()) ? null : d; } }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+// The latest business day STRICTLY before `date` (skips Sat/Sun). due Wed -> Tue; due Mon -> prev Fri.
+function prevBusinessDay(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+  return d;
+}
+
 function renderProposalCalendar(briefing) {
   const card = document.getElementById('calendarCard');
   const list = document.getElementById('calendarList');
@@ -4224,29 +4522,33 @@ function renderProposalCalendar(briefing) {
   const events = [];
   const now = new Date();
 
-  // Helper to parse a date string loosely
-  function parseDate(str) {
-    if (!str) return null;
-    const d = new Date(str);
-    return isNaN(d.getTime()) ? null : d;
-  }
+  const parseDate = parseDateLoose;
 
-  // Extract dates from briefing with clean labels
-  if (briefing.submission_date) events.push({ label: 'Proposal Due', date: briefing.submission_date, urgent: true, icon: '🚨' });
-  if (briefing.qa_deadline)      events.push({ label: 'Q&A Deadline', date: briefing.qa_deadline, icon: '❓' });
-  if (briefing.solicitation_release) events.push({ label: 'Solicitation Released', date: briefing.solicitation_release, icon: '📋' });
+  // Proposal due date (Government) — the hard deadline. Always shown, and we always
+  // derive our own internal target from it, so the calendar always has at least two dates.
+  const govDue = parseDate(briefing.submission_date);
+  if (govDue) {
+    events.push({ label: 'Proposal Due — Government', dateObj: govDue, urgent: true, icon: '🚨' });
+    const internal = prevBusinessDay(govDue);
+    const company = (CLIENT_CONFIG && CLIENT_CONFIG.companyShortName && String(CLIENT_CONFIG.companyShortName).trim()) ? String(CLIENT_CONFIG.companyShortName).trim() : '';
+    if (internal) events.push({ label: company ? company + ' Internal Deadline' : 'Internal Submission Deadline', dateObj: internal, sub: 'Submit one business day before the Government due date.', icon: '🏁', internal: true });
+  } else if (briefing.submission_date) {
+    events.push({ label: 'Proposal Due — Government', dateRaw: briefing.submission_date, urgent: true, icon: '🚨' });
+  }
+  if (briefing.qa_deadline)          events.push({ label: 'Q&A / Questions Due', dateObj: parseDate(briefing.qa_deadline), dateRaw: briefing.qa_deadline, icon: '❓' });
+  if (briefing.solicitation_release) events.push({ label: 'Solicitation Released', dateObj: parseDate(briefing.solicitation_release), dateRaw: briefing.solicitation_release, icon: '📋' });
 
   // Extract from assumptions that are actual dates (value must parse as a date)
   assumptions.filter(a => a.category === 'rfp' && a.value &&
-    parseDate(a.value) !== null &&  // must be an actual parseable date
+    parseDate(a.value) &&
     a.label && !events.find(e => e.label.toLowerCase().includes(a.label.toLowerCase().substring(0, 10)))
-  ).slice(0, 5).forEach(a => events.push({ label: a.label, date: a.value, icon: '📌' }));
+  ).slice(0, 5).forEach(a => events.push({ label: a.label, dateObj: parseDate(a.value), icon: '📌' }));
 
   if (events.length === 0) { card.style.display = 'none'; return; }
 
-  // Sort: parse dates where possible, put unparseable at end
+  // Sort by date; entries with no parseable date sort to the end.
   events.sort((a, b) => {
-    const da = parseDate(a.date), db = parseDate(b.date);
+    const da = a.dateObj, db = b.dateObj;
     if (da && db) return da - db;
     if (da) return -1;
     if (db) return 1;
@@ -4255,19 +4557,18 @@ function renderProposalCalendar(briefing) {
 
   card.style.display = 'block';
   list.innerHTML = events.map(ev => {
-    const d = parseDate(ev.date);
+    const d = ev.dateObj || null;
     const isPast = d && d < now;
-    const urgentStyle = ev.urgent ? 'color:var(--error);font-weight:700' : (isPast ? 'color:var(--muted)' : 'color:var(--blue);font-weight:600');
-    // Format date nicely if parseable
-    let displayDate = ev.date;
-    if (d) {
-      displayDate = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    }
+    const display = d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : (ev.dateRaw || '');
+    const dateStyle = ev.urgent ? 'color:var(--error);font-weight:700'
+      : ev.internal ? 'color:#b45309;font-weight:700'
+      : (isPast ? 'color:var(--muted)' : 'color:var(--blue);font-weight:600');
     return `<div class="cal-item">
       <div style="font-size:18px;flex-shrink:0;width:24px;text-align:center">${ev.icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;${isPast?'color:var(--muted)':''}">${escHtml(ev.label)}</div>
-        <div style="font-size:12px;${urgentStyle}">${escHtml(displayDate)}</div>
+        <div style="font-size:13px;font-weight:600;${isPast ? 'color:var(--muted)' : ''}">${escHtml(ev.label)}</div>
+        <div style="font-size:12px;${dateStyle}">${escHtml(display)}</div>
+        ${ev.sub ? `<div style="font-size:10.5px;color:var(--muted);margin-top:2px">${escHtml(ev.sub)}</div>` : ''}
       </div>
       ${isPast ? '<div style="font-size:11px;color:var(--muted);flex-shrink:0">Past</div>' : ''}
     </div>`;
@@ -4393,7 +4694,7 @@ function onBriefingExtracted(briefing) {
 }
 
 // ─── API KEY MANAGEMENT ───────────────────────────────────────────────────────
-function saveApiKey(value) {
+function saveApiKey(value, sourceId) {
   const trimmed = value.trim();
   const statusEl = document.getElementById('apiKeyStatus');
   const validEl  = document.getElementById('apiKeyValid');
@@ -4406,12 +4707,17 @@ function saveApiKey(value) {
     if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Key cleared.'; }
     if (validEl)  { validEl.style.display  = 'none'; }
   }
+  // Keep every API-key field in sync (Step 2 and the top-of-page field share one key). Skip the field
+  // being typed in so the caret doesn't jump.
+  ['apiKeyInput', 'apiKeyInputTop'].forEach(id => { if (id !== sourceId) { const el = document.getElementById(id); if (el && el.value !== trimmed) el.value = trimmed; } });
+  const topStat = document.getElementById('apiKeyTopStatus');
+  if (topStat) topStat.style.display = trimmed ? 'inline' : 'none';
   updateStepLocks();  // unlock Steps 3+ once key is entered
 }
 
-function toggleApiKeyVisibility() {
-  const input = document.getElementById('apiKeyInput');
-  input.type = input.type === 'password' ? 'text' : 'password';
+function toggleApiKeyVisibility(id) {
+  const input = document.getElementById(id || 'apiKeyInput');
+  if (input) input.type = input.type === 'password' ? 'text' : 'password';
 }
 
 function getApiKey() {
@@ -4422,11 +4728,15 @@ function restoreApiKey() {
   const saved = sessionStorage.getItem('srfed_api_key');
   if (saved) {
     const input   = document.getElementById('apiKeyInput');
+    const top     = document.getElementById('apiKeyInputTop');
     const statusEl = document.getElementById('apiKeyStatus');
     const validEl  = document.getElementById('apiKeyValid');
     if (input)    input.value = saved;
+    if (top)      top.value = saved;
     if (statusEl) statusEl.style.display = 'none';
     if (validEl)  validEl.style.display  = 'block';
+    const topStat = document.getElementById('apiKeyTopStatus');
+    if (topStat) topStat.style.display = 'inline';
   }
 }
 
@@ -7083,7 +7393,7 @@ async function runGeneration() {
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
-      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
+      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
       `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
@@ -7121,7 +7431,7 @@ async function runGeneration() {
       agency_name: briefing.agency_name, agency_address: briefing.agency_address,
       agency_poc: briefing.agency_poc, agency_poc_email: briefing.agency_poc_email,
       agency_poc_phone: briefing.agency_poc_phone,
-      // Submission date = one day before the RFP due date (gives a review buffer).
+      // Submission date = one business day before the RFP due date (review buffer; weekends skipped).
       // Only a clean "Month DD, YYYY" ever reaches the proposal; a non-date (e.g. "Not specified in
       // Block 9 of SF 33; questions due …") becomes '' so it can never appear in a header or title.
       submission_date: sanitizeProposalDate(briefing.submission_date, true),
@@ -7146,10 +7456,16 @@ async function runGeneration() {
     // Page limits per volume
     const pageLimits = briefing.page_limits || {};
     const formatPageLimit = (vol, label) => {
-      const limit = pageLimits[`vol${vol}`] || pageLimits[vol] || 'not specified';
-      const isUnlimited = /unlimited|no limit|not specified|n\/a/i.test(String(limit));
+      const raw = pageLimits[`vol${vol}`] || pageLimits[vol] || 'not specified';
+      const isUnlimited = /unlimited|no limit|not specified|n\/a/i.test(String(raw));
       if (isUnlimited) return `${label}: no page limit stated — write comprehensive, well-organized content (~20-30 pages recommended)`;
-      return `${label}: do NOT exceed ${limit}. Target 90-100% of this limit. Fill the space allocated.`;
+      const nums = String(raw).match(/\d+/g);
+      const maxPages = nums && nums.length ? Math.max(...nums.map(Number)) : 0;
+      const wordCap = maxPages ? maxPages * 425 : 0;
+      const budget = wordCap
+        ? ` HARD LIMIT — at most ${maxPages} page${maxPages > 1 ? 's' : ''}: write NO MORE THAN about ${wordCap.toLocaleString()} words total for this volume (~425 words per page, counting headings and tables). Exceeding the page limit is disqualifying, so write tightly, prioritize ruthlessly, and prefer coming in UNDER the limit. Do NOT pad to fill the space.`
+        : ' Stay within the stated limit; exceeding it is disqualifying.';
+      return `${label}: do NOT exceed ${raw}.${budget}`;
     };
 
     // Get the extracted compliance requirements from the shalls panel
@@ -7465,6 +7781,7 @@ async function runGeneration() {
 
   // Store for revise function
   window._lastProposalData = proposalData;
+  if (typeof updatePresentationLock === 'function') updatePresentationLock();
   window._lastBriefingText = briefingText;
 
     allSteps[2].status = 'done'; allSteps[3].status = 'active';
@@ -8103,9 +8420,9 @@ function sanitizeProposalDate(raw, subtractDay) {
   const m = raw.match(new RegExp(MONTHS + '\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s+\\d{4}', 'i'));
   let d = null;
   if (m) d = new Date(m[0].replace(/(\d)(?:st|nd|rd|th)/i, '$1'));
-  if (!d || isNaN(d.getTime())) { const t = new Date(raw); if (!isNaN(t.getTime())) d = t; }
+  if (!d || isNaN(d.getTime())) d = parseDateLoose(raw);
   if (!d || isNaN(d.getTime())) return '';   // not a clean date -> omit entirely
-  if (subtractDay) d.setDate(d.getDate() - 1);
+  if (subtractDay) { const b = prevBusinessDay(d); if (b) d = b; }
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
@@ -8347,6 +8664,7 @@ let pricingModel = {
   statedFteTotal: null,            // number if the PWS stated it
   fteSource: 'estimated',          // 'stated' | 'estimated'
   directedLabor: false,            // true when the Government directed exact labor categories AND counts (locked verbatim)
+  hoursPerFte: null,               // agency-stated billable hours per FTE (e.g. 1920, 2080); null = company default (1912)
   gsaDecision: null,               // null (undecided → locks the rest) | 'schedule' | 'na'
   gsaDiscount: 1,                  // % discount offered to the Government off GSA rates (suggested 1, editable)
   gsaRateCard: [],                 // [{ id, lcat, rates:[y1..yN] }] from the uploaded GSA MAS schedule (fully-burdened ceiling rates per option year)
@@ -8362,7 +8680,7 @@ const PRICING_KEY = 'srfed_pricing_model';
 let _prSeq = 1;
 function _prId(p) { return p + Date.now().toString(36) + (_prSeq++); }
 function pricingEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-function defaultHpf() { return (CLIENT_CONFIG.pricing && parseFloat(CLIENT_CONFIG.pricing.hoursPerFte)) || 1912; }
+function defaultHpf() { const _mo = (typeof pricingModel !== 'undefined' && pricingModel) ? parseFloat(pricingModel.hoursPerFte) : NaN; if (_mo > 0) return _mo; return (CLIENT_CONFIG.pricing && parseFloat(CLIENT_CONFIG.pricing.hoursPerFte)) || 1912; }
 
 function pricingSave() { /* Pricing is per-session work product — intentionally NOT persisted across reloads (cleared on load in DOMContentLoaded). Kept as a no-op so existing call sites stay valid. */ }
 function pricingLoadStored() {
@@ -8470,7 +8788,16 @@ function pricingPeriodStartDate(i) {
   return d.toISOString().slice(0, 10);
 }
 // The GSA Schedule year that applies to opportunity period i.
-function pricingGsaScheduleYearForPeriod(i) { return pricingGsaYearForDate(pricingPeriodStartDate(i) || pricingModel.gsaPopStart || new Date().toISOString().slice(0, 10)); }
+function pricingGsaScheduleYearForPeriod(i) {
+  const sd = pricingPeriodStartDate(i);
+  if (sd) return pricingGsaYearForDate(sd);
+  // No period-of-performance start entered yet: walk schedule years sequentially from the base
+  // period's year so option years still ESCALATE (Base = base year, each option = the next priced
+  // year), clamped to the number of priced years. Once a PoP start is set, the date mapping wins.
+  const years = Math.max(1, parseInt(pricingModel.gsaScheduleYears) || 1);
+  const base = pricingGsaYearForDate(pricingModel.gsaPopStart || new Date().toISOString().slice(0, 10));
+  return Math.min(base + i, years);
+}
 // The schedule's ceiling rate for a labor category in a given schedule year (1-based).
 function pricingGsaRateFor(l, year) {
   if (!l || !l.gsaLcat) return 0;
@@ -8689,7 +9016,7 @@ function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(
 function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
 function pricingResetModel() {
   if (!confirm('Reset the entire pricing model? This clears the GSA Schedule choice, tasks, labor categories, hours, and periods for this opportunity.')) return;
-  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', directedLabor: false, gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
+  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', directedLabor: false, hoursPerFte: null, gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
   pricingGsaFiles = [];
   pricingRenderAll();
 }
@@ -8941,7 +9268,10 @@ async function pricingParseGsaSchedule() {
     pricingModel.gsaRateCard = card;
     pricingModel.gsaScheduleYears = Math.max(parseInt(parsed && parsed.years) || 0, ...card.map(r => r.rates.length), 1);
     if (parsed && /^\d{4}-\d{2}-\d{2}$/.test(parsed.schedule_start || '')) pricingModel.gsaScheduleStart = parsed.schedule_start;
-    // Extracting rates does not flip the methodology to GSA — that stays the user's explicit choice.
+    // Importing AND extracting a Schedule strongly signals a GSA MAS buy, so if the methodology is
+    // still undecided, select GSA now — the extracted rates populate Step 1 with no extra click.
+    // (Reversible: the user can still switch to a different vehicle.)
+    if (pricingModel.gsaDecision == null) pricingModel.gsaDecision = 'schedule';
     pricingRenderAll();
     const yrLine = pricingModel.gsaScheduleStart ? ` Schedule starts ${pricingModel.gsaScheduleStart} (${pricingModel.gsaScheduleYears} priced years).` : '';
     showStatus('success', 'GSA Schedule read', `Extracted ${card.length} labor categor${card.length > 1 ? 'ies' : 'y'} across ${pricingModel.gsaScheduleYears} year${pricingModel.gsaScheduleYears > 1 ? 's' : ''}.${yrLine} Review the rates, confirm the schedule start date, then set the opportunity's period-of-performance start so the correct year's rate is used.`);
@@ -9100,18 +9430,20 @@ ${taskList}
 OPPORTUNITY CONTEXT:
 ${ctx}
 
-FTE BASIS: ${fteLine} Assume ${hpf} billable hours per FTE per 12-month period.
+FTE BASIS: ${fteLine} Assume ${hpf} billable hours per FTE per 12-month period UNLESS the solicitation explicitly states a different productive-hours/FTE basis (e.g. 1,920 or 2,080) - if it does, size to the solicitation's figure for all roles and report it in hours_per_fte.
 PRICING MODE: ${gsa ? 'GSA Schedule (rates come from the Schedule below).' : 'Build-up (the offeror sets base rates; you only propose structure and give market context).'}${schedBlock}${scaBlock}
 
 Return ONLY JSON, no prose:
 {
  "fte_basis":"1-2 sentences on how you sized the team",
+ "hours_per_fte": <the billable hours that equal ONE FTE for a 12-month period IF the solicitation explicitly states a productive-hours or FTE-hour basis (e.g. 1920, 2080); null if it does not state one>,
  "directed_hours_note":"if the RFP explicitly mandates hours/LOE/staffing for any task, state what you used as-is; '' if none",
  "directed_labor":[{"lcat":"position / labor-category title EXACTLY as the Government wrote it","count": <integer 1+>}],
  ${tasks.length ? '' : '"proposed_tasks":[{"code":"1.1","name":"..."}],'}
  "labor_mix":[
    {"role_name":"role as it will appear in the proposal",
     "headcount": <integer 1 or more>,
+    "fte": <the Advertised FTE for this role over the 12-month base period - the staffing level you propose, as a CLEAN number: a whole number for a full-time role, or a simple fraction like 0.25, 0.5, 0.75 for part-time. The role's total base-period hours are set to exactly fte times the hours-per-FTE basis, so size this to the role's real level of effort>,
     ${gsa ? '"gsa_lcat":"EXACT Schedule LCAT title from the list above, or null if none is a reasonable fit",\n    "match_confidence":"high|medium|low|none",\n    "match_rationale":"compare the Government required education/experience/scope to the Schedule LCAT; if none fits, say what is missing",' : '"suggested_rate_basis":"what kind of market rate to expect for this role",'}
     "hours_by_task":{"<task code or name exactly as listed>": <hours for a 12-month base period>},
     "allowed_tasks":["<task code or name>"]${pricingScaActive() ? ',\n    "sca_covered": <true if this role is a non-exempt SCA service employee, false if exempt professional>,\n    "wd_occupation":"matching WD occupation title from the list above, or null",\n    "wd_min_wage": <WD minimum hourly wage for that occupation as a number, or null>' : ''},\n    "fte_by_period":[<OMIT this field entirely unless the solicitation specifies DIFFERENT staffing by year for this role; if it does, give this role's FTE for each period in order (base first, then each option), aligned to the ${pricingModel.periods.length} period(s)>]}
@@ -9127,7 +9459,7 @@ Return ONLY JSON, no prose:
 }
 
 Rules:
-- Headcount must be whole people. Hours should reflect realistic level-of-effort and roughly reconcile to headcount times ${hpf} hours.
+- "fte" is the staffing decision and drives the math: each role's total base-period hours are set to exactly fte times ${hpf}. Size "fte" to the real level of effort - a whole number for a full-time role, or a clean fraction (0.25 / 0.5 / 0.75) for part-time; not every role is full-time. "headcount" is the number of distinct people (a single part-time person is headcount 1, fte 0.5). Use "hours_by_task" only to show how each role's hours split across its tasks; those per-task numbers are rescaled so the role total equals fte times ${hpf}.
 - Allocate hours so that EVERY PWS task listed above receives hours from at least one labor category \u2014 the union of all roles' allowed_tasks must cover every task. Only leave a task with no labor if it is genuinely not a labor effort (a pure travel/ODC or materials line); list any such task codes in "non_labor_tasks".
 - Per-year staffing is CONSTANT by default. ONLY if the solicitation explicitly specifies different staffing by ordering period (a manning/staffing table that changes year to year, or wording like "base year: N FTE; option years: M FTE") provide "fte_by_period" for each affected role, aligned in order to the ${pricingModel.periods.length} period(s). If staffing does not change by year, OMIT fte_by_period for every role.
 - ${gsa ? 'Map by EDUCATION, EXPERIENCE, and SCOPE \u2014 never by title alone. If the closest Schedule LCAT does not reasonably meet what the Government requires, set gsa_lcat=null, match_confidence="none", and list it under "unmatched". Be honest; do not force a poor match.' : 'Do not invent specific dollar rates for our cost; market_low/high are rough reference ranges only.'}
@@ -9206,7 +9538,77 @@ function pricingReconcileStatedFte(lcats, hours, mask, tasks, target, hpf) {
   });
 }
 
+// The Advertised FTE for a model-proposed role: the explicit "fte" when given (the staffing
+// decision), else the integer headcount, else the FTE implied by the proposed hours. Drives both the
+// Advertised FTE and the role's total hours so the two always tie out.
+function _pxRoleFte(m, hpf) {
+  const f = parseFloat(m && m.fte);
+  if (f > 0) return f;
+  const hc = parseInt(m && m.headcount);
+  if (hc > 0) return hc;
+  const hbt = (m && m.hours_by_task) || {};
+  const sum = Object.keys(hbt).reduce((s, k) => s + Math.max(0, parseFloat(hbt[k]) || 0), 0);
+  return (sum > 0 && hpf > 0) ? sum / hpf : 0;
+}
+
+// Free-sizing: set each role's TOTAL hours to exactly its Advertised FTE x hpf, then distribute across
+// the role's allowed tasks in the model's proposed proportions (largest-remainder, integer hours).
+function pricingDeriveHoursFromFte(lcats, hours, mask, tasks, hpf) {
+  if (!(hpf > 0)) return;
+  lcats.forEach(l => {
+    const fte = Math.max(0, parseFloat(l.advertised) || 0);
+    const target = Math.round(fte * hpf);
+    if (target <= 0) { hours[l.id] = {}; return; }
+    const cur = hours[l.id] || {};
+    const allowedIds = tasks.filter(t => !mask[l.id] || mask[l.id][t.id] !== false).map(t => t.id);
+    const tids = allowedIds.length ? allowedIds : tasks.map(t => t.id);
+    let weights = tids.map(tid => Math.max(0, parseFloat(cur[tid]) || 0));
+    let wsum = weights.reduce((a, b) => a + b, 0);
+    if (wsum <= 0) { weights = tids.map(() => 1); wsum = tids.length; }
+    const ideal = weights.map(w => w / wsum * target);
+    const split = ideal.map(x => Math.floor(x));
+    let s = split.reduce((a, b) => a + b, 0);
+    const rem = ideal.map(x => x - Math.floor(x));
+    const order = split.map((_, k) => k).sort((a, b) => rem[b] - rem[a]);
+    let k = 0; while (s < target && tids.length) { split[order[k % tids.length]]++; s++; k++; }
+    const newH = {};
+    tids.forEach((tid, k) => { if (split[k] > 0) newH[tid] = split[k]; });
+    hours[l.id] = newH;
+  });
+}
+
+// No PWS task left unpriced: for any non-(non-labor) task with zero total hours, MOVE a small slice of
+// a generalist role's hours from its largest task onto the empty one. Moving (not adding) preserves
+// each role's FTE total, so the table still ties out.
+function pricingEnsureTaskHoursCovered(lcats, hours, mask, tasks, nonLabor) {
+  if (!lcats.length || !tasks.length) return;
+  tasks.forEach(t => {
+    if (nonLabor && nonLabor.has(t.id)) return;
+    let total = 0; lcats.forEach(l => { total += Math.max(0, parseFloat((hours[l.id] || {})[t.id]) || 0); });
+    if (total > 0) return;
+    let best = null, bestHrs = -1;
+    lcats.forEach(l => {
+      const allowed = !mask[l.id] || mask[l.id][t.id] !== false;
+      if (!allowed) return;
+      const h = hours[l.id] || {};
+      const rt = Object.keys(h).reduce((s, k) => s + (parseFloat(h[k]) || 0), 0);
+      if (rt > bestHrs) { bestHrs = rt; best = l; }
+    });
+    if (!best || bestHrs <= 1) return;
+    const h = hours[best.id] || (hours[best.id] = {});
+    let donor = null, donorHrs = -1;
+    Object.keys(h).forEach(k => { const v = parseFloat(h[k]) || 0; if (k !== t.id && v > donorHrs) { donorHrs = v; donor = k; } });
+    if (!donor || donorHrs <= 1) return;
+    const give = Math.max(1, Math.min(Math.round(bestHrs * 0.02), donorHrs - 1));
+    h[donor] = donorHrs - give;
+    h[t.id] = (parseFloat(h[t.id]) || 0) + give;
+  });
+}
+
 function pricingApplyAutoBuild(a) {
+  // Agency-stated FTE-hour basis (e.g. 2,080 hrs/FTE): honor it for THIS proposal, overriding the
+  // company default. Only set when the model reports an explicit figure from the solicitation.
+  { const _h = parseFloat(a.hours_per_fte); pricingModel.hoursPerFte = (_h > 0) ? _h : null; }
   if (!pricingModel.tasks.length && Array.isArray(a.proposed_tasks) && a.proposed_tasks.length) {
     pricingModel.tasks = a.proposed_tasks.map(t => ({ id: _prId('t_'), code: String(t.code || '').trim(), name: String(t.name || t).trim() }));
   }
@@ -9226,7 +9628,7 @@ function pricingApplyAutoBuild(a) {
         if (wdWage === '' && (m.wd_min_wage === 0 || m.wd_min_wage)) { const w = parseFloat(m.wd_min_wage); if (w > 0) wdWage = w; }
       }
     }
-    lcats.push({ id, name: String(m.role_name || 'Role').trim(), baseRate: '', hpf: '', advertised: Math.max(0, parseInt(m.headcount) || 0), gsaLcat, scaCovered, wdWage });
+    lcats.push({ id, name: String(m.role_name || 'Role').trim(), baseRate: '', hpf: '', advertised: _pxRoleFte(m, defaultHpf()), gsaLcat, scaCovered, wdWage });
     hours[id] = {};
     const hbt = m.hours_by_task || {};
     Object.keys(hbt).forEach(k => { const tid = _pxMatchTaskId(k); if (tid) hours[id][tid] = Math.max(0, Math.round(parseFloat(hbt[k]) || 0)); });
@@ -9279,7 +9681,7 @@ function pricingApplyAutoBuild(a) {
       lcats.forEach(l => {
         if (!mask[l.id]) return;
         const n = pricingModel.tasks.reduce((s, x) => s + (mask[l.id][x.id] ? 1 : 0), 0);
-        const score = n * 1000 + (parseInt(l.advertised) || 0);   // most tasks already (generalist); tie -> largest headcount
+        const score = n * 1000 + (parseFloat(l.advertised) || 0);   // most tasks already (generalist); tie -> largest advertised FTE
         if (score > bestScore) { bestScore = score; best = l; }
       });
       if (best) mask[best.id][t.id] = true;
@@ -9288,6 +9690,17 @@ function pricingApplyAutoBuild(a) {
   if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && pricingModel.tasks.length) {
     pricingReconcileStatedFte(lcats, hours, mask, pricingModel.tasks, Math.round(pricingModel.statedFteTotal), defaultHpf());
     if (!pricingModel.directedLabor) (a.labor_mix || []).forEach((m, i) => { if (lcats[i]) m.headcount = lcats[i].advertised; });
+  } else if (pricingModel.tasks.length) {
+    // Free-sizing path (no Government-stated or directed FTE): hours follow the Advertised FTE exactly
+    // (fte x hours-per-FTE), distributed across the role's tasks in the model's proposed proportions.
+    // The FTE is the decision; the hours are derived from it (no snapping). A 0.5-FTE role therefore
+    // reads 956 hrs on a 1,912 basis, and per-role + total FTE are clean.
+    pricingDeriveHoursFromFte(lcats, hours, mask, pricingModel.tasks, defaultHpf());
+  }
+  if (pricingModel.tasks.length) {
+    // Reconcile coverage BEFORE anything downstream: no PWS task may be left with zero hours.
+    const _nl = new Set((Array.isArray(a.non_labor_tasks) ? a.non_labor_tasks : []).map(_pxMatchTaskId).filter(Boolean));
+    pricingEnsureTaskHoursCovered(lcats, hours, mask, pricingModel.tasks, _nl);
   }
   // Auto-populate per-year staffing when the solicitation specified different FTEs by ordering period.
   (function applyPerYearFte() {
@@ -9711,7 +10124,10 @@ function pricingRenderFteBar() {
       ? `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#065f46;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:8px 12px">${_okMsg}</div>`
       : `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px">⚠ Does NOT match the Government-stated ${stated} FTE (advertised ${advTotal.toFixed(2)}, allocated ${allocated.toFixed(2)}). Deviating from the stated FTE can be disqualifying — adjust headcount/hours to hit ${stated}.</div>`;
   }
-  el.innerHTML = badge + card('FTE basis', src) + card('Advertised FTE (sum of roles)', advTotal.toFixed(2), advOk) + card('Allocated FTE (from hours)', allocated.toFixed(2), allocOk);
+  const _hpf = defaultHpf();
+  const _hpfTag = (pricingModel.hoursPerFte > 0) ? 'per PWS' : 'standard';
+  const srcFull = src + ` &middot; <span style="font-weight:700">${Math.round(_hpf).toLocaleString()} hrs/FTE</span> <span style="color:var(--muted);font-weight:400">(${_hpfTag})</span>`;
+  el.innerHTML = badge + card('FTE basis', srcFull) + card('Advertised FTE (sum of roles)', advTotal.toFixed(2), advOk) + card('Allocated FTE (from hours)', allocated.toFixed(2), allocOk);
 }
 
 // ───────────────────────── Travel / ODCs (pass-through, no G&A markup) ─────────────────────────
@@ -10044,14 +10460,33 @@ function pricingBuildWorkbook() {
   XLSX.utils.book_append_sheet(wb, wsBL, 'By Labor Category');
 
   // ---- Loaded Rate Table (fully-burdened hourly rate per labor category, per period) ----
-  const rt = [['Labor Category', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)')].concat(pNames.map(nm => nm + ' ($/hr)'))];
-  M.lcats.forEach(l => {
-    rt.push([l.name || '(unnamed)', gsa ? (l.gsaLcat || l.name || '') : r2(parseFloat(l.baseRate) || 0)].concat(P.map((p, i) => r2(effRate(l, i)))));
-  });
-  const wsRT = XLSX.utils.aoa_to_sheet(rt);
-  wsRT['!cols'] = [{ wch: 26 }, { wch: 18 }].concat(pNames.map(() => ({ wch: 14 })));
-  pxStyle(wsRT, { money: (gsa ? [] : [1]).concat(pNames.map((_, i) => 2 + i)) });
-  for (let c = 0; c < rt[0].length; c++) { const a = XLSX.utils.encode_cell({ r: 0, c }); if (wsRT[a]) wsRT[a].s = Object.assign({}, wsRT[a].s, { font: { bold: true } }); }
+  // In GSA mode the discount is shown explicitly: the schedule (ceiling) rate, the discount %, and the
+  // resulting net rate per period, so the derivation is obvious and the data is easy to pivot. The
+  // schedule rate escalates by period; the net rate is what flows into the priced totals.
+  let wsRT;
+  if (gsa) {
+    const discPct = parseFloat(pricingModel.gsaDiscount) || 0;
+    const hdrRT = ['Labor Category', 'GSA LCAT', 'Discount %'];
+    pNames.forEach(nm => { hdrRT.push(nm + ' \u2014 GSA Rate ($/hr)'); hdrRT.push(nm + ' \u2014 Net Rate ($/hr)'); });
+    const rt = [hdrRT];
+    M.lcats.forEach(l => {
+      const row = [l.name || '(unnamed)', l.gsaLcat || l.name || '', (discPct ? discPct + '%' : '0%')];
+      P.forEach((p, i) => { row.push(r2(pricingGsaRateFor(l, pricingGsaScheduleYearForPeriod(i)))); row.push(r2(effRate(l, i))); });
+      rt.push(row);
+    });
+    wsRT = XLSX.utils.aoa_to_sheet(rt);
+    const colsRT = [{ wch: 26 }, { wch: 18 }, { wch: 11 }]; pNames.forEach(() => { colsRT.push({ wch: 18 }); colsRT.push({ wch: 18 }); });
+    wsRT['!cols'] = colsRT;
+    const moneyRT = []; for (let c = 3; c < hdrRT.length; c++) moneyRT.push(c);
+    pxStyle(wsRT, { money: moneyRT });
+  } else {
+    const rt = [['Labor Category', 'Base Rate ($/hr)'].concat(pNames.map(nm => nm + ' ($/hr)'))];
+    M.lcats.forEach(l => { rt.push([l.name || '(unnamed)', r2(parseFloat(l.baseRate) || 0)].concat(P.map((p, i) => r2(effRate(l, i))))); });
+    wsRT = XLSX.utils.aoa_to_sheet(rt);
+    wsRT['!cols'] = [{ wch: 26 }, { wch: 18 }].concat(pNames.map(() => ({ wch: 14 })));
+    pxStyle(wsRT, { money: [1].concat(pNames.map((_, i) => 2 + i)) });
+  }
+  { const _rng = wsRT['!ref'] ? XLSX.utils.decode_range(wsRT['!ref']) : null; const _nc = _rng ? _rng.e.c + 1 : 0; for (let c = 0; c < _nc; c++) { const a = XLSX.utils.encode_cell({ r: 0, c }); if (wsRT[a]) wsRT[a].s = Object.assign({}, wsRT[a].s, { font: { bold: true } }); } }
   XLSX.utils.book_append_sheet(wb, wsRT, 'Loaded Rate Table');
 
   // ---- TABS 3 & 4: by the column dimension (PWS task / CLIN) ----
@@ -10165,7 +10600,7 @@ async function pricingWriteWorkbookWithTables(wb, filename) {
   if (typeof XLSX === 'undefined') return fallback();
   let out;
   try { out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }); } catch (e) { console.error(e); return fallback(); }
-  if (typeof JSZip === 'undefined') return fallback();
+  if (typeof JSZip === 'undefined') { if (typeof showStatus === 'function') showStatus('info', 'Workbook exported without colors', 'A component (JSZip) did not load, so tab colors and Excel tables were skipped. The data is complete; reload the page and re-export to get the colored, table-formatted version.'); return fallback(); }
   try {
     const zip = await JSZip.loadAsync(out);
     await injectTablesAndColors(zip, wb._tableSpecs, wb._tabColors);
@@ -10173,7 +10608,7 @@ async function pricingWriteWorkbookWithTables(wb, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
     setTimeout(() => { try { document.body.removeChild(a); } catch (e) {} URL.revokeObjectURL(url); }, 1500);
-  } catch (e) { console.error('table/color injection failed; writing plain workbook', e); return fallback(); }
+  } catch (e) { console.error('table/color injection failed; writing plain workbook', e); if (typeof showStatus === 'function') showStatus('info', 'Workbook exported without colors', 'Tab colors and Excel tables could not be applied this time; the data is complete. Re-exporting usually restores them.'); return fallback(); }
 }
 // SHARED injector — mutates a loaded JSZip in place to add Excel Tables (ListObjects) and tab colors.
 // Used by the test harness (node) and embedded verbatim in index.html (browser). No I/O here.
@@ -10302,7 +10737,6 @@ function pricingRenderWarnings() {
     if (l.advertised !== '' && l.advertised != null) {
       const adv = parseFloat(l.advertised) || 0, got = pricingRowFte(l);
       if (Math.abs(got - adv) > 0.1) w.push({ s: 'warn', m: `“${pricingEsc(l.name)}”: advertising ${adv} FTE but the allocation totals ${got.toFixed(2)} FTE (${Math.round(pricingRowHours(l.id)).toLocaleString()} hrs). Reconcile the hours or the advertised count.` });
-      if (pricingModel.fteSource === 'estimated' && adv > 0 && Math.abs(adv - Math.round(adv)) > 0.001) w.push({ s: 'info', m: `“${pricingEsc(l.name)}” is advertised as a fractional ${adv} FTE. The PWS didn't state FTEs, so a whole number is the safer default unless a partial role is intended.` });
     }
   });
   if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) {
@@ -10405,6 +10839,7 @@ function switchTab(name) {
     pricingRenderAll();
   }
   if (typeof updateProposalPricingGate === 'function') updateProposalPricingGate();
+  if (name === 'presentation' && typeof updatePresentationLock === 'function') updatePresentationLock();
   sessionStorage.setItem('srfed_active_tab', name);
 }
 // Return to the Proposal tab at the exact scroll position the user left it.
@@ -11678,7 +12113,7 @@ async function runBidNoBid() {
       `- Each factor's rationale is REQUIRED and must be non-empty: 1-2 sentences citing SPECIFIC evidence (sections, NAICS, clearance, FTE, the company's documents). If something is not stated, say "not stated" — but never leave a rationale blank.\n` +
       `- risks: 3-5 specific items in DEFINITIVE, plain language. When a required capability or task area is outside ${CLIENT_CONFIG.companyShortName}'s demonstrated experience, state it DIRECTLY (e.g. "${CLIENT_CONFIG.companyShortName} has no demonstrated experience in X, a core requirement of this SOW"). Do NOT hedge with "may", "might", "could", "potentially", or "some" — a reader must not be able to mistake a real gap for a minor caveat. If a task is clearly beyond current capabilities, say so plainly. win_strategy: 3-5 specific strategies. summary: 2-3 sentences (reference the score as X out of 10; do not invent scales like x/60).\n` +
       `- Use only plain ASCII. No em-dashes, no smart quotes.\n` +
-      `- JSON shape: {"data_confidence":"...","factors":{"technical_capability":{"score":N,"rationale":"..."}, ...5 more...},"opportunity":{"required_clearance":"","fte_count":"","set_aside":"","required_dcaa":false,"prime_eligible":true,"prime_ineligibility_reason":"","contract_vehicle":"","vehicle_is_open":true,"estimated_value":"","required_cmmc":"","required_iso":""},"scope_coverage":N,"risks":[...],"win_strategy":[...],"summary":"..."}\n` +
+      `- JSON shape: {"data_confidence":"...","factors":{"technical_capability":{"score":N,"rationale":"..."}, ...5 more...},"opportunity":{"required_clearance":"","fte_count":"","set_aside":"","required_dcaa":false,"prime_eligible":true,"prime_ineligibility_reason":"","contract_vehicle":"the NAME of the contract vehicle the work is ordered under (e.g. SEWP V, OASIS+, GSA MAS, CIO-SP4) - a PROPER NAME, not a type/structure; do NOT put IDIQ, MATOC, BPA, GWAC, FFP, or T&M; use N/A if open-market or if this opportunity is itself establishing a vehicle","vehicle_is_open":true,"estimated_value":"","required_cmmc":"","required_iso":""},"scope_coverage":N,"risks":[...],"win_strategy":[...],"summary":"..."}\n` +
       `- Always complete the full JSON — do not stop after factors.\n\n` +
       `Respond with ONLY the completed JSON. No markdown. No preamble.`
     });
@@ -11860,6 +12295,7 @@ async function runBidNoBid() {
 
     // Set up Tier 2 inputs with defaults — user will confirm to get final score
     window._bnaConfirmed = false;   // hide the verdict until the user confirms inputs
+    { const _pb = document.getElementById('bnaPdfBtnWrap'); if (_pb) _pb.style.display = 'none'; }
     renderTier2Inputs();
 
     // Show the input prompt where the verdict will appear (verdict stays hidden
@@ -11924,8 +12360,66 @@ async function runBidNoBid() {
     updateBnaBtn();
   }
 }
+// Build a clean, well-formatted PDF of the completed Bid/No-Bid analysis. We reuse the already-rendered,
+// display-only sections (verdict/recommendation, score derivation, scored factors, opportunity details)
+// plus the app's own stylesheet, render them into a hidden iframe with print rules (interactive controls
+// stripped), and trigger the browser's print -> Save as PDF.
+function downloadBnaPdf() {
+  const intel = window._lastBnaIntel || {};
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.companyShortName && String(CLIENT_CONFIG.companyShortName).trim())
+    || (CLIENT_CONFIG && CLIENT_CONFIG.companyName) || '';
+  const oppName = intel.requirement_name || intel.opportunity_title || 'Opportunity';
+  const idNo = intel.id_number || '';
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const grab = id => { const el = document.getElementById(id); return (el && el.innerHTML) ? el.innerHTML : ''; };
+  const sec = (label, id) => grab(id) ? ('<div class="pdf-sec-title">' + label + '</div><div class="pdf-block">' + grab(id) + '</div>') : '';
+  const styles = Array.prototype.map.call(document.querySelectorAll('style'), s => s.textContent).join('\n');
+  const title = 'Bid-No-Bid - ' + oppName + ' - ' + today;
+
+  const docHtml =
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escHtml(title) + '</title>' +
+    '<style>' + styles + '</style>' +
+    '<style>' +
+      '@page { margin: 14mm; }' +
+      'body { background:#fff; margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }' +
+      '.pdf-head { border-bottom:3px solid var(--blue,#1d4ed8); padding-bottom:12px; margin-bottom:8px; }' +
+      '.pdf-title { font-size:22px; font-weight:800; color:var(--blue,#1d4ed8); }' +
+      '.pdf-sub { font-size:13px; color:#475569; margin-top:4px; }' +
+      '.pdf-sec-title { font-size:15px; font-weight:800; color:var(--blue,#1d4ed8); margin:20px 0 10px; border-bottom:1px solid #e2e8f0; padding-bottom:4px; }' +
+      '.card { border:1px solid #e2e8f0 !important; margin:0 !important; }' +
+      '.pdf-foot { margin-top:24px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:10.5px; color:#94a3b8; line-height:1.5; }' +
+      'button, input, select, textarea, [role="slider"], .bna-hide-print { display:none !important; }' +
+      'a { color:inherit; text-decoration:none; }' +
+      '* { box-shadow:none !important; }' +
+    '</style></head><body>' +
+      '<div class="pdf-head"><div class="pdf-title">Bid / No-Bid Analysis</div>' +
+      '<div class="pdf-sub">' + escHtml(cap ? cap + ' \u00b7 ' : '') + escHtml(oppName) +
+        (idNo ? ' \u00b7 ' + escHtml(idNo) : '') + ' \u00b7 ' + escHtml(today) + '</div></div>' +
+      sec('Recommendation', 'bnaDecisionPanel') +
+      sec('How the Score Is Derived', 'bnaScoreBreakdown') +
+      sec('Scored Factors', 'bnaFactorsTier1') +
+      sec('Opportunity Details', 'bnaIntelBody') +
+      '<div class="pdf-foot">Generated by ' + escHtml(cap || 'the proposal tool') + ' on ' + escHtml(today) +
+        '. AI-assisted analysis - verify all figures, eligibility, and compliance against the solicitation before relying on this for a bid decision.</div>' +
+    '</body></html>';
+
+  let f = document.getElementById('_bnaPdfFrame');
+  if (f) f.remove();
+  f = document.createElement('iframe');
+  f.id = '_bnaPdfFrame';
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;';
+  document.body.appendChild(f);
+  let printed = false;
+  const doPrint = () => { if (printed) return; printed = true; try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { console.error('print failed', e); } };
+  f.onload = doPrint;
+  const d = f.contentWindow.document;
+  d.open(); d.write(docHtml); d.close();
+  setTimeout(doPrint, 600);
+}
+
 function confirmBnaScore() {
   window._bnaConfirmed = true;   // unlock the verdict panel
+  { const _pb = document.getElementById('bnaPdfBtnWrap'); if (_pb) _pb.style.display = 'block'; }
   updateBnaLiveScore();
   const scoreBreakdown  = document.getElementById('bnaScoreBreakdown');
   if (scoreBreakdown) scoreBreakdown.style.display  = 'block';
@@ -11999,7 +12493,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
