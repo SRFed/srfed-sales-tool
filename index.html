@@ -1806,15 +1806,24 @@
     <div class="card-header"><span class="icon">📊</span> PowerPoint Presentation</div>
     <div class="card-body">
 
-      <div id="pptLocked" style="text-align:center;padding:30px 12px">
-        <div style="font-size:42px;margin-bottom:12px">🔒</div>
-        <div style="font-weight:700;font-size:16px;color:var(--blue);margin-bottom:6px">Generate your proposal first</div>
-        <p style="font-size:13px;color:var(--muted);max-width:540px;margin:0 auto;line-height:1.6">Once you've generated a proposal on the <strong>Proposal</strong> tab, come back here to build a Government oral-presentation deck directly from it.</p>
-        <button onclick="switchTab('proposal')" style="margin-top:18px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;font-size:13px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">→ Go to Proposal</button>
+      <p style="font-size:14px;color:var(--text);line-height:1.65;margin-bottom:14px">Build a <strong>professional oral-presentation deck</strong> for the Government — in your brand colors, with speaker notes. Two ways to do it: use the proposal you generated on the <strong>Proposal</strong> tab, or drop a <strong>finished proposal</strong> below (handy when it was written outside this tool).</p>
+
+      <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Build from an existing proposal <span style="font-weight:500;color:var(--muted)">(optional — overrides the generated proposal when used)</span></label>
+      <div onclick="document.getElementById('pptDocInput').click()" ondragover="event.preventDefault();this.style.background='#dbeafe'" ondragleave="this.style.background='#fff'" ondrop="pptDocsDrop(event)" style="border:2px dashed var(--mid-blue);border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:#fff;font-size:13px;color:var(--blue);font-weight:600">⤓ Drop a finished proposal here (PDF or Word) — or click to browse</div>
+      <input type="file" id="pptDocInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" multiple style="display:none" onchange="pptDocsChosen(event)"/>
+      <div id="pptDocsList" style="margin-top:10px"></div>
+
+      <div style="height:1px;background:var(--border);margin:20px 0"></div>
+
+      <div id="pptLocked" style="text-align:center;padding:18px 12px">
+        <div style="font-size:34px;margin-bottom:10px">🔒</div>
+        <div style="font-weight:700;font-size:15px;color:var(--blue);margin-bottom:6px">No proposal loaded yet</div>
+        <p style="font-size:13px;color:var(--muted);max-width:560px;margin:0 auto;line-height:1.6">Generate a proposal on the <strong>Proposal</strong> tab, or drop a finished proposal above — then come back here to build the deck.</p>
+        <button onclick="switchTab('proposal')" style="margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;font-size:13px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">→ Go to Proposal</button>
       </div>
 
       <div id="pptUnlocked" style="display:none">
-        <p style="font-size:14px;color:var(--text);line-height:1.65;margin-bottom:18px">Build a <strong>professional oral presentation</strong> to the Government — pre-formatted in your brand colors and ready to present — generated directly from your completed proposal. The proposal is the only input required; add any specific guidance below.</p>
+        <div id="pptSourceNote" style="font-size:12.5px;color:var(--muted);margin-bottom:14px"></div>
 
         <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Optional guidance for the presentation</label>
         <textarea id="pptInstructions" rows="3" placeholder="e.g., keep it to ~10 slides; emphasize our FRA past performance; add a slide on our SDVOSB status; lead with the transition plan" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;line-height:1.5;resize:vertical;box-sizing:border-box"></textarea>
@@ -2687,12 +2696,38 @@ function applyClientConfig() {
 // (Section Editor, Settings) get a desaturated brand-grey so they read as "not part of a flow."
 // ─── POWERPOINT PRESENTATION (oral deck generated from the completed proposal) ───────
 // Show the create UI only once a proposal has actually been generated.
+let pptDocFiles = [];
+function pptDocsDrop(e) { e.preventDefault(); if (e.currentTarget) e.currentTarget.style.background = '#fff'; pptDocsAddFiles([...(e.dataTransfer.files || [])]); }
+function pptDocsChosen(e) { pptDocsAddFiles([...(e.target.files || [])]); e.target.value = ''; }
+function pptDocsAddFiles(files) {
+  (files || []).forEach(f => { if (!pptDocFiles.find(x => x.name === f.name && x.size === f.size)) pptDocFiles.push(f); });
+  renderPptDocs();
+  if (typeof updatePresentationLock === 'function') updatePresentationLock();
+}
+function pptRemoveDocFile(i) { pptDocFiles.splice(i, 1); renderPptDocs(); if (typeof updatePresentationLock === 'function') updatePresentationLock(); }
+function renderPptDocs() {
+  const el = document.getElementById('pptDocsList');
+  if (!el) return;
+  if (!pptDocFiles.length) { el.innerHTML = ''; return; }
+  el.innerHTML = pptDocFiles.map((f, i) =>
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:7px;padding:7px 11px;margin-bottom:6px">' +
+      '<span style="font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\uD83D\uDCC4 ' + escHtml(f.name) + '</span>' +
+      '<button onclick="pptRemoveDocFile(' + i + ')" style="flex-shrink:0;background:none;border:none;color:var(--error);font-size:17px;line-height:1;cursor:pointer" title="Remove">\u00D7</button>' +
+    '</div>'
+  ).join('');
+}
 function updatePresentationLock() {
-  const ready = !!(window._lastProposalData && Object.keys(window._lastProposalData).some(k => /^volume/.test(k)));
+  const haveGen = !!(window._lastProposalData && Object.keys(window._lastProposalData).some(k => /^volume/.test(k)));
+  const haveDocs = (typeof pptDocFiles !== 'undefined') && pptDocFiles.length > 0;
+  const ready = haveGen || haveDocs;
   const locked = document.getElementById('pptLocked');
   const unlocked = document.getElementById('pptUnlocked');
   if (locked) locked.style.display = ready ? 'none' : 'block';
   if (unlocked) unlocked.style.display = ready ? 'block' : 'none';
+  const note = document.getElementById('pptSourceNote');
+  if (note) note.innerHTML = haveDocs
+    ? 'Source: <strong>uploaded proposal</strong> (' + pptDocFiles.length + ' file' + (pptDocFiles.length > 1 ? 's' : '') + '). Remove the upload to use your generated proposal instead.'
+    : 'Source: <strong>your generated proposal</strong> from the Proposal tab.';
 }
 
 // Strip a hex color to bare RRGGBB for PptxGenJS (no leading #); fall back if malformed.
@@ -2749,22 +2784,33 @@ async function createPresentation() {
   }
   const apiKey = getApiKey();
   if (!apiKey) { showStatus('error', 'API key required', 'Enter your Anthropic API key (top of the page, or Proposal Step 2) first.'); return; }
-  if (!(window._lastProposalData && Object.keys(window._lastProposalData).some(k => /^volume/.test(k)))) {
-    showStatus('error', 'No proposal yet', 'Generate a proposal on the Proposal tab first.'); return;
+  const haveGen = !!(window._lastProposalData && Object.keys(window._lastProposalData).some(k => /^volume/.test(k)));
+  const useDocs = (typeof pptDocFiles !== 'undefined') && pptDocFiles.length > 0;
+  if (!haveGen && !useDocs) {
+    showStatus('error', 'No proposal yet', 'Generate a proposal on the Proposal tab, or drop a finished proposal in the Presentation tab first.'); return;
   }
-  const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) || {};
+  const b = useDocs ? {} : ((typeof cachedBriefing !== 'undefined' && cachedBriefing) || {});
   const co = CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyName || '';
-  const agency = b.agency_name || (window._lastProposalData && window._lastProposalData.agency_name) || 'the Government';
+  const agency = (b && b.agency_name) || (!useDocs && window._lastProposalData && window._lastProposalData.agency_name) || 'the Government';
   const userInstr = ((document.getElementById('pptInstructions') || {}).value || '').trim();
-  const digest = _pptProposalDigest();
+  const digest = useDocs ? '' : _pptProposalDigest();
+  const coCtx = 'COMPANY: ' + (CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyName || co) + (CLIENT_CONFIG.companyShortName ? ' (' + CLIENT_CONFIG.companyShortName + ')' : '') + '\n' +
+    ((CLIENT_CONFIG.setAsides && CLIENT_CONFIG.setAsides.length) ? ('STATUS / SET-ASIDES: ' + CLIENT_CONFIG.setAsides.join(', ') + '\n') : '') +
+    (CLIENT_CONFIG.companyTagline ? ('TAGLINE: ' + CLIENT_CONFIG.companyTagline + '\n') : '');
 
   if (btn) { btn.disabled = true; btn.dataset._t = btn.innerHTML; btn.innerHTML = '\u23F3 Building presentation...'; btn.style.opacity = '0.6'; }
   showStatus('info', 'Building your presentation', 'Distilling the proposal into an oral-presentation deck...', true);
   try {
+    let docBlocks = [];
+    if (useDocs) {
+      showStatus('info', 'Reading proposal', 'Reading your uploaded proposal document(s)...', true);
+      docBlocks = (await Promise.all(pptDocFiles.map(f => fileToContentBlock(f).catch(() => null)))).filter(Boolean);
+      if (!docBlocks.length) throw new Error('None of the uploaded files could be read. Try a PDF or Word export of the proposal.');
+    }
     const prompt =
       'You are a senior capture/proposal lead building a PROFESSIONAL ORAL PRESENTATION deck for ' + co +
-      ' to deliver to ' + agency + ' during a Government source selection. Build the deck STRICTLY from the proposal content below - do not invent facts, numbers, names, or past performance that are not present in it.\n\n' +
-      'PROPOSAL:\n' + digest + '\n\n' +
+      ' to deliver to ' + agency + ' during a Government source selection. Build the deck STRICTLY from the proposal ' + (useDocs ? 'document(s) attached above' : 'content below') + ' - do not invent facts, numbers, names, or past performance that are not present in it.\n\n' +
+      (useDocs ? (coCtx + '\n') : ('PROPOSAL:\n' + digest + '\n\n')) +
       (userInstr ? ('USER INSTRUCTIONS (follow these closely):\n' + userInstr + '\n\n') : '') +
       'Produce a tight, confident oral-presentation deck (NOT a written document). Rules:\n' +
       '- 9 to 13 content slides total unless the user instructions say otherwise.\n' +
@@ -2780,7 +2826,7 @@ async function createPresentation() {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] })
+        messages: [{ role: 'user', content: useDocs ? [...docBlocks, { type: 'text', text: prompt }] : [{ type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) { const t = await resp.text().catch(() => ''); throw new Error('API error ' + resp.status + ': ' + t.slice(0, 160)); }
     const d = await resp.json();
@@ -12276,6 +12322,9 @@ async function runBidNoBid() {
         : `No set-aside barrier to priming (see verdict for full gate check).`;
     }
 
+    // Persist the full scoring result so the PDF report can read factor rationales
+    window._bnaResult = result;
+
     // Render Tier 1 factor bars
     const t1El = document.getElementById('bnaFactorsTier1');
     if (t1El) {
@@ -12346,7 +12395,7 @@ async function runBidNoBid() {
       const confirmDiv = document.createElement('div');
       confirmDiv.id = 'bnaConfirmRow';
       confirmDiv.style.cssText = 'padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-top:8px;text-align:center';
-      confirmDiv.innerHTML = '<p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px">👆 Adjust the sliders above for your Tier 2 assessment, then confirm to lock in your final score.</p>' +
+      confirmDiv.innerHTML = '<p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:10px">👆 These are your manual inputs. Set each slider to match your team, pricing, and resources. Confirm when you\u2019re done to lock in your score.</p>' +
         '<button onclick="confirmBnaScore()" style="padding:10px 28px;font-size:14px;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer">✅ Confirm Entries & Calculate Score</button>';
       tier2Section.parentNode.insertBefore(confirmDiv, tier2Section.nextSibling);
     }
@@ -12401,13 +12450,23 @@ function downloadBnaPdf() {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const PW = 612, PH = 792, M = 50, CW = PW - M * 2;
   const ACCENT = _pdfRgb((CLIENT_CONFIG && CLIENT_CONFIG.primaryColor) || '#1d4ed8');
-  const DARK = [30, 41, 59], GREY = [100, 116, 139], LINE = [226, 232, 240], ZEBRA = [247, 249, 252], WHITE = [255, 255, 255];
+  const DARK = [30, 41, 59], GREY = [100, 116, 139], LINE = [226, 232, 240], ZEBRA = [247, 249, 252], WHITE = [255, 255, 255], AMBER = [146, 64, 14];
   let y = 0, page = 1;
   const clean = s => String(s == null ? '' : s)
     .replace(/[\u2014\u2013]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
     .replace(/[^\x00-\x7F]+/g, '').replace(/[ \t]+/g, ' ').trim();
   const tint = (rgb, amt) => [Math.round(rgb[0] + (255 - rgb[0]) * amt), Math.round(rgb[1] + (255 - rgb[1]) * amt), Math.round(rgb[2] + (255 - rgb[2]) * amt)];
   const scoreColor = sc => sc == null ? GREY : sc >= 7.5 ? [22, 163, 74] : sc >= 6 ? [37, 99, 235] : sc >= 4 ? [180, 83, 9] : [220, 38, 38];
+  // Mirror the on-screen intel styling: [Inferred] -> amber, missing -> muted grey, else dark.
+  const fieldVal = raw => {
+    if (raw == null) return { t: 'Not stated in documents', color: GREY };
+    let s = String(raw).trim();
+    const inf = /^\[Inferred\]/i.test(s);
+    if (inf) s = s.replace(/^\[Inferred\]\s*/i, '');
+    if (!s || /^(not stated( in documents)?|null|n\/a|none)$/i.test(s)) return { t: 'Not stated in documents', color: GREY };
+    return { t: inf ? s + '  [inferred]' : s, color: inf ? AMBER : DARK };
+  };
+  const fcell = key => { const fv = fieldVal(intel[key]); return { t: fv.t, color: fv.color }; };
 
   function footer() {
     doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.6); doc.line(M, PH - 34, PW - M, PH - 34);
@@ -12422,6 +12481,11 @@ function downloadBnaPdf() {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(ACCENT[0], ACCENT[1], ACCENT[2]);
     doc.text(clean(txt).toUpperCase(), M, y);
     y += 5; doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]); doc.setLineWidth(1.2); doc.line(M, y, M + CW, y); y += 14;
+  }
+  function subheading(txt) {
+    ensure(20); y += 7;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.text(clean(txt).toUpperCase(), M, y); y += 9;
   }
   function para(txt, o) {
     o = o || {}; const size = o.size || 9.5, color = o.color || DARK, ind = o.indent || 0, lh = size + 3.5;
@@ -12460,8 +12524,9 @@ function downloadBnaPdf() {
         const isObj = raw && typeof raw === 'object' && raw.t != null;
         const s = isObj ? raw.t : raw;
         const color = (isObj && raw.color) ? raw.color : (c.color || DARK);
+        const url = (isObj && raw.url) ? raw.url : null;
         doc.setFont('helvetica', c.bold ? 'bold' : 'normal'); doc.setFontSize(fs);
-        return { lines: doc.splitTextToSize(clean(s), c.w - 2 * padX), color, c, i };
+        return { lines: doc.splitTextToSize(clean(s), c.w - 2 * padX), color, c, i, url };
       });
       const rh = Math.max(1, ...cells.map(x => x.lines.length)) * lh + 2 * padY - 2;
       if (y + rh > PH - 44) { newPage(); if (showHdr) headerRow(); }
@@ -12469,25 +12534,44 @@ function downloadBnaPdf() {
       cells.forEach(x => {
         doc.setFont('helvetica', x.c.bold ? 'bold' : 'normal'); doc.setFontSize(fs);
         doc.setTextColor(x.color[0], x.color[1], x.color[2]);
-        x.lines.forEach((ln, li) => doc.text(ln, cellX(x.c, x.i), y + padY + fs + li * lh - 1, x.c.align ? { align: x.c.align } : undefined));
+        x.lines.forEach((ln, li) => {
+          const tx = cellX(x.c, x.i), ty = y + padY + fs + li * lh - 1, opt = x.c.align ? { align: x.c.align } : undefined;
+          if (x.url) { doc.textWithLink(ln, tx, ty, { url: x.url }); } else { doc.text(ln, tx, ty, opt); }
+        });
       });
       doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.5); doc.line(M, y + rh, M + totalW, y + rh);
       y += rh;
     });
     y += 6;
   }
+  // 2-column label/value table used throughout the detail sections.
+  const kvTable = rows => table([{ header: '', w: 168, bold: true, color: GREY }, { header: '', w: CW - 168 }], rows, { header: false, zebra: true });
 
-  // ---------- Title band ----------
+  // ---------- Title band (with optional logo from Settings) ----------
   const BAND = 98;
   doc.setFillColor(ACCENT[0], ACCENT[1], ACCENT[2]); doc.rect(0, 0, PW, BAND, 'F');
+  let tx = M, twAvail = CW;
+  try {
+    const logoEl = (typeof document !== 'undefined') ? document.getElementById('appLogo') : null;
+    const lsrc = logoEl && logoEl.getAttribute && logoEl.getAttribute('src');
+    const isSvg = /^data:image\/svg|\.svg(\?|$)/i.test(lsrc || '');
+    if (logoEl && lsrc && logoEl.naturalWidth > 0 && !isSvg) {
+      const fmt = /^data:image\/jpe?g|\.jpe?g(\?|$)/i.test(lsrc) ? 'JPEG' : 'PNG';
+      const maxH = 52, maxW = 118;
+      const sc = Math.min(maxW / logoEl.naturalWidth, maxH / logoEl.naturalHeight);
+      const lw = logoEl.naturalWidth * sc, lh = logoEl.naturalHeight * sc;
+      doc.addImage(logoEl, fmt, M, (BAND - lh) / 2, lw, lh);
+      tx = M + lw + 18; twAvail = PW - M - tx;
+    }
+  } catch (e) { tx = M; twAvail = CW; }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.setTextColor(255, 255, 255);
-  doc.text('BID / NO-BID ANALYSIS', M, 40);
+  doc.text('BID / NO-BID ANALYSIS', tx, 40);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(12); doc.setTextColor(226, 236, 255);
-  const titleLine = doc.splitTextToSize(clean(intel.requirement_name || 'Opportunity'), CW);
-  doc.text(titleLine[0] || 'Opportunity', M, 62);
-  if (titleLine[1]) { doc.setFontSize(10.5); doc.text(titleLine[1], M, 77); }
+  const titleLine = doc.splitTextToSize(clean(intel.requirement_name || 'Opportunity'), twAvail);
+  doc.text(titleLine[0] || 'Opportunity', tx, 62);
+  if (titleLine[1]) { doc.setFontSize(10.5); doc.text(titleLine[1], tx, 77); }
   doc.setFontSize(9); doc.setTextColor(200, 222, 255);
-  doc.text(clean(coFull) + '   |   ' + dateStr, M, BAND - 13);
+  doc.text(clean(coFull) + '   |   ' + dateStr, tx, BAND - 13);
   y = BAND + 22;
 
   // ---------- Verdict callout ----------
@@ -12513,18 +12597,22 @@ function downloadBnaPdf() {
 
   // ---------- Opportunity snapshot ----------
   heading('Opportunity Snapshot');
-  table(
-    [{ header: '', w: 150, bold: true, color: GREY }, { header: '', w: CW - 150 }],
-    [
-      ['Opportunity', intel.requirement_name || '-'],
-      ['Source / Where Found', intel.source || 'Not specified'],
-      ['Contract Vehicle', intel.contract_vehicle || 'N/A'],
-      ['Agency', intel.customer_agency || '-'],
-      ['Solicitation #', intel.id_number || '-'],
-      ['Analysis Date', dateStr],
-    ],
-    { header: false, zebra: true }
-  );
+  const hasBreakout = [intel.department_agency, intel.sub_agency, intel.contracting_office]
+    .some(x => x && String(x).trim() && !/^not stated/i.test(String(x).trim()));
+  const snap = [];
+  if (hasBreakout) {
+    snap.push(['Department / Agency', fcell('department_agency')]);
+    if (intel.sub_agency && String(intel.sub_agency).trim() && !/^not stated/i.test(String(intel.sub_agency).trim())) snap.push(['Sub-Agency', fcell('sub_agency')]);
+    if (intel.contracting_office && String(intel.contracting_office).trim() && !/^not stated/i.test(String(intel.contracting_office).trim())) snap.push(['Contracting Office', fcell('contracting_office')]);
+  } else {
+    snap.push(['Agency', fcell('customer_agency')]);
+  }
+  snap.push(['Source / Where Found', fieldVal(intel.source).t === 'Not stated in documents' ? { t: 'Not specified', color: GREY } : fcell('source')]);
+  snap.push(['Contract Vehicle', intel.contract_vehicle ? fcell('contract_vehicle') : { t: 'N/A', color: GREY }]);
+  snap.push(['Current Stage', fcell('stage')]);
+  snap.push(['Solicitation #', fcell('id_number')]);
+  snap.push(['Analysis Date', { t: dateStr, color: DARK }]);
+  kvTable(snap);
 
   // ---------- Recommendation + Prime vs Sub ----------
   if (v) {
@@ -12551,8 +12639,8 @@ function downloadBnaPdf() {
       ],
       { zebra: true }
     );
-    if (v.blockers && v.blockers.length) para('Prime blocked by: ' + v.blockers.join('; ') + '.', { size: 9, color: [146, 64, 14], gap: 1 });
-    if (v.constraints && v.constraints.length) para('Scope limits: ' + v.constraints.join('; ') + '.', { size: 9, color: [146, 64, 14], gap: 1 });
+    if (v.blockers && v.blockers.length) para('Prime blocked by: ' + v.blockers.join('; ') + '.', { size: 9, color: AMBER, gap: 1 });
+    if (v.constraints && v.constraints.length) para('Scope limits: ' + v.constraints.join('; ') + '.', { size: 9, color: AMBER, gap: 1 });
   }
 
   // ---------- Scored factors ----------
@@ -12562,7 +12650,7 @@ function downloadBnaPdf() {
     heading('Scored Factors');
     const rows = t1.map(f => {
       const sc = (typeof bna_tier1_scores !== 'undefined' && bna_tier1_scores[f.key] != null) ? bna_tier1_scores[f.key] : null;
-      const fr = factors[f.key]; const rat = (fr && (fr.rationale || fr.reason || fr.justification)) || '';
+      const fr = factors[f.key]; const rat = (fr && (fr.rationale || fr.reason || fr.justification)) || 'Scored from your documents and the extracted opportunity facts.';
       return [f.label, { t: (sc != null ? sc + '/10' : '-'), color: scoreColor(sc) }, rat];
     });
     table(
@@ -12572,24 +12660,62 @@ function downloadBnaPdf() {
     );
   }
 
-  // ---------- Opportunity details ----------
-  const detailRows = [
-    ['Stage', intel.stage], ['Set-Aside', intel.set_aside], ['Contract Type', intel.contract_type],
-    ['NAICS', intel.naics_code], ['PSC', intel.psc], ['SIN', intel.sin],
-    ['Period of Performance', intel.period_of_performance], ['Place of Performance', intel.place_of_performance],
-    ['Work Setting', intel.work_setting], ['FTEs', intel.fte_count],
-    ['Base Year Value', intel.base_year_value], ['Total Value', intel.total_contract_value],
-    ['New / Recompete', intel.new_or_recompete], ['Incumbent', intel.incumbent],
-    ['KO', intel.ko_name_office], ['COR', intel.cor_name_office],
-  ].filter(r => r[1] != null && String(r[1]).trim() !== '' && String(r[1]).trim().toUpperCase() !== 'N/A');
-  if (detailRows.length || intel.description) {
-    heading('Opportunity Details');
-    if (detailRows.length) table(
-      [{ header: '', w: 150, bold: true, color: GREY }, { header: '', w: CW - 150 }],
-      detailRows,
-      { header: false, zebra: true }
+  // ---------- Opportunity details (mirrors the on-screen sections) ----------
+  heading('Opportunity Details');
+  if (intel.description) para(intel.description, { size: 9.5 });
+  if (intel.opportunity_url && !/^not stated/i.test(String(intel.opportunity_url))) para('Link: ' + intel.opportunity_url, { size: 9, color: ACCENT, gap: 4 });
+
+  const groups = [
+    ['Dates & Timeline', [['Next Due Date', 'next_due_date'], ['Period of Performance', 'period_of_performance'], ['Contract Duration (years)', 'contract_years'], ['Last Possible Performance Date', 'last_possible_performance_date']]],
+    ['Size & Value', [['Number of FTEs', 'fte_count'], ['Base Year Value', 'base_year_value'], ['Total Contract Value', 'total_contract_value'], ['Award Value Rationale', 'award_value_rationale']]],
+    ['Scope & Place of Performance', [['Place of Performance', 'place_of_performance'], ['In-Person / Remote / Hybrid', 'work_setting']]],
+    ['Acquisition & Codes', [['Set-Aside', 'set_aside'], ['Contract Type', 'contract_type'], ['NAICS Code', 'naics_code'], ['SIN', 'sin'], ['PSC', 'psc']]],
+    ['Clearances', [['Facility Clearance Required', 'facility_clearance_required'], ['Personnel Clearance Required', 'personnel_clearance_required']]],
+    ['Points of Contact', [['KO Name and Office', 'ko_name_office'], ['COR Name and Office', 'cor_name_office']]],
+    ['Competition', [['New or Recompete', 'new_or_recompete'], ['Incumbent', 'incumbent']]],
+  ];
+  const incumbentCell = () => {
+    const fv = fieldVal(intel.incumbent);
+    const url = intel.incumbent_source_url;
+    if (url && fv.t !== 'Not stated in documents') {
+      const sn = intel.incumbent_source_name || String(url).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] || 'source';
+      const name = fv.t.replace(/\s*\[inferred\]\s*$/i, '');
+      return { t: name + '  (' + sn + ')', color: [37, 99, 235], url: url };
+    }
+    return fv;
+  };
+  groups.forEach(([title, fields]) => {
+    subheading(title);
+    kvTable(fields.map(([label, key]) => [label, key === 'incumbent' ? incumbentCell() : fcell(key)]));
+  });
+
+  // Requirements: certifications + labor categories
+  subheading('Requirements');
+  const certs = Array.isArray(intel.certifications_required)
+    ? intel.certifications_required.map(c => typeof c === 'object' ? (c.name || c.certification || '') : String(c)).filter(s => s && s.trim() && s !== 'null')
+    : [];
+  kvTable([['Certifications Required', certs.length ? { t: certs.join(', '), color: DARK } : { t: 'None specified', color: GREY }]]);
+
+  const lcats = Array.isArray(intel.labor_categories)
+    ? intel.labor_categories.map(it => ({
+        lcat: it.lcat || it.labor_category || it['labor category'] || '',
+        key: (it.key_personnel === true || it.key_personnel === 'true') ? 'Yes' : '-',
+        sca: (it.is_sca === true || it.is_sca === 'true') ? 'Yes' : (it.is_sca === false || it.is_sca === 'false') ? 'No' : '-',
+        rate: it.min_hourly_rate || it.wage_rate || '',
+        clr: it.clearance || '',
+        exp: (it.experience_yrs || it.experience_years) ? String(it.experience_yrs || it.experience_years) + ' yr' : '',
+        fte: it.base_year_fte || it.base_fte || '',
+      })).filter(r => r.lcat && r.lcat !== 'null' && r.lcat !== 'Exact Labor Category Title').sort((a, b) => String(a.lcat).localeCompare(String(b.lcat)))
+    : [];
+  if (lcats.length) {
+    y += 2;
+    table(
+      [{ header: 'Labor Category', w: 196, bold: true }, { header: 'Key', w: 36, align: 'center' }, { header: 'SCA', w: 36, align: 'center' }, { header: 'Min Rate', w: 60, align: 'center' }, { header: 'Clearance', w: 78 }, { header: 'Exp', w: 42, align: 'center' }, { header: 'FTE', w: CW - 448, align: 'center' }],
+      lcats.map(r => [r.lcat, r.key, r.sca, r.rate || '-', r.clr || '-', r.exp || '-', r.fte || '-']),
+      { zebra: true, fontSize: 8.5 }
     );
-    if (intel.description) para(intel.description, { size: 9.5 });
+  } else {
+    kvTable([['Labor Categories (LCATs)', { t: 'Not stated in documents', color: GREY }]]);
   }
 
   // ---------- Potential prime partners ----------
@@ -12619,7 +12745,7 @@ function downloadBnaPdf() {
       }
       let yy = y + 32;
       const put = (arr, color) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(color[0], color[1], color[2]); arr.forEach(ln => { doc.text(ln, M + 12, yy); yy += 12; }); };
-      put(clrL, [22, 101, 52]); put(whyL, DARK); put(roleL, GREY); put(watchL, [146, 64, 14]);
+      put(clrL, [22, 101, 52]); put(whyL, DARK); put(roleL, GREY); put(watchL, AMBER);
       y += cardH + 6;
     });
   }
@@ -12681,7 +12807,7 @@ async function runOpportunityIntel() {
     if (block) rfpContent.push(block);
   }
   const bnaText = (document.getElementById('bnaTextInput')?.value || '').trim();
-  if (bnaText.length >= 30) rfpContent.push({ type: 'text', text: `PASTED OPPORTUNITY INFORMATION (treat as solicitation source):\n${bnaText}` });
+  if (bnaText.length >= 30) rfpContent.push({ type: 'text', text: `=== USER-PROVIDED CONTEXT (typed directly by the user \u2014 treat as AUTHORITATIVE; map every fact here to its matching field even if the formal documents do not mention it) ===\n${bnaText}\n=== END USER-PROVIDED CONTEXT ===` });
 
   await extractOpportunityIntel(rfpContent, apiKey);
 }
@@ -12694,8 +12820,9 @@ async function extractOpportunityIntel(docContent, apiKey) {
   const _coName = CLIENT_CONFIG.companyFullName ? `${CLIENT_CONFIG.companyFullName}${CLIENT_CONFIG.companyShortName ? ' (' + CLIENT_CONFIG.companyShortName + ')' : ''}${CLIENT_CONFIG.businessType ? ', a ' + CLIENT_CONFIG.businessType : ''}` : 'a government contractor';
   const prompt = `You are analyzing a US Government solicitation document for ${_coName}.\n\n` +
     `CRITICAL RULES:\n` +
+    `AUTHORITATIVE USER INPUT: Part of the input may be free text the user typed themselves (shown under a "USER-PROVIDED CONTEXT" heading), not formal solicitation language. Treat anything the user typed as AUTHORITATIVE ground truth and map it into the matching fields even when the formal documents do not mention it. In particular: if the user names a contract vehicle (e.g. they wrote "GSA MAS", "SEWP", "OASIS+", "on our Schedule"), put it in contract_vehicle (normalize "GSA MAS" to "GSA MAS / Federal Supply Schedule"); map a stated source/portal to source, a stated set-aside to set_aside, a stated agency to the agency fields, and a stated dollar value to the value fields. A user-supplied fact OVERRIDES "Not stated in documents" \u2014 never report a field as not stated if the user provided it.\n` +
     `1. Use VERBATIM text from the document for all fields — do not paraphrase, expand, or infer the title or ID. Copy them exactly.\n` +
-    `2. For customer_agency: list BOTH the specific office (verbatim from document) AND its parent department/service branch with standard abbreviation. Format: "SPECIFIC OFFICE NAME - PARENT DEPARTMENT (ABBREV)". Examples: "Naval Surface Warfare Center Dahlgren Division (NSWCDD) - Department of the Navy (DON)", "Defense Logistics Agency J7 (DLA J7) - Department of Defense (DoD)", "Walter Reed National Military Medical Center - Department of the Army (DA)", "Defense Health Agency (DHA) - Department of Defense (DoD)". Common abbreviations: Army=DA, Navy=DON, Air Force=DAF, Marines=USMC, Space Force=USSF, Defense agencies=DoD, VA=VA, DHS=DHS, DOS=DoS, DOJ=DOJ.\n` +
+    `2. Break the federal customer into THREE separate fields, each WITH its standard abbreviation in parentheses: (a) department_agency = the top-level Cabinet Department or independent agency (e.g. "Department of Health and Human Services (HHS)", "Department of the Navy (DON)", "General Services Administration (GSA)", "National Aeronautics and Space Administration (NASA)"); (b) sub_agency = the operating division, bureau, or military command beneath it (e.g. "Administration for Children and Families (ACF)", "Naval Surface Warfare Center Dahlgren Division (NSWCDD)", "Federal Acquisition Service (FAS)") \u2014 use "" if there is none; (c) contracting_office = the specific buying/contracting office issuing this action (e.g. "Office of Administration (OA)") \u2014 use "" if not stated. Do NOT cram all three into one field. Example for ACF Office of Administration under HHS: department_agency "Department of Health and Human Services (HHS)", sub_agency "Administration for Children and Families (ACF)", contracting_office "Office of Administration (OA)". Common abbreviations: Army=DA, Navy=DON, Air Force=DAF, Marines=USMC, Space Force=USSF, Defense agencies=DoD, VA=VA, DHS=DHS, State=DoS, Justice=DOJ.\n` +
     `3. For requirement_name: copy the EXACT title from the solicitation cover page — do not reword or expand it.\n` +
     `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated.\n` +
     `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n` +
@@ -12707,7 +12834,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -12874,7 +13001,10 @@ function extractIntelFields(jsonStr) {
   };
 
   return {
-    customer_agency:               str('customer_agency'),
+    department_agency:             str('department_agency'),
+    sub_agency:                    str('sub_agency'),
+    contracting_office:            str('contracting_office'),
+    customer_agency:               [str('contracting_office'), str('sub_agency'), str('department_agency')].filter(x => x && !/^(not stated|n\/a)/i.test(x)).join(' - '),
     requirement_name:              str('requirement_name'),
     id_number:                     str('id_number'),
     stage:                         str('stage'),
@@ -12953,7 +13083,9 @@ async function lookupIncumbentViaWeb(intel, apiKey) {
 function renderOpportunityIntel(intel, container) {
   const SECTIONS = [
     { title:'Opportunity', fields:[
-      { key:'customer_agency',              label:'Customer and Agency' },
+      { key:'department_agency',            label:'Department / Agency' },
+      { key:'sub_agency',                   label:'Sub-Agency' },
+      { key:'contracting_office',           label:'Contracting Office' },
       { key:'requirement_name',             label:'Requirement / Opportunity Name' },
       { key:'source',                       label:'Source / Where Found' },
       { key:'id_number',                    label:'ID Number' },
