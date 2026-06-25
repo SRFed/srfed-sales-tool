@@ -24,6 +24,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <script>document.addEventListener('DOMContentLoaded', function(){ if (typeof pdfjsLib !== 'undefined') { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } });</script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js" crossorigin="anonymous"></script>
@@ -585,13 +586,13 @@
     background: #ffffff;
     padding: 12px 22px;
     margin-bottom: 22px;
-    border: 1px solid var(--border, #e2e8f0);
+    border: 3px solid #000000;
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     position: sticky; top: 0; z-index: 50;
   }
   .top-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
-  .top-brand .top-logo-text { font-size: 25px; font-weight: 800; color: var(--blue); letter-spacing: .2px; line-height: 1.1; }
+  .top-brand .top-logo-text { font-size: 36px; font-weight: 800; color: var(--blue); letter-spacing: .2px; line-height: 1.05; }
   .sidebar-logo {
     background: #ffffff;
     border-radius: 10px;
@@ -731,7 +732,7 @@
   <div class="sidebar-divider"></div>
   <!-- Tab navigation -->
   <nav class="tab-nav" id="tabNav">
-    <button class="tab-btn" data-fam="decide-build" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
+    <button class="tab-btn" data-fam="decide" onclick="switchTab('bidnobid')" id="tab-bidnobid">🎯 Bid/No-Bid</button>
     <button class="tab-btn" data-fam="decide" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
     <button class="tab-btn" data-fam="decide-build-present" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
     <button class="tab-btn" data-fam="build" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
@@ -743,9 +744,9 @@
   <div class="sidebar-legend">
     <div class="sl-title">🔗 How tabs connect</div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Partners</b><span>teaming — your CRM feeds the partner finder</span></div></div>
-    <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 33.33%,var(--fam-build,#8a93e8) 33.33% 66.66%,var(--fam-present,#a855f7) 66.66%)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Proposal</b><span>the RFP you analyze carries into the proposal</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 50%,var(--fam-build,#8a93e8) 50%)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Proposal</b><span>the RFP you analyze carries into the proposal</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
-    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-present,#a855f7)"></span><div class="sl-txt"><b>Proposal → Presentation</b><span>your finished proposal builds the oral deck</span></div></div>
+    <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-build,#8a93e8) 0 50%,var(--fam-present,#a855f7) 50%)"></span><div class="sl-txt"><b>Proposal → Presentation</b><span>your finished proposal builds the oral deck</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Section Editor</b><span>standalone — doesn't feed other tabs</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1)"></span><div class="sl-txt"><b>Settings</b><span>standalone — doesn't feed other tabs</span></div></div>
   </div>
@@ -824,17 +825,18 @@
     <span class="ms-signout" onclick="msLogout()">Sign out</span>
   </div>
   <div style="display:flex;align-items:center;gap:6px;width:600px;max-width:84vw">
-    <span style="font-size:11px;color:#64748b;white-space:nowrap">Anthropic API key</span>
-    <input type="password" id="apiKeyInputTop" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false" oninput="saveApiKey(this.value, 'apiKeyInputTop')" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff"/>
-    <button type="button" onclick="toggleApiKeyVisibility('apiKeyInputTop')" title="Show/hide key" style="padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1">👁</button>
-    <span id="apiKeyTopStatus" title="Key saved for this session" style="display:none;color:var(--success);font-size:14px;font-weight:700">✓</span>
+    <span style="width:108px;flex-shrink:0;font-size:11px;color:#64748b">Anthropic API key</span>
+    <input type="password" id="apiKeyInputTop" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false" oninput="saveApiKey(this.value, 'apiKeyInputTop')" style="flex:1;min-width:0;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff"/>
+    <button type="button" onclick="toggleApiKeyVisibility('apiKeyInputTop')" title="Show/hide key" style="flex-shrink:0;padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1">👁</button>
+    <button type="button" onclick="saveApiKey((document.getElementById('apiKeyInputTop')||{}).value||'')" title="Save key for this session" style="flex-shrink:0;min-width:78px;padding:6px 12px;border:none;border-radius:6px;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Save</button>
+    <span id="apiKeyTopStatus" title="Key saved for this session" style="flex-shrink:0;width:16px;text-align:center;display:none;color:var(--success);font-size:14px;font-weight:700">✓</span>
   </div>
   <div style="display:flex;align-items:center;gap:6px;width:600px;max-width:84vw">
-    <span style="font-size:11px;color:#64748b;white-space:nowrap">HubSpot key</span>
-    <input type="password" id="hsTokenInputTop" placeholder="pat-na1-..." autocomplete="off" spellcheck="false" oninput="syncHsToken('hsTokenInputTop')" style="flex:1;min-width:200px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff"/>
-    <button type="button" onclick="toggleHsToken('hsTokenInputTop')" title="Show/hide token" style="padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1">👁</button>
-    <button type="button" id="hsSaveBtnTop" onclick="saveHsToken('hsTokenInputTop')" disabled title="Verify & connect to HubSpot" style="padding:6px 12px;border:none;border-radius:6px;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;opacity:0.45;white-space:nowrap">Connect</button>
-    <span id="hsTokenTopStatus" title="HubSpot connected for this session" style="display:none;color:var(--success);font-size:14px;font-weight:700">✓</span>
+    <span style="width:108px;flex-shrink:0;font-size:11px;color:#64748b">HubSpot key</span>
+    <input type="password" id="hsTokenInputTop" placeholder="pat-na1-..." autocomplete="off" spellcheck="false" oninput="syncHsToken('hsTokenInputTop')" style="flex:1;min-width:0;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:#fff"/>
+    <button type="button" onclick="toggleHsToken('hsTokenInputTop')" title="Show/hide token" style="flex-shrink:0;padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1">👁</button>
+    <button type="button" id="hsSaveBtnTop" onclick="saveHsToken('hsTokenInputTop')" disabled title="Verify & connect to HubSpot" style="flex-shrink:0;min-width:78px;padding:6px 12px;border:none;border-radius:6px;background:var(--blue);color:#fff;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;opacity:0.45">Connect</button>
+    <span id="hsTokenTopStatus" title="HubSpot connected for this session" style="flex-shrink:0;width:16px;text-align:center;display:none;color:var(--success);font-size:14px;font-weight:700">✓</span>
   </div>
 </div>
 </div>
@@ -1588,6 +1590,7 @@
       <div style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px">✏️ Or paste opportunity text</div>
         <p style="font-size:12px;color:var(--muted);margin:0 0 6px">For early-stage opportunities — paste what you have from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. You can use this alone or alongside uploaded documents.</p>
+        <p style="font-size:12px;color:var(--blue);background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 10px;margin:0 0 8px;line-height:1.55">💡 <strong>Tip:</strong> Note where you found this opportunity (e.g. SAM.gov, GSA eBuy, Unison/ORBIT, an agency forecast) and the vehicle it’s on if you know it. The solicitation itself often doesn’t say — noting it here captures it in the Source and Contract Vehicle fields of your analysis.</p>
         <textarea id="bnaTextInput" rows="6" oninput="updateBnaBtn()" placeholder="Paste solicitation summary, requirements, agency, set-aside, clearance, estimated value, scope notes, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
       </div>
 
@@ -1790,6 +1793,11 @@
 
 
   </div>
+        <!-- Duplicate download button at the very bottom of the BNA tab -->
+        <div id="bnaPdfBtnWrapBottom" style="display:none;text-align:center;margin:8px 0 24px">
+          <button onclick="downloadBnaPdf()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12)">📄 Download Bid/No-Bid PDF</button>
+        </div>
+
 </div>
 
 <!-- ══════════════════════════ PRESENTATION TAB ═════════════════════════ -->
@@ -11579,6 +11587,7 @@ async function findPrimePartners() {
     let matches = [], overallTake = '';
     const objM = mraw.match(/\{[\s\S]+\}/);
     if (objM) { try { const parsed = JSON.parse(objM[0]); matches = parsed.matches || []; overallTake = parsed.overall_take || ''; } catch(_) {} }
+    window._bnaPrimePartners = matches; window._bnaPrimePartnersOverall = overallTake;
 
     let html = `<div style="border:1px solid #bfdbfe;border-radius:10px;background:#f8fbff;padding:16px 18px">` +
       `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">` +
@@ -12295,7 +12304,9 @@ async function runBidNoBid() {
 
     // Set up Tier 2 inputs with defaults — user will confirm to get final score
     window._bnaConfirmed = false;   // hide the verdict until the user confirms inputs
-    { const _pb = document.getElementById('bnaPdfBtnWrap'); if (_pb) _pb.style.display = 'none'; }
+    window._bnaAnalysisDate = new Date();   // timestamp this analysis run (shown on the PDF)
+    window._bnaPrimePartners = null; window._bnaPrimePartnersOverall = '';   // clear any prior partner search
+    ['bnaPdfBtnWrap','bnaPdfBtnWrapBottom'].forEach(_id => { const _pb = document.getElementById(_id); if (_pb) _pb.style.display = 'none'; });
     renderTier2Inputs();
 
     // Show the input prompt where the verdict will appear (verdict stays hidden
@@ -12364,62 +12375,265 @@ async function runBidNoBid() {
 // display-only sections (verdict/recommendation, score derivation, scored factors, opportunity details)
 // plus the app's own stylesheet, render them into a hidden iframe with print rules (interactive controls
 // stripped), and trigger the browser's print -> Save as PDF.
-function downloadBnaPdf() {
-  const intel = window._lastBnaIntel || {};
-  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.companyShortName && String(CLIENT_CONFIG.companyShortName).trim())
-    || (CLIENT_CONFIG && CLIENT_CONFIG.companyName) || '';
-  const oppName = intel.requirement_name || intel.opportunity_title || 'Opportunity';
-  const idNo = intel.id_number || '';
-  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const grab = id => { const el = document.getElementById(id); return (el && el.innerHTML) ? el.innerHTML : ''; };
-  const sec = (label, id) => grab(id) ? ('<div class="pdf-sec-title">' + label + '</div><div class="pdf-block">' + grab(id) + '</div>') : '';
-  const styles = Array.prototype.map.call(document.querySelectorAll('style'), s => s.textContent).join('\n');
-  const title = 'Bid-No-Bid - ' + oppName + ' - ' + today;
-
-  const docHtml =
-    '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escHtml(title) + '</title>' +
-    '<style>' + styles + '</style>' +
-    '<style>' +
-      '@page { margin: 14mm; }' +
-      'body { background:#fff; margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }' +
-      '.pdf-head { border-bottom:3px solid var(--blue,#1d4ed8); padding-bottom:12px; margin-bottom:8px; }' +
-      '.pdf-title { font-size:22px; font-weight:800; color:var(--blue,#1d4ed8); }' +
-      '.pdf-sub { font-size:13px; color:#475569; margin-top:4px; }' +
-      '.pdf-sec-title { font-size:15px; font-weight:800; color:var(--blue,#1d4ed8); margin:20px 0 10px; border-bottom:1px solid #e2e8f0; padding-bottom:4px; }' +
-      '.card { border:1px solid #e2e8f0 !important; margin:0 !important; }' +
-      '.pdf-foot { margin-top:24px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:10.5px; color:#94a3b8; line-height:1.5; }' +
-      'button, input, select, textarea, [role="slider"], .bna-hide-print { display:none !important; }' +
-      'a { color:inherit; text-decoration:none; }' +
-      '* { box-shadow:none !important; }' +
-    '</style></head><body>' +
-      '<div class="pdf-head"><div class="pdf-title">Bid / No-Bid Analysis</div>' +
-      '<div class="pdf-sub">' + escHtml(cap ? cap + ' \u00b7 ' : '') + escHtml(oppName) +
-        (idNo ? ' \u00b7 ' + escHtml(idNo) : '') + ' \u00b7 ' + escHtml(today) + '</div></div>' +
-      sec('Recommendation', 'bnaDecisionPanel') +
-      sec('How the Score Is Derived', 'bnaScoreBreakdown') +
-      sec('Scored Factors', 'bnaFactorsTier1') +
-      sec('Opportunity Details', 'bnaIntelBody') +
-      '<div class="pdf-foot">Generated by ' + escHtml(cap || 'the proposal tool') + ' on ' + escHtml(today) +
-        '. AI-assisted analysis - verify all figures, eligibility, and compliance against the solicitation before relying on this for a bid decision.</div>' +
-    '</body></html>';
-
-  let f = document.getElementById('_bnaPdfFrame');
-  if (f) f.remove();
-  f = document.createElement('iframe');
-  f.id = '_bnaPdfFrame';
-  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;';
-  document.body.appendChild(f);
-  let printed = false;
-  const doPrint = () => { if (printed) return; printed = true; try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { console.error('print failed', e); } };
-  f.onload = doPrint;
-  const d = f.contentWindow.document;
-  d.open(); d.write(docHtml); d.close();
-  setTimeout(doPrint, 600);
+function _pdfRgb(hex) {
+  let m = String(hex || '').replace('#', '').trim();
+  if (m.length === 3) m = m.split('').map(x => x + x).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(m)) m = '1D4ED8';
+  return [parseInt(m.slice(0,2),16), parseInt(m.slice(2,4),16), parseInt(m.slice(4,6),16)];
 }
+function _pdfVerdictRgb(code) {
+  return code === 'prime' ? [22,163,74] : code === 'sub' ? [37,99,235] : code === 'gaps' ? [180,83,9] : [220,38,38];
+}
+// Build the completed Bid/No-Bid analysis as a real PDF and download it directly (no print dialog).
+function downloadBnaPdf() {
+  if (!(window.jspdf && window.jspdf.jsPDF)) {
+    showStatus('error', 'PDF library not loaded', 'A component (jsPDF) did not load. Disable any ad blocker for this site, hard-refresh (Ctrl+Shift+R), and try again.');
+    return;
+  }
+  const intel = window._lastBnaIntel || {};
+  const v = (typeof computeDecisiveVerdict === 'function' && window._bnaOpp) ? computeDecisiveVerdict() : null;
+  const co = (CLIENT_CONFIG && (CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyName)) || '';
+  const coFull = (CLIENT_CONFIG && (CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyName)) || co;
+  const runDate = window._bnaAnalysisDate ? new Date(window._bnaAnalysisDate) : new Date();
+  const dateStr = runDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const jsPDF = window.jspdf.jsPDF;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const PW = 612, PH = 792, M = 50, CW = PW - M * 2;
+  const ACCENT = _pdfRgb((CLIENT_CONFIG && CLIENT_CONFIG.primaryColor) || '#1d4ed8');
+  const DARK = [30, 41, 59], GREY = [100, 116, 139], LINE = [226, 232, 240], ZEBRA = [247, 249, 252], WHITE = [255, 255, 255];
+  let y = 0, page = 1;
+  const clean = s => String(s == null ? '' : s)
+    .replace(/[\u2014\u2013]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
+    .replace(/[^\x00-\x7F]+/g, '').replace(/[ \t]+/g, ' ').trim();
+  const tint = (rgb, amt) => [Math.round(rgb[0] + (255 - rgb[0]) * amt), Math.round(rgb[1] + (255 - rgb[1]) * amt), Math.round(rgb[2] + (255 - rgb[2]) * amt)];
+  const scoreColor = sc => sc == null ? GREY : sc >= 7.5 ? [22, 163, 74] : sc >= 6 ? [37, 99, 235] : sc >= 4 ? [180, 83, 9] : [220, 38, 38];
+
+  function footer() {
+    doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.6); doc.line(M, PH - 34, PW - M, PH - 34);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.text(clean(coFull) + '   |   Proprietary & Confidential   |   AI-assisted - verify before relying on this for a bid decision', M, PH - 22);
+    doc.text('Page ' + page, PW - M, PH - 22, { align: 'right' });
+  }
+  function newPage() { footer(); doc.addPage(); page++; y = M; }
+  function ensure(h) { if (y + h > PH - 44) newPage(); }
+  function heading(txt) {
+    ensure(34); y += 12;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(ACCENT[0], ACCENT[1], ACCENT[2]);
+    doc.text(clean(txt).toUpperCase(), M, y);
+    y += 5; doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]); doc.setLineWidth(1.2); doc.line(M, y, M + CW, y); y += 14;
+  }
+  function para(txt, o) {
+    o = o || {}; const size = o.size || 9.5, color = o.color || DARK, ind = o.indent || 0, lh = size + 3.5;
+    if (!String(txt == null ? '' : txt).trim()) return;
+    doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(size); doc.setTextColor(color[0], color[1], color[2]);
+    doc.splitTextToSize(clean(txt), CW - ind).forEach(ln => { ensure(lh); doc.text(ln, M + ind, y); y += lh; });
+    y += (o.gap == null ? 3 : o.gap);
+  }
+
+  // Generic table. cols=[{header,w,align,bold,color}]; rows=[[cell,...]]; a cell may be {t,color}.
+  function table(cols, rows, opt) {
+    opt = opt || {};
+    const fs = opt.fontSize || 9, hfs = opt.headerFontSize || 8.5, padX = 7, padY = 5.5, lh = fs + 3;
+    const totalW = cols.reduce((a, c) => a + c.w, 0);
+    const xs = []; let cx = M; cols.forEach(c => { xs.push(cx); cx += c.w; });
+    const hFill = opt.headerFill || ACCENT, hTx = opt.headerText || WHITE;
+    const zebra = opt.zebra !== false;
+    const showHdr = cols.some(c => c.header) && opt.header !== false;
+    const cellX = (c, i) => c.align === 'right' ? xs[i] + c.w - padX : (c.align === 'center' ? xs[i] + c.w / 2 : xs[i] + padX);
+
+    function headerRow() {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(hfs);
+      const cl = cols.map(c => doc.splitTextToSize(clean(c.header || ''), c.w - 2 * padX));
+      const hh = Math.max(1, ...cl.map(l => l.length)) * (hfs + 2.5) + 2 * padY - 2;
+      ensure(hh);
+      doc.setFillColor(hFill[0], hFill[1], hFill[2]); doc.rect(M, y, totalW, hh, 'F');
+      doc.setTextColor(hTx[0], hTx[1], hTx[2]);
+      cl.forEach((lines, i) => { const c = cols[i]; lines.forEach((ln, li) => doc.text(ln, cellX(c, i), y + padY + hfs + li * (hfs + 2.5) - 1, c.align ? { align: c.align } : undefined)); });
+      y += hh;
+    }
+    if (showHdr) headerRow();
+
+    rows.forEach((r, ri) => {
+      const cells = cols.map((c, i) => {
+        const raw = r[i];
+        const isObj = raw && typeof raw === 'object' && raw.t != null;
+        const s = isObj ? raw.t : raw;
+        const color = (isObj && raw.color) ? raw.color : (c.color || DARK);
+        doc.setFont('helvetica', c.bold ? 'bold' : 'normal'); doc.setFontSize(fs);
+        return { lines: doc.splitTextToSize(clean(s), c.w - 2 * padX), color, c, i };
+      });
+      const rh = Math.max(1, ...cells.map(x => x.lines.length)) * lh + 2 * padY - 2;
+      if (y + rh > PH - 44) { newPage(); if (showHdr) headerRow(); }
+      if (zebra && ri % 2 === 1) { doc.setFillColor(ZEBRA[0], ZEBRA[1], ZEBRA[2]); doc.rect(M, y, totalW, rh, 'F'); }
+      cells.forEach(x => {
+        doc.setFont('helvetica', x.c.bold ? 'bold' : 'normal'); doc.setFontSize(fs);
+        doc.setTextColor(x.color[0], x.color[1], x.color[2]);
+        x.lines.forEach((ln, li) => doc.text(ln, cellX(x.c, x.i), y + padY + fs + li * lh - 1, x.c.align ? { align: x.c.align } : undefined));
+      });
+      doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.5); doc.line(M, y + rh, M + totalW, y + rh);
+      y += rh;
+    });
+    y += 6;
+  }
+
+  // ---------- Title band ----------
+  const BAND = 98;
+  doc.setFillColor(ACCENT[0], ACCENT[1], ACCENT[2]); doc.rect(0, 0, PW, BAND, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.setTextColor(255, 255, 255);
+  doc.text('BID / NO-BID ANALYSIS', M, 40);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(12); doc.setTextColor(226, 236, 255);
+  const titleLine = doc.splitTextToSize(clean(intel.requirement_name || 'Opportunity'), CW);
+  doc.text(titleLine[0] || 'Opportunity', M, 62);
+  if (titleLine[1]) { doc.setFontSize(10.5); doc.text(titleLine[1], M, 77); }
+  doc.setFontSize(9); doc.setTextColor(200, 222, 255);
+  doc.text(clean(coFull) + '   |   ' + dateStr, M, BAND - 13);
+  y = BAND + 22;
+
+  // ---------- Verdict callout ----------
+  if (v) {
+    const vr = _pdfVerdictRgb(v.code);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    const dLines = doc.splitTextToSize(clean(v.detail), CW - 130);
+    const boxH = Math.max(60, 32 + dLines.length * 13 + 12);
+    ensure(boxH + 8);
+    const tb = tint(vr, 0.92);
+    doc.setFillColor(tb[0], tb[1], tb[2]); doc.roundedRect(M, y, CW, boxH, 7, 7, 'F');
+    doc.setDrawColor(vr[0], vr[1], vr[2]); doc.setLineWidth(1.3); doc.roundedRect(M, y, CW, boxH, 7, 7, 'S');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14.5); doc.setTextColor(vr[0], vr[1], vr[2]);
+    doc.text(clean(v.label) || String(v.code).toUpperCase(), M + 18, y + 25);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    dLines.forEach((ln, i) => doc.text(ln, M + 18, y + 42 + i * 13));
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(31); doc.setTextColor(vr[0], vr[1], vr[2]);
+    doc.text(String(v.fit), M + CW - 20, y + 35, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(GREY[0], GREY[1], GREY[2]);
+    doc.text('FIT / 10', M + CW - 20, y + 48, { align: 'right' });
+    y += boxH + 8;
+  }
+
+  // ---------- Opportunity snapshot ----------
+  heading('Opportunity Snapshot');
+  table(
+    [{ header: '', w: 150, bold: true, color: GREY }, { header: '', w: CW - 150 }],
+    [
+      ['Opportunity', intel.requirement_name || '-'],
+      ['Source / Where Found', intel.source || 'Not specified'],
+      ['Contract Vehicle', intel.contract_vehicle || 'N/A'],
+      ['Agency', intel.customer_agency || '-'],
+      ['Solicitation #', intel.id_number || '-'],
+      ['Analysis Date', dateStr],
+    ],
+    { header: false, zebra: true }
+  );
+
+  // ---------- Recommendation + Prime vs Sub ----------
+  if (v) {
+    const canPrime = v.gates && v.gates.canPrime;
+    const primePosture = (v.code === 'prime') ? 'PURSUE as prime' : (v.code === 'gaps') ? 'Pursue if gaps closed' : canPrime ? 'Pass as prime' : 'Not available';
+    const subPosture = (v.fteNum === 1) ? 'Not realistic (1 FTE)' : v.subWorth ? 'Viable teaming play' : 'Not worth subbing';
+    const primeFit = v.fit + ' / 10' + (v.ceilingBinding ? ' (capped at ' + v.ceiling + ')' : '');
+    const subFitS = v.subFit + ' / 10';
+    const primeElig = canPrime ? 'Eligible to prime' : ('Cannot prime - ' + ((v.blockers && v.blockers.length) ? v.blockers.join('; ') : 'eligibility/capacity gap'));
+    const subElig = (v.fteNum === 1) ? 'Single-FTE - no realistic sub path' : 'Eligible as subcontractor';
+    const primeSelf = '~' + v.scopeCov + '% self-performed (floor ' + v.selfPerformFloor + '%' + (v.isSetAside ? ', set-aside LoS' : '') + ')';
+    const subSelf = '~' + v.scopeCov + '% slice; execution fit ' + v.subCapability + '/10';
+
+    heading('Recommendation');
+    para(v.detail, { size: 10 });
+    const half = (CW - 120) / 2;
+    table(
+      [{ header: '', w: 120, bold: true, color: GREY }, { header: 'As Prime', w: half }, { header: 'As Subcontractor', w: half }],
+      [
+        ['Posture', { t: primePosture, color: _pdfVerdictRgb(canPrime ? v.code : 'pass') }, { t: subPosture, color: (v.subWorth && v.fteNum !== 1) ? [37, 99, 235] : [220, 38, 38] }],
+        ['Fit score', primeFit, subFitS],
+        ['Eligibility', primeElig, subElig],
+        ['Self-perform', primeSelf, subSelf],
+      ],
+      { zebra: true }
+    );
+    if (v.blockers && v.blockers.length) para('Prime blocked by: ' + v.blockers.join('; ') + '.', { size: 9, color: [146, 64, 14], gap: 1 });
+    if (v.constraints && v.constraints.length) para('Scope limits: ' + v.constraints.join('; ') + '.', { size: 9, color: [146, 64, 14], gap: 1 });
+  }
+
+  // ---------- Scored factors ----------
+  const factors = (window._bnaResult && window._bnaResult.factors) || {};
+  const t1 = (typeof BNA_TIER1 !== 'undefined') ? BNA_TIER1 : [];
+  if (t1.length) {
+    heading('Scored Factors');
+    const rows = t1.map(f => {
+      const sc = (typeof bna_tier1_scores !== 'undefined' && bna_tier1_scores[f.key] != null) ? bna_tier1_scores[f.key] : null;
+      const fr = factors[f.key]; const rat = (fr && (fr.rationale || fr.reason || fr.justification)) || '';
+      return [f.label, { t: (sc != null ? sc + '/10' : '-'), color: scoreColor(sc) }, rat];
+    });
+    table(
+      [{ header: 'Factor', w: 150, bold: true }, { header: 'Score', w: 55, align: 'center', bold: true }, { header: 'Rationale', w: CW - 205 }],
+      rows,
+      { zebra: true }
+    );
+  }
+
+  // ---------- Opportunity details ----------
+  const detailRows = [
+    ['Stage', intel.stage], ['Set-Aside', intel.set_aside], ['Contract Type', intel.contract_type],
+    ['NAICS', intel.naics_code], ['PSC', intel.psc], ['SIN', intel.sin],
+    ['Period of Performance', intel.period_of_performance], ['Place of Performance', intel.place_of_performance],
+    ['Work Setting', intel.work_setting], ['FTEs', intel.fte_count],
+    ['Base Year Value', intel.base_year_value], ['Total Value', intel.total_contract_value],
+    ['New / Recompete', intel.new_or_recompete], ['Incumbent', intel.incumbent],
+    ['KO', intel.ko_name_office], ['COR', intel.cor_name_office],
+  ].filter(r => r[1] != null && String(r[1]).trim() !== '' && String(r[1]).trim().toUpperCase() !== 'N/A');
+  if (detailRows.length || intel.description) {
+    heading('Opportunity Details');
+    if (detailRows.length) table(
+      [{ header: '', w: 150, bold: true, color: GREY }, { header: '', w: CW - 150 }],
+      detailRows,
+      { header: false, zebra: true }
+    );
+    if (intel.description) para(intel.description, { size: 9.5 });
+  }
+
+  // ---------- Potential prime partners ----------
+  const partners = window._bnaPrimePartners;
+  if (Array.isArray(partners) && partners.length) {
+    heading('Potential Prime Partners (' + co + ' subs)');
+    if (window._bnaPrimePartnersOverall) para(window._bnaPrimePartnersOverall, { size: 9.5, color: GREY });
+    partners.forEach(m => {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+      const clrL = m.gaps_cleared ? doc.splitTextToSize('Clears: ' + clean(m.gaps_cleared), CW - 24) : [];
+      const whyL = m.why ? doc.splitTextToSize(clean(m.why), CW - 24) : [];
+      const roleL = m.potential_role ? doc.splitTextToSize('Role split: ' + clean(m.potential_role), CW - 24) : [];
+      const watchL = (m.concerns && m.concerns !== 'None') ? doc.splitTextToSize('Watch: ' + clean(m.concerns), CW - 24) : [];
+      const bodyLines = clrL.length + whyL.length + roleL.length + watchL.length;
+      const cardH = 30 + bodyLines * 12 + 6;
+      ensure(cardH + 6);
+      doc.setFillColor(252, 253, 255); doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.8);
+      doc.roundedRect(M, y, CW, cardH, 5, 5, 'FD');
+      const sc = (m.fit_score != null) ? m.fit_score : null;
+      const fitRgb = scoreColor(sc);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+      doc.text(clean('#' + (m.rank || '') + '  ' + (m.company_name || '')), M + 12, y + 19);
+      if (sc != null) {
+        doc.setTextColor(fitRgb[0], fitRgb[1], fitRgb[2]); doc.setFontSize(13);
+        doc.text(sc + '/10', M + CW - 12, y + 19, { align: 'right' });
+        if (m.fit_label) { doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(clean(m.fit_label), M + CW - 12, y + 28, { align: 'right' }); }
+      }
+      let yy = y + 32;
+      const put = (arr, color) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(color[0], color[1], color[2]); arr.forEach(ln => { doc.text(ln, M + 12, yy); yy += 12; }); };
+      put(clrL, [22, 101, 52]); put(whyL, DARK); put(roleL, GREY); put(watchL, [146, 64, 14]);
+      y += cardH + 6;
+    });
+  }
+
+  footer();
+  const nameRaw = String(intel.requirement_name || 'Opportunity').replace(/[\/\\:*?"<>|\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Opportunity';
+  const fileDate = dateStr.replace(/,/g, '');
+  doc.save(nameRaw + ' BNA ' + fileDate + '.pdf');
+}
+
 
 function confirmBnaScore() {
   window._bnaConfirmed = true;   // unlock the verdict panel
-  { const _pb = document.getElementById('bnaPdfBtnWrap'); if (_pb) _pb.style.display = 'block'; }
+  ['bnaPdfBtnWrap','bnaPdfBtnWrapBottom'].forEach(_id => { const _pb = document.getElementById(_id); if (_pb) _pb.style.display = 'block'; });
   updateBnaLiveScore();
   const scoreBreakdown  = document.getElementById('bnaScoreBreakdown');
   if (scoreBreakdown) scoreBreakdown.style.display  = 'block';
@@ -12493,7 +12707,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"customer_agency":"EXACT office - Parent Dept (ABBREV)","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -12741,6 +12955,7 @@ function renderOpportunityIntel(intel, container) {
     { title:'Opportunity', fields:[
       { key:'customer_agency',              label:'Customer and Agency' },
       { key:'requirement_name',             label:'Requirement / Opportunity Name' },
+      { key:'source',                       label:'Source / Where Found' },
       { key:'id_number',                    label:'ID Number' },
       { key:'stage',                        label:'Current Stage' },
       { key:'opportunity_url',              label:'Opportunity URL' },
