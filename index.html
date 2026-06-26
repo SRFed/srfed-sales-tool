@@ -2794,38 +2794,67 @@ async function createPresentation() {
   const agency = (b && b.agency_name) || (!useDocs && window._lastProposalData && window._lastProposalData.agency_name) || 'the Government';
   const userInstr = ((document.getElementById('pptInstructions') || {}).value || '').trim();
   const digest = useDocs ? '' : _pptProposalDigest();
+  const caps = CLIENT_CONFIG.capabilities ? [].concat(CLIENT_CONFIG.capabilities).filter(Boolean).slice(0, 8).join(', ') : '';
   const coCtx = 'COMPANY: ' + (CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyName || co) + (CLIENT_CONFIG.companyShortName ? ' (' + CLIENT_CONFIG.companyShortName + ')' : '') + '\n' +
     ((CLIENT_CONFIG.setAsides && CLIENT_CONFIG.setAsides.length) ? ('STATUS / SET-ASIDES: ' + CLIENT_CONFIG.setAsides.join(', ') + '\n') : '') +
-    (CLIENT_CONFIG.companyTagline ? ('TAGLINE: ' + CLIENT_CONFIG.companyTagline + '\n') : '');
+    (CLIENT_CONFIG.companyTagline ? ('TAGLINE: ' + CLIENT_CONFIG.companyTagline + '\n') : '') +
+    (caps ? ('CORE CAPABILITIES: ' + caps + '\n') : '');
 
-  if (btn) { btn.disabled = true; btn.dataset._t = btn.innerHTML; btn.innerHTML = '\u23F3 Building presentation...'; btn.style.opacity = '0.6'; }
-  showStatus('info', 'Building your presentation', 'Distilling the proposal into an oral-presentation deck...', true);
+  if (btn) { btn.disabled = true; btn.dataset._t = btn.innerHTML; btn.innerHTML = '\u23F3 Building...'; btn.style.opacity = '0.6'; }
+
+  // Real progress: reset any stale bar state, then drive explicit steps + a time-based ETA.
+  const steps = useDocs
+    ? [{ text: 'Reading your proposal', status: 'active' }, { text: 'Designing the slides', status: '' }, { text: 'Building the deck', status: '' }]
+    : [{ text: 'Designing the slides', status: 'active' }, { text: 'Building the deck', status: '' }];
+  setProgress(0);
+  showStatus('info', 'Building your presentation', useDocs ? 'Reading your proposal\u2026' : 'Designing your slides\u2026', true);
+  _startEtaTimer(useDocs ? 48 : 40);
+  _setSteps(steps);
+
   try {
     let docBlocks = [];
     if (useDocs) {
-      showStatus('info', 'Reading proposal', 'Reading your uploaded proposal document(s)...', true);
       docBlocks = (await Promise.all(pptDocFiles.map(f => fileToContentBlock(f).catch(() => null)))).filter(Boolean);
       if (!docBlocks.length) throw new Error('None of the uploaded files could be read. Try a PDF or Word export of the proposal.');
+      steps[0].status = 'done'; steps[1].status = 'active'; _setSteps(steps);
+      showStatus('info', 'Building your presentation', 'Designing your slides\u2026', true);
     }
+
     const prompt =
-      'You are a senior capture/proposal lead building a PROFESSIONAL ORAL PRESENTATION deck for ' + co +
-      ' to deliver to ' + agency + ' during a Government source selection. Build the deck STRICTLY from the proposal ' + (useDocs ? 'document(s) attached above' : 'content below') + ' - do not invent facts, numbers, names, or past performance that are not present in it.\n\n' +
-      (useDocs ? (coCtx + '\n') : ('PROPOSAL:\n' + digest + '\n\n')) +
-      (userInstr ? ('USER INSTRUCTIONS (follow these closely):\n' + userInstr + '\n\n') : '') +
-      'Produce a tight, confident oral-presentation deck (NOT a written document). Rules:\n' +
-      '- 9 to 13 content slides total unless the user instructions say otherwise.\n' +
-      '- A clear arc: agenda, understanding of the requirement, technical approach (1-2 slides), management & staffing, past performance, why ' + co + ' (win themes & discriminators), and a closing / questions slide. Include a brief pricing-philosophy slide ONLY if pricing content is present (never fabricate dollar figures).\n' +
-      '- Each slide: 3 to 6 bullets, each a SHORT spoken phrase (max ~12 words); no sub-bullets, no paragraphs.\n' +
-      '- Add concise speaker NOTES (2-4 sentences) per slide describing what the presenter would say aloud.\n' +
-      '- Professional tone suitable for a Government evaluation panel; use the company status (e.g. SDVOSB) where relevant.\n\n' +
-      'Return ONLY JSON (no markdown, no preamble) in EXACTLY this shape:\n' +
-      '{"deck_title":"short punchy title","subtitle":"e.g. Oral Presentation to ' + agency + '","slides":[{"title":"Slide Title","bullets":["point","point"],"notes":"what to say"}]}';
+      'You are a senior capture / proposal lead and presentation designer building a POLISHED, VISUAL oral-presentation deck for ' + co + ' to deliver to ' + agency + ' during a U.S. Government source selection.\n\n' +
+      'Build the deck STRICTLY from the proposal ' + (useDocs ? 'document(s) attached above' : 'content below') + '. Do NOT invent facts, numbers, customers, or past performance that are not present - every metric, statistic, and claim must trace to the source.\n\n' +
+      (useDocs ? (coCtx + '\n') : (coCtx + '\nPROPOSAL:\n' + digest + '\n\n')) +
+      (userInstr ? ('USER INSTRUCTIONS (follow closely):\n' + userInstr + '\n\n') : '') +
+      'DESIGN PRINCIPLES:\n' +
+      '- This is a spoken briefing, not a document: short phrases, real numbers, and structure - never paragraphs.\n' +
+      '- VARY the slides. Do NOT make every slide a 5-bullet list. Choose the layout that best fits each slide and aim for a genuine mix.\n' +
+      '- Vary bullet counts (3-7) based on substance - never a uniform count across slides.\n' +
+      '- Quantify wherever the source supports it, and surface real metrics as their own visual.\n' +
+      '- If the proposal names a methodology, framework, or multi-step process, give it a PROCESS slide with EACH step explained in one short line - do not merely name it.\n' +
+      '- Tie everything to THIS opportunity, THIS customer, and ' + co + '\'s actual strengths and past performance.\n\n' +
+      'LAYOUTS (set "layout" per slide; include only the fields that layout needs, plus title + notes):\n' +
+      '- "bullets": title + "bullets" (3-7 short phrases). Default; agenda, qualitative points.\n' +
+      '- "metrics": title + "metrics" (2-4 of {"value","label"}) for quantified results/scale, e.g. {"value":"193%","label":"compliance improvement"}. Optional "context" (one line) and "bullets". Values MUST be real figures from the source.\n' +
+      '- "process": title + "steps" (3-8 of {"name","desc"}) for a methodology/workflow/phased approach; "desc" explains the step in one line. Optional "intro".\n' +
+      '- "two_column": title + "left" and "right", each {"heading","points":[...]}. Use for Challenge vs Approach, Requirement vs Solution, As-Is vs To-Be.\n' +
+      '- "chart": title + "chart" {"type":"bar"|"line"|"pie","categories":[...],"series":[{"name","values":[...]}]} for a quantified comparison or trend (e.g. before/after). Optional "takeaway" (one-line so-what). Use ONLY real numbers; if there are none, do NOT invent a chart.\n\n' +
+      'STRUCTURE (about 9-12 content slides; a branded title slide and a closing slide are added AUTOMATICALLY - do NOT create them):\n' +
+      '1. Agenda (bullets).\n' +
+      '2. Understanding the requirement (two_column challenge/approach, or bullets).\n' +
+      '3-5. Technical approach - include a PROCESS slide for any named methodology; bullets/two_column for the rest.\n' +
+      '6. Management & staffing / transition (bullets or two_column).\n' +
+      '7-8. Past performance - prefer metrics or a chart for quantified outcomes; bullets for the relevance narrative.\n' +
+      '9. Why ' + co + ' (bullets or metrics; weave in set-aside status and discriminators).\n' +
+      'Add a pricing slide ONLY if pricing content exists; never fabricate dollar figures.\n\n' +
+      'Every slide MUST include concise speaker "notes" (2-4 sentences of what the presenter says aloud).\n\n' +
+      'Return ONLY raw JSON (no markdown, no backticks, no preamble), starting with { and ending with }:\n' +
+      '{"deck_title":"punchy title, <= 8 words","subtitle":"e.g. Oral Presentation to ' + agency + '","slides":[{"layout":"bullets|metrics|process|two_column|chart","title":"Slide Title","bullets":["..."],"metrics":[{"value":"","label":""}],"steps":[{"name":"","desc":""}],"left":{"heading":"","points":["..."]},"right":{"heading":"","points":["..."]},"chart":{"type":"bar","categories":["..."],"series":[{"name":"","values":[]}]},"context":"","intro":"","takeaway":"","notes":"what to say aloud"}]}';
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4500,
         messages: [{ role: 'user', content: useDocs ? [...docBlocks, { type: 'text', text: prompt }] : [{ type: 'text', text: prompt }] }] })
     });
     if (!resp.ok) { const t = await resp.text().catch(() => ''); throw new Error('API error ' + resp.status + ': ' + t.slice(0, 160)); }
@@ -2837,22 +2866,32 @@ async function createPresentation() {
     try { deck = JSON.parse(raw); } catch (e) { throw new Error('Could not parse the generated deck - please try again.'); }
     if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) throw new Error('The generated deck was empty - please try again.');
 
-    _pptRenderDeck(deck, b);
+    const di = useDocs ? 2 : 1; steps[di - 1].status = 'done'; steps[di].status = 'active'; _setSteps(steps);
+    showStatus('info', 'Building your presentation', 'Assembling slides, charts, and branding\u2026', true);
 
-    const titles = deck.slides.map(s => s.title).filter(Boolean);
+    const out = await _pptRenderDeck(deck, b);   // builds, auto-downloads, returns {url, fname}
+
+    steps.forEach(s => s.status = 'done'); setProgress(100, steps);
+
+    const total = deck.slides.length + 2;   // + title + closing
     const res = document.getElementById('pptResult');
     if (res) {
       res.style.display = 'block';
-      res.innerHTML = '<div style="border:1px solid #86efac;background:var(--success-bg,#f0fdf4);border-radius:8px;padding:14px 16px">' +
-        '<div style="font-weight:700;color:var(--success);font-size:14px;margin-bottom:8px">\u2705 Presentation downloaded - ' + (titles.length + 1) + ' slides</div>' +
-        '<div style="font-size:12px;color:var(--text);line-height:1.7"><strong>Title:</strong> ' + escHtml(deck.deck_title || '(untitled)') + '<br>' +
-        '<strong>Slides:</strong> ' + escHtml(titles.join('  \u2022  ')) + '</div>' +
-        '<button onclick="createPresentation()" style="margin-top:12px;padding:7px 14px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;cursor:pointer">\u21BB Regenerate</button>' +
+      res.innerHTML =
+        '<div style="border:1px solid #86efac;background:#f0fdf4;border-radius:10px;padding:16px 18px">' +
+          '<div style="font-weight:700;color:var(--success);font-size:15px;margin-bottom:6px">\u2705 Presentation ready \u2014 ' + total + ' slides</div>' +
+          '<div style="font-size:12.5px;color:var(--text);line-height:1.6;margin-bottom:13px"><strong>' + escHtml(deck.deck_title || '(untitled)') + '</strong></div>' +
+          '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
+            '<a href="' + out.url + '" download="' + escHtml(out.fname) + '" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;text-decoration:none;cursor:pointer">\u2B07 Download presentation (.pptx)</a>' +
+            '<button onclick="createPresentation()" style="padding:9px 16px;font-size:12.5px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:8px;cursor:pointer">\u21BB Regenerate</button>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:10px">It also downloaded automatically. If you can\u2019t find it, use the button above \u2014 it saves to your browser\u2019s Downloads folder.</div>' +
         '</div>';
     }
-    showStatus('success', 'Presentation ready', 'Your .pptx has been downloaded.');
+    showStatus('success', 'Presentation ready', 'Your .pptx is ready \u2014 use the Download button or check your Downloads folder.');
   } catch (e) {
     console.error('Presentation error:', e);
+    setProgress(0);
     showStatus('error', 'Presentation failed', e.message || String(e));
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = (btn.dataset && btn.dataset._t) || '\uD83D\uDCCA Create Presentation'; btn.style.opacity = '1'; }
@@ -2860,69 +2899,242 @@ async function createPresentation() {
 }
 
 // Render the deck spec into a styled .pptx and trigger a download (PptxGenJS; no template, no raw XML).
-function _pptRenderDeck(deck, briefing) {
+// Build the deck and return the PptxGenJS object (no I/O — unit-testable).
+function _pptBuildDeck(deck, briefing) {
   briefing = briefing || {};
+  const C = (typeof CLIENT_CONFIG !== 'undefined') ? CLIENT_CONFIG : {};
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';                 // 13.33 x 7.5 in
-  pptx.author = CLIENT_CONFIG.companyShortName || '';
-  pptx.company = CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyName || '';
+  pptx.author = C.companyShortName || '';
+  pptx.company = C.companyFullName || C.companyName || '';
   pptx.title = deck.deck_title || briefing.requirement_title || 'Oral Presentation';
 
-  const ACCENT = _pptHex(CLIENT_CONFIG.primaryColor, '005FD5');
-  const DARK = '1F2937', GREY = '6B7280';
+  const ACCENT = _pptHex(C.primaryColor, '005FD5');
+  const DARK = '1F2937', GREY = '6B7280', INK = '111827';
+  const CARD = 'F4F8FE', CARD_LINE = 'D8E4F6', LIGHT2 = 'A9C6F2';
   const FONT = 'Calibri';
-  const co = CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyName || '';
-  const footer = (CLIENT_CONFIG.companyFullName || co) + '  |  Proprietary & Confidential';
+  const co = C.companyShortName || C.companyName || '';
+  const coFull = C.companyFullName || co;
+  const footer = coFull + '   |   Proprietary & Confidential';
+  const PGW = 13.33, PGH = 7.5;
 
+  // ----- Logo (native data URL preferred; aspect from the loaded <img> when available) -----
+  let logoImg = null, logoAR = 120 / 68;
+  const rawLogo = C.logoBase64 ? (String(C.logoBase64).startsWith('data:') ? C.logoBase64 : 'data:image/png;base64,' + C.logoBase64) : '';
+  if (rawLogo && !/^data:image\/svg/i.test(rawLogo)) logoImg = { data: rawLogo };
+  else if (C.logoUrl && !/\.svg(\?|$)/i.test(C.logoUrl)) logoImg = { path: C.logoUrl };
+  try {
+    const le = (typeof document !== 'undefined') ? document.getElementById('appLogo') : null;
+    if (le && le.naturalWidth > 0) logoAR = le.naturalWidth / le.naturalHeight;
+  } catch (e) {}
+
+  // ----- Content master: thin top band, fixed footer (not clipped), small corner logo, page # -----
+  const masterObjs = [
+    { rect: { x: 0, y: 0, w: '100%', h: 0.16, fill: { color: ACCENT } } },
+    { line: { x: 0.5, y: 7.16, w: 12.33, h: 0, line: { color: CARD_LINE, width: 1 } } },
+    { text: { text: footer, options: { x: 0.5, y: 7.2, w: 9.0, h: 0.25, fontSize: 8, color: GREY, fontFace: FONT, align: 'left', valign: 'middle' } } }
+  ];
+  if (logoImg) {
+    const h = 0.42, w = h * logoAR;
+    masterObjs.push({ image: Object.assign({ x: PGW - 0.45 - w, y: 0.3, w: w, h: h }, logoImg) });
+  }
   pptx.defineSlideMaster({
-    title: 'CONTENT',
-    background: { color: 'FFFFFF' },
-    objects: [
-      { rect: { x: 0, y: 0, w: '100%', h: 0.16, fill: { color: ACCENT } } },
-      { rect: { x: 0, y: 7.18, w: '100%', h: 0.02, fill: { color: ACCENT } } },
-      { text: { text: footer, options: { x: 0.5, y: 7.04, w: 9.5, h: 0.3, fontSize: 8, color: GREY, fontFace: FONT, align: 'left' } } }
-    ],
-    slideNumber: { x: 12.4, y: 7.02, w: 0.6, h: 0.3, fontSize: 8, color: GREY, fontFace: FONT, align: 'right' }
+    title: 'CONTENT', background: { color: 'FFFFFF' }, objects: masterObjs,
+    slideNumber: { x: 12.45, y: 7.2, w: 0.55, h: 0.25, fontSize: 8, color: GREY, fontFace: FONT, align: 'right', valign: 'middle' }
   });
 
-  // Title slide
+  const credLine = () => {
+    const p = [];
+    if (C.uei) p.push('UEI ' + C.uei);
+    if (C.cage) p.push('CAGE ' + C.cage);
+    if (C.gsaMas) p.push('GSA MAS ' + C.gsaMas);
+    return p.join('    |    ');
+  };
+
+  // ===== Title slide =====
   const t = pptx.addSlide();
   t.background = { color: 'FFFFFF' };
-  t.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 3.4, fill: { color: ACCENT } });
+  t.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.28, h: PGH, fill: { color: ACCENT } });
+  let ty = 1.85;
+  if (logoImg) { const h = 1.0, w = h * logoAR; t.addImage(Object.assign({ x: 0.7, y: 0.6, w: w, h: h }, logoImg)); }
+  else ty = 1.35;
   t.addText(String(deck.deck_title || briefing.requirement_title || 'Oral Presentation'),
-    { x: 0.7, y: 0.9, w: 11.9, h: 1.7, fontSize: 34, bold: true, color: 'FFFFFF', fontFace: FONT, valign: 'middle' });
+    { x: 0.7, y: ty, w: 11.9, h: 1.5, fontSize: 33, bold: true, color: ACCENT, fontFace: FONT, valign: 'top' });
   t.addText(String(deck.subtitle || ('Oral Presentation to ' + (briefing.agency_name || 'the Government'))),
-    { x: 0.72, y: 2.55, w: 11.9, h: 0.6, fontSize: 18, color: 'E8F0FF', fontFace: FONT });
-  t.addText(String(CLIENT_CONFIG.companyFullName || co),
-    { x: 0.7, y: 4.0, w: 11.9, h: 0.5, fontSize: 22, bold: true, color: ACCENT, fontFace: FONT });
-  if (CLIENT_CONFIG.companyTagline)
-    t.addText(String(CLIENT_CONFIG.companyTagline), { x: 0.72, y: 4.56, w: 11.9, h: 0.4, fontSize: 13, italic: true, color: GREY, fontFace: FONT });
+    { x: 0.72, y: ty + 1.45, w: 11.9, h: 0.6, fontSize: 17, color: DARK, fontFace: FONT });
+  t.addShape(pptx.ShapeType.line, { x: 0.74, y: ty + 2.1, w: 3.4, h: 0, line: { color: ACCENT, width: 2.5 } });
+  t.addText(String(coFull), { x: 0.7, y: ty + 2.28, w: 11.9, h: 0.5, fontSize: 21, bold: true, color: INK, fontFace: FONT });
+  if (C.companyTagline) t.addText(String(C.companyTagline), { x: 0.72, y: ty + 2.78, w: 11.9, h: 0.4, fontSize: 13, italic: true, color: GREY, fontFace: FONT });
   const meta = [];
   if (briefing.solicitation_number) meta.push('Solicitation ' + briefing.solicitation_number);
   if (briefing.agency_name) meta.push(briefing.agency_name);
-  if (meta.length) t.addText(meta.join('   |   '), { x: 0.72, y: 5.12, w: 11.9, h: 0.4, fontSize: 12, color: DARK, fontFace: FONT });
-  const setAsides = (CLIENT_CONFIG.setAsides || []).join('  \u2022  ');
-  if (setAsides) t.addText(setAsides, { x: 0.72, y: 5.56, w: 11.9, h: 0.4, fontSize: 11, color: GREY, fontFace: FONT });
+  let by = 6.05;
+  if (meta.length) { t.addText(meta.join('    |    '), { x: 0.72, y: by, w: 11.9, h: 0.35, fontSize: 12, color: DARK, fontFace: FONT }); by += 0.4; }
+  const sa = (C.setAsides || []).join('   •   ');
+  if (sa) { t.addText(sa, { x: 0.72, y: by, w: 11.9, h: 0.35, fontSize: 11, bold: true, color: ACCENT, fontFace: FONT }); by += 0.36; }
+  const cl = credLine();
+  if (cl) { t.addText(cl, { x: 0.72, y: by, w: 11.9, h: 0.32, fontSize: 9.5, color: GREY, fontFace: FONT }); by += 0.34; }
   t.addText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-    { x: 0.72, y: 6.12, w: 11.9, h: 0.4, fontSize: 11, color: GREY, fontFace: FONT });
+    { x: 0.72, y: by, w: 11.9, h: 0.32, fontSize: 10, color: GREY, fontFace: FONT });
 
-  // Content slides
+  // ===== shared helpers for content slides =====
+  const titleW = logoImg ? 10.7 : 12.3;
+  function titleBlock(slide, title) {
+    slide.addText(String(title || ''), { x: 0.5, y: 0.42, w: titleW, h: 0.82, fontSize: 25, bold: true, color: ACCENT, fontFace: FONT, valign: 'middle' });
+    slide.addShape(pptx.ShapeType.line, { x: 0.55, y: 1.3, w: 3.0, h: 0, line: { color: ACCENT, width: 2.5 } });
+  }
+  const clean = x => String(x == null ? '' : x).trim();
+  const bl = s => (Array.isArray(s.bullets) ? s.bullets : []).map(clean).filter(Boolean);
+
+  function renderBullets(slide, s, yTop) {
+    const items = bl(s);
+    if (!items.length) return;
+    const n = items.length;
+    const fs = n <= 3 ? 19 : n <= 5 ? 17 : n <= 7 ? 15 : 13.5;
+    const sp = n <= 3 ? 18 : n <= 5 ? 12 : n <= 7 ? 9 : 7;
+    slide.addText(items.map(x => ({ text: x, options: { bullet: { code: '2022' } } })),
+      { x: 0.72, y: (yTop || 1.62), w: 12.0, h: 6.9 - (yTop || 1.62), fontSize: fs, color: DARK, fontFace: FONT, valign: 'top', paraSpaceAfter: sp, lineSpacingMultiple: 1.08 });
+  }
+
+  function renderMetrics(slide, s) {
+    const ms = (Array.isArray(s.metrics) ? s.metrics : []).filter(m => m && (m.value != null || m.label)).slice(0, 4);
+    if (!ms.length) return renderBullets(slide, s);
+    let yTop = 1.62;
+    if (clean(s.context)) { slide.addText(clean(s.context), { x: 0.72, y: yTop, w: 12.0, h: 0.55, fontSize: 14.5, italic: true, color: GREY, fontFace: FONT }); yTop = 2.25; }
+    const n = ms.length, gap = 0.35, totalW = 12.0, cardW = (totalW - gap * (n - 1)) / n, cardH = 2.5, x0 = 0.66, y0 = yTop + 0.15;
+    ms.forEach((m, i) => {
+      const x = x0 + i * (cardW + gap);
+      slide.addShape(pptx.ShapeType.roundRect, { x: x, y: y0, w: cardW, h: cardH, rectRadius: 0.08, fill: { color: CARD }, line: { color: CARD_LINE, width: 1 } });
+      slide.addShape(pptx.ShapeType.rect, { x: x, y: y0, w: cardW, h: 0.1, fill: { color: ACCENT } });
+      const v = clean(m.value), vfs = v.length <= 4 ? 42 : v.length <= 7 ? 32 : v.length <= 11 ? 24 : 19;
+      slide.addText(v, { x: x, y: y0 + 0.28, w: cardW, h: 1.15, fontSize: vfs, bold: true, color: ACCENT, align: 'center', valign: 'middle', fontFace: FONT });
+      slide.addText(clean(m.label), { x: x + 0.12, y: y0 + 1.48, w: cardW - 0.24, h: 0.92, fontSize: 12.5, color: DARK, align: 'center', valign: 'top', fontFace: FONT });
+    });
+    const extra = bl(s);
+    if (extra.length) slide.addText(extra.map(x => ({ text: x, options: { bullet: { code: '2022' } } })),
+      { x: 0.72, y: y0 + cardH + 0.3, w: 12.0, h: 6.8 - (y0 + cardH + 0.3), fontSize: 13, color: DARK, fontFace: FONT, valign: 'top', paraSpaceAfter: 7 });
+  }
+
+  function renderProcess(slide, s) {
+    const steps = (Array.isArray(s.steps) ? s.steps : []).filter(x => x && (x.name || x.desc)).slice(0, 10);
+    if (!steps.length) return renderBullets(slide, s);
+    let yTop = 1.6;
+    if (clean(s.intro)) { slide.addText(clean(s.intro), { x: 0.72, y: yTop, w: 12.0, h: 0.5, fontSize: 14, italic: true, color: GREY, fontFace: FONT }); yTop = 2.12; }
+    if (steps.length <= 4) {
+      const n = steps.length, gap = 0.3, totalW = 12.0, cardW = (totalW - gap * (n - 1)) / n, y0 = yTop + 0.15, cardH = 6.7 - y0;
+      steps.forEach((st, i) => {
+        const x = 0.66 + i * (cardW + gap);
+        slide.addShape(pptx.ShapeType.roundRect, { x: x, y: y0, w: cardW, h: cardH, rectRadius: 0.06, fill: { color: 'F8FAFD' }, line: { color: CARD_LINE, width: 1 } });
+        slide.addShape(pptx.ShapeType.ellipse, { x: x + cardW / 2 - 0.32, y: y0 + 0.28, w: 0.64, h: 0.64, fill: { color: ACCENT } });
+        slide.addText(String(i + 1), { x: x + cardW / 2 - 0.32, y: y0 + 0.28, w: 0.64, h: 0.64, fontSize: 22, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: FONT });
+        slide.addText(clean(st.name), { x: x + 0.12, y: y0 + 1.08, w: cardW - 0.24, h: 0.85, fontSize: 14, bold: true, color: ACCENT, align: 'center', valign: 'top', fontFace: FONT });
+        slide.addText(clean(st.desc), { x: x + 0.14, y: y0 + 1.95, w: cardW - 0.28, h: cardH - 2.1, fontSize: 11.5, color: DARK, align: 'center', valign: 'top', fontFace: FONT });
+      });
+    } else {
+      // vertical numbered list, two columns
+      const half = Math.ceil(steps.length / 2);
+      const cols = [steps.slice(0, half), steps.slice(half)];
+      const colX = [0.6, 6.85], colW = 5.85;
+      const rowH = Math.min(1.15, (6.7 - yTop) / half);
+      cols.forEach((colSteps, ci) => {
+        colSteps.forEach((st, ri) => {
+          const idx = ci * half + ri, x = colX[ci], y = yTop + ri * rowH;
+          slide.addShape(pptx.ShapeType.ellipse, { x: x, y: y + 0.05, w: 0.42, h: 0.42, fill: { color: ACCENT } });
+          slide.addText(String(idx + 1), { x: x, y: y + 0.05, w: 0.42, h: 0.42, fontSize: 14, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: FONT });
+          slide.addText([
+            { text: clean(st.name) + (clean(st.desc) ? '  ' : ''), options: { bold: true, color: ACCENT, fontSize: 13 } },
+            { text: clean(st.desc), options: { color: DARK, fontSize: 11.5 } }
+          ], { x: x + 0.55, y: y, w: colW - 0.6, h: rowH - 0.05, fontFace: FONT, valign: 'top' });
+        });
+      });
+    }
+  }
+
+  function renderTwoCol(slide, s) {
+    const cols = [s.left || {}, s.right || {}];
+    if (!cols.some(c => (c.points && c.points.length) || c.heading)) return renderBullets(slide, s);
+    const colW = 5.85, xs = [0.6, 6.85], y0 = 1.62, headH = 0.5;
+    cols.forEach((c, i) => {
+      const x = xs[i];
+      slide.addShape(pptx.ShapeType.rect, { x: x, y: y0, w: colW, h: headH, fill: { color: i === 0 ? GREY : ACCENT } });
+      slide.addText(clean(c.heading) || (i === 0 ? 'Challenge' : 'Our Approach'), { x: x + 0.15, y: y0, w: colW - 0.3, h: headH, fontSize: 15, bold: true, color: 'FFFFFF', valign: 'middle', fontFace: FONT });
+      const pts = (Array.isArray(c.points) ? c.points : []).map(clean).filter(Boolean);
+      if (pts.length) slide.addText(pts.map(p => ({ text: p, options: { bullet: { code: '2022' } } })),
+        { x: x + 0.1, y: y0 + headH + 0.22, w: colW - 0.2, h: 4.5, fontSize: 13.5, color: DARK, fontFace: FONT, valign: 'top', paraSpaceAfter: 10, lineSpacingMultiple: 1.06 });
+    });
+  }
+
+  function renderChart(slide, s) {
+    const c = s.chart || {};
+    const cats = (Array.isArray(c.categories) ? c.categories : []).map(x => String(x));
+    const series = (Array.isArray(c.series) ? c.series : []).filter(se => se && Array.isArray(se.values) && se.values.length);
+    if (!cats.length || !series.length) return renderBullets(slide, s);
+    const data = series.map((se, i) => ({ name: String(se.name || ('Series ' + (i + 1))), labels: cats, values: se.values.map(v => Number(v) || 0) }));
+    const ctype = c.type === 'line' ? pptx.ChartType.line : c.type === 'pie' ? pptx.ChartType.pie : pptx.ChartType.bar;
+    const hasTake = !!clean(s.takeaway);
+    const opts = {
+      x: 0.7, y: 1.7, w: hasTake ? 8.3 : 12.0, h: 4.7, fontFace: FONT,
+      chartColors: [ACCENT, LIGHT2, CARD_LINE, GREY],
+      showLegend: series.length > 1, legendPos: 'b', legendColor: DARK, legendFontSize: 11,
+      showValue: true, dataLabelColor: ctype === pptx.ChartType.pie ? 'FFFFFF' : DARK, dataLabelFontSize: 11, dataLabelFontBold: true,
+      showTitle: false, catAxisLabelColor: DARK, catAxisLabelFontSize: 12, valAxisHidden: true, valGridLine: { style: 'none' }
+    };
+    if (ctype === pptx.ChartType.bar) { opts.barDir = 'col'; opts.dataLabelPosition = 'outEnd'; }
+    if (ctype === pptx.ChartType.pie) { opts.showPercent = true; opts.showValue = false; }
+    slide.addChart(ctype, data, opts);
+    if (hasTake) {
+      slide.addShape(pptx.ShapeType.line, { x: 9.25, y: 2.1, w: 0, h: 3.6, line: { color: ACCENT, width: 2 } });
+      slide.addText([{ text: 'Takeaway\n', options: { bold: true, color: ACCENT, fontSize: 13 } }, { text: clean(s.takeaway), options: { color: DARK, fontSize: 14 } }],
+        { x: 9.5, y: 2.1, w: 3.3, h: 3.6, fontFace: FONT, valign: 'middle', lineSpacingMultiple: 1.1 });
+    }
+  }
+
+  // ===== content slides =====
   (deck.slides || []).forEach(s => {
     const slide = pptx.addSlide({ masterName: 'CONTENT' });
-    slide.addText(String(s.title || ''), { x: 0.5, y: 0.45, w: 12.3, h: 0.85, fontSize: 26, bold: true, color: ACCENT, fontFace: FONT, valign: 'middle' });
-    slide.addShape(pptx.ShapeType.line, { x: 0.55, y: 1.32, w: 3.2, h: 0, line: { color: ACCENT, width: 2 } });
-    const bullets = Array.isArray(s.bullets) ? s.bullets.filter(x => x && String(x).trim()) : [];
-    if (bullets.length) {
-      slide.addText(bullets.map(x => ({ text: String(x), options: { bullet: true } })),
-        { x: 0.7, y: 1.6, w: 12.0, h: 5.2, fontSize: 17, color: DARK, fontFace: FONT, valign: 'top', paraSpaceAfter: 10, lineSpacingMultiple: 1.05 });
-    }
-    if (s.notes && String(s.notes).trim()) slide.addNotes(String(s.notes));
+    titleBlock(slide, s.title);
+    const layout = String(s.layout || 'bullets').toLowerCase().replace(/[^a-z_]/g, '');
+    try {
+      if (layout === 'metrics' || layout === 'stats') renderMetrics(slide, s);
+      else if (layout === 'process' || layout === 'steps') renderProcess(slide, s);
+      else if (layout === 'twocolumn' || layout === 'two_column' || layout === 'columns' || layout === 'compare' || layout === 'comparison') renderTwoCol(slide, s);
+      else if (layout === 'chart') renderChart(slide, s);
+      else renderBullets(slide, s);
+    } catch (e) { try { renderBullets(slide, s); } catch (_) {} }
+    if (clean(s.notes)) slide.addNotes(clean(s.notes));
   });
+
+  // ===== closing slide =====
+  const cl2 = pptx.addSlide();
+  cl2.background = { color: 'FFFFFF' };
+  cl2.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.28, h: PGH, fill: { color: ACCENT } });
+  if (logoImg) { const h = 1.0, w = h * logoAR; cl2.addImage(Object.assign({ x: PGW / 2 - w / 2, y: 1.1, w: w, h: h }, logoImg)); }
+  cl2.addText('Thank You', { x: 0, y: 2.5, w: PGW, h: 1.0, fontSize: 40, bold: true, color: ACCENT, align: 'center', fontFace: FONT });
+  cl2.addText('Questions & Discussion', { x: 0, y: 3.55, w: PGW, h: 0.6, fontSize: 19, color: GREY, align: 'center', fontFace: FONT });
+  cl2.addText(String(coFull), { x: 0, y: 4.45, w: PGW, h: 0.5, fontSize: 19, bold: true, color: INK, align: 'center', fontFace: FONT });
+  if (C.companyTagline) cl2.addText(String(C.companyTagline), { x: 0, y: 4.95, w: PGW, h: 0.4, fontSize: 13, italic: true, color: GREY, align: 'center', fontFace: FONT });
+  const contact = [C.ceoName && C.ceoTitle ? (C.ceoName + ', ' + C.ceoTitle) : (C.ceoName || ''), C.ceoEmail || '', C.ceoPhone || ''].filter(Boolean).join('    |    ');
+  let cy = 5.6;
+  if (contact) { cl2.addText(contact, { x: 0, y: cy, w: PGW, h: 0.35, fontSize: 12.5, color: DARK, align: 'center', fontFace: FONT }); cy += 0.4; }
+  const cl3 = credLine();
+  if (cl3) cl2.addText(cl3, { x: 0, y: cy, w: PGW, h: 0.32, fontSize: 10, color: GREY, align: 'center', fontFace: FONT });
 
   const safe = String(deck.deck_title || briefing.requirement_title || 'Presentation')
     .replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'Presentation';
-  const fname = (CLIENT_CONFIG.companyShortName || 'Proposal') + '_' + safe + '_Oral_Presentation.pptx';
-  return pptx.writeFile({ fileName: fname });
+  const fname = (co || 'Proposal') + '_' + safe + '_Oral_Presentation.pptx';
+  return { pptx, fname };
+}
+
+// Browser render: build, export to a blob, auto-download, and return {url, fname} for a download button.
+async function _pptRenderDeck(deck, briefing) {
+  const built = _pptBuildDeck(deck, briefing);
+  const blob = await built.pptx.write({ outputType: 'blob' });
+  const url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = url; a.download = built.fname; document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) {}
+  return { url: url, fname: built.fname };
 }
 
 function applyTabFamilyColors() {
@@ -4882,6 +5094,16 @@ function setProgress(pct, steps) {
       `${s.text}</div>`
     ).join('');
   }
+}
+
+function _setSteps(steps) {
+  const el = document.getElementById('gsbSteps');
+  if (!el || !steps) return;
+  el.innerHTML = steps.map(s =>
+    `<div class="progress-step ${s.status}">` +
+    `<span class="step-icon">${s.status === 'done' ? '✅' : s.status === 'active' ? '<div class="spinner-dark" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></div>' : '○'}</span>` +
+    `${s.text}</div>`
+  ).join('');
 }
 
 // Soft-advance: nudge progress forward visually between hard milestones
@@ -12556,11 +12778,24 @@ function downloadBnaPdf() {
     const lsrc = logoEl && logoEl.getAttribute && logoEl.getAttribute('src');
     const isSvg = /^data:image\/svg|\.svg(\?|$)/i.test(lsrc || '');
     if (logoEl && lsrc && logoEl.naturalWidth > 0 && !isSvg) {
-      const fmt = /^data:image\/jpe?g|\.jpe?g(\?|$)/i.test(lsrc) ? 'JPEG' : 'PNG';
-      const maxH = 52, maxW = 118;
-      const sc = Math.min(maxW / logoEl.naturalWidth, maxH / logoEl.naturalHeight);
-      const lw = logoEl.naturalWidth * sc, lh = logoEl.naturalHeight * sc;
-      doc.addImage(logoEl, fmt, M, (BAND - lh) / 2, lw, lh);
+      const nw = logoEl.naturalWidth, nh = logoEl.naturalHeight;
+      const maxH = 50, maxW = 118;
+      const fit = Math.min(maxW / nw, maxH / nh);
+      const lw = nw * fit, lh = nh * fit;   // on-page size (pt)
+      // Embed the logo at its NATIVE resolution. The on-screen <img> is a small thumbnail, so handing
+      // jsPDF the rendered element bakes in that thumbnail size and looks blurry; instead use the
+      // original data URL (full-resolution, lossless), or a 1:1 canvas capture for remote URLs.
+      let imgData, fmt;
+      if (/^data:/i.test(lsrc)) {
+        imgData = lsrc;
+        fmt = /^data:image\/jpe?g/i.test(lsrc) ? 'JPEG' : 'PNG';
+      } else {
+        const cv = document.createElement('canvas');
+        cv.width = nw; cv.height = nh;
+        cv.getContext('2d').drawImage(logoEl, 0, 0);
+        imgData = cv.toDataURL('image/png'); fmt = 'PNG';
+      }
+      doc.addImage(imgData, fmt, M, (BAND - lh) / 2, lw, lh, undefined, 'NONE');
       tx = M + lw + 18; twAvail = PW - M - tx;
     }
   } catch (e) { tx = M; twAvail = CW; }
@@ -12660,20 +12895,25 @@ function downloadBnaPdf() {
     );
   }
 
-  // ---------- Opportunity details (mirrors the on-screen sections) ----------
+  // ---------- Opportunity details (full 1:1 mirror of the on-screen sections) ----------
   heading('Opportunity Details');
   if (intel.description) para(intel.description, { size: 9.5 });
-  if (intel.opportunity_url && !/^not stated/i.test(String(intel.opportunity_url))) para('Link: ' + intel.opportunity_url, { size: 9, color: ACCENT, gap: 4 });
 
-  const groups = [
-    ['Dates & Timeline', [['Next Due Date', 'next_due_date'], ['Period of Performance', 'period_of_performance'], ['Contract Duration (years)', 'contract_years'], ['Last Possible Performance Date', 'last_possible_performance_date']]],
-    ['Size & Value', [['Number of FTEs', 'fte_count'], ['Base Year Value', 'base_year_value'], ['Total Contract Value', 'total_contract_value'], ['Award Value Rationale', 'award_value_rationale']]],
-    ['Scope & Place of Performance', [['Place of Performance', 'place_of_performance'], ['In-Person / Remote / Hybrid', 'work_setting']]],
-    ['Acquisition & Codes', [['Set-Aside', 'set_aside'], ['Contract Type', 'contract_type'], ['NAICS Code', 'naics_code'], ['SIN', 'sin'], ['PSC', 'psc']]],
-    ['Clearances', [['Facility Clearance Required', 'facility_clearance_required'], ['Personnel Clearance Required', 'personnel_clearance_required']]],
-    ['Points of Contact', [['KO Name and Office', 'ko_name_office'], ['COR Name and Office', 'cor_name_office']]],
-    ['Competition', [['New or Recompete', 'new_or_recompete'], ['Incumbent', 'incumbent']]],
-  ];
+  const _present = x => x && String(x).trim() && !/^not stated/i.test(String(x).trim());
+  const agencyRows = (() => {
+    if ([intel.department_agency, intel.sub_agency, intel.contracting_office].some(_present)) {
+      const r = [['Department / Agency', fcell('department_agency')]];
+      if (_present(intel.sub_agency)) r.push(['Sub-Agency', fcell('sub_agency')]);
+      if (_present(intel.contracting_office)) r.push(['Contracting Office', fcell('contracting_office')]);
+      return r;
+    }
+    return [['Agency', fcell('customer_agency')]];
+  })();
+  const urlCell = key => {
+    const fv = fieldVal(intel[key]);
+    if (fv.t !== 'Not stated in documents' && /^https?:\/\//i.test(fv.t)) return { t: fv.t, color: [37, 99, 235], url: fv.t };
+    return fv;
+  };
   const incumbentCell = () => {
     const fv = fieldVal(intel.incumbent);
     const url = intel.incumbent_source_url;
@@ -12684,6 +12924,26 @@ function downloadBnaPdf() {
     }
     return fv;
   };
+
+  subheading('Opportunity');
+  kvTable([
+    ...agencyRows,
+    ['Requirement / Opportunity Name', fcell('requirement_name')],
+    ['Source / Where Found', fcell('source')],
+    ['ID Number', fcell('id_number')],
+    ['Current Stage', fcell('stage')],
+    ['Opportunity URL', urlCell('opportunity_url')],
+  ]);
+
+  const groups = [
+    ['Dates & Timeline', [['Next Due Date', 'next_due_date'], ['Period of Performance', 'period_of_performance'], ['Contract Duration (years)', 'contract_years'], ['Period of Performance Start Date', 'pop_start_date'], ['Period of Performance End Date', 'pop_end_date'], ['Last Possible Performance Date', 'last_possible_performance_date']]],
+    ['Size & Value', [['Number of FTEs', 'fte_count'], ['Base Year Value', 'base_year_value'], ['Total Contract Value', 'total_contract_value'], ['Award Value Rationale', 'award_value_rationale']]],
+    ['Scope & Place of Performance', [['Place of Performance', 'place_of_performance'], ['In-Person / Remote / Hybrid', 'work_setting']]],
+    ['Acquisition & Codes', [['Set-Aside', 'set_aside'], ['Contract Vehicle', 'contract_vehicle'], ['Contract Type', 'contract_type'], ['NAICS Code', 'naics_code'], ['SIN', 'sin'], ['PSC', 'psc']]],
+    ['Clearances', [['Facility Clearance Required', 'facility_clearance_required'], ['Personnel Clearance Required', 'personnel_clearance_required']]],
+    ['Points of Contact', [['KO Name and Office', 'ko_name_office'], ['COR Name and Office', 'cor_name_office']]],
+    ['Competition', [['New or Recompete', 'new_or_recompete'], ['Incumbent', 'incumbent']]],
+  ];
   groups.forEach(([title, fields]) => {
     subheading(title);
     kvTable(fields.map(([label, key]) => [label, key === 'incumbent' ? incumbentCell() : fcell(key)]));
@@ -12834,7 +13094,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -13016,6 +13276,8 @@ function extractIntelFields(jsonStr) {
     place_of_performance:          str('place_of_performance'),
     work_setting:                  str('work_setting'),
     period_of_performance:         str('period_of_performance'),
+    pop_start_date:                str('pop_start_date'),
+    pop_end_date:                  str('pop_end_date'),
     last_possible_performance_date:str('last_possible_performance_date'),
     facility_clearance_required:   str('facility_clearance_required'),
     personnel_clearance_required:  str('personnel_clearance_required'),
@@ -13097,6 +13359,8 @@ function renderOpportunityIntel(intel, container) {
       { key:'next_due_date',                label:'Next Due Date' },
       { key:'period_of_performance',        label:'Period of Performance' },
       { key:'contract_years',               label:'Contract Duration (years)' },
+      { key:'pop_start_date',               label:'Period of Performance Start Date' },
+      { key:'pop_end_date',                 label:'Period of Performance End Date' },
       { key:'last_possible_performance_date',label:'Last Possible Performance Date' },
     ]},
     { title:'Size & Value', fields:[
