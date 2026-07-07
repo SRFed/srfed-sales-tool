@@ -627,7 +627,12 @@
   .tab-btn[data-fam="decide"] { border-left: 8px solid var(--fam-decide, #2aa79b); }
   .tab-btn[data-fam="build"]  { border-left: 8px solid var(--fam-build,  #8a93e8); }
   .tab-btn[data-fam="edit"]   { border-left: 8px solid var(--fam-edit,   #e0894a); }
-  .tab-btn[data-fam="config"] { border-left: 8px solid var(--fam-neutral, rgba(255,255,255,0.45)); }
+  .tab-btn[data-fam="config"] {
+    border-left: 8px solid transparent;
+    background:
+      linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 33.33%, var(--fam-build, #8a93e8) 33.33% 66.66%, var(--fam-present, #a855f7) 66.66% 100%) border-box left / 8px 100% no-repeat,
+      linear-gradient(160deg, var(--tab-top) 0%, var(--tab-bottom) 100%) border-box;
+  }
   /* Dual-family tabs (Bid/No-Bid + Proposal) belong to BOTH decide (green) and build (purple).
      The left stripe is a sharp diagonal — green over purple — painted as a background layer so it
      survives the white "active" state cleanly (no per-side border math). */
@@ -667,7 +672,12 @@
   .tab-btn.active[data-fam="decide"] { border-left: 8px solid var(--fam-decide, #2aa79b); }
   .tab-btn.active[data-fam="build"]  { border-left: 8px solid var(--fam-build,  #8a93e8); }
   .tab-btn.active[data-fam="edit"]   { border-left: 8px solid var(--fam-edit,   #e0894a); }
-  .tab-btn.active[data-fam="config"] { border-left: 8px solid var(--fam-neutral, #cbd5e1); }
+  .tab-btn.active[data-fam="config"] {
+    border-left: 8px solid transparent;
+    background:
+      linear-gradient(135deg, var(--fam-decide, #2aa79b) 0 33.33%, var(--fam-build, #8a93e8) 33.33% 66.66%, var(--fam-present, #a855f7) 66.66% 100%) border-box left / 8px 100% no-repeat,
+      linear-gradient(160deg, #ffffff 0%, #e8f0ff 100%) border-box;
+  }
   .tab-btn.active[data-fam="decide-build"] {
     border-left: 8px solid transparent;
     background:
@@ -748,7 +758,7 @@
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-build,#8a93e8) 0 50%,var(--fam-present,#a855f7) 50%)"></span><div class="sl-txt"><b>Proposal → Presentation</b><span>your finished proposal builds the oral deck</span></div></div>
     <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Section Editor</b><span>standalone — doesn't feed other tabs</span></div></div>
-    <div class="sl-row"><span class="sl-dot" style="background:var(--fam-neutral,#cbd5e1)"></span><div class="sl-txt"><b>Settings</b><span>standalone — doesn't feed other tabs</span></div></div>
+        <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 33.33%,var(--fam-build,#8a93e8) 33.33% 66.66%,var(--fam-present,#a855f7) 66.66% 100%)"></span><div class="sl-txt"><b>Settings</b><span>foundation — profile &amp; branding feed every tab except the Section Editor</span></div></div>
   </div>
 </header>
 
@@ -1588,7 +1598,7 @@
       </div>
       <div class="file-list" id="fileListBNA" style="margin-bottom:10px"></div>
       <div style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px">✏️ Or paste opportunity text</div>
+        <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px">✏️ And/or paste opportunity text</div>
         <p style="font-size:12px;color:var(--muted);margin:0 0 6px">For early-stage opportunities — paste what you have from SAM.gov, an APFS/AFPS listing, an email, or a sources-sought notice. You can use this alone or alongside uploaded documents.</p>
         <p style="font-size:12px;color:var(--blue);background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 10px;margin:0 0 8px;line-height:1.55">💡 <strong>Tip:</strong> Note where you found this opportunity (e.g. SAM.gov, GSA eBuy, Unison/ORBIT, an agency forecast) and the vehicle it’s on if you know it. The solicitation itself often doesn’t say — noting it here captures it in the Source and Contract Vehicle fields of your analysis.</p>
         <textarea id="bnaTextInput" rows="6" oninput="updateBnaBtn()" placeholder="Paste solicitation summary, requirements, agency, set-aside, clearance, estimated value, scope notes, etc." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
@@ -2187,6 +2197,7 @@
         <div class="settings-grid">
           <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5" onblur="forceHashColor(this)"/></div>
           <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872" onblur="forceHashColor(this)"/></div>
+          <div class="settings-field" style="grid-column:1/-1;margin-top:-2px"><button type="button" onclick="revertBrandColors()" title="Restore the primary and secondary colors to the values set when you opened the browser" style="padding:6px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--border);border-radius:6px;cursor:pointer">↩ Revert colors</button></div>
           <div class="settings-field" style="grid-column:1/-1">
             <label>Logo</label>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
@@ -4093,7 +4104,7 @@ async function runHsMatch() {
       : (isSpecificSetAside
           ? `SET-ASIDE FILTER (HARD REQUIREMENT): This is a ${setAside} set-aside. The PRIME must independently hold the ${setAside} certification to be eligible. You MUST only include companies that have the ${setAside} certification in their CRM record; exclude all others entirely.`
           : isTotalSmallBusiness
-          ? `SET-ASIDE NOTE: Total Small Business set-aside. The prime must qualify as a small business. All small-business types are eligible; specific certifications beyond small-business status are not required.`
+          ? `SET-ASIDE FILTER (HARD REQUIREMENT): Total Small Business set-aside - the PRIME must qualify as a SMALL BUSINESS. Large businesses are INELIGIBLE to prime and MUST be EXCLUDED entirely (do not rank or list them), no matter how capable or how many vehicles they hold. Judge size from each CRM record employees/revenue - a firm with thousands of employees is a large business, so exclude it. All small-business types are eligible; certifications beyond small-business status are not required.`
           : `SET-ASIDE NOTE: Unrestricted or open competition. Small-business certifications are not relevant to prime eligibility; do not weight them.`);
     const _scoringWeights = _isSubs
       ? `SCORING WEIGHTS (apply in this order):\n1. Covers scope ${_co} cannot self-perform (complementary capability in this opportunity's core domain) - HIGHEST (~40%)\n2. Realistic size to subcontract under a small-business prime - HIGH (~20%)\n3. Set-aside benefit (similarly situated counts toward the Limitations-on-Subcontracting math) - MEDIUM (~20%)\n4. Clearance and geographic fit for their portion - LOW (~10%)\n5. Relationship quality from CRM notes - LOW (~10%)`
@@ -5632,7 +5643,7 @@ async function ensureBriefing(apiKey) {
     `"base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026), count the months (=9); if a month count is stated, use it; if a full base year with no other length is indicated, use 12; use 0 only if you truly cannot tell",` +
     `"option_period_count":"number of option periods/years as a number; 0 if none",` +
     `"option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown",` +
-    `"sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies to it; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
+    `"sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
     `"pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated",` +
     `"estimated_ftes":"the number of FTEs/labor the solicitation REQUIRES if stated; '' or 'not specified' if it does not state one",` +
     `"estimated_value":"",` +
@@ -7669,7 +7680,7 @@ async function runGeneration() {
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
-      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the work is covered by the Service Contract Act / SCLS or a Wage Determination applies; 'no' if the solicitation indicates the work is exempt (e.g. exempt professional services); '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
+      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
       `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
@@ -11621,6 +11632,13 @@ function computeDecisiveVerdict() {
   const w = getEffectiveWeights();
   const opp = window._bnaOpp || {};
   const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  // Value consistency: reason about the SAME contract value shown in Opportunity Details (when it has
+  // been extracted), so the verdict, prime/sub gates, and partner search never contradict the displayed
+  // figure. The displayed total_contract_value is treated as canonical for the whole analysis.
+  const _intelTot = window._lastBnaIntel && window._lastBnaIntel.total_contract_value;
+  if (_intelTot) { const _t = String(_intelTot).replace(/\[inferred\]/ig, '').trim(); if (_t && /\d/.test(_t)) opp.estimated_value = _t; }
+  const _intelSa = window._lastBnaIntel && window._lastBnaIntel.set_aside;
+  if (_intelSa) { const _s = String(_intelSa).replace(/\[inferred\]/ig, '').trim(); if (_s && !/^not stated/i.test(_s)) opp.set_aside = _s; }
   const gates = evaluateBnaGates(opp, cap);
   const fteNum = parseInt(String(opp.fte_count || '').replace(/[^0-9]/g, '')) || null;
   let scopeCov = (window._bnaScopeCoverage != null) ? Number(window._bnaScopeCoverage) : null;
@@ -11643,7 +11661,7 @@ function computeDecisiveVerdict() {
   const criticalScores = criticalKeys.map(k => bna_tier1_scores[k]).filter(v => v != null);
   const minCritical = criticalScores.length ? Math.min(...criticalScores) : base;
   const blended = 0.55 * base + 0.45 * minCritical; // decisive blend
-  const ceiling = minCritical + 1.5;                // weakest-link cap: one genuinely weak critical factor caps the upside
+  const ceiling = Math.min(10, minCritical + 1.5);                // weakest-link cap: one genuinely weak critical factor caps the upside
   const ceilingBinding = blended > ceiling;         // true when the cap (not the blend) is what limits the score
   let fit = Math.min(blended, ceiling);             // apply the weakest-link ceiling
   // Spread calibration pushes muddy-middle scores toward a clear decision. Skip it when the
@@ -11833,14 +11851,15 @@ async function findPrimePartners() {
       `${oppText}\n` +
       `WHY ${co} CANNOT PRIME (the partner MUST cover these specific gaps):\n` +
       (gapList.length ? gapList.map(g=>`- ${g}`).join('\n') : `- (general capacity — find a larger/credentialed prime)`) + '\n\n' +
+      `SET-ASIDE ELIGIBILITY (MANDATORY GATE) - this opportunity's set-aside is: ${opp.set_aside||'not stated'}. If it is restricted to a business category (Small Business, 8(a), SDVOSB/VOSB, WOSB/EDWOSB, HUBZone, or similar), the PRIME must ITSELF qualify for that set-aside. A large business CANNOT prime a small-business-type set-aside no matter how many vehicles it holds or how large it is - such firms are INELIGIBLE and MUST be EXCLUDED entirely: do not rank, list, or even mention them. Judge each CRM company's size/status from its employees, revenue, and certifications; when a firm is clearly a large business (e.g. thousands of employees) and the set-aside requires a small business, exclude it. Rank ONLY companies eligible to serve as the prime on THIS set-aside.\n\n` +
       `${co}'s OWN PROFILE (so the prime is complementary, not redundant): facility clearance ${cap.facilityClearance||'None'}, business size ${cap.businessSize||'?'}, set-asides held: ${(cap.setAsides||[]).join(', ')||'none'}, vehicles held: ${(cap.contractVehicles||[]).join(', ')||'none'}, max prime FTE ${cap.maxPrimeFTE||'?'}. ${co} can self-perform roughly ${v.scopeCov}% of this scope.\n\n` +
       `CRM COMPANIES (${summaries.length} total - one per line):\n` +
       summaries.map((s,i)=>`${i+1}. ${s}`).join('\n') + '\n\n' +
       `TASK: Rank the top 6 companies best suited to PRIME this opportunity with ${co} subbing. A good prime MUST plausibly CLEAR the gaps listed above (e.g. hold the required clearance, hold the required vehicle, be large enough for the FTE scale) AND have capability that complements (not duplicates) ${co}. Exclude companies that cannot clear the gaps. If few or none qualify, say so honestly in overall_take and return only those that do.\n\n` +
       `SCORING WEIGHTS: (1) Clears ${co}'s blocking gaps — HIGHEST (~45%); (2) Capability to lead/prime this scope — HIGH (~30%); (3) Complements ${co}'s self-perform share — MEDIUM (~15%); (4) Relationship/agency fit — LOW (~10%).\n\n` +
       `Return ONLY a JSON object. Plain ASCII, no em-dashes:\n` +
-      `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match","why":"2-3 sentences citing their CRM properties and which specific gaps they clear","gaps_cleared":"e.g. holds TS facility clearance; holds SeaPort-NxG; ~400 employees","potential_role":"What they prime and what ${co} would sub","concerns":"Specific risks, or None"}],"overall_take":"3-5 sentences on whether a viable prime exists in the CRM for this pursuit."}\n` +
-      `fit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match.`;
+      `{"matches":[{"rank":1,"company_name":"Exact name from CRM","fit_score":8,"fit_label":"Strong Match","why":"2-3 sentences citing their CRM properties and which specific gaps they clear","gaps_cleared":"e.g. holds TS facility clearance; holds SeaPort-NxG; ~400 employees","potential_role":"What they prime and what ${co} would sub","concerns":"Specific risks, or None","business_size":"Small, Large, or Unknown based on the CRM employees/revenue","eligible_to_prime":true}],"overall_take":"3-5 sentences on whether a viable prime exists in the CRM for this pursuit."}\n` +
+      `fit_score 1-10. fit_label: Strong Match / Good Match / Possible Match / Weak Match. Set eligible_to_prime=false for any firm that cannot legally prime this set-aside, and do NOT include such firms in matches at all.`;
 
     const mr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -11855,6 +11874,10 @@ async function findPrimePartners() {
     let matches = [], overallTake = '';
     const objM = mraw.match(/\{[\s\S]+\}/);
     if (objM) { try { const parsed = JSON.parse(objM[0]); matches = parsed.matches || []; overallTake = parsed.overall_take || ''; } catch(_) {} }
+    // Hard gate (belt-and-suspenders to the prompt): never surface a firm that is ineligible to PRIME
+    // this set-aside — e.g. a large business on a small-business-type set-aside.
+    const _saRestricted = /small business|8\s*\(?a\)?\b|sdvosb|vosb|wosb|edwosb|hubzone|service.?disabled|women.?owned|economically disadvantaged|disadvantaged business/i.test(String(opp.set_aside || ''));
+    if (_saRestricted) matches = matches.filter(m => m && m.eligible_to_prime !== false && !/^\s*large/i.test(String(m.business_size || '')));
     window._bnaPrimePartners = matches; window._bnaPrimePartnersOverall = overallTake;
 
     let html = `<div style="border:1px solid #bfdbfe;border-radius:10px;background:#f8fbff;padding:16px 18px">` +
@@ -12367,7 +12390,7 @@ async function runBidNoBid() {
       `OPPORTUNITY FACTS — extract these verbatim where stated, else "" (empty). These drive prime/sub eligibility:\n` +
       `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
       `- fte_count: number of FTEs/positions if stated (digits only, e.g. "45"), else ""\n` +
-      `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated". SDVOSB (52.219-27, service-disabled veteran-owned), WOSB (52.219-30, women-owned), EDWOSB (52.219-29), HUBZone (52.219-3), and 8(a) (52.219-18) are DISTINCT - never substitute one for another. Cross-check your answer against the required certifications: if offerors must be certified SDVOSB / VOSB / WOSB / 8(a) / HUBZone, the set_aside MUST match that certification.\n` +
+      `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated". SDVOSB (52.219-27, service-disabled veteran-owned), WOSB (52.219-30, women-owned), EDWOSB (52.219-29), HUBZone (52.219-3), and 8(a) (52.219-18) are DISTINCT - never substitute one for another. Cross-check your answer against the required certifications: if offerors must be certified SDVOSB / VOSB / WOSB / 8(a) / HUBZone, the set_aside MUST match that certification. Use this SAME set-aside consistently everywhere in your output (risks, win_strategy, summary) - never name a different set-aside category in the narrative than in this structured field.\n` +
       `- required_dcaa: true ONLY if the award is a COST-REIMBURSEMENT contract type (cost-plus / CPFF / CPIF / CPAF / cost-sharing), OR the solicitation EXPLICITLY requires a "DCAA-approved" or "adequate accounting system." Set FALSE for Firm-Fixed-Price, Time-and-Materials (T&M), or Labor-Hour awards. A cost-reimbursable TRAVEL or ODC line alone does NOT make this true (travel is reimbursed per travel regulations). If the contract type is not stated, set false.\n` +
       `- prime_eligible: true or false. Can ${CLIENT_CONFIG.companyShortName} legally and practically compete as the PRIME on this? Weigh EVERY dimension below against the CAPACITY facts in the company profile, and set FALSE if ANY is a hard barrier:\n` +
       `    • Set-aside: operative set-aside is one the company does NOT hold (e.g. 8(a)/HUBZone set-aside when not 8(a)/HUBZone certified).\n` +
@@ -12782,20 +12805,19 @@ function downloadBnaPdf() {
       const maxH = 50, maxW = 118;
       const fit = Math.min(maxW / nw, maxH / nh);
       const lw = nw * fit, lh = nh * fit;   // on-page size (pt)
-      // Embed the logo at its NATIVE resolution. The on-screen <img> is a small thumbnail, so handing
-      // jsPDF the rendered element bakes in that thumbnail size and looks blurry; instead use the
-      // original data URL (full-resolution, lossless), or a 1:1 canvas capture for remote URLs.
-      let imgData, fmt;
-      if (/^data:/i.test(lsrc)) {
-        imgData = lsrc;
-        fmt = /^data:image\/jpe?g/i.test(lsrc) ? 'JPEG' : 'PNG';
-      } else {
-        const cv = document.createElement('canvas');
-        cv.width = nw; cv.height = nh;
-        cv.getContext('2d').drawImage(logoEl, 0, 0);
-        imgData = cv.toDataURL('image/png'); fmt = 'PNG';
-      }
-      doc.addImage(imgData, fmt, M, (BAND - lh) / 2, lw, lh, undefined, 'NONE');
+      // Render onto a ~300-DPI canvas. A low-res source logo (e.g. the 120px default) otherwise gets
+      // upscaled by the PDF viewer and looks blurry, especially when zoomed. Supersampling with
+      // high-quality smoothing gives the crispest result the source allows; a high-resolution uploaded
+      // logo is used at full detail. (Sharpness is ultimately capped by the source image's resolution.)
+      const targetPx = Math.round((lw / 72) * 300);
+      const cw = Math.min(1400, Math.max(nw, targetPx));
+      const ch = Math.max(1, Math.round(cw * nh / nw));
+      const cv = document.createElement('canvas');
+      cv.width = cw; cv.height = ch;
+      const cx = cv.getContext('2d');
+      cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+      cx.drawImage(logoEl, 0, 0, cw, ch);
+      doc.addImage(cv.toDataURL('image/png'), 'PNG', M, (BAND - lh) / 2, lw, lh, undefined, 'FAST');
       tx = M + lw + 18; twAvail = PW - M - tx;
     }
   } catch (e) { tx = M; twAvail = CW; }
@@ -12924,6 +12946,15 @@ function downloadBnaPdf() {
     }
     return fv;
   };
+  const valueCell = key => {
+    const fv = fieldVal(intel[key]);
+    const url = intel.value_source_url;
+    if (url && fv.t !== 'Not stated in documents' && !/\[inferred\]/i.test(fv.t)) {
+      const sn = intel.value_source_name || String(url).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] || 'source';
+      return { t: fv.t + '  (' + sn + ')', color: [37, 99, 235], url: url };
+    }
+    return fv;
+  };
 
   subheading('Opportunity');
   kvTable([
@@ -12939,14 +12970,14 @@ function downloadBnaPdf() {
     ['Dates & Timeline', [['Next Due Date', 'next_due_date'], ['Period of Performance', 'period_of_performance'], ['Contract Duration (years)', 'contract_years'], ['Period of Performance Start Date', 'pop_start_date'], ['Period of Performance End Date', 'pop_end_date'], ['Last Possible Performance Date', 'last_possible_performance_date']]],
     ['Size & Value', [['Number of FTEs', 'fte_count'], ['Base Year Value', 'base_year_value'], ['Total Contract Value', 'total_contract_value'], ['Award Value Rationale', 'award_value_rationale']]],
     ['Scope & Place of Performance', [['Place of Performance', 'place_of_performance'], ['In-Person / Remote / Hybrid', 'work_setting']]],
-    ['Acquisition & Codes', [['Set-Aside', 'set_aside'], ['Contract Vehicle', 'contract_vehicle'], ['Contract Type', 'contract_type'], ['NAICS Code', 'naics_code'], ['SIN', 'sin'], ['PSC', 'psc']]],
+    ['Acquisition & Codes', [['Set-Aside', 'set_aside'], ['Contract Vehicle', 'contract_vehicle'], ['Contract Type', 'contract_type'], ['Service Contract Act', 'sca_coverage'], ['NAICS Code', 'naics_code'], ['SIN', 'sin'], ['PSC', 'psc']]],
     ['Clearances', [['Facility Clearance Required', 'facility_clearance_required'], ['Personnel Clearance Required', 'personnel_clearance_required']]],
     ['Points of Contact', [['KO Name and Office', 'ko_name_office'], ['COR Name and Office', 'cor_name_office']]],
     ['Competition', [['New or Recompete', 'new_or_recompete'], ['Incumbent', 'incumbent']]],
   ];
   groups.forEach(([title, fields]) => {
     subheading(title);
-    kvTable(fields.map(([label, key]) => [label, key === 'incumbent' ? incumbentCell() : fcell(key)]));
+    kvTable(fields.map(([label, key]) => [label, key === 'incumbent' ? incumbentCell() : (key === 'base_year_value' || key === 'total_contract_value') ? valueCell(key) : fcell(key)]));
   });
 
   // Requirements: certifications + labor categories
@@ -13087,14 +13118,14 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated.\n` +
     `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n` +
     `6. For labor_categories: list EVERY labor category or position title mentioned anywhere in the solicitation (PWS, staffing plan, Section B, wage determinations, attachments). Sort them alphabetically by lcat name.\n` +
-    `7. For is_sca: set to true ONLY if the solicitation explicitly states this position falls under the Service Contract Act or references a Wage Determination for it. Set to false if no SCA language applies.\n` +
+    `7. For is_sca: the contract is SCA/SCLS-covered whenever a Wage Determination is attached or referenced, or FAR 52.222-41 applies - treat a WD's presence as DECISIVE evidence of coverage. When the contract is SCA-covered, mark is_sca true for every non-exempt SERVICE position (administrative, technical support, clerical, operations, maintenance, help-desk, and similar roles). Mark a position false ONLY if it is a bona-fide exempt professional/administrative/executive/computer employee under 29 CFR 541, or the contract is genuinely not SCA-covered. Do NOT mark positions false just because the SCA clause does not name each one individually, and do NOT default everything to false when a WD is present.\n` +
     `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
     `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName || 'the company'}${CLIENT_CONFIG.businessType ? ' (a ' + CLIENT_CONFIG.businessType + ')' : ''} and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - the set-aside aligns directly with the company's certifications and the NAICS matches core capabilities."\n\n` +
     `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from.
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -13157,6 +13188,7 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
     }
     window._lastBnaIntel = intel;
     renderOpportunityIntel(intel, body);
+    if (window._bnaOpp && Object.keys(window._bnaOpp).length && typeof renderBnaDecisionPanel === 'function') renderBnaDecisionPanel();
     // Live incumbent lookup (non-blocking): when the documents do not clearly name the incumbent,
     // search the web and, if a source is found, re-render it as a blue linked value.
     (function () {
@@ -13183,6 +13215,27 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
                 intel.incumbent_source_name = found.source_name || '';
               }
               intel.incumbent_lookup = 'found';
+              // Real award figures from a credible source override inferred/missing dollar values.
+              if (!_weak && found.source_url) {
+                var _hasNum = function (s) { return /\d/.test(String(s == null ? '' : s)); };
+                var _infOrMiss = function (v) {
+                  var s = String(v == null ? '' : v).trim();
+                  return !s || /^\[inferred\]/i.test(s) || /^(not stated( in documents)?|n\/a|none|tbd|unknown)$/i.test(s);
+                };
+                var _vApplied = false;
+                if (_hasNum(found.total_contract_value) && _infOrMiss(intel.total_contract_value)) {
+                  intel.total_contract_value = String(found.total_contract_value).trim(); _vApplied = true;
+                }
+                if (_hasNum(found.base_year_value) && _infOrMiss(intel.base_year_value)) {
+                  intel.base_year_value = String(found.base_year_value).trim(); _vApplied = true;
+                }
+                if (_vApplied) {
+                  intel.value_source_url = found.source_url;
+                  intel.value_source_name = found.source_name || '';
+                  var _vb = String(found.value_basis || '').trim();
+                  intel.award_value_rationale = 'Actual figure(s) from the incumbent\'s prior/current award via ' + (found.source_name || 'federal award records') + (_vb ? ' \u2014 ' + _vb : '') + '. Overrides the earlier estimate.';
+                }
+              }
             } else {
               intel.incumbent_lookup = 'none';          // ran cleanly, but no credible federal-award source named the incumbent
             }
@@ -13282,6 +13335,7 @@ function extractIntelFields(jsonStr) {
     facility_clearance_required:   str('facility_clearance_required'),
     personnel_clearance_required:  str('personnel_clearance_required'),
     set_aside:                     str('set_aside'),
+    sca_coverage:                  str('sca_coverage'),
     contract_vehicle:              str('contract_vehicle'),
     ko_name_office:                str('ko_name_office'),
     cor_name_office:               str('cor_name_office'),
@@ -13315,11 +13369,12 @@ async function lookupIncumbentViaWeb(intel, apiKey) {
   const idnum = String(intel.id_number || '').trim();
   const agency = String(intel.customer_agency || '').trim();
   if (!title && !idnum) return null;
-  const q = 'Find the INCUMBENT contractor for this U.S. federal opportunity. ' +
+  const q = 'Find the INCUMBENT contractor AND the prior/current award\'s real dollar value for this U.S. federal opportunity. ' +
     'Title: "' + title + '". ' + (idnum ? ('Solicitation/ID: ' + idnum + '. ') : '') + (agency ? ('Agency: ' + agency + '. ') : '') +
-    'Determine incumbency ONLY from federal award/contract records. Prioritize USASpending.gov, FPDS.gov, and SAM.gov, then reputable GovCon trackers such as GovTribe and HigherGov. Base the answer on who holds or most recently held the contract, not on hiring activity. ' +
+    'Determine incumbency ONLY from federal award/contract records. Prioritize USASpending.gov, FPDS.gov, and SAM.gov, then reputable GovCon trackers such as Orange Slices AI (orangeslices.ai), GovTribe, HigherGov, and GovWin. Base the answer on who holds or most recently held the contract, not on hiring activity. ' +
     'Do NOT cite job boards, recruiting pages, or applicant-tracking systems (for example Paylocity, Indeed, LinkedIn jobs, Greenhouse, Lever, Workday, iCIMS) as the source, and do NOT infer incumbency from a company posting similar jobs - those pages are unreliable and expire. The source_url must be a stable page that actually documents the award. ' +
-    'Respond with ONLY a raw JSON object, no markdown, no backticks: {"incumbent":"company name, or empty string if you cannot find a credible source","source_url":"the exact URL of the page where you found it, or empty","source_name":"the website name or domain (for example USASpending.gov), or empty","confidence":"high|medium|low"}.';
+    'ALSO capture the prior/current contract\'s REAL dollar figures from that SAME authoritative award record when they are shown: the total value / ceiling or total obligated to date, and the annual or base-period value if determinable. Report ONLY actual figures present in the award data - do NOT estimate, guess, round, or compute figures that are not shown. If real figures are not available, leave those fields as empty strings. ' +
+    'Respond with ONLY a raw JSON object, no markdown, no backticks: {"incumbent":"company name, or empty string if you cannot find a credible source","source_url":"the exact URL of the page where you found it, or empty","source_name":"the website name or domain (for example USASpending.gov or Orange Slices AI), or empty","confidence":"high|medium|low","total_contract_value":"the actual total contract value/ceiling or total obligated on the prior/current award, verbatim with units (for example $45.2M), or empty if not shown in the award data","base_year_value":"the actual annual or base-period dollar value if the award data shows it (for example $9.1M/yr), or empty","value_basis":"one short phrase naming what the figures represent and the record they came from, for example: total obligated on prior award W91234-20-C-0001 per USASpending.gov; empty if there are no figures"}.';
   // A network/HTTP failure THROWS (caller marks the lookup 'error'); a clean run that simply finds
   // nothing returns null (caller marks it 'none'). That split is what lets the UI tell them apart.
   const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -13375,6 +13430,7 @@ function renderOpportunityIntel(intel, container) {
     ]},
     { title:'Acquisition & Codes', fields:[
       { key:'set_aside',                    label:'Set-Aside' },
+      { key:'sca_coverage',                 label:'Service Contract Act (SCA)' },
       { key:'contract_vehicle',             label:'Contract Vehicle' },
       { key:'contract_type',                label:'Contract Type' },
       { key:'naics_code',                   label:'NAICS Code' },
@@ -13521,6 +13577,11 @@ function renderOpportunityIntel(intel, container) {
         const _sn = escHtml(intel.incumbent_source_name || String(intel.incumbent_source_url).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] || 'web');
         displayHtml = '<a href="' + _su + '" target="_blank" style="color:var(--blue);font-weight:700">' + escHtml(displayVal) + '</a>' +
           '<a href="' + _su + '" target="_blank" style="text-decoration:none"><span style="font-size:10px;font-weight:700;background:#eff6ff;border:1px solid var(--mid-blue);border-radius:8px;padding:1px 6px;color:#1e40af;margin-left:6px">Found on ' + _sn + '</span></a>';
+      } else if ((f.key === 'base_year_value' || f.key === 'total_contract_value') && intel && intel.value_source_url && !isInferred && !isMissing) {
+        const _vu = escHtml(intel.value_source_url);
+        const _vn = escHtml(intel.value_source_name || String(intel.value_source_url).replace(/^https?:\/\/(www\.)?/i, '').split('/')[0] || 'web');
+        displayHtml = '<span style="color:var(--text);font-weight:600">' + escHtml(displayVal) + '</span>' +
+          '<a href="' + _vu + '" target="_blank" style="text-decoration:none"><span style="font-size:10px;font-weight:700;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;padding:1px 6px;color:#047857;margin-left:6px">Actual \u00B7 ' + _vn + '</span></a>';
       } else {
         displayHtml = valContent + badge;
         if (f.key === 'incumbent' && intel) {
@@ -14065,6 +14126,26 @@ function resetSettings() {
   applyClientConfig();
 }
 
+function revertBrandColors() {
+  const boot = window._bootBrandColors || { primary: CLIENT_CONFIG.primaryColor, secondary: CLIENT_CONFIG.secondaryColor };
+  const p = document.getElementById('s_primaryColor');
+  const s = document.getElementById('s_secondaryColor');
+  if (p && boot.primary) p.value = boot.primary;
+  if (s && boot.secondary) s.value = boot.secondary;
+  if (boot.primary) CLIENT_CONFIG.primaryColor = boot.primary;
+  if (boot.secondary) CLIENT_CONFIG.secondaryColor = boot.secondary;
+  applyClientConfig();
+  // Persist so the revert survives a reload — merge, leaving all other settings intact.
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (boot.primary) saved.primaryColor = boot.primary;
+    if (boot.secondary) saved.secondaryColor = boot.secondary;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));
+  } catch (e) {}
+  const msg = document.getElementById('settingsSavedMsg');
+  if (msg) { msg.textContent = '↩ Colors reverted to the values set when you opened the browser.'; msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2800); }
+}
+
 function applySettingsOverrides() {
   const saved = localStorage.getItem(SETTINGS_KEY);
   if (!saved) return;
@@ -14077,6 +14158,7 @@ function applySettingsOverrides() {
 window.addEventListener('load', () => {
   if (window.__MSAL_POPUP_REDIRECT__) return;   // sign-in popup: skip app init entirely
   applySettingsOverrides();
+  window._bootBrandColors = { primary: CLIENT_CONFIG.primaryColor, secondary: CLIENT_CONFIG.secondaryColor };
   applyClientConfig();
   loadSettingsIntoUI();
   initMsal();
