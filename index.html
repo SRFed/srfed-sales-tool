@@ -697,6 +697,8 @@
   .rec-add-link { margin-top: 4px; padding: 7px 14px; border: 1px dashed var(--mid-blue); border-radius: 6px; background: var(--pale); color: var(--blue); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
   .rec-add-link:hover { background: #e3eefb; }
   .settings-field textarea.cap-ta { resize: vertical; line-height: 1.5; min-height: 60px; }
+  .cap-dz { border: 2px dashed var(--border); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; font-size: 12.5px; color: var(--muted); transition: border-color 0.15s, background 0.15s, color 0.15s; background: var(--pale); }
+  .cap-dz:hover, .cap-dz.over { border-color: var(--blue); background: #eef4fd; color: var(--blue); }
   .rec-advanced { margin: 14px 0 4px; border: 1px solid var(--border); border-radius: 8px; }
   .rec-advanced summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--blue); user-select: none; list-style: revert; }
   .rec-advanced summary:hover { background: var(--pale); border-radius: 8px; }
@@ -2402,6 +2404,41 @@
       </div>
 
       <div class="settings-section">
+        <h3>🎨 Branding</h3>
+        <div class="settings-grid">
+          <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5" onblur="forceHashColor(this)"/></div>
+          <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872" onblur="forceHashColor(this)"/></div>
+          <div class="settings-field" style="grid-column:1/-1;margin-top:-2px"><button type="button" onclick="revertBrandColors()" title="Restore the primary and secondary colors to the values set when you opened the browser" style="padding:6px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--border);border-radius:6px;cursor:pointer">↩ Revert colors</button></div>
+          <div class="settings-field" style="grid-column:1/-1">
+            <label>Logo</label>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <div style="width:124px;height:50px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;flex-shrink:0">
+                <img id="s_logoPreview" src="" alt="" style="max-width:100%;max-height:100%;display:none"/>
+                <span id="s_logoPreviewEmpty" style="font-size:10px;color:var(--muted)">No logo</span>
+              </div>
+              <div style="flex:1;min-width:240px">
+                <input type="text" id="s_logoUrl" placeholder="https://your-logo.png  (or upload →)" oninput="onLogoUrlInput()"/>
+                <div style="display:flex;gap:8px;margin-top:6px">
+                  <label style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--mid-blue);color:#fff;border-radius:6px;cursor:pointer;display:inline-block">⤓ Upload logo<input type="file" id="s_logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" onchange="onLogoFileChosen(event)" style="display:none"/></label>
+                  <button type="button" onclick="clearLogo()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;color:var(--error)">Clear</button>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px">Paste a URL <em>or</em> upload an image — an uploaded logo is embedded directly, so it needs no hosting. Click Save to apply.</div>
+              </div>
+            </div>
+          </div>
+          <div class="settings-field">
+            <label>Logo Background</label>
+            <select id="s_logoBg" onchange="CLIENT_CONFIG.logoBg=this.value; applyLogoBadgeBg();">
+              <option value="auto">Auto (detect from logo)</option>
+              <option value="light">Light (white badge)</option>
+              <option value="dark">Dark badge</option>
+            </select>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">For light/knockout logos meant for dark backgrounds, choose Dark. Auto inspects the image.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
         <h3>👤 CEO / Primary Contact</h3>
         <div class="settings-grid">
           <div class="settings-field"><label>CEO Name</label><input type="text" id="s_ceoName" placeholder="Matthew Tarjick"/></div>
@@ -2418,44 +2455,6 @@
           <div class="settings-field"><label>CMMC Level</label><input type="text" id="s_cmmc" placeholder="CMMC Level 2 Compliant"/></div>
           <div class="settings-field"><label>DCAA Status</label><input type="text" id="s_dcaa" placeholder="DCAA-approved accounting system"/></div>
         </div>
-      </div>
-
-      <div class="settings-section">
-        <h3>🤖 AI Model</h3>
-        <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">The Claude model used to read RFPs and write proposals. This list is pulled live from Anthropic using your API key, so it always reflects the models that currently exist and that your key can use. Pick a newer one any time — nothing else in the tool needs to change.</p>
-        <div class="settings-grid">
-          <div class="settings-field">
-            <label>Model</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <select id="s_model" onchange="updateModelSelectionWarning()" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
-                <option value="">Loading…</option>
-              </select>
-              <button type="button" onclick="loadModelsIntoDropdown(true)" style="padding:8px 14px;font-size:12px;font-weight:600;background:var(--mid-blue);color:white;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">↻ Refresh</button>
-            </div>
-            <div id="s_model_status" style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <h3>💵 Pricing Defaults</h3>
-        <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Company-wide pricing constants. The per-opportunity work — labor categories, hours, and the allocation matrix — lives on the <strong>Pricing</strong> tab. These two items are the only pricing values that rarely change.</p>
-        <div class="settings-grid">
-          <div class="settings-field"><label>Fringe %</label><input type="number" id="s_pr_fringe" step="0.1" min="0" placeholder="28" oninput="updateWrapPreview()"/></div>
-          <div class="settings-field"><label>Overhead %</label><input type="number" id="s_pr_overhead" step="0.1" min="0" placeholder="15" oninput="updateWrapPreview()"/></div>
-          <div class="settings-field"><label>G&amp;A %</label><input type="number" id="s_pr_ga" step="0.1" min="0" placeholder="15" oninput="updateWrapPreview()"/></div>
-          <div class="settings-field"><label>Fee / Profit %</label><input type="number" id="s_pr_fee" step="0.1" min="0" placeholder="8" oninput="updateWrapPreview()"/></div>
-          <div class="settings-field"><label title="Portion of fringe that is mandatory payroll burden (FICA/FUTA/SUTA/workers' comp). Used for SCA-covered roles, where the discretionary benefit portion of fringe is replaced by the Wage Determination H&amp;W rate.">SCA statutory % <span style="color:var(--muted);font-weight:400">(payroll burden)</span></label><input type="number" id="s_pr_sca_statutory" step="0.1" min="0" placeholder="10"/></div>
-          <div class="settings-field">
-            <label>Wrap Calculation</label>
-            <select id="s_pr_wrapmode" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white" onchange="updateWrapPreview()">
-              <option value="compounded">Multiplicative (Compounded)</option>
-              <option value="additive">Additive</option>
-            </select>
-          </div>
-          <div class="settings-field"><label>Default Billable Hours / FTE</label><input type="number" id="s_pr_hpf" step="1" min="1" placeholder="1912"/></div>
-        </div>
-        <div id="s_wrap_preview" style="margin-top:6px;padding:10px 12px;background:#f0f9ff;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text)"></div>
       </div>
 
       <div class="settings-section">
@@ -2550,10 +2549,56 @@
       </div>
 
       <div class="settings-section">
+        <h3>🤖 AI Model</h3>
+        <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">The Claude model used to read RFPs and write proposals. This list is pulled live from Anthropic using your API key, so it always reflects the models that currently exist and that your key can use. Pick a newer one any time — nothing else in the tool needs to change.</p>
+        <div class="settings-grid">
+          <div class="settings-field">
+            <label>Model</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="s_model" onchange="updateModelSelectionWarning()" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
+                <option value="">Loading…</option>
+              </select>
+              <button type="button" onclick="loadModelsIntoDropdown(true)" style="padding:8px 14px;font-size:12px;font-weight:600;background:var(--mid-blue);color:white;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">↻ Refresh</button>
+            </div>
+            <div id="s_model_status" style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>💵 Pricing Defaults</h3>
+        <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Company-wide pricing constants. The per-opportunity work — labor categories, hours, and the allocation matrix — lives on the <strong>Pricing</strong> tab. These two items are the only pricing values that rarely change.</p>
+        <div class="settings-grid">
+          <div class="settings-field"><label>Fringe %</label><input type="number" id="s_pr_fringe" step="0.1" min="0" placeholder="28" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label>Overhead %</label><input type="number" id="s_pr_overhead" step="0.1" min="0" placeholder="15" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label>G&amp;A %</label><input type="number" id="s_pr_ga" step="0.1" min="0" placeholder="15" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label>Fee / Profit %</label><input type="number" id="s_pr_fee" step="0.1" min="0" placeholder="8" oninput="updateWrapPreview()"/></div>
+          <div class="settings-field"><label title="Portion of fringe that is mandatory payroll burden (FICA/FUTA/SUTA/workers' comp). Used for SCA-covered roles, where the discretionary benefit portion of fringe is replaced by the Wage Determination H&amp;W rate.">SCA statutory % <span style="color:var(--muted);font-weight:400">(payroll burden)</span></label><input type="number" id="s_pr_sca_statutory" step="0.1" min="0" placeholder="10"/></div>
+          <div class="settings-field">
+            <label>Wrap Calculation</label>
+            <select id="s_pr_wrapmode" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white" onchange="updateWrapPreview()">
+              <option value="compounded">Multiplicative (Compounded)</option>
+              <option value="additive">Additive</option>
+            </select>
+          </div>
+          <div class="settings-field"><label>Default Billable Hours / FTE</label><input type="number" id="s_pr_hpf" step="1" min="1" placeholder="1912"/></div>
+        </div>
+        <div id="s_wrap_preview" style="margin-top:6px;padding:10px 12px;background:#f0f9ff;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text)"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>📄 Capability Statement</h3>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
           Your company's core capabilities and voice. These ground AI-generated proposals and slides <strong>when no capability-statement or past-performance documents are loaded</strong> from SharePoint. One item per line.
         </p>
+        <div class="settings-field" style="margin-bottom:14px">
+          <label>Drop in a capability statement to auto-fill</label>
+          <div id="capdz" class="cap-dz" onclick="document.getElementById('capFile').click()" ondragover="capDzOver(event)" ondragleave="capDzLeave(event)" ondrop="capDzDrop(event)">
+            <span id="capdz-label">📎 Drop a capability statement here, or click to browse &nbsp;·&nbsp; PDF, Word, or text</span>
+          </div>
+          <input type="file" id="capFile" accept=".pdf,.doc,.docx,.txt,.md" style="display:none" onchange="parseCapabilityStatement(this.files[0])"/>
+          <div id="capdz-status" style="font-size:12px;margin-top:6px;display:none"></div>
+        </div>
         <div class="settings-field" style="margin-bottom:12px">
           <label>Core capabilities</label>
           <textarea id="s_cap_capabilities" rows="5" class="cap-ta" placeholder="One capability per line (e.g. Program Management)"></textarea>
@@ -2573,38 +2618,53 @@
       </div>
 
       <div class="settings-section">
-        <h3>🎨 Branding</h3>
+        <h3>👤 Recruiting</h3>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
+          Configuration for the Recruiting suite. The SharePoint fields point the Candidate Tracker and Candidate Match at your lists and require Microsoft sign-in (above). Leave them blank to use recruiting without a shared candidate store.
+        </p>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin:4px 0 8px">SharePoint lists</div>
         <div class="settings-grid">
-          <div class="settings-field"><label>Primary Color (hex)</label><input type="text" id="s_primaryColor" placeholder="#005FD5" onblur="forceHashColor(this)"/></div>
-          <div class="settings-field"><label>Secondary Color (hex)</label><input type="text" id="s_secondaryColor" placeholder="#485872" onblur="forceHashColor(this)"/></div>
-          <div class="settings-field" style="grid-column:1/-1;margin-top:-2px"><button type="button" onclick="revertBrandColors()" title="Restore the primary and secondary colors to the values set when you opened the browser" style="padding:6px 12px;font-size:12px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--border);border-radius:6px;cursor:pointer">↩ Revert colors</button></div>
-          <div class="settings-field" style="grid-column:1/-1">
-            <label>Logo</label>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-              <div style="width:124px;height:50px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;flex-shrink:0">
-                <img id="s_logoPreview" src="" alt="" style="max-width:100%;max-height:100%;display:none"/>
-                <span id="s_logoPreviewEmpty" style="font-size:10px;color:var(--muted)">No logo</span>
-              </div>
-              <div style="flex:1;min-width:240px">
-                <input type="text" id="s_logoUrl" placeholder="https://your-logo.png  (or upload →)" oninput="onLogoUrlInput()"/>
-                <div style="display:flex;gap:8px;margin-top:6px">
-                  <label style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--mid-blue);color:#fff;border-radius:6px;cursor:pointer;display:inline-block">⤓ Upload logo<input type="file" id="s_logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" onchange="onLogoFileChosen(event)" style="display:none"/></label>
-                  <button type="button" onclick="clearLogo()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;color:var(--error)">Clear</button>
-                </div>
-                <div style="font-size:11px;color:var(--muted);margin-top:4px">Paste a URL <em>or</em> upload an image — an uploaded logo is embedded directly, so it needs no hosting. Click Save to apply.</div>
-              </div>
-            </div>
-          </div>
-          <div class="settings-field">
-            <label>Logo Background</label>
-            <select id="s_logoBg" onchange="CLIENT_CONFIG.logoBg=this.value; applyLogoBadgeBg();">
-              <option value="auto">Auto (detect from logo)</option>
-              <option value="light">Light (white badge)</option>
-              <option value="dark">Dark badge</option>
-            </select>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">For light/knockout logos meant for dark backgrounds, choose Dark. Auto inspects the image.</div>
-          </div>
+          <div class="settings-field"><label>SharePoint site URL</label><input type="text" id="s_rec_spSite" placeholder="https://yourorg.sharepoint.com/sites/YourSite"/></div>
+          <div class="settings-field"><label>Permission scope</label><input type="text" id="s_rec_spScope" placeholder="https://yourorg.sharepoint.com/AllSites.Write"/></div>
+          <div class="settings-field"><label>Working list &mdash; Candidate Tracker</label><input type="text" id="s_rec_trackerList" placeholder="Your working candidate list name"/></div>
+          <div class="settings-field"><label>Applicant repository &mdash; Candidate Match</label><input type="text" id="s_rec_applicantsList" placeholder="Your applicant repository list name"/></div>
         </div>
+        <p style="font-size:11px;color:var(--muted);margin:8px 0 0">The scope is your site host followed by <code>/AllSites.Write</code>. Column mappings for non-standard list schemas are in the advanced panel below.</p>
+        <details class="rec-advanced">
+          <summary>Advanced: SharePoint column mapping</summary>
+          <div class="rec-adv-body">
+            <p style="font-size:11px;color:var(--muted);margin:2px 0 12px">Only change these if your SharePoint lists use non-standard internal column names. Leave as-is for the default schema.</p>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin:4px 0 6px">Working list columns <span style="font-weight:400;color:var(--muted)">— Candidate Tracker</span></div>
+            <div class="rec-col-grid">
+              <div class="settings-field"><label>Name</label><input type="text" id="s_col_name" placeholder="Title"/></div>
+              <div class="settings-field"><label>Role</label><input type="text" id="s_col_role" placeholder="CurrentRole"/></div>
+              <div class="settings-field"><label>Location</label><input type="text" id="s_col_location" placeholder="Location"/></div>
+              <div class="settings-field"><label>Email</label><input type="text" id="s_col_email" placeholder="Email"/></div>
+              <div class="settings-field"><label>Status</label><input type="text" id="s_col_status" placeholder="Status"/></div>
+              <div class="settings-field"><label>Profile URL</label><input type="text" id="s_col_url" placeholder="ProfileURL"/></div>
+              <div class="settings-field"><label>Source</label><input type="text" id="s_col_source" placeholder="Source"/></div>
+              <div class="settings-field"><label>Notes</label><input type="text" id="s_col_notes" placeholder="Notes"/></div>
+              <div class="settings-field"><label>Phone</label><input type="text" id="s_col_phone" placeholder="PhoneNumber"/></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin:12px 0 6px">Applicant repository columns <span style="font-weight:400;color:var(--muted)">— Candidate Match (often auto-generated internal names)</span></div>
+            <div class="rec-col-grid">
+              <div class="settings-field"><label>First name</label><input type="text" id="s_ac_firstName" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Last name</label><input type="text" id="s_ac_lastName" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Position</label><input type="text" id="s_ac_position" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Phone</label><input type="text" id="s_ac_phone" placeholder="internal name"/></div>
+              <div class="settings-field"><label>State</label><input type="text" id="s_ac_state" placeholder="internal name"/></div>
+              <div class="settings-field"><label>City</label><input type="text" id="s_ac_city" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Email</label><input type="text" id="s_ac_email" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Stage</label><input type="text" id="s_ac_stage" placeholder="internal name"/></div>
+              <div class="settings-field"><label>LinkedIn</label><input type="text" id="s_ac_linkedIn" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Resume link</label><input type="text" id="s_ac_resume" placeholder="internal name"/></div>
+            </div>
+            <div class="settings-field"><label>Exclude from keyword search <span style="font-weight:400;color:var(--muted);font-size:11px">— comma-separated internal names (e.g. status columns)</span></label><input type="text" id="s_ac_skip" placeholder="e.g. field_30, field_31"/></div>
+          </div>
+        </details>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin:18px 0 6px">Booking links <span style="font-weight:400;color:var(--muted);font-size:12px">&mdash; shown on the Outreach Writer for scheduling</span></div>
+        <div id="s_rec_meetingLinks"></div>
+        <button type="button" class="rec-add-link" onclick="addMeetingLinkRow()">+ Add booking link</button>
       </div>
 
       <div class="settings-section">
@@ -2661,56 +2721,6 @@
           <strong>Redirect URI:</strong> must exactly match a redirect URI registered in the Azure app, and is
           normally the URL where this tool is hosted.
         </p>
-      </div>
-
-      <div class="settings-section">
-        <h3>👤 Recruiting</h3>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
-          Configuration for the Recruiting suite. The SharePoint fields point the Candidate Tracker and Candidate Match at your lists and require Microsoft sign-in (above). Leave them blank to use recruiting without a shared candidate store.
-        </p>
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin:4px 0 8px">SharePoint lists</div>
-        <div class="settings-grid">
-          <div class="settings-field"><label>SharePoint site URL</label><input type="text" id="s_rec_spSite" placeholder="https://yourorg.sharepoint.com/sites/YourSite"/></div>
-          <div class="settings-field"><label>Permission scope</label><input type="text" id="s_rec_spScope" placeholder="https://yourorg.sharepoint.com/AllSites.Write"/></div>
-          <div class="settings-field"><label>Working list &mdash; Candidate Tracker</label><input type="text" id="s_rec_trackerList" placeholder="Your working candidate list name"/></div>
-          <div class="settings-field"><label>Applicant repository &mdash; Candidate Match</label><input type="text" id="s_rec_applicantsList" placeholder="Your applicant repository list name"/></div>
-        </div>
-        <p style="font-size:11px;color:var(--muted);margin:8px 0 0">The scope is your site host followed by <code>/AllSites.Write</code>. Column mappings for non-standard list schemas are in the advanced panel below.</p>
-        <details class="rec-advanced">
-          <summary>Advanced: SharePoint column mapping</summary>
-          <div class="rec-adv-body">
-            <p style="font-size:11px;color:var(--muted);margin:2px 0 12px">Only change these if your SharePoint lists use non-standard internal column names. Leave as-is for the default schema.</p>
-            <div style="font-size:12px;font-weight:700;color:var(--text);margin:4px 0 6px">Working list columns <span style="font-weight:400;color:var(--muted)">— Candidate Tracker</span></div>
-            <div class="rec-col-grid">
-              <div class="settings-field"><label>Name</label><input type="text" id="s_col_name" placeholder="Title"/></div>
-              <div class="settings-field"><label>Role</label><input type="text" id="s_col_role" placeholder="CurrentRole"/></div>
-              <div class="settings-field"><label>Location</label><input type="text" id="s_col_location" placeholder="Location"/></div>
-              <div class="settings-field"><label>Email</label><input type="text" id="s_col_email" placeholder="Email"/></div>
-              <div class="settings-field"><label>Status</label><input type="text" id="s_col_status" placeholder="Status"/></div>
-              <div class="settings-field"><label>Profile URL</label><input type="text" id="s_col_url" placeholder="ProfileURL"/></div>
-              <div class="settings-field"><label>Source</label><input type="text" id="s_col_source" placeholder="Source"/></div>
-              <div class="settings-field"><label>Notes</label><input type="text" id="s_col_notes" placeholder="Notes"/></div>
-              <div class="settings-field"><label>Phone</label><input type="text" id="s_col_phone" placeholder="PhoneNumber"/></div>
-            </div>
-            <div style="font-size:12px;font-weight:700;color:var(--text);margin:12px 0 6px">Applicant repository columns <span style="font-weight:400;color:var(--muted)">— Candidate Match (often auto-generated internal names)</span></div>
-            <div class="rec-col-grid">
-              <div class="settings-field"><label>First name</label><input type="text" id="s_ac_firstName" placeholder="internal name"/></div>
-              <div class="settings-field"><label>Last name</label><input type="text" id="s_ac_lastName" placeholder="internal name"/></div>
-              <div class="settings-field"><label>Position</label><input type="text" id="s_ac_position" placeholder="internal name"/></div>
-              <div class="settings-field"><label>Phone</label><input type="text" id="s_ac_phone" placeholder="internal name"/></div>
-              <div class="settings-field"><label>State</label><input type="text" id="s_ac_state" placeholder="internal name"/></div>
-              <div class="settings-field"><label>City</label><input type="text" id="s_ac_city" placeholder="internal name"/></div>
-              <div class="settings-field"><label>Email</label><input type="text" id="s_ac_email" placeholder="internal name"/></div>
-              <div class="settings-field"><label>Stage</label><input type="text" id="s_ac_stage" placeholder="internal name"/></div>
-              <div class="settings-field"><label>LinkedIn</label><input type="text" id="s_ac_linkedIn" placeholder="internal name"/></div>
-              <div class="settings-field"><label>Resume link</label><input type="text" id="s_ac_resume" placeholder="internal name"/></div>
-            </div>
-            <div class="settings-field"><label>Exclude from keyword search <span style="font-weight:400;color:var(--muted);font-size:11px">— comma-separated internal names (e.g. status columns)</span></label><input type="text" id="s_ac_skip" placeholder="e.g. field_30, field_31"/></div>
-          </div>
-        </details>
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin:18px 0 6px">Booking links <span style="font-weight:400;color:var(--muted);font-size:12px">&mdash; shown on the Outreach Writer for scheduling</span></div>
-        <div id="s_rec_meetingLinks"></div>
-        <button type="button" class="rec-add-link" onclick="addMeetingLinkRow()">+ Add booking link</button>
       </div>
 
       <div style="display:flex;gap:10px;margin-top:8px">
@@ -3764,6 +3774,8 @@ function renderMsState() {
   }
 
   updateStepLocks();
+  // Auth state just changed — refresh the recruiting tabs so sign-in/out updates them without a tab click.
+  if (window.Rec) { try { window.Rec.onAuthChangedT && window.Rec.onAuthChangedT(); window.Rec.onAuthChangedM && window.Rec.onAuthChangedM(); } catch (e) {} }
 }
 
 // Initialize on load
@@ -14432,6 +14444,55 @@ function _readAppColMap() {
   return m;
 }
 
+// ── Capability Statement drop-in: parse an uploaded document to fill the fields ──
+function capCapStatus(kind, msg) {
+  var el = document.getElementById('capdz-status'); if (!el) return;
+  el.style.display = 'block';
+  el.style.color = kind === 'err' ? '#a12020' : (kind === 'ok' ? '#1a7a3a' : 'var(--muted)');
+  el.textContent = msg;
+}
+function capDzOver(e) { e.preventDefault(); var d = document.getElementById('capdz'); if (d) d.classList.add('over'); }
+function capDzLeave(e) { e.preventDefault(); var d = document.getElementById('capdz'); if (d) d.classList.remove('over'); }
+function capDzDrop(e) { e.preventDefault(); var d = document.getElementById('capdz'); if (d) d.classList.remove('over'); var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) parseCapabilityStatement(f); }
+async function parseCapabilityStatement(file) {
+  if (!file) return;
+  var fname = file.name.toLowerCase();
+  var exts = ['.pdf', '.docx', '.doc', '.txt', '.md'];
+  if (!exts.some(function (x) { return fname.endsWith(x); })) { capCapStatus('err', 'PDF, Word (.docx), or text files only'); return; }
+  var apiKey = (typeof getApiKey === 'function') ? getApiKey() : null;
+  if (!apiKey) { capCapStatus('err', 'Enter your Anthropic API key first (top of the page).'); return; }
+  capCapStatus('info', 'Reading ' + file.name + '\u2026');
+  try {
+    var b64 = await new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result.split(',')[1]); }; r.onerror = function () { rej(new Error('File read failed')); }; r.readAsDataURL(file); });
+    var mediaType = fname.endsWith('.pdf') ? 'application/pdf'
+      : fname.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      : fname.endsWith('.doc') ? 'application/msword' : 'text/plain';
+    capCapStatus('info', 'Extracting capabilities with AI\u2026');
+    var prompt = 'This document is a company capability statement. Extract the following and return ONLY a valid JSON object (no markdown, no code fences \u2014 raw JSON), with exactly these keys, each an array of short strings:\n'
+      + '- "capabilities": the company\'s core capabilities, service areas, or core competencies (short phrases)\n'
+      + '- "systems": specific systems, software, platforms, tools, or technical certifications the company works with\n'
+      + '- "phrases": signature phrases, taglines, mottos, or differentiator statements the document uses to describe the company\n'
+      + '- "style": brief notes on the document\'s writing tone/voice, as short guideline phrases\n'
+      + 'Use an empty array for anything not present. Do not invent content that the document does not support.';
+    var payload = { model: (typeof CLAUDE_MODEL !== 'undefined' ? CLAUDE_MODEL : 'claude-sonnet-4-6'), max_tokens: 1500, messages: [{ role: 'user', content: [{ type: 'document', source: { type: 'base64', media_type: mediaType, data: b64 } }, { type: 'text', text: prompt }] }] };
+    var resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', mode: 'cors', credentials: 'omit', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(payload) });
+    if (!resp.ok) { var errText = await resp.text(); capCapStatus('err', 'API error (' + resp.status + '): ' + errText.slice(0, 140)); return; }
+    var data = await resp.json();
+    if (data.error) { capCapStatus('err', 'AI error: ' + data.error.message); return; }
+    var txt = (data.content || []).map(function (b) { return b.text || ''; }).join('');
+    var info;
+    try { info = JSON.parse(txt.replace(/```json/g, '').replace(/```/g, '').trim()); }
+    catch (e) { capCapStatus('err', 'Could not parse the AI response. Try again.'); console.error('Capability parse error. Raw:', txt); return; }
+    var fill = function (id, arr) { var el = document.getElementById(id); if (el && Array.isArray(arr) && arr.length) el.value = arr.filter(Boolean).join('\n'); };
+    fill('s_cap_capabilities', info.capabilities);
+    fill('s_cap_systems', info.systems);
+    fill('s_cap_phrases', info.phrases);
+    fill('s_cap_style', info.style);
+    var n = ['capabilities', 'systems', 'phrases', 'style'].reduce(function (a, k) { return a + ((Array.isArray(info[k]) ? info[k] : []).filter(Boolean).length); }, 0);
+    capCapStatus('ok', '\u2713 Filled ' + n + ' item' + (n !== 1 ? 's' : '') + ' from ' + file.name + ' \u2014 review the fields, then click Save Settings to keep them.');
+  } catch (e) { capCapStatus('err', 'Error: ' + (e.message || 'Unknown error')); console.error('Capability statement error:', e); }
+}
+
 function loadSettingsIntoUI() {
   const saved = localStorage.getItem(SETTINGS_KEY);
   const cfg   = saved ? { ...CLIENT_CONFIG, ...JSON.parse(saved) } : CLIENT_CONFIG;
@@ -15031,12 +15092,17 @@ window.RecAuth = (function () {
     } catch (e) { if (st) { st.className = 'pdfs er'; st.textContent = 'Error: ' + (e.message || 'Unknown error'); } console.error('PDF error:', e); }
   }
   function trackerOpened() { renderC(); if (!_loaded) loadC(false); }
+  function onAuthChanged() {
+    _loaded = false;                                    // force a fresh load when auth state changes
+    if (!signedIn()) cands = [];                        // clear stale rows on sign-out
+    if (((document.querySelector('.tab-pane.active') || {}).id || '') === 'pane-rec-tracker') loadC(false); else renderC();
+  }
 
   if (window.Rec) {
     window.Rec.loadC = loadC; window.Rec.addC = addC; window.Rec.updSt = updSt; window.Rec.remC = remC;
     window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP;
     window.Rec.dzOv = dzOv; window.Rec.dzLv = dzLv; window.Rec.dzDp = dzDp; window.Rec.handlePdf = handlePdf;
-    window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint;
+    window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint; window.Rec.onAuthChangedT = onAuthChanged;
   }
 })();
 
@@ -15324,12 +15390,15 @@ window.RecAuth = (function () {
     if (b && L.both) b.textContent = L.both;
   }
   function matchOpened() { renderMatchLabels(); setTimeout(sizeBothListsPill, 50); refreshMatchConn(); }
+  function onAuthChanged() {
+    if (((document.querySelector('.tab-pane.active') || {}).id || '') === 'pane-rec-match') refreshMatchConn();
+  }
 
   if (window.Rec) {
     window.Rec.runLookup = runLookup; window.Rec.clearLookup = clearLookup;
     window.Rec.setLuList = setLuList; window.Rec.setSearchMode = setSearchMode;
     window.Rec.luSortBy = luSortBy; window.Rec.luFilter = luFilter;
-    window.Rec.exportLookupCSV = exportLookupCSV; window.Rec.matchOpened = matchOpened; window.Rec.connectSharePointM = connectSharePointM;
+    window.Rec.exportLookupCSV = exportLookupCSV; window.Rec.matchOpened = matchOpened; window.Rec.connectSharePointM = connectSharePointM; window.Rec.onAuthChangedM = onAuthChanged;
     window.Rec.renderMatchLabels = renderMatchLabels;
   }
 })();
