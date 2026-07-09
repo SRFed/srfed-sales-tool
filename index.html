@@ -631,6 +631,9 @@
   .rec-scope .spb.info { background: var(--pale); color: var(--blue); border-color: #bcdcfa; }
   .rec-scope .spb.ok { background: var(--success-bg); color: var(--success); }
   .rec-scope .spb.err { background: #fde8e8; color: #a12020; border-color: #f5c2c2; }
+  .rec-scope .spb.warn { background: #fffbe9; color: #6b5900; border-color: #f5e4a8; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .rec-scope .spb-btn { padding: 6px 14px; border: none; border-radius: 6px; background: var(--blue); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .rec-scope .spb-btn:hover { background: var(--mid-blue); }
   .rec-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
   .rec-stat { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
   .rec-stat .sn { font-size: 26px; font-weight: 800; color: var(--blue); line-height: 1.1; }
@@ -694,6 +697,13 @@
   .rec-add-link { margin-top: 4px; padding: 7px 14px; border: 1px dashed var(--mid-blue); border-radius: 6px; background: var(--pale); color: var(--blue); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
   .rec-add-link:hover { background: #e3eefb; }
   .settings-field textarea.cap-ta { resize: vertical; line-height: 1.5; min-height: 60px; }
+  .rec-advanced { margin: 14px 0 4px; border: 1px solid var(--border); border-radius: 8px; }
+  .rec-advanced summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--blue); user-select: none; list-style: revert; }
+  .rec-advanced summary:hover { background: var(--pale); border-radius: 8px; }
+  .rec-advanced[open] summary { border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; }
+  .rec-advanced .rec-adv-body { padding: 8px 14px 14px; }
+  .rec-col-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
+  .rec-col-grid .settings-field input { padding: 6px 9px; font-size: 12.5px; }
   #msSignedInArea { text-align: right; }
   .top-header {
     display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
@@ -2261,7 +2271,7 @@
     <div class="fb">
       <input type="text" id="fsrch" placeholder="Search name, role, location, notes..." oninput="Rec.renderC()"/>
       <select id="fstat" onchange="Rec.renderC()" style="min-width:170px"><option value="">All statuses</option><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select>
-      <button class="btn sm" onclick="Rec.loadC()">&#8635; Refresh</button>
+      <button class="btn sm" onclick="Rec.loadC(true)">&#8635; Refresh</button>
       <button class="btn sm" onclick="Rec.expCSV()">&#8595; CSV</button>
     </div>
     <div id="clist"></div>
@@ -2271,6 +2281,7 @@
   <div class="rec-scope">
     <div class="rec-title">Candidate Match</div>
     <div class="rec-sub">Search your applicant repositories &middot; find candidates who match an open role</div>
+    <div id="sp-banner-match" class="spb info" style="display:none"></div>
     <div class="card rec-card">
       <div class="sec">Search criteria</div>
       <div class="r2">
@@ -2664,7 +2675,39 @@
           <div class="settings-field"><label>Working list &mdash; Candidate Tracker</label><input type="text" id="s_rec_trackerList" placeholder="Your working candidate list name"/></div>
           <div class="settings-field"><label>Applicant repository &mdash; Candidate Match</label><input type="text" id="s_rec_applicantsList" placeholder="Your applicant repository list name"/></div>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin:8px 0 0">The scope is your site host followed by <code>/AllSites.Write</code>. Column mappings for non-standard list schemas are advanced settings (coming soon).</p>
+        <p style="font-size:11px;color:var(--muted);margin:8px 0 0">The scope is your site host followed by <code>/AllSites.Write</code>. Column mappings for non-standard list schemas are in the advanced panel below.</p>
+        <details class="rec-advanced">
+          <summary>Advanced: SharePoint column mapping</summary>
+          <div class="rec-adv-body">
+            <p style="font-size:11px;color:var(--muted);margin:2px 0 12px">Only change these if your SharePoint lists use non-standard internal column names. Leave as-is for the default schema.</p>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin:4px 0 6px">Working list columns <span style="font-weight:400;color:var(--muted)">— Candidate Tracker</span></div>
+            <div class="rec-col-grid">
+              <div class="settings-field"><label>Name</label><input type="text" id="s_col_name" placeholder="Title"/></div>
+              <div class="settings-field"><label>Role</label><input type="text" id="s_col_role" placeholder="CurrentRole"/></div>
+              <div class="settings-field"><label>Location</label><input type="text" id="s_col_location" placeholder="Location"/></div>
+              <div class="settings-field"><label>Email</label><input type="text" id="s_col_email" placeholder="Email"/></div>
+              <div class="settings-field"><label>Status</label><input type="text" id="s_col_status" placeholder="Status"/></div>
+              <div class="settings-field"><label>Profile URL</label><input type="text" id="s_col_url" placeholder="ProfileURL"/></div>
+              <div class="settings-field"><label>Source</label><input type="text" id="s_col_source" placeholder="Source"/></div>
+              <div class="settings-field"><label>Notes</label><input type="text" id="s_col_notes" placeholder="Notes"/></div>
+              <div class="settings-field"><label>Phone</label><input type="text" id="s_col_phone" placeholder="PhoneNumber"/></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin:12px 0 6px">Applicant repository columns <span style="font-weight:400;color:var(--muted)">— Candidate Match (often auto-generated internal names)</span></div>
+            <div class="rec-col-grid">
+              <div class="settings-field"><label>First name</label><input type="text" id="s_ac_firstName" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Last name</label><input type="text" id="s_ac_lastName" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Position</label><input type="text" id="s_ac_position" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Phone</label><input type="text" id="s_ac_phone" placeholder="internal name"/></div>
+              <div class="settings-field"><label>State</label><input type="text" id="s_ac_state" placeholder="internal name"/></div>
+              <div class="settings-field"><label>City</label><input type="text" id="s_ac_city" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Email</label><input type="text" id="s_ac_email" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Stage</label><input type="text" id="s_ac_stage" placeholder="internal name"/></div>
+              <div class="settings-field"><label>LinkedIn</label><input type="text" id="s_ac_linkedIn" placeholder="internal name"/></div>
+              <div class="settings-field"><label>Resume link</label><input type="text" id="s_ac_resume" placeholder="internal name"/></div>
+            </div>
+            <div class="settings-field"><label>Exclude from keyword search <span style="font-weight:400;color:var(--muted);font-size:11px">— comma-separated internal names (e.g. status columns)</span></label><input type="text" id="s_ac_skip" placeholder="e.g. field_30, field_31"/></div>
+          </div>
+        </details>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin:18px 0 6px">Booking links <span style="font-weight:400;color:var(--muted);font-size:12px">&mdash; shown on the Outreach Writer for scheduling</span></div>
         <div id="s_rec_meetingLinks"></div>
         <button type="button" class="rec-add-link" onclick="addMeetingLinkRow()">+ Add booking link</button>
@@ -14376,6 +14419,19 @@ function loadMeetingLinksIntoUI(links) {
   (links || []).forEach(function (m) { addMeetingLinkRow(m.l, m.u); });
 }
 
+// ── Recruiting settings: SharePoint column-map read helpers ──────────────────
+function _readColMap() {
+  const g = (id, d) => (document.getElementById(id) && document.getElementById(id).value.trim()) || d;
+  return { name: g('s_col_name', 'Title'), role: g('s_col_role', 'CurrentRole'), location: g('s_col_location', 'Location'), email: g('s_col_email', 'Email'), status: g('s_col_status', 'Status'), url: g('s_col_url', 'ProfileURL'), source: g('s_col_source', 'Source'), notes: g('s_col_notes', 'Notes'), phone: g('s_col_phone', 'PhoneNumber') };
+}
+function _readAppColMap() {
+  const g = (id) => (document.getElementById(id) && document.getElementById(id).value.trim()) || '';
+  const skip = ((document.getElementById('s_ac_skip') || {}).value || '').split(',').map(x => x.trim()).filter(Boolean);
+  const m = { firstName: g('s_ac_firstName'), lastName: g('s_ac_lastName'), position: g('s_ac_position'), phone: g('s_ac_phone'), state: g('s_ac_state'), city: g('s_ac_city'), email: g('s_ac_email'), stage: g('s_ac_stage'), linkedIn: g('s_ac_linkedIn'), resume: g('s_ac_resume') };
+  if (skip.length) m.skip = skip;
+  return m;
+}
+
 function loadSettingsIntoUI() {
   const saved = localStorage.getItem(SETTINGS_KEY);
   const cfg   = saved ? { ...CLIENT_CONFIG, ...JSON.parse(saved) } : CLIENT_CONFIG;
@@ -14432,6 +14488,12 @@ function loadSettingsIntoUI() {
   setVal('s_rec_trackerList', rsp.trackerList);
   setVal('s_rec_applicantsList', rsp.applicantsList);
   loadMeetingLinksIntoUI(rec.meetingLinks || []);
+  // SharePoint column mappings (advanced)
+  const rcols = rsp.columns || {}, acols = rsp.applicantsColumns || {};
+  const setC = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  setC('s_col_name', rcols.name); setC('s_col_role', rcols.role); setC('s_col_location', rcols.location); setC('s_col_email', rcols.email); setC('s_col_status', rcols.status); setC('s_col_url', rcols.url); setC('s_col_source', rcols.source); setC('s_col_notes', rcols.notes); setC('s_col_phone', rcols.phone);
+  setC('s_ac_firstName', acols.firstName); setC('s_ac_lastName', acols.lastName); setC('s_ac_position', acols.position); setC('s_ac_phone', acols.phone); setC('s_ac_state', acols.state); setC('s_ac_city', acols.city); setC('s_ac_email', acols.email); setC('s_ac_stage', acols.stage); setC('s_ac_linkedIn', acols.linkedIn); setC('s_ac_resume', acols.resume);
+  setC('s_ac_skip', Array.isArray(acols.skip) ? acols.skip.join(', ') : '');
   // Capability statement fallback content — arrays shown one item per line
   const joinL = (a) => Array.isArray(a) ? a.join('\n') : (a || '');
   const setTA = (id, a) => { const el = document.getElementById(id); if (el) el.value = joinL(a); };
@@ -14608,6 +14670,8 @@ function saveSettings() {
       scope:          document.getElementById('s_rec_spScope')?.value.trim() || '',
       trackerList:    document.getElementById('s_rec_trackerList')?.value.trim() || '',
       applicantsList: document.getElementById('s_rec_applicantsList')?.value.trim() || '',
+      columns: _readColMap(),
+      applicantsColumns: _readAppColMap(),
     })
   });
   // Capability statement fallback content — arrays, one item per line.
@@ -14783,6 +14847,29 @@ function applySettingsOverrides() {
 })();
 
 
+
+// ── Shared SharePoint REST auth (incremental consent, gesture-safe) ──────────
+// The recruiting tabs use the SharePoint REST API, which needs a token for the
+// SharePoint resource itself (e.g. AllSites.Write on the site host) — a DIFFERENT
+// audience than the Microsoft Graph scopes consented at sign-in. We therefore
+// acquire it INCREMENTALLY: silently once it has been consented, and interactively
+// (a popup) ONLY from a real click, so the browser never blocks it.
+window.RecAuth = (function () {
+  function sp() { return (CLIENT_CONFIG.recruiting && CLIENT_CONFIG.recruiting.sharePoint) || {}; }
+  function scope() { return sp().scope || ''; }
+  function ready() { return typeof msalClient !== 'undefined' && !!msalClient && typeof msAccount !== 'undefined' && !!msAccount; }
+  async function tokenSilent() {
+    if (!ready() || !scope()) return null;
+    try { return (await msalClient.acquireTokenSilent({ scopes: [scope()], account: msAccount })).accessToken; }
+    catch (e) { return null; }
+  }
+  async function tokenInteractive() {
+    if (!ready() || !scope()) return null;
+    try { return (await msalClient.acquireTokenPopup({ scopes: [scope()], account: msAccount })).accessToken; }
+    catch (e) { return null; }
+  }
+  return { scope: scope, ready: ready, tokenSilent: tokenSilent, tokenInteractive: tokenInteractive };
+})();
 // ═══ RECRUITING SUITE — Candidate Tracker (SharePoint-backed CRUD + resume parsing) ═══
 // Extends window.Rec. Uses the unified Microsoft session (msalClient / msAccount) to acquire a
 // SharePoint REST token via the shared getGraphToken(); all SharePoint targets are tenant-driven
@@ -14802,11 +14889,25 @@ function applySettingsOverrides() {
   function esc(s) { var str = (!s || typeof s === 'object') ? '' : String(s); return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function setB(kind, msg) { var b = document.getElementById('sp-banner-tracker'); if (!b) return; if (!msg) { b.style.display = 'none'; return; } b.style.display = 'block'; b.className = 'spb ' + kind; b.textContent = msg; }
 
-  async function getSpRestToken() {
-    var scope = spScope();
-    if (!scope) { toast('SharePoint is not configured for this tenant'); return null; }
-    try { return await getGraphToken([scope]); }
-    catch (e) { toast('Could not get SharePoint token — check that you are signed in'); return null; }
+  async function getSpRestToken(interactive) {
+    if (!spScope()) { toast('SharePoint is not configured for this tenant'); return null; }
+    var t = await window.RecAuth.tokenSilent();
+    if (t) return t;
+    if (!interactive) return null;                 // caller shows the Connect prompt; popup must fire on a click
+    t = await window.RecAuth.tokenInteractive();
+    if (!t) toast('SharePoint permission was not granted.');
+    return t;
+  }
+  function showConnect(msg) {
+    var b = document.getElementById('sp-banner-tracker'); if (!b) return;
+    b.style.display = 'block'; b.className = 'spb warn';
+    b.innerHTML = '<span>' + esc(msg) + '</span> <button type="button" class="spb-btn" onclick="Rec.connectSharePoint()">Connect to SharePoint</button>';
+  }
+  async function connectSharePoint() {
+    setB('info', 'Opening the Microsoft permission prompt\u2026');
+    var t = await window.RecAuth.tokenInteractive();   // direct popup within the click gesture
+    if (!t) { setB('err', 'SharePoint permission was not granted. Try again when ready.'); return; }
+    await loadC(true);
   }
   async function getDig(t) {
     var r = await fetch(spSite() + '/_api/contextinfo', { method: 'POST', headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
@@ -14819,11 +14920,16 @@ function applySettingsOverrides() {
     LT = (d && d.d && d.d.ListItemEntityTypeFullName) ? d.d.ListItemEntityTypeFullName : null;
     return LT;
   }
-  async function loadC() {
+  async function loadC(interactive) {
     if (!signedIn()) { setB('info', 'Sign in with Microsoft (top of the page) to load candidates from SharePoint.'); renderC(); return; }
-    if (!spSite() || !spList()) { setB('info', 'SharePoint isn\u2019t configured for this tenant yet. You can still add candidates below, or set the list in Settings.'); renderC(); return; }
-    setB('info', 'Loading candidates from SharePoint...');
-    var t = await getSpRestToken(); if (!t) { setB('err', 'Could not authenticate to SharePoint.'); return; }
+    if (!spSite() || !spList()) { setB('info', 'SharePoint isn\u2019t configured for this tenant yet. You can still add candidates below, or set the list in Settings \u2192 Recruiting.'); renderC(); return; }
+    var t = await getSpRestToken(interactive);
+    if (!t) {
+      if (interactive) setB('err', 'Could not connect to SharePoint. Please try again, or check that your account has access to the site.');
+      else { showConnect('One-time setup: grant this app permission to read and update your SharePoint candidate list.'); renderC(); }
+      return;
+    }
+    setB('info', 'Loading candidates from SharePoint\u2026');
     var C = spCols();
     try {
       var sel = ['Id', C.name, C.role, C.location, C.email, C.phone, C.status, C.url, C.source, C.notes].join(',');
@@ -14841,7 +14947,7 @@ function applySettingsOverrides() {
     if (!signedIn()) { toast('Sign in with Microsoft first'); return; }
     var C = spCols();
     var ld = document.getElementById('cld'); if (ld) ld.style.display = 'block';
-    var t = await getSpRestToken(); if (!t) { if (ld) ld.style.display = 'none'; return; }
+    var t = await getSpRestToken(true); if (!t) { if (ld) ld.style.display = 'none'; return; }
     try {
       var dg = await getDig(t), lt = await getLT(t);
       var b = {}; if (lt) b.__metadata = { type: lt };
@@ -14855,7 +14961,7 @@ function applySettingsOverrides() {
   async function updSt(id, val) {
     if (!signedIn()) { toast('Not signed in'); return; }
     var C = spCols();
-    var t = await getSpRestToken(); if (!t) return;
+    var t = await getSpRestToken(true); if (!t) return;
     try {
       var dg = await getDig(t), lt = await getLT(t);
       var b = {}; if (lt) b.__metadata = { type: lt }; b[C.status] = val;
@@ -14865,7 +14971,7 @@ function applySettingsOverrides() {
   }
   async function remC(id) {
     if (!confirm('Remove this candidate?')) return;
-    var t = await getSpRestToken(); if (!t) return;
+    var t = await getSpRestToken(true); if (!t) return;
     try {
       var dg = await getDig(t);
       var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/items(" + id + ")", { method: 'POST', headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose', 'X-RequestDigest': dg, 'IF-MATCH': '*', 'X-HTTP-Method': 'DELETE' } });
@@ -14924,13 +15030,13 @@ function applySettingsOverrides() {
       toast('Resume parsed! Review fields below.');
     } catch (e) { if (st) { st.className = 'pdfs er'; st.textContent = 'Error: ' + (e.message || 'Unknown error'); } console.error('PDF error:', e); }
   }
-  function trackerOpened() { renderC(); if (signedIn() && !_loaded) loadC(); }
+  function trackerOpened() { renderC(); if (!_loaded) loadC(false); }
 
   if (window.Rec) {
     window.Rec.loadC = loadC; window.Rec.addC = addC; window.Rec.updSt = updSt; window.Rec.remC = remC;
     window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP;
     window.Rec.dzOv = dzOv; window.Rec.dzLv = dzLv; window.Rec.dzDp = dzDp; window.Rec.handlePdf = handlePdf;
-    window.Rec.trackerOpened = trackerOpened;
+    window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint;
   }
 })();
 
@@ -14951,7 +15057,33 @@ function applySettingsOverrides() {
   function signedIn() { return typeof msAccount !== 'undefined' && !!msAccount; }
   function toast(m) { var t = document.getElementById('recToast'); if (t) { t.textContent = m; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2400); } }
   function esc(s) { var str = (!s || typeof s === 'object') ? '' : String(s); return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  async function getSpRestToken() { var scope = spScope(); if (!scope) { toast('SharePoint is not configured for this tenant'); return null; } try { return await getGraphToken([scope]); } catch (e) { toast('Could not get SharePoint token — check sign-in'); return null; } }
+  async function getSpRestToken(interactive) {
+    if (!spScope()) { toast('SharePoint is not configured for this tenant'); return null; }
+    var t = await window.RecAuth.tokenSilent();
+    if (t) return t;
+    if (!interactive) return null;
+    t = await window.RecAuth.tokenInteractive();
+    if (!t) toast('SharePoint permission was not granted.');
+    return t;
+  }
+  function setBM(kind, msg) { var b = document.getElementById('sp-banner-match'); if (!b) return; if (!msg) { b.style.display = 'none'; return; } b.style.display = 'block'; b.className = 'spb ' + kind; b.textContent = msg; }
+  function showConnectM(msg) {
+    var b = document.getElementById('sp-banner-match'); if (!b) return;
+    b.style.display = 'block'; b.className = 'spb warn';
+    b.innerHTML = '<span>' + esc(msg) + '</span> <button type="button" class="spb-btn" onclick="Rec.connectSharePointM()">Connect to SharePoint</button>';
+  }
+  async function connectSharePointM() {
+    setBM('info', 'Opening the Microsoft permission prompt\u2026');
+    var t = await window.RecAuth.tokenInteractive();
+    if (t) setBM('ok', '\u2713 Connected to SharePoint \u2014 you can search now.');
+    else setBM('err', 'Could not connect. Please try again.');
+  }
+  async function refreshMatchConn() {
+    if (!window.RecAuth.ready()) { setBM('info', 'Sign in with Microsoft (top of the page) to search your SharePoint lists.'); return; }
+    if (!spSite() || (!appList() && !spList())) { setBM('info', 'SharePoint isn\u2019t configured for this tenant yet \u2014 set it in Settings \u2192 Recruiting.'); return; }
+    var t = await window.RecAuth.tokenSilent();
+    if (t) setBM(null); else showConnectM('One-time setup: grant this app permission to search your SharePoint candidate lists.');
+  }
 
   var luResults = [], _luList = 'applicants', _searchMode = 'literal';
   var _luSort = { col: -1, dir: 1 }, _luFilters = {};
@@ -15000,7 +15132,7 @@ function applySettingsOverrides() {
     if (!role && !loc && !skills) { toast('Enter at least one search criterion'); return; }
     var ldg = document.getElementById('lu-loading'); if (ldg) ldg.style.display = 'block';
     var res = document.getElementById('lu-results'); if (res) res.style.display = 'none';
-    var t = await getSpRestToken(); if (!t) { if (ldg) ldg.style.display = 'none'; return; }
+    var t = await getSpRestToken(true); if (!t) { if (ldg) ldg.style.display = 'none'; return; }
     var all = [];
     try {
       if (ldg) ldg.textContent = 'Fetching candidates from SharePoint...';
@@ -15191,13 +15323,13 @@ function applySettingsOverrides() {
     if (p && L.potentials) p.textContent = L.potentials;
     if (b && L.both) b.textContent = L.both;
   }
-  function matchOpened() { renderMatchLabels(); setTimeout(sizeBothListsPill, 50); }
+  function matchOpened() { renderMatchLabels(); setTimeout(sizeBothListsPill, 50); refreshMatchConn(); }
 
   if (window.Rec) {
     window.Rec.runLookup = runLookup; window.Rec.clearLookup = clearLookup;
     window.Rec.setLuList = setLuList; window.Rec.setSearchMode = setSearchMode;
     window.Rec.luSortBy = luSortBy; window.Rec.luFilter = luFilter;
-    window.Rec.exportLookupCSV = exportLookupCSV; window.Rec.matchOpened = matchOpened;
+    window.Rec.exportLookupCSV = exportLookupCSV; window.Rec.matchOpened = matchOpened; window.Rec.connectSharePointM = connectSharePointM;
     window.Rec.renderMatchLabels = renderMatchLabels;
   }
 })();
