@@ -856,6 +856,33 @@
   #weightsTier2 input[type=number]::-webkit-inner-spin-button,
   #weightsTier2 input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
   #weightsTier1 input[type=number], #weightsTier2 input[type=number] { -moz-appearance:textfield; }
+  /* ── First-run setup guide (white-label onboarding) ─────────────────────── */
+  .onboard-guide { margin: 0 0 22px; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 14px rgba(15,23,42,.06); overflow: hidden; }
+  .onboard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 22px 14px; background: linear-gradient(135deg, #f6f8fb, #ffffff 70%); border-bottom: 1px solid var(--border); }
+  .onboard-title { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -.01em; }
+  .onboard-sub { font-size: 12.5px; color: var(--muted); margin-top: 4px; max-width: 720px; line-height: 1.5; }
+  .onboard-dismiss { flex-shrink: 0; background: #fff; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 6px 13px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .onboard-dismiss:hover { background: #f8fafc; color: var(--text); }
+  .onboard-steps { padding: 6px 10px; }
+  .onboard-step { display: flex; align-items: flex-start; gap: 13px; padding: 12px; border-radius: 9px; cursor: pointer; transition: background .12s; }
+  .onboard-step:hover { background: #f6f8fb; }
+  .onboard-dot { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-top: 1px; border: 2px solid var(--border); color: var(--muted); background: #fff; }
+  .onboard-step.done .onboard-dot { background: var(--success); border-color: var(--success); color: #fff; }
+  .onboard-step.todo .onboard-dot { border-color: var(--blue); color: var(--blue); }
+  .onboard-body { flex: 1; min-width: 0; }
+  .onboard-step-label { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .onboard-req { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 20px; }
+  .onboard-req.required { background: #eef2f7; color: var(--blue); }
+  .onboard-req.optional { background: #f1f5f9; color: #64748b; }
+  .onboard-step-desc { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+  .onboard-step-desc.is-done { color: var(--success); font-weight: 600; }
+  .onboard-go { flex-shrink: 0; align-self: center; font-size: 12px; font-weight: 700; color: var(--blue); white-space: nowrap; opacity: 0; transition: opacity .12s; }
+  .onboard-step:hover .onboard-go { opacity: 1; }
+  .onboard-step.done .onboard-go { display: none; }
+  .onboard-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 22px 18px; }
+  .onboard-cta { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .onboard-cta:hover { filter: brightness(1.06); }
+  .onboard-progress { font-size: 12px; color: var(--muted); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -904,9 +931,9 @@
     </nav>
     <div class="sidebar-legend">
       <div class="sl-title">🔗 How tabs connect</div>
-      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Search → Tracker</b><span>sourced candidates land in your tracker</span></div></div>
-      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Tracker ↔ Match</b><span>your bench is the pool Candidate Match ranks</span></div></div>
-      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Outreach Writer</b><span>drafts messages to candidates you surface</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Candidate Search</b><span>boolean search strings for LinkedIn or Google &mdash; standalone</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Tracker &harr; Match</b><span>your tracked bench is the pool Match ranks against a role</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Outreach Writer</b><span>drafts outreach to candidates you surface &mdash; standalone</span></div></div>
     </div>
   </div>
 </header>
@@ -1003,6 +1030,22 @@
 
 
 <!-- ══════════════════════════ PROPOSAL TAB ══════════════════════════════ -->
+<!-- ── First-run setup guide (shows only on a fresh, unconfigured white-label install) ── -->
+<div id="onboardGuide" class="onboard-guide" style="display:none">
+  <div class="onboard-head">
+    <div>
+      <div class="onboard-title" id="onboardTitle">Welcome — let's get your tool set up</div>
+      <div class="onboard-sub">A couple of quick steps and you're ready to read solicitations and build proposals. This guide goes away on its own once your company is configured.</div>
+    </div>
+    <button class="onboard-dismiss" onclick="dismissOnboard()" title="Hide this guide for now">Dismiss</button>
+  </div>
+  <div class="onboard-steps" id="onboardSteps"></div>
+  <div class="onboard-foot">
+    <button class="onboard-cta" onclick="onboardOpenSettings()">Open Settings to finish setup</button>
+    <span class="onboard-progress" id="onboardProgress"></span>
+  </div>
+</div>
+
 <div class="tab-pane" id="pane-proposal">
 
   <!-- ── ROW 1: Step 1 | Step 2 ───────────────────────────────────────────── -->
@@ -1951,6 +1994,22 @@
     </div>
 
 
+    <!-- ── Coverage-Gap Analysis (Phase 7) — additive readout; does NOT read or change the fit score ── -->
+    <div class="card" style="margin-bottom:24px" id="bnaGapCard">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span><span class="icon">🧭</span> Coverage-Gap Analysis</span>
+        <button id="bnaGapCopyBtn" onclick="copyBnaGap()" style="display:none;padding:4px 10px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:rgba(255,255,255,0.15);cursor:pointer;color:white">⎘ Copy</button>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.6">A requirement-by-requirement read of where <strong id="bnaGapCo">your company</strong> covers this solicitation and where the gaps are — each with a recommended fix. This is a planning view; it does not change the fit score above, but when you run it, it is included in the Bid/No-Bid PDF.</p>
+        <div id="bnaGapEmpty" style="text-align:center;padding:6px 0 4px">
+          <button id="bnaGapRunBtn" onclick="runBnaCoverageGap()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12)">🧭 Run coverage-gap analysis</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">Reads the analyzed opportunity against your capability profile — about 15–30 seconds.</div>
+        </div>
+        <div id="bnaGapStatus" style="display:none;font-size:13px;color:var(--muted);text-align:center;padding:12px 0"></div>
+        <div id="bnaGapResults" style="display:none"></div>
+      </div>
+    </div>
   </div>
         <!-- Duplicate download button at the very bottom of the BNA tab -->
         <div id="bnaPdfBtnWrapBottom" style="display:none;text-align:center;margin:8px 0 24px">
@@ -2040,6 +2099,21 @@
     <div class="card-body">
       <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.6">Build this opportunity's price on a single labor-category × PWS-task hours matrix — every methodology is just a roll-up of that one matrix. You can price <strong>on its own</strong> here, or as part of a proposal: this tab reads the same RFP you upload on the <strong>Proposal</strong> tab, and when you generate a proposal the price below flows into <strong>Volume III</strong> automatically. Work the steps top to bottom — each unlocks the next.</p>
       <div style="margin-top:12px"><button onclick="switchTab('proposal')" class="btn btn-secondary btn-sm" style="width:auto">← Back to Proposal</button></div>
+    </div>
+  </div>
+
+  <!-- ── Constrained / reverse pricing (Phase 8) — pin populated stages, solve the rest ── -->
+  <div class="card" id="constrainedCard" style="margin-bottom:20px">
+    <div class="card-header"><span class="icon">🧩</span> Constrained pricing (reverse-solve)</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.6">Already have a partly-built pricing spreadsheet? Upload it and the tool detects which stages are already populated — PWS-task mapping, labor categories, GSA-schedule mapping, FTEs, and rates — treats those as fixed, and solves only what's blank. <strong>Optional</strong> — skip this and build forward from the steps below if you're starting fresh.</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:12.5px;font-weight:600;background:none;border:1px solid var(--border);border-radius:7px;padding:8px 14px;cursor:pointer;color:var(--text)">📎 Upload pricing spreadsheet<input type="file" id="constrainedFile" accept=".xlsx,.xls,.csv" onchange="constrainedFileChosen(event)" style="display:none"/></label>
+        <span id="constrainedFileName" style="font-size:12px;color:var(--muted)"></span>
+        <button id="constrainedDetectBtn" onclick="runConstrainedDetect()" style="display:none;padding:8px 15px;font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer">Detect what's populated</button>
+      </div>
+      <div id="constrainedStatus" style="display:none;font-size:13px;color:var(--muted);margin-top:12px"></div>
+      <div id="constrainedResults" style="display:none;margin-top:14px"></div>
     </div>
   </div>
 
@@ -2265,7 +2339,7 @@
       <label>Notes</label>
       <textarea id="cno" placeholder="Key qualifications, years of experience..." style="min-height:60px"></textarea>
       <div class="btn-row">
-        <button class="btn primary" onclick="Rec.addC()">Save to SharePoint</button>
+        <button class="btn primary" id="saveCandBtn" onclick="Rec.addC()">Save to SharePoint</button>
         <button class="btn" onclick="Rec.clrC()">Clear</button>
       </div>
       <div class="ldg" id="cld">Saving to SharePoint...</div>
@@ -2275,6 +2349,8 @@
       <select id="fstat" onchange="Rec.renderC()" style="min-width:170px"><option value="">All statuses</option><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select>
       <button class="btn sm" onclick="Rec.loadC(true)">&#8635; Refresh</button>
       <button class="btn sm" onclick="Rec.expCSV()">&#8595; CSV</button>
+      <button class="btn sm" onclick="document.getElementById('csvIn').click()" title="Bulk-import candidates from a CSV">&#8593; Import CSV</button>
+      <input type="file" id="csvIn" accept=".csv" style="display:none" onchange="Rec.importCsv(this.files[0]); this.value='';"/>
     </div>
     <div id="clist"></div>
   </div>
@@ -2336,6 +2412,49 @@
       </div>
       <div id="lu-list-output"></div>
     </div>
+    <!-- ── Proposed Team & Staffing Plan (Phase 7 piece 2) — bench-backed, self-contained ── -->
+    <div class="card rec-card" id="staffCard" style="margin-top:22px">
+      <div class="sec">Proposed team &amp; staffing plan</div>
+      <p class="hint" style="margin:-4px 0 12px">Assemble the people you'd put on this opportunity from your bench, then generate a staffing narrative that names them and maps them to the requirement. Uses the opportunity you analyzed on the Bid/No-Bid tab, if any.</p>
+      <div id="staffRoster"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn sm" onclick="staffAddRow()">+ Add role</button>
+        <button class="btn sm" onclick="staffPullBench()">Pull from bench</button>
+        <button class="btn sm danger" onclick="staffClear()">Clear</button>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn primary" onclick="runStaffingPlan()">Generate staffing plan</button>
+      </div>
+      <div id="staffStatus" class="ldg" style="display:none">Generating&hellip;</div>
+      <div id="staffResults" style="display:none;margin-top:16px"></div>
+    </div>
+    <!-- ── Compliant Resume Builder (Phase 7 piece 3) — bench candidate -> tailored, compliant resume ── -->
+    <div class="card rec-card" id="resumeCard" style="margin-top:22px">
+      <div class="sec">Compliant resume builder</div>
+      <p class="hint" style="margin:-4px 0 12px">Turn a bench candidate into a solicitation-tailored resume that maps their experience to the key-personnel qualifications and flags any shortfall. Uses only what you provide &mdash; it never invents credentials.</p>
+      <div class="r2">
+        <div>
+          <label>Candidate name</label>
+          <input type="text" id="resName" placeholder="e.g. Paul Scace"/>
+          <p class="hint"><a href="javascript:void(0)" onclick="resumePullBench()">Pull a name from your bench</a></p>
+        </div>
+        <div>
+          <label>Target position / labor category</label>
+          <input type="text" id="resRole" placeholder="e.g. Program Manager (Key Personnel)"/>
+        </div>
+      </div>
+      <label style="margin-top:10px;display:block">Candidate background</label>
+      <textarea id="resBg" placeholder="Paste the person's experience, education, certifications, and clearance &mdash; or their existing resume text. The more detail, the better the mapping." style="min-height:120px"></textarea>
+      <label style="margin-top:10px;display:block">Key-personnel requirements for this position</label>
+      <textarea id="resReq" placeholder="Paste the solicitation's qualification requirements for this role &mdash; degree, years of experience, certifications, clearance." style="min-height:90px"></textarea>
+      <p class="hint"><a href="javascript:void(0)" onclick="resumeSeedReq()">Seed requirements from the analyzed opportunity</a></p>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn primary" onclick="runResume()">Generate compliant resume</button>
+        <button class="btn sm danger" onclick="resumeClear()">Clear</button>
+      </div>
+      <div id="resStatus" class="ldg" style="display:none">Generating&hellip;</div>
+      <div id="resResults" style="display:none;margin-top:16px"></div>
+    </div>
   </div>
 </div>
 <div class="tab-pane" id="pane-rec-outreach">
@@ -2391,7 +2510,7 @@
     <div class="card-body">
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px">These settings configure the tool for your company. Changes take effect immediately and are saved in your browser.</p>
 
-      <div class="settings-section">
+      <div class="settings-section" id="set-company">
         <h3>🏢 Company Identity</h3>
         <div class="settings-grid">
           <div class="settings-field"><label>Company Full Name</label><input type="text" id="s_companyFullName" placeholder="South River Federal Solutions LLC"/></div>
@@ -2586,7 +2705,7 @@
         <div id="s_wrap_preview" style="margin-top:6px;padding:10px 12px;background:#f0f9ff;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text)"></div>
       </div>
 
-      <div class="settings-section">
+      <div class="settings-section" id="set-capability">
         <h3>📄 Capability Statement</h3>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
           Your company's core capabilities and voice. These ground AI-generated proposals and slides <strong>when no capability-statement or past-performance documents are loaded</strong> from SharePoint. One item per line.
@@ -2617,11 +2736,19 @@
         </div>
       </div>
 
-      <div class="settings-section">
+      <div class="settings-section" id="set-recruiting">
         <h3>👤 Recruiting</h3>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px">
           Configuration for the Recruiting suite. The SharePoint fields point the Candidate Tracker and Candidate Match at your lists and require Microsoft sign-in (above). Leave them blank to use recruiting without a shared candidate store.
         </p>
+        <div class="settings-field" style="margin-bottom:14px">
+          <label>Candidate data source</label>
+          <select id="s_rec_sourceMode" style="max-width:360px">
+            <option value="sharepoint">SharePoint &mdash; shared list (requires Microsoft sign-in)</option>
+            <option value="local">Local &mdash; this browser only (no account needed)</option>
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Local mode keeps candidates in this browser via CSV import, resume upload, or manual entry &mdash; the Tracker and Match work without SharePoint.</div>
+        </div>
         <div style="font-size:13px;font-weight:700;color:var(--text);margin:4px 0 8px">SharePoint lists</div>
         <div class="settings-grid">
           <div class="settings-field"><label>SharePoint site URL</label><input type="text" id="s_rec_spSite" placeholder="https://yourorg.sharepoint.com/sites/YourSite"/></div>
@@ -3731,6 +3858,7 @@ function msLogout() {
 function setMsAccount(account) {
   msAccount = account;
   renderMsState();
+  if (typeof renderOnboard === 'function') renderOnboard();
 }
 
 function renderMsState() {
@@ -5456,6 +5584,7 @@ function saveApiKey(value, sourceId) {
   const topStat = document.getElementById('apiKeyTopStatus');
   if (topStat) topStat.style.display = trimmed ? 'inline' : 'none';
   updateStepLocks();  // unlock Steps 3+ once key is entered
+  if (typeof renderOnboard === 'function') renderOnboard();
 }
 
 function toggleApiKeyVisibility(id) {
@@ -6108,7 +6237,7 @@ async function ensureBriefing(apiKey) {
     `"option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown",` +
     `"sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
     `"pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated",` +
-    `"estimated_ftes":"the number of FTEs/labor the solicitation REQUIRES if stated; '' or 'not specified' if it does not state one",` +
+    `"estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated. Copy the EXACT figure INCLUDING any decimal or fraction (e.g. 2.5, 0.5, 3.25); do NOT round to a whole number. '' or 'not specified' if it does not state one",` +
     `"estimated_value":"",` +
     `"pricing_methodology":"exactly one of 'lcat','pws_task','product','simple' — how pricing must be STRUCTURED per Section L/B; '' if unstated",` +
     `"pricing_instructions":"any cost/price-volume format instructions from Section L/B/M; '' if none",` +
@@ -8083,6 +8212,7 @@ async function runGeneration() {
     const styleCtx = CLIENT_CONFIG.writingStyle ?
       `\nWRITING STYLE: ${CLIENT_CONFIG.writingStyle.join(' | ')}\nPhrases: ${(CLIENT_CONFIG.signaturePhrases||[]).join(', ')}` : '';
 
+    const proposedTeamCtx = (typeof _proposedTeamContext === 'function') ? _proposedTeamContext() : '';
     const companyCtx =
       `COMPANY IDENTITY:\n` +
       `Name: ${CLIENT_CONFIG.companyFullName} (${CLIENT_CONFIG.companyShortName})\n` +
@@ -8094,7 +8224,7 @@ async function runGeneration() {
       `CMMC: ${CLIENT_CONFIG.cmmc || 'N/A'}\n` +
       `DCAA: ${CLIENT_CONFIG.dcaa || 'N/A'}\n` +
       `CEO: ${CLIENT_CONFIG.ceoName} | ${CLIENT_CONFIG.ceoTitle} | ${CLIENT_CONFIG.ceoPhone} | ${CLIENT_CONFIG.ceoEmail}\n` +
-      fallbackPersonnel + fallbackPP + fallbackCaps + styleCtx + `\n` +
+      fallbackPersonnel + fallbackPP + fallbackCaps + styleCtx + proposedTeamCtx + `\n` +
       `\nNOTES FROM PROPOSAL MANAGER: ${notes || 'None'}\n` +
       assumptionsCtx + clarifyCtx +
       (typeof getTeamingContext === 'function' ? getTeamingContext() : '');
@@ -8164,7 +8294,7 @@ async function runGeneration() {
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
-      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
+      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated — copy the EXACT figure including any decimal or fraction (e.g. 2.5, 0.5); do NOT round; '' or 'not specified' if none","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
       `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
@@ -10164,10 +10294,11 @@ async function pricingAutoBuildStructure() {
     add('Key personnel', b.key_personnel); add('Periods', b.period_structure); add('Estimated FTEs', b.estimated_ftes);
     const ctx = ctxBits.join('\n') || '(no structured briefing available \u2014 work from the PWS tasks and your judgment)';
 
-    const _statedN = pricingModel.statedFteTotal != null ? Math.round(pricingModel.statedFteTotal) : null;
-    const fteLine = (pricingModel.fteSource === 'stated' && _statedN != null)
-      ? `The Government requires EXACTLY ${_statedN} FTE. Your integer headcounts MUST sum to EXACTLY ${_statedN}, and total base-period billable hours MUST equal ${_statedN} \u00d7 ${defaultHpf()} = ${(_statedN * defaultHpf()).toLocaleString('en-US')} hours (every FTE fully utilized). Distribute those hours across the PWS tasks. Deviating from the stated FTE is disqualifying \u2014 do not propose a different total.`
-      : `The Government did NOT state an FTE count \u2014 size the team yourself from the scope and keep total headcount realistic.`;
+    const _statedFte = pricingModel.statedFteTotal != null ? pricingModel.statedFteTotal : null;
+    const _statedFteStr = _statedFte != null ? pricingFmtFte(_statedFte) : '';
+    const fteLine = (pricingModel.fteSource === 'stated' && _statedFte != null)
+      ? `The Government requires EXACTLY ${_statedFteStr} FTE of level of effort \u2014 this figure is GOSPEL and MAY be fractional (e.g. 2.5). Reproduce it EXACTLY; do NOT round a fractional FTE up or down to a whole number. The sum of the per-role "fte" values MUST equal EXACTLY ${_statedFteStr}, and total base-period billable hours MUST equal ${_statedFteStr} \u00d7 ${defaultHpf()} = ${Math.round(_statedFte * defaultHpf()).toLocaleString('en-US')} hours. A role's "fte" is its level of effort; whole numbers are preferred, but it may be fractional (0.5, 1.5, \u2026); "headcount" is the number of people and need not equal the fte (one half-time person is headcount 1, fte 0.5). Distribute the hours across the PWS tasks. Deviating from the stated FTE \u2014 including rounding a mandated fraction \u2014 is disqualifying.`
+      : `The Government did NOT state an FTE count \u2014 size the team yourself from the scope. PREFER whole-number FTEs (they keep staffing clean); use a fractional FTE only where a role's scope genuinely amounts to part-time work.`;
     const hpf = defaultHpf();
 
     let schedBlock = '';
@@ -10209,12 +10340,12 @@ Return ONLY JSON, no prose:
  "fte_basis":"1-2 sentences on how you sized the team",
  "hours_per_fte": <the billable hours that equal ONE FTE for a 12-month period IF the solicitation explicitly states a productive-hours or FTE-hour basis (e.g. 1920, 2080); null if it does not state one>,
  "directed_hours_note":"if the RFP explicitly mandates hours/LOE/staffing for any task, state what you used as-is; '' if none",
- "directed_labor":[{"lcat":"position / labor-category title EXACTLY as the Government wrote it","count": <integer 1+>}],
+ "directed_labor":[{"lcat":"position / labor-category title EXACTLY as the Government wrote it","count": <the exact quantity the Government directs — usually whole, but may be fractional (e.g. 0.5, 2.5) for a partial FTE; copy it verbatim, do NOT round>}],
  ${tasks.length ? '' : '"proposed_tasks":[{"code":"1.1","name":"..."}],'}
  "labor_mix":[
    {"role_name":"role as it will appear in the proposal",
     "headcount": <integer 1 or more>,
-    "fte": <the Advertised FTE for this role over the 12-month base period - the staffing level you propose, as a CLEAN number: a whole number for a full-time role, or a simple fraction like 0.25, 0.5, 0.75 for part-time. The role's total base-period hours are set to exactly fte times the hours-per-FTE basis, so size this to the role's real level of effort>,
+    "fte": <the Advertised FTE for this role over the 12-month base period - the staffing level you propose. PREFER WHOLE NUMBERS: default every role to a whole-number FTE (1, 2, 3, ...). Use a fraction (0.5, 0.75, ...) ONLY when it is genuinely warranted - the Government stipulates a fractional level of effort, or the role's scope truly amounts to only part of a full-time person's work; never use a fraction merely to balance a total. The role's total base-period hours are set to exactly fte times the hours-per-FTE basis, so size this to the role's real level of effort>,
     ${gsa ? '"gsa_lcat":"EXACT Schedule LCAT title from the list above, or null if none is a reasonable fit",\n    "match_confidence":"high|medium|low|none",\n    "match_rationale":"compare the Government required education/experience/scope to the Schedule LCAT; if none fits, say what is missing",' : '"suggested_rate_basis":"what kind of market rate to expect for this role",'}
     "hours_by_task":{"<task code or name exactly as listed>": <hours for a 12-month base period>},
     "allowed_tasks":["<task code or name>"]${pricingScaActive() ? ',\n    "sca_covered": <true if this role is a non-exempt SCA service employee, false if exempt professional>,\n    "wd_occupation":"matching WD occupation title from the list above, or null",\n    "wd_min_wage": <WD minimum hourly wage for that occupation as a number, or null>' : ''},\n    "fte_by_period":[<OMIT this field entirely unless the solicitation specifies DIFFERENT staffing by year for this role; if it does, give this role's FTE for each period in order (base first, then each option), aligned to the ${pricingModel.periods.length} period(s)>]}
@@ -10230,7 +10361,7 @@ Return ONLY JSON, no prose:
 }
 
 Rules:
-- "fte" is the staffing decision and drives the math: each role's total base-period hours are set to exactly fte times ${hpf}. Size "fte" to the real level of effort - a whole number for a full-time role, or a clean fraction (0.25 / 0.5 / 0.75) for part-time; not every role is full-time. "headcount" is the number of distinct people (a single part-time person is headcount 1, fte 0.5). Use "hours_by_task" only to show how each role's hours split across its tasks; those per-task numbers are rescaled so the role total equals fte times ${hpf}.
+- "fte" is the staffing decision and drives the math: each role's total base-period hours are set to exactly fte times ${hpf}. WHOLE-NUMBER FTEs ARE STRONGLY PREFERRED because they make staffing cleaner - default each role to an integer FTE. Use a fractional fte ONLY when genuinely justified: the Government stipulates a fractional FTE, or a role's scope truly needs only part of a full-time person (a small, well-bounded effort that clearly does not justify a whole FTE). Never split a role into a fraction just to make a total come out even. "headcount" is the number of distinct people (a single part-time person is headcount 1, fte 0.5). Use "hours_by_task" only to show how each role's hours split across its tasks; those per-task numbers are rescaled so the role total equals fte times ${hpf}.
 - Allocate hours so that EVERY PWS task listed above receives hours from at least one labor category \u2014 the union of all roles' allowed_tasks must cover every task. Only leave a task with no labor if it is genuinely not a labor effort (a pure travel/ODC or materials line); list any such task codes in "non_labor_tasks".
 - Per-year staffing is CONSTANT by default. ONLY if the solicitation explicitly specifies different staffing by ordering period (a manning/staffing table that changes year to year, or wording like "base year: N FTE; option years: M FTE") provide "fte_by_period" for each affected role, aligned in order to the ${pricingModel.periods.length} period(s). If staffing does not change by year, OMIT fte_by_period for every role.
 - ${gsa ? 'Map by EDUCATION, EXPERIENCE, and SCOPE \u2014 never by title alone. If the closest Schedule LCAT does not reasonably meet what the Government requires, set gsa_lcat=null, match_confidence="none", and list it under "unmatched". Be honest; do not force a poor match.' : 'Do not invent specific dollar rates for our cost; market_low/high are rough reference ranges only.'}
@@ -10267,30 +10398,46 @@ function _pxMatchTaskId(key) {
 // (2) Each role's hours are set to headcount x hours-per-FTE and split across its allowed tasks in
 //     the AI's proposed proportions. Result: headcount sum, hours/hpf, and per-role FTE all tie to
 //     the target exactly. Deviating from a stated FTE is disqualifying, so this is enforced, not advisory.
+function pricingFmtFte(x) {
+  if (x == null || isNaN(Number(x))) return '\u2014';
+  const r = Math.round(Number(x) * 100) / 100;
+  return (Math.round(r) === r) ? String(Math.round(r)) : String(r);
+}
 function pricingReconcileStatedFte(lcats, hours, mask, tasks, target, hpf) {
   const n = lcats.length;
   if (!n || !(target > 0) || !(hpf > 0)) return;
-  let hc = lcats.map(l => Math.max(1, parseInt(l.advertised) || 1));
-  let S = hc.reduce((a, b) => a + b, 0);
-  if (S !== target && target >= n) {
-    const ideal = hc.map(x => x / S * target);
-    let alloc = ideal.map(x => Math.max(1, Math.floor(x)));
-    const rem = ideal.map(x => x - Math.floor(x));
-    let s = alloc.reduce((a, b) => a + b, 0);
-    const order = alloc.map((_, i) => i);
-    if (s < target) {
-      order.sort((a, b) => rem[b] - rem[a]);
-      let k = 0; while (s < target) { alloc[order[k % n]]++; s++; k++; }
-    } else if (s > target) {
-      order.sort((a, b) => rem[a] - rem[b]);
-      let k = 0, guard = 0;
-      while (s > target && guard < 100000) { const i = order[k % n]; if (alloc[i] > 1) { alloc[i]--; s--; } k++; guard++; }
+  const eps = 1e-6;
+  const proposed = lcats.map(l => Math.max(0, parseFloat(l.advertised) || 0));
+  // Integers are the DEFAULT (cleaner staffing). Keep fractions only when actually warranted: the
+  // Government stated a fractional total, or the model deliberately proposed a fractional (part-time)
+  // role. When both the proposed roles and the target are whole, allocate clean integer FTEs.
+  const wantIntegers = Math.abs(target - Math.round(target)) < eps && proposed.every(x => Math.abs(x - Math.round(x)) < eps);
+  if (wantIntegers) {
+    const tgt = Math.round(target);
+    let hc = lcats.map(l => Math.max(1, Math.round(parseFloat(l.advertised) || 0) || 1));
+    let S = hc.reduce((a, b) => a + b, 0);
+    if (S !== tgt && tgt >= n) {
+      const ideal = hc.map(x => x / S * tgt);
+      let alloc = ideal.map(x => Math.max(1, Math.floor(x)));
+      const rem = ideal.map(x => x - Math.floor(x));
+      let s = alloc.reduce((a, b) => a + b, 0);
+      const order = alloc.map((_, i) => i);
+      if (s < tgt) { order.sort((a, b) => rem[b] - rem[a]); let k = 0; while (s < tgt) { alloc[order[k % n]]++; s++; k++; } }
+      else if (s > tgt) { order.sort((a, b) => rem[a] - rem[b]); let k = 0, guard = 0; while (s > tgt && guard < 100000) { const i = order[k % n]; if (alloc[i] > 1) { alloc[i]--; s--; } k++; guard++; } }
+      hc = alloc;
     }
-    hc = alloc;
+    lcats.forEach((l, i) => { l.advertised = hc[i]; });
+  } else {
+    let S = proposed.reduce((a, b) => a + b, 0);
+    let f = S <= 0 ? lcats.map(() => target / n) : proposed.map(x => x * target / S);
+    f = f.map(x => Math.round(x * 10000) / 10000);
+    let resid = Math.round((target - f.reduce((a, b) => a + b, 0)) * 10000) / 10000;
+    if (resid !== 0) { let bi = 0; f.forEach((x, i) => { if (f[i] > f[bi]) bi = i; }); f[bi] = Math.round((f[bi] + resid) * 10000) / 10000; }
+    lcats.forEach((l, i) => { l.advertised = f[i]; });
   }
-  lcats.forEach((l, i) => { l.advertised = hc[i]; });
+  // Role hours = advertised FTE x hpf, distributed across the role's tasks (integer hours, largest-remainder).
   lcats.forEach((l, i) => {
-    const roleHours = hc[i] * hpf;
+    const roleHours = Math.round((parseFloat(l.advertised) || 0) * hpf);
     const cur = hours[l.id] || {};
     const allowedIds = tasks.filter(t => !mask[l.id] || mask[l.id][t.id] !== false).map(t => t.id);
     const tids = allowedIds.length ? allowedIds : tasks.map(t => t.id);
@@ -10413,7 +10560,7 @@ function pricingApplyAutoBuild(a) {
   // the columns each role's hours are spread across. statedFteTotal is set to the table's own sum, so a
   // separately-stated total can never override the explicit per-category counts.
   let _directed = Array.isArray(a.directed_labor)
-    ? a.directed_labor.map(d => ({ lcat: String((d && d.lcat) || '').trim(), count: Math.max(0, parseInt(d && d.count) || 0) })).filter(d => d.lcat && d.count > 0)
+    ? a.directed_labor.map(d => ({ lcat: String((d && d.lcat) || '').trim(), count: Math.max(0, parseFloat(d && d.count) || 0) })).filter(d => d.lcat && d.count > 0)
     : [];
   if (_directed.length) {
     const _merged = [], _seen = {};
@@ -10459,7 +10606,7 @@ function pricingApplyAutoBuild(a) {
     });
   })();
   if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && pricingModel.tasks.length) {
-    pricingReconcileStatedFte(lcats, hours, mask, pricingModel.tasks, Math.round(pricingModel.statedFteTotal), defaultHpf());
+    pricingReconcileStatedFte(lcats, hours, mask, pricingModel.tasks, pricingModel.statedFteTotal, defaultHpf());
     if (!pricingModel.directedLabor) (a.labor_mix || []).forEach((m, i) => { if (lcats[i]) m.headcount = lcats[i].advertised; });
   } else if (pricingModel.tasks.length) {
     // Free-sizing path (no Government-stated or directed FTE): hours follow the Advertised FTE exactly
@@ -10877,23 +11024,24 @@ function pricingRenderFteBar() {
   if (!pricingModel.lcats.length) { el.innerHTML = ''; return; }
   const allocated = pricingTotalHours() / defaultHpf();
   const advTotal = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
-  const stated = (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) ? Math.round(pricingModel.statedFteTotal) : null;
+  const stated = (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) ? pricingModel.statedFteTotal : null;
+  const statedStr = stated != null ? pricingFmtFte(stated) : '—';
   const src = pricingModel.directedLabor
-    ? `Government-<strong>directed</strong> labor table (<strong>${stated != null ? stated : '—'} FTE</strong>, exact categories &amp; counts)`
+    ? `Government-<strong>directed</strong> labor table (<strong>${statedStr} FTE</strong>, exact categories &amp; counts)`
     : pricingModel.fteSource === 'stated'
-    ? `Government-stated: <strong>${stated != null ? stated : '—'} FTE</strong>`
+    ? `Government-stated: <strong>${statedStr} FTE</strong>`
     : `<strong>You are sizing the effort</strong> (PWS didn't state FTEs)`;
-  const advOk = stated == null ? null : Math.abs(advTotal - stated) < 0.5;
+  const advOk = stated == null ? null : Math.abs(advTotal - stated) < 0.05;
   const allocOk = stated == null ? null : Math.abs(allocated - stated) < 0.05;
   const card = (label, val, ok) => `<div style="flex:1;min-width:150px;border:1px solid ${ok === false ? '#fca5a5' : 'var(--border)'};border-radius:8px;padding:10px 12px;background:${ok === false ? '#fef2f2' : 'white'}"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:15px;font-weight:800;margin-top:2px">${val}</div></div>`;
   let badge = '';
   if (stated != null) {
     const _okMsg = pricingModel.directedLabor
-      ? '✓ Locked to the Government-directed labor table — exactly these ' + stated + ' FTE in the directed categories. PWS tasks only spread the hours.'
-      : '✓ Staffing matches the Government-stated ' + stated + ' FTE — headcount and hours both reconcile.';
+      ? '✓ Locked to the Government-directed labor table — exactly these ' + statedStr + ' FTE in the directed categories. PWS tasks only spread the hours.'
+      : '✓ Staffing matches the Government-stated ' + statedStr + ' FTE — headcount and hours both reconcile.';
     badge = (advOk && allocOk)
       ? `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#065f46;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:8px 12px">${_okMsg}</div>`
-      : `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px">⚠ Does NOT match the Government-stated ${stated} FTE (advertised ${advTotal.toFixed(2)}, allocated ${allocated.toFixed(2)}). Deviating from the stated FTE can be disqualifying — adjust headcount/hours to hit ${stated}.</div>`;
+      : `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px">⚠ Does NOT match the Government-stated ${statedStr} FTE (advertised ${advTotal.toFixed(2)}, allocated ${allocated.toFixed(2)}). Deviating from the stated FTE can be disqualifying — adjust headcount/hours to hit ${statedStr}.</div>`;
   }
   const _hpf = defaultHpf();
   const _hpfTag = (pricingModel.hoursPerFte > 0) ? 'per PWS' : 'standard';
@@ -11736,6 +11884,107 @@ setInterval(saveSession, 30000);
 let bnaFiles = [];
 let bnaCompanyFiles = [];
 
+/* ══════════════════════ First-run setup guide (white-label onboarding) ══════════════════════
+   A fresh white-label install opens with a blank CLIENT_CONFIG. This guide walks a new customer
+   through the essential setup (API key, company identity) plus recommended steps (capability
+   statement, Microsoft 365), with live done/todo status. It shows ONLY while the company identity
+   is unconfigured, so a configured build (an established tenant) never sees it and returning users
+   are not nagged about the per-session API key. Identical in both builds; visibility is entirely
+   config-driven. */
+function onboardItems() {
+  var cfg = (typeof CLIENT_CONFIG !== 'undefined' && CLIENT_CONFIG) || {};
+  var hasCompany = !!(((cfg.companyShortName || '').trim()) || ((cfg.companyFullName || '').trim()));
+  var hasKey = (typeof getApiKey === 'function') && !!getApiKey();
+  var capFilled = ['capabilities', 'systemsExpertise', 'signaturePhrases'].some(function (k) {
+    return Array.isArray(cfg[k]) ? cfg[k].length : ((cfg[k] || '').toString().trim().length);
+  });
+  var signedIn = (typeof msAccount !== 'undefined') && !!msAccount;
+  var recruiting = !!(cfg.modules && cfg.modules.recruiting);
+  return [
+    { key: 'apikey', done: hasKey, req: true, label: 'Add your Anthropic API key',
+      desc: 'Powers every AI feature \u2014 reading RFPs, drafting proposal volumes, and Bid/No-Bid analysis. Stored in this browser session only.',
+      go: 'onboardFocusKey()', cta: 'Enter key' },
+    { key: 'company', done: hasCompany, req: true, label: 'Set your company identity',
+      desc: 'Company name, UEI, GSA MAS number and brand color \u2014 these flow into every document the tool generates.',
+      go: "onboardGo('set-company')", cta: 'Open' },
+    { key: 'capability', done: capFilled, req: false, label: 'Add your capability statement',
+      desc: 'Your real capabilities, systems expertise and signature phrases, so AI-written proposals sound like your company \u2014 not a generic template.',
+      go: "onboardGo('set-capability')", cta: 'Open' },
+    { key: 'ms', done: signedIn, req: false, label: 'Connect Microsoft 365',
+      desc: 'Optional \u2014 enables SharePoint document conversion' + (recruiting ? ' and the recruiting suite.' : ' for reading and writing Office files.'),
+      go: 'msLogin()', cta: 'Sign in' }
+  ];
+}
+function onboardShouldShow() {
+  try { if (sessionStorage.getItem('onboard_dismissed') === '1') return false; } catch (e) {}
+  var cfg = (typeof CLIENT_CONFIG !== 'undefined' && CLIENT_CONFIG) || {};
+  var hasCompany = !!(((cfg.companyShortName || '').trim()) || ((cfg.companyFullName || '').trim()));
+  return !hasCompany;   // fresh-install signal; a configured build never shows the guide
+}
+function renderOnboard() {
+  var guide = document.getElementById('onboardGuide');
+  if (!guide) return;
+  if (!onboardShouldShow()) { guide.style.display = 'none'; return; }
+  var cfg = (typeof CLIENT_CONFIG !== 'undefined' && CLIENT_CONFIG) || {};
+  var titleEl = document.getElementById('onboardTitle');
+  if (titleEl) titleEl.textContent = "Welcome \u2014 let's get your " + (cfg.productName || 'tool') + " set up";
+  var items = onboardItems();
+  var stepsEl = document.getElementById('onboardSteps');
+  if (stepsEl) {
+    stepsEl.innerHTML = items.map(function (it) {
+      var cls = it.done ? 'done' : 'todo';
+      var badge = it.req
+        ? '<span class="onboard-req required">Required</span>'
+        : '<span class="onboard-req optional">Recommended</span>';
+      var dot = it.done ? '\u2713' : '';
+      var desc = it.done
+        ? '<div class="onboard-step-desc is-done">\u2713 Done</div>'
+        : '<div class="onboard-step-desc">' + it.desc + '</div>';
+      var go = it.done ? '' : '<div class="onboard-go">' + it.cta + ' \u2192</div>';
+      return '<div class="onboard-step ' + cls + '" onclick="' + it.go + '">' +
+               '<div class="onboard-dot">' + dot + '</div>' +
+               '<div class="onboard-body">' +
+                 '<div class="onboard-step-label">' + it.label + ' ' + badge + '</div>' +
+                 desc +
+               '</div>' + go +
+             '</div>';
+    }).join('');
+  }
+  var done = items.filter(function (it) { return it.done; }).length;
+  var reqDone = items.filter(function (it) { return it.req && it.done; }).length;
+  var reqTotal = items.filter(function (it) { return it.req; }).length;
+  var prog = document.getElementById('onboardProgress');
+  if (prog) prog.textContent = reqDone + ' of ' + reqTotal + ' required steps done \u00b7 ' + done + ' of ' + items.length + ' complete';
+  guide.style.display = '';
+}
+function dismissOnboard() {
+  try { sessionStorage.setItem('onboard_dismissed', '1'); } catch (e) {}
+  var g = document.getElementById('onboardGuide'); if (g) g.style.display = 'none';
+}
+function onboardOpenSettings() { if (typeof switchTab === 'function') switchTab('settings'); }
+function onboardGo(sectionId) {
+  if (typeof switchTab === 'function') switchTab('settings');
+  setTimeout(function () {
+    var el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.style.transition = 'box-shadow .3s';
+      el.style.boxShadow = '0 0 0 3px var(--blue)';
+      setTimeout(function () { el.style.boxShadow = ''; }, 1400);
+    }
+  }, 90);
+}
+function onboardFocusKey() {
+  var el = document.getElementById('apiKeyInputTop');
+  if (el) {
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+    el.focus();
+    el.style.transition = 'box-shadow .3s';
+    el.style.boxShadow = '0 0 0 3px var(--blue)';
+    setTimeout(function () { el.style.boxShadow = ''; }, 1400);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   if (window.__MSAL_POPUP_REDIRECT__) return;   // sign-in popup: don't init the app, let the opener finish auth
   initDropZone('dropZoneRFP',        'fileInputRFP',        rfpFiles,        'fileListRFP');
@@ -11754,6 +12003,7 @@ window.addEventListener('DOMContentLoaded', () => {
   restoreSession();
   if (typeof initSuites === 'function') initSuites();
   else switchTab(sessionStorage.getItem('srfed_active_tab') || 'bidnobid');
+  if (typeof renderOnboard === 'function') renderOnboard();
 });
 
 // BNA button update — defined below after weight system is initialized
@@ -12446,6 +12696,945 @@ function onScopeCoverageInput(val) {
   if (lbl) lbl.textContent = window._bnaScopeCoverage + '%';
 }
 
+/* ═══════════════════ Coverage-Gap Analysis (Phase 7 payoff) ═══════════════════
+   An ADDITIVE, requirement-by-requirement read of where the company covers a
+   solicitation vs. where the gaps are, each with a recommended fix. It consumes the
+   already-analyzed opportunity (window._bnaOpp) plus the capability profile. It does
+   NOT read from or modify computeDecisiveVerdict / the fit score — that methodology is
+   left entirely untouched. */
+function _bnaGapContent(opp, cap) {
+  const co = (CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyShortName || 'the company');
+  const g = (k, alt) => (opp[k] != null && String(opp[k]).trim()) ? String(opp[k]).trim() : (alt || '');
+  const certs = [].concat(opp.required_certifications || opp.certifications || []).filter(Boolean);
+  const caps = [].concat(opp.key_capabilities || opp.key_capabilities_needed || []).filter(Boolean);
+  const naics = [].concat(opp.naics_codes || opp.naics_code || []).filter(Boolean);
+  const sol = [
+    'Title: ' + g('requirement_title', '(untitled)'),
+    'Set-aside: ' + g('set_aside', 'Not stated'),
+    'Facility clearance required: ' + g('required_clearance', 'None / Not stated'),
+    'Required certifications: ' + (certs.length ? certs.join(', ') : 'None / Not stated'),
+    'Key capabilities / scope areas: ' + (caps.length ? caps.join('; ') : 'see scope'),
+    'Contract vehicle: ' + g('contract_vehicle', 'None / open market') + (opp.vehicle_is_open === false ? ' (CLOSED IDIQ — offeror must already hold it)' : ''),
+    'NAICS: ' + (naics.length ? naics.join(', ') : 'Not stated'),
+    'FTE count: ' + g('fte_count', 'Not stated'),
+    'Estimated value: ' + g('estimated_value', 'Not stated'),
+    'Period of performance: ' + g('period_of_performance', 'Not stated'),
+    'CMMC level required: ' + g('required_cmmc', 'None / Not stated'),
+    'ISO required: ' + g('required_iso', 'None / Not stated'),
+    'Cost-reimbursement / DCAA-approved accounting required: ' + (opp.required_dcaa ? 'Yes' : 'No / Not stated')
+  ].join('\n');
+  const ppList = [].concat(CLIENT_CONFIG.pastPerformance || [])
+    .map(p => typeof p === 'string' ? p : (p && (p.title || p.customer || p.name || p.scope)) || '')
+    .filter(Boolean).slice(0, 8);
+  const profile = [
+    'Business size: ' + (cap.businessSize || 'Small business'),
+    'Set-asides / socioeconomic certifications HELD: ' + (([].concat(cap.setAsides || [])).join(', ') || 'none recorded'),
+    'Facility clearance HELD: ' + (cap.facilityClearance || 'None'),
+    'Personnel clearance posture: ' + (CLIENT_CONFIG.clearances || 'not recorded'),
+    'Contract vehicles HELD: ' + (([].concat(cap.contractVehicles || [])).join(', ') || 'none recorded'),
+    'Max FTE the company can realistically PRIME: ' + (cap.maxPrimeFTE || 'not specified'),
+    'Core capabilities: ' + (([].concat(CLIENT_CONFIG.capabilities || [])).join('; ') || 'not recorded'),
+    'Systems / tools expertise: ' + (([].concat(CLIENT_CONFIG.systemsExpertise || [])).join('; ') || 'not recorded'),
+    'Past performance on file: ' + (ppList.length ? ppList.join(' | ') : 'none recorded')
+  ].join('\n');
+  return (
+    'You are a federal capture analyst. Compare THIS SOLICITATION against ' + co + "'s capability profile and produce a requirement-by-requirement coverage-gap analysis to support a bid decision.\n\n" +
+    'SOLICITATION (from the Bid/No-Bid analysis):\n' + sol + '\n\n' +
+    co.toUpperCase() + "'S PROFILE:\n" + profile + '\n\n' +
+    'Break the solicitation into its DISTINCT requirements \u2014 eligibility (set-aside / business size), facility clearance, required certifications, contract vehicle / access, each core capability or scope area, key-personnel qualifications if stated, past-performance or experience thresholds, and any other pass/fail or scored demand evident in the facts above. For EACH requirement, judge whether the company covers it, using ONLY the profile provided.\n\n' +
+    'Return ONLY JSON (no prose, no markdown fences):\n' +
+    '{"items":[{"requirement":"the specific solicitation demand, one line","category":"Capability|Certification|Clearance|Contract Vehicle|Set-Aside|Key Personnel|Past Performance|Other","status":"covered|partial|gap","evidence":"what in the profile covers it, or the exact text: Nothing in the profile addresses this","fix":"for partial or gap: the concrete action to close it (team with a firm that holds X, obtain certification Y, hire or subcontract role Z, cite past performance A). For covered: an empty string","severity":"critical|important|minor"}],"summary":"2 to 4 sentences: the overall coverage picture and the one or two things that most threaten this bid."}\n\n' +
+    'Rules:\n' +
+    '- Base every judgment ONLY on the profile above. If the profile does not mention something, it is a gap or partial \u2014 never assume unstated strengths.\n' +
+    '- severity: "critical" = a pass/fail eligibility or mandatory requirement the company does NOT clearly meet (wrong set-aside, missing mandatory clearance / certification / vehicle, business-size mismatch, cost-reimbursement without DCAA). "important" = a scored requirement with a real shortfall. "minor" = a small or easily-closed gap.\n' +
+    '- A certification / clearance / vehicle the requirement demands and the company HOLDS = covered, with the held item named as evidence.\n' +
+    '- Be specific and honest; never inflate coverage. Every partial or gap MUST have an actionable fix.\n' +
+    '- Aim for 6\u201312 items covering the material requirements; do not pad with trivia.'
+  );
+}
+
+async function runBnaCoverageGap() {
+  const empty = document.getElementById('bnaGapEmpty');
+  const status = document.getElementById('bnaGapStatus');
+  const results = document.getElementById('bnaGapResults');
+  const showMsg = (msg, err) => { if (status) { status.style.display = 'block'; status.style.color = err ? 'var(--error)' : 'var(--muted)'; status.textContent = msg; } };
+  const opp = window._bnaOpp || {};
+  if (!opp || !Object.keys(opp).length) { showMsg('Analyze the opportunity first (Steps 1\u20132 above), then run the coverage-gap analysis.', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { showMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
+  if (empty) empty.style.display = 'none';
+  if (results) results.style.display = 'none';
+  showMsg('Analyzing coverage against your capability profile\u2026', false);
+  try {
+    const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+    const data = await callClaudeForJson(apiKey, _bnaGapContent(opp, cap), 2600, 90000, 'Coverage-gap analysis');
+    window._bnaGapData = data;
+    if (status) status.style.display = 'none';
+    renderBnaCoverageGap(data);
+  } catch (e) {
+    showMsg('Coverage-gap analysis failed: ' + (e && e.message ? e.message : e), true);
+    if (empty) empty.style.display = 'block';
+  }
+}
+
+function renderBnaCoverageGap(data) {
+  const results = document.getElementById('bnaGapResults');
+  const copyBtn = document.getElementById('bnaGapCopyBtn');
+  const coEl = document.getElementById('bnaGapCo');
+  if (coEl) coEl.textContent = (CLIENT_CONFIG && (CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyFullName)) || 'your company';
+  if (!results) return;
+  const items = Array.isArray(data && data.items) ? data.items.slice() : [];
+  const STY = {
+    covered: { label: 'COVERED', bd: '#16a34a', bg: '#f0fdf4', tx: '#166534' },
+    partial: { label: 'PARTIAL', bd: '#d97706', bg: '#fffbeb', tx: '#92400e' },
+    gap:     { label: 'GAP',     bd: '#dc2626', bg: '#fef2f2', tx: '#991b1b' }
+  };
+  const norm = s => (s === 'covered' || s === 'partial' || s === 'gap') ? s : 'partial';
+  const sevRank = { critical: 0, important: 1, minor: 2 };
+  const statRank = { gap: 0, partial: 1, covered: 2 };
+  const sv = s => (sevRank[s] != null ? sevRank[s] : 1);
+  items.forEach(it => { it.status = norm(it.status); });
+  items.sort((a, b) => (statRank[a.status] - statRank[b.status]) || (sv(a.severity) - sv(b.severity)));
+  const nCov = items.filter(i => i.status === 'covered').length;
+  const nPar = items.filter(i => i.status === 'partial').length;
+  const nGap = items.filter(i => i.status === 'gap').length;
+  const nCrit = items.filter(i => i.status !== 'covered' && i.severity === 'critical').length;
+  const chip = (txt, sty) => `<span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:20px;background:${sty.bg};color:${sty.tx};border:1px solid ${sty.bd}">${txt}</span>`;
+  const tally =
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">` +
+      chip(nCov + ' covered', STY.covered) + chip(nPar + ' partial', STY.partial) + chip(nGap + ' gap' + (nGap === 1 ? '' : 's'), STY.gap) +
+      (nCrit ? `<span style="display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:#dc2626;color:#fff">\u26A0 ${nCrit} critical</span>` : '') +
+    `</div>`;
+  const summary = (data && data.summary) ? `<div style="font-size:13px;line-height:1.65;color:var(--text);background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px">${escHtml(String(data.summary))}</div>` : '';
+  const sevTag = it => {
+    if (it.status === 'covered' || !it.severity) return '';
+    const c = it.severity === 'critical' ? '#dc2626' : it.severity === 'important' ? '#d97706' : '#6b7280';
+    return `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${c}">${escHtml(String(it.severity))}</span>`;
+  };
+  const rows = items.map(it => {
+    const sty = STY[it.status];
+    const fix = (it.status !== 'covered' && it.fix && String(it.fix).trim())
+      ? `<div style="margin-top:8px;font-size:12.5px;line-height:1.55;color:var(--text);background:#fff;border:1px dashed ${sty.bd};border-radius:6px;padding:8px 10px"><span style="font-weight:700;color:${sty.tx}">Fix \u2192 </span>${escHtml(String(it.fix))}</div>`
+      : '';
+    return `<div style="border:1px solid var(--border);border-left:4px solid ${sty.bd};border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fff">` +
+      `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px">` +
+        chip(sty.label, sty) +
+        `<span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">${escHtml(String(it.category || ''))}</span>` +
+        sevTag(it) +
+      `</div>` +
+      `<div style="font-size:13.5px;font-weight:700;color:var(--text);line-height:1.45">${escHtml(String(it.requirement || ''))}</div>` +
+      (it.evidence ? `<div style="margin-top:4px;font-size:12px;color:var(--muted);line-height:1.5"><span style="font-weight:600">Evidence:</span> ${escHtml(String(it.evidence))}</div>` : '') +
+      fix +
+    `</div>`;
+  }).join('');
+  results.innerHTML = tally + summary + (rows || '<div style="font-size:13px;color:var(--muted)">No requirements were returned. Re-run, or confirm the opportunity analysis captured the solicitation details.</div>');
+  results.style.display = 'block';
+  if (copyBtn) copyBtn.style.display = 'inline-block';
+}
+
+function resetBnaGap() {
+  window._bnaGapData = null;
+  const results = document.getElementById('bnaGapResults');
+  const status = document.getElementById('bnaGapStatus');
+  const empty = document.getElementById('bnaGapEmpty');
+  const copyBtn = document.getElementById('bnaGapCopyBtn');
+  if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  if (status) { status.style.display = 'none'; status.style.color = 'var(--muted)'; status.textContent = ''; }
+  if (empty) empty.style.display = 'block';
+  if (copyBtn) copyBtn.style.display = 'none';
+  const coEl = document.getElementById('bnaGapCo');
+  if (coEl) coEl.textContent = (CLIENT_CONFIG && (CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyFullName)) || 'your company';
+}
+
+function copyBnaGap() {
+  const d = window._bnaGapData;
+  if (!d || !Array.isArray(d.items)) return;
+  const co = (CLIENT_CONFIG.companyShortName || CLIENT_CONFIG.companyFullName || 'Company');
+  const lines = ['COVERAGE-GAP ANALYSIS \u2014 ' + co, ''];
+  if (d.summary) { lines.push(String(d.summary), ''); }
+  d.items.forEach(it => {
+    lines.push('[' + String(it.status || '').toUpperCase() + '] (' + (it.category || '') + ') ' + (it.requirement || ''));
+    if (it.evidence) lines.push('   Evidence: ' + it.evidence);
+    if (it.status !== 'covered' && it.fix) lines.push('   Fix: ' + it.fix);
+    lines.push('');
+  });
+  const text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const b = document.getElementById('bnaGapCopyBtn');
+      if (b) { const o = b.textContent; b.textContent = '\u2713 Copied'; setTimeout(() => { b.textContent = o; }, 1500); }
+    }).catch(() => {});
+  }
+}
+
+/* ═══════════════════ Proposed Team & Staffing Plan (Phase 7 piece 2) ═══════════════════
+   Bench-backed staffing. The user assembles a proposed team of REAL people (pulled from the
+   recruiting bench or entered by hand), each mapped to a role for this opportunity. The tool then
+   writes a staffing narrative that NAMES those people and maps them to the analyzed requirement.
+   Self-contained (mirrors the coverage-gap readout); it does not yet feed the full multi-volume
+   proposal generation — that deeper integration is the next increment. */
+window._staffRoster = window._staffRoster || [];
+
+/* Proposed-team context for proposal generation. When the user has assembled a proposed team,
+   these real people are injected into the generation briefing as the DESIGNATED key personnel,
+   so the Staffing and Key Personnel prose names them instead of the static config list. */
+function _proposedTeamContext() {
+  const r = (window._staffRoster || []).filter(function (m) { return (m.name || '').trim(); });
+  if (!r.length) return '';
+  return '\nPROPOSED KEY PERSONNEL FOR THIS BID (name these specific, real people in the Staffing and Key Personnel sections; use their listed roles and quals; do NOT invent any credential, clearance, or experience not listed here):\n' +
+    r.map(function (m) { return '- ' + m.name + (m.role ? ', ' + m.role : '') + (m.quals ? ': ' + m.quals : ''); }).join('\n') + '\n';
+}
+
+function staffRenderRoster() {
+  const host = document.getElementById('staffRoster');
+  if (!host) return;
+  const r = window._staffRoster;
+  if (!r.length) {
+    host.innerHTML = '<div style="font-size:12.5px;color:var(--muted);padding:8px 2px">No team members yet. Add a role, or pull your bench candidates in.</div>';
+    return;
+  }
+  host.innerHTML = r.map(function (m, i) {
+    return '<div style="display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:8px;align-items:start;margin-bottom:8px">' +
+        '<input type="text" value="' + escHtml(m.role || '') + '" placeholder="Role on this bid" oninput="staffUpdate(' + i + ',\'role\',this.value)" style="padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12.5px"/>' +
+        '<input type="text" value="' + escHtml(m.name || '') + '" placeholder="Person" oninput="staffUpdate(' + i + ',\'name\',this.value)" style="padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12.5px"/>' +
+        '<input type="text" value="' + escHtml(m.quals || '') + '" placeholder="Key quals (clearance, certs, experience)" oninput="staffUpdate(' + i + ',\'quals\',this.value)" style="padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12.5px"/>' +
+        '<button class="btn sm danger" onclick="staffRemoveRow(' + i + ')" title="Remove">\u2715</button>' +
+      '</div>';
+  }).join('');
+}
+function staffUpdate(i, field, val) { if (window._staffRoster[i]) window._staffRoster[i][field] = val; staffInvalidate(); }
+function staffAddRow() { window._staffRoster.push({ role: '', name: '', quals: '' }); staffRenderRoster(); staffInvalidate(); }
+function staffRemoveRow(i) { window._staffRoster.splice(i, 1); staffRenderRoster(); staffInvalidate(); }
+function staffClear() {
+  window._staffRoster = [];
+  staffRenderRoster();
+  const res = document.getElementById('staffResults'); if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+  window._staffPlanData = null;
+}
+function staffInvalidate() {
+  // Roster changed — drop any prior generated plan so it can't go stale.
+  window._staffPlanData = null;
+  const res = document.getElementById('staffResults');
+  if (res && res.style.display !== 'none') { res.style.display = 'none'; res.innerHTML = ''; }
+}
+function staffPullBench() {
+  let bench = [];
+  try { if (window.Rec && typeof Rec.currentBench === 'function') bench = Rec.currentBench() || []; } catch (e) {}
+  if (!bench.length) { try { bench = (window.RecStore && RecStore.load()) || []; } catch (e) {} }
+  if (!bench.length) {
+    const res = document.getElementById('staffResults');
+    if (res) { res.style.display = 'block'; res.innerHTML = '<div style="font-size:12.5px;color:var(--error)">No candidates are loaded. Load your bench on the Candidate Tracker first (or add roles by hand).</div>'; }
+    return;
+  }
+  const seen = {};
+  window._staffRoster.forEach(function (m) { if (m.name) seen[m.name.trim().toLowerCase()] = 1; });
+  bench.forEach(function (c) {
+    const nm = (c.name || '').trim();
+    if (!nm || seen[nm.toLowerCase()]) return;
+    seen[nm.toLowerCase()] = 1;
+    const quals = [c.location, c.notes].filter(Boolean).join('; ');
+    window._staffRoster.push({ role: c.role || '', name: nm, quals: quals });
+  });
+  staffRenderRoster();
+  staffInvalidate();
+}
+
+function _staffOppContext() {
+  const opp = window._bnaOpp || {};
+  if (!opp || !Object.keys(opp).length) return null;
+  const g = function (k, alt) { return (opp[k] != null && String(opp[k]).trim()) ? String(opp[k]).trim() : (alt || ''); };
+  const certs = [].concat(opp.required_certifications || opp.certifications || []).filter(Boolean);
+  const caps = [].concat(opp.key_capabilities || opp.key_capabilities_needed || []).filter(Boolean);
+  return [
+    'Title: ' + g('requirement_title', '(untitled)'),
+    'Set-aside: ' + g('set_aside', 'Not stated'),
+    'Facility clearance required: ' + g('required_clearance', 'None / Not stated'),
+    'Required certifications: ' + (certs.length ? certs.join(', ') : 'None / Not stated'),
+    'Key capabilities / scope areas: ' + (caps.length ? caps.join('; ') : 'see scope'),
+    'FTE count: ' + g('fte_count', 'Not stated'),
+    'Period of performance: ' + g('period_of_performance', 'Not stated')
+  ].join('\n');
+}
+
+function _staffContent(roster, oppCtx) {
+  const co = (CLIENT_CONFIG.companyFullName || CLIENT_CONFIG.companyShortName || 'the company');
+  const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
+  const team = roster.map(function (m, i) {
+    return (i + 1) + '. Role on this bid: ' + (m.role || '(unspecified)') + ' \u2014 Person: ' + m.name + (m.quals ? ' \u2014 Key quals: ' + m.quals : ' \u2014 Key quals: (none provided)');
+  }).join('\n');
+  const oppBlock = oppCtx
+    ? 'OPPORTUNITY (from the Bid/No-Bid analysis):\n' + oppCtx
+    : 'OPPORTUNITY: No opportunity has been analyzed on the Bid/No-Bid tab. Write a specific but general staffing approach for the roles below.';
+  const profile = 'COMPANY: ' + co + ' \u2014 business size ' + (cap.businessSize || 'small business') +
+    ', set-asides held ' + (([].concat(cap.setAsides || [])).join(', ') || 'none recorded') +
+    ', facility clearance ' + (cap.facilityClearance || 'None') +
+    '. Personnel clearance posture: ' + (CLIENT_CONFIG.clearances || 'not recorded') + '.';
+  return (
+    'You are a federal proposal writer. Using ONLY the proposed team below, write the STAFFING narrative for this opportunity \u2014 naming the real people and mapping them to the requirement.\n\n' +
+    oppBlock + '\n\n' + profile + '\n\n' +
+    'PROPOSED TEAM (real people):\n' + team + '\n\n' +
+    'Return ONLY JSON (no prose, no markdown fences):\n' +
+    '{"staffing_narrative":"3 to 5 paragraphs that NAME the team and describe the staffing approach: how these people map to the PWS/task areas and FTE structure, their clearances and onboarding, surge and continuity, and subcontracting if relevant. Reference the named individuals and their listed quals specifically.","personnel":[{"name":"exact name","role":"role on this bid","fit":"1 to 2 sentences on why this person fits THIS requirement, drawn only from their listed quals","gap":"any qualification shortfall vs. what the requirement implies, or an empty string"}],"notes":"1 to 2 sentences naming any staffing risk or coverage gap for this requirement \u2014 a role still unfilled, a clearance not yet held \u2014 or an empty string"}\n\n' +
+    'Rules:\n' +
+    '- Use ONLY the people and quals provided. NEVER invent personnel, certifications, clearances, or experience that are not listed.\n' +
+    '- Be specific to the requirement and to each person\u2019s listed quals; do not write generic boilerplate.\n' +
+    '- If the requirement clearly needs a role that is not present in the team, say so plainly in "notes".'
+  );
+}
+
+async function runStaffingPlan() {
+  const status = document.getElementById('staffStatus');
+  const results = document.getElementById('staffResults');
+  const show = function (msg, err) { if (results) { results.style.display = 'block'; results.innerHTML = '<div style="font-size:12.5px;color:' + (err ? 'var(--error)' : 'var(--muted)') + '">' + escHtml(msg) + '</div>'; } };
+  const roster = (window._staffRoster || []).filter(function (m) { return (m.name || '').trim(); });
+  if (!roster.length) { show('Add at least one team member with a name, then generate.', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
+  if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  if (status) { status.style.display = 'block'; status.textContent = 'Writing the staffing plan\u2026'; }
+  try {
+    const data = await callClaudeForJson(apiKey, _staffContent(roster, _staffOppContext()), 2600, 90000, 'Staffing plan');
+    window._staffPlanData = data;
+    if (status) status.style.display = 'none';
+    renderStaffingPlan(data);
+  } catch (e) {
+    if (status) status.style.display = 'none';
+    show('Staffing plan failed: ' + (e && e.message ? e.message : e), true);
+  }
+}
+
+function renderStaffingPlan(data) {
+  const results = document.getElementById('staffResults');
+  if (!results) return;
+  const narr = (data && data.staffing_narrative) ? String(data.staffing_narrative) : '';
+  const paras = narr.split(/\n{2,}/).map(function (p) { return p.trim(); }).filter(Boolean);
+  const narrHtml = paras.length
+    ? '<div style="font-size:13px;line-height:1.7;color:var(--text)">' + paras.map(function (p) { return '<p style="margin:0 0 10px">' + escHtml(p) + '</p>'; }).join('') + '</div>'
+    : '';
+  const people = Array.isArray(data && data.personnel) ? data.personnel : [];
+  let peopleHtml = '';
+  if (people.length) {
+    peopleHtml = '<div style="margin-top:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden">' +
+      people.map(function (p, i) {
+        const gap = (p.gap && String(p.gap).trim())
+          ? '<div style="margin-top:4px;font-size:11.5px;color:#92400e"><strong>Gap:</strong> ' + escHtml(String(p.gap)) + '</div>' : '';
+        return '<div style="padding:10px 12px;' + (i ? 'border-top:1px solid var(--border);' : '') + 'background:#fff">' +
+            '<div style="font-size:13px;font-weight:700;color:var(--text)">' + escHtml(String(p.name || '')) +
+              (p.role ? ' <span style="font-weight:600;color:var(--muted)">\u2014 ' + escHtml(String(p.role)) + '</span>' : '') + '</div>' +
+            (p.fit ? '<div style="margin-top:3px;font-size:12px;color:var(--text);line-height:1.5">' + escHtml(String(p.fit)) + '</div>' : '') +
+            gap +
+          '</div>';
+      }).join('') +
+    '</div>';
+  }
+  const notes = (data && data.notes && String(data.notes).trim())
+    ? '<div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px"><strong>Staffing note:</strong> ' + escHtml(String(data.notes)) + '</div>' : '';
+  const copyBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn sm" onclick="copyStaffingPlan()">\u2398 Copy</button></div>';
+  results.innerHTML = copyBtn +
+    (narrHtml ? '<div class="sec" style="margin-bottom:8px">Staffing narrative</div>' + narrHtml : '') +
+    (peopleHtml ? '<div class="sec" style="margin:16px 0 6px">Key personnel mapping</div>' + peopleHtml : '') +
+    notes;
+  results.style.display = 'block';
+}
+
+function copyStaffingPlan() {
+  const d = window._staffPlanData;
+  if (!d) return;
+  const lines = [];
+  if (d.staffing_narrative) { lines.push('STAFFING NARRATIVE', '', String(d.staffing_narrative), ''); }
+  if (Array.isArray(d.personnel) && d.personnel.length) {
+    lines.push('KEY PERSONNEL', '');
+    d.personnel.forEach(function (p) {
+      lines.push('- ' + (p.name || '') + (p.role ? ' (' + p.role + ')' : ''));
+      if (p.fit) lines.push('    Fit: ' + p.fit);
+      if (p.gap && String(p.gap).trim()) lines.push('    Gap: ' + p.gap);
+    });
+    lines.push('');
+  }
+  if (d.notes && String(d.notes).trim()) lines.push('STAFFING NOTE: ' + d.notes);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(lines.join('\n')).catch(function () {});
+}
+
+/* ═══════════════════ Compliant Resume Builder (Phase 7 piece 3) ═══════════════════
+   Takes a candidate's real background plus the position's key-personnel requirements and produces
+   a solicitation-tailored resume, mapping their experience to each requirement and flagging any
+   shortfall. Uses ONLY what the user provides and never invents credentials. Output shows in-app
+   (resume + honest compliance mapping) and downloads as a Word-compatible file. */
+function resumeMsg(msg, err) {
+  const res = document.getElementById('resResults');
+  if (res) { res.style.display = 'block'; res.innerHTML = '<div style="font-size:12.5px;color:' + (err ? 'var(--error)' : 'var(--muted)') + '">' + escHtml(msg) + '</div>'; }
+}
+function resumePullBench() {
+  let bench = [];
+  try { if (window.Rec && typeof Rec.currentBench === 'function') bench = Rec.currentBench() || []; } catch (e) {}
+  if (!bench.length) { try { bench = (window.RecStore && RecStore.load()) || []; } catch (e) {} }
+  if (!bench.length) { resumeMsg('No candidates are loaded. Load your bench on the Candidate Tracker first (or type the name and background by hand).', true); return; }
+  const nameEl = document.getElementById('resName');
+  const bgEl = document.getElementById('resBg');
+  const typed = (nameEl && nameEl.value.trim().toLowerCase()) || '';
+  let c = typed ? bench.find(function (x) { return (x.name || '').trim().toLowerCase() === typed; }) : null;
+  if (!c) c = bench[0];
+  if (nameEl) nameEl.value = c.name || '';
+  const seed = [c.role ? 'Current role: ' + c.role : '', c.location ? 'Location: ' + c.location : '', c.notes ? 'Notes: ' + c.notes : ''].filter(Boolean).join('\n');
+  if (bgEl && seed && !bgEl.value.trim()) bgEl.value = seed;
+}
+function resumeSeedReq() {
+  const opp = window._bnaOpp || {};
+  const reqEl = document.getElementById('resReq');
+  if (!reqEl) return;
+  const certs = [].concat(opp.required_certifications || opp.certifications || []).filter(Boolean);
+  const caps = [].concat(opp.key_capabilities || opp.key_capabilities_needed || []).filter(Boolean);
+  const lines = [];
+  if (opp.required_clearance && String(opp.required_clearance).trim()) lines.push('Clearance: ' + opp.required_clearance);
+  if (certs.length) lines.push('Certifications: ' + certs.join(', '));
+  if (caps.length) lines.push('Relevant capability areas: ' + caps.join('; '));
+  if (!lines.length) { resumeMsg('The analyzed opportunity has no clearance, certification, or capability details to seed from. Analyze an opportunity on the Bid/No-Bid tab, or type the requirements by hand.', true); return; }
+  if (!reqEl.value.trim()) reqEl.value = lines.join('\n');
+}
+function resumeClear() {
+  ['resName', 'resRole', 'resBg', 'resReq'].forEach(function (id) { const el = document.getElementById(id); if (el) el.value = ''; });
+  const res = document.getElementById('resResults'); if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+  window._resumeData = null;
+}
+
+function _resumeContent(name, role, bg, req) {
+  return (
+    'You are a federal proposal writer producing a KEY PERSONNEL RESUME tailored to a solicitation. Using ONLY the candidate background provided, write a resume for ' + name + ' targeting the position "' + (role || 'the proposed key-personnel role') + '", and map their experience to the key-personnel requirements.\n\n' +
+    'CANDIDATE BACKGROUND (the ONLY source of facts \u2014 do not invent anything not present here):\n' + bg + '\n\n' +
+    'TARGET POSITION: ' + (role || '(not specified)') + '\n' +
+    'KEY-PERSONNEL REQUIREMENTS FOR THIS POSITION:\n' + (req && req.trim() ? req : 'None provided \u2014 write a strong, accurate resume for the target position and return an empty compliance array.') + '\n\n' +
+    'Return ONLY JSON (no prose, no markdown fences):\n' +
+    '{"candidate_name":"' + name + '","target_role":"' + (role || '') + '","summary":"2 to 4 sentence professional summary tailored to the target position, drawn only from the background","experience":[{"title":"role title","org":"organization","dates":"dates if stated, else empty string","bullets":["accomplishment or responsibility relevant to the target requirements","..."]}],"education":["degree, institution, year \u2014 only if stated in the background"],"certifications":["only certifications stated in the background"],"clearance":"clearance stated in the background, or an empty string","compliance":[{"requirement":"one key-personnel requirement","status":"met|partial|gap","note":"how the candidate meets it from the background, or what evidence is missing"}],"gaps_summary":"1 to 2 sentences on any qualification the candidate does not clearly meet, or an empty string"}\n\n' +
+    'Rules:\n' +
+    '- Use ONLY the background provided. NEVER invent employers, titles, dates, degrees, certifications, or clearances that are not stated.\n' +
+    '- Tailor the summary and the emphasis of the experience bullets to the target requirements.\n' +
+    '- In "compliance", assess each stated key-personnel requirement HONESTLY: "met" only if the background clearly evidences it; "partial" if only partially; "gap" if nothing in the background supports it.\n' +
+    '- If no requirements were provided, return an empty "compliance" array and focus on an accurate resume.'
+  );
+}
+
+async function runResume() {
+  const status = document.getElementById('resStatus');
+  const name = (document.getElementById('resName') || {}).value || '';
+  const role = (document.getElementById('resRole') || {}).value || '';
+  const bg = (document.getElementById('resBg') || {}).value || '';
+  const req = (document.getElementById('resReq') || {}).value || '';
+  if (!name.trim()) { resumeMsg('Enter the candidate\u2019s name.', true); return; }
+  if (!bg.trim()) { resumeMsg('Paste the candidate\u2019s background (experience, education, certifications, clearance) so the resume has real facts to work from.', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { resumeMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
+  const res = document.getElementById('resResults'); if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+  if (status) { status.style.display = 'block'; status.textContent = 'Writing the resume\u2026'; }
+  try {
+    const data = await callClaudeForJson(apiKey, _resumeContent(name.trim(), role.trim(), bg.trim(), req.trim()), 3200, 120000, 'Resume');
+    if (!data.candidate_name) data.candidate_name = name.trim();
+    if (!data.target_role) data.target_role = role.trim();
+    window._resumeData = data;
+    if (status) status.style.display = 'none';
+    renderResume(data);
+  } catch (e) {
+    if (status) status.style.display = 'none';
+    resumeMsg('Resume generation failed: ' + (e && e.message ? e.message : e), true);
+  }
+}
+
+function _resumeStatusStyle(st) {
+  return st === 'met' ? { label: 'MET', bd: '#16a34a', bg: '#f0fdf4', tx: '#166534' }
+    : st === 'partial' ? { label: 'PARTIAL', bd: '#d97706', bg: '#fffbeb', tx: '#92400e' }
+    : { label: 'GAP', bd: '#dc2626', bg: '#fef2f2', tx: '#991b1b' };
+}
+
+function renderResume(data) {
+  const res = document.getElementById('resResults');
+  if (!res) return;
+  const esc = escHtml;
+  const exp = Array.isArray(data.experience) ? data.experience : [];
+  const edu = Array.isArray(data.education) ? data.education.filter(Boolean) : [];
+  const certs = Array.isArray(data.certifications) ? data.certifications.filter(Boolean) : [];
+  const comp = Array.isArray(data.compliance) ? data.compliance : [];
+
+  // Compliance mapping (the "compliant" value — shown first)
+  let compHtml = '';
+  if (comp.length) {
+    const norm = function (s) { return (s === 'met' || s === 'partial' || s === 'gap') ? s : 'partial'; };
+    const rank = { gap: 0, partial: 1, met: 2 };
+    const sorted = comp.slice();
+    sorted.forEach(function (c) { c.status = norm(c.status); });
+    sorted.sort(function (a, b) { return rank[a.status] - rank[b.status]; });
+    compHtml = '<div class="sec" style="margin-bottom:8px">Compliance against key-personnel requirements</div>' +
+      sorted.map(function (c) {
+        const s = _resumeStatusStyle(c.status);
+        return '<div style="border:1px solid var(--border);border-left:4px solid ' + s.bd + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff">' +
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:3px"><span style="font-size:10.5px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:20px;background:' + s.bg + ';color:' + s.tx + ';border:1px solid ' + s.bd + '">' + s.label + '</span></div>' +
+            '<div style="font-size:13px;font-weight:700;color:var(--text)">' + esc(String(c.requirement || '')) + '</div>' +
+            (c.note ? '<div style="margin-top:3px;font-size:12px;color:var(--muted);line-height:1.5">' + esc(String(c.note)) + '</div>' : '') +
+          '</div>';
+      }).join('');
+  }
+
+  // Resume preview (clean)
+  const expHtml = exp.map(function (e) {
+    const head = esc(String(e.title || '')) + (e.org ? ' <span style="font-weight:600;color:var(--muted)">\u2014 ' + esc(String(e.org)) + '</span>' : '') + (e.dates ? ' <span style="font-size:11px;color:var(--muted)">(' + esc(String(e.dates)) + ')</span>' : '');
+    const bullets = Array.isArray(e.bullets) ? e.bullets.filter(Boolean) : [];
+    return '<div style="margin-bottom:10px"><div style="font-size:13px;font-weight:700;color:var(--text)">' + head + '</div>' +
+      (bullets.length ? '<ul style="margin:4px 0 0;padding-left:18px">' + bullets.map(function (b) { return '<li style="font-size:12.5px;color:var(--text);line-height:1.5;margin-bottom:2px">' + esc(String(b)) + '</li>'; }).join('') + '</ul>' : '') +
+      '</div>';
+  }).join('');
+  const line = function (lbl, val) { return val ? '<div style="font-size:12.5px;color:var(--text);margin-bottom:3px"><span style="font-weight:700">' + lbl + ':</span> ' + esc(String(val)) + '</div>' : ''; };
+  const listBlock = function (lbl, arr) { return arr.length ? '<div style="margin-top:10px"><div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px">' + lbl + '</div>' + arr.map(function (x) { return '<div style="font-size:12.5px;color:var(--text);margin-bottom:2px">' + esc(String(x)) + '</div>'; }).join('') + '</div>' : ''; };
+
+  const resumeHtml =
+    '<div style="border:1px solid var(--border);border-radius:10px;padding:16px 18px;background:#fff">' +
+      '<div style="font-size:19px;font-weight:800;color:var(--text)">' + esc(String(data.candidate_name || '')) + '</div>' +
+      (data.target_role ? '<div style="font-size:13px;color:var(--blue);font-weight:700;margin-top:1px">' + esc(String(data.target_role)) + '</div>' : '') +
+      (data.summary ? '<div style="font-size:12.5px;color:var(--text);line-height:1.6;margin-top:8px">' + esc(String(data.summary)) + '</div>' : '') +
+      (expHtml ? '<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px">Professional experience</div>' + expHtml + '</div>' : '') +
+      listBlock('Education', edu) +
+      listBlock('Certifications', certs) +
+      (data.clearance ? '<div style="margin-top:10px">' + line('Clearance', data.clearance) + '</div>' : '') +
+    '</div>';
+
+  const gaps = (data.gaps_summary && String(data.gaps_summary).trim())
+    ? '<div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px"><strong>Qualification note:</strong> ' + esc(String(data.gaps_summary)) + '</div>' : '';
+
+  const buttons = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px">' +
+    '<button class="btn sm" onclick="copyResume()">\u2398 Copy</button>' +
+    '<button class="btn sm" onclick="downloadResumeWord()">\u2193 Download Word</button></div>';
+
+  res.innerHTML = buttons +
+    compHtml +
+    '<div class="sec" style="margin:14px 0 8px">Resume preview</div>' + resumeHtml +
+    gaps +
+    '<p class="hint" style="margin-top:8px">The compliance mapping is for your internal review; the Word download contains the resume only.</p>';
+  res.style.display = 'block';
+}
+
+function _resumeWordHtml(d) {
+  const esc = escHtml;
+  const exp = (Array.isArray(d.experience) ? d.experience : []).map(function (e) {
+    const head = esc(String(e.title || '')) + (e.org ? ' &ndash; ' + esc(String(e.org)) : '') + (e.dates ? ' (' + esc(String(e.dates)) + ')' : '');
+    const bullets = (Array.isArray(e.bullets) ? e.bullets.filter(Boolean) : []).map(function (b) { return '<li>' + esc(String(b)) + '</li>'; }).join('');
+    return '<p style="margin:8px 0 2px;font-weight:bold">' + head + '</p>' + (bullets ? '<ul style="margin:0 0 6px 18px">' + bullets + '</ul>' : '');
+  }).join('');
+  const edu = (Array.isArray(d.education) ? d.education.filter(Boolean) : []).map(function (x) { return '<li>' + esc(String(x)) + '</li>'; }).join('');
+  const certs = (Array.isArray(d.certifications) ? d.certifications.filter(Boolean) : []).map(function (x) { return '<li>' + esc(String(x)) + '</li>'; }).join('');
+  const sect = function (t) { return '<p style="margin:12px 0 2px;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #333;font-size:11pt">' + t + '</p>'; };
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1a1a1a} h1{font-size:16pt;margin:0} ul{margin:0 0 6px 18px} li{margin-bottom:2px}</style></head><body>' +
+    '<h1>' + esc(String(d.candidate_name || '')) + '</h1>' +
+    (d.target_role ? '<p style="margin:2px 0 0;font-weight:bold;color:#005FD5">' + esc(String(d.target_role)) + '</p>' : '') +
+    (d.summary ? '<p style="margin:8px 0 0">' + esc(String(d.summary)) + '</p>' : '') +
+    (exp ? sect('Professional Experience') + exp : '') +
+    (edu ? sect('Education') + '<ul>' + edu + '</ul>' : '') +
+    (certs ? sect('Certifications') + '<ul>' + certs + '</ul>' : '') +
+    (d.clearance ? sect('Clearance') + '<p style="margin:2px 0 0">' + esc(String(d.clearance)) + '</p>' : '') +
+    '</body></html>';
+}
+
+function downloadResumeWord() {
+  const d = window._resumeData;
+  if (!d) return;
+  try {
+    const html = _resumeWordHtml(d);
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = ((d.candidate_name || 'Resume') + (d.target_role ? ' - ' + d.target_role : '') + ' Resume').replace(/[\/:*?"<>|\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim() + '.doc';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  } catch (e) {}
+}
+
+function copyResume() {
+  const d = window._resumeData;
+  if (!d) return;
+  const lines = [String(d.candidate_name || ''), d.target_role ? String(d.target_role) : '', ''];
+  if (d.summary) { lines.push(String(d.summary), ''); }
+  (Array.isArray(d.experience) ? d.experience : []).forEach(function (e) {
+    lines.push((e.title || '') + (e.org ? ' - ' + e.org : '') + (e.dates ? ' (' + e.dates + ')' : ''));
+    (Array.isArray(e.bullets) ? e.bullets.filter(Boolean) : []).forEach(function (b) { lines.push('  - ' + b); });
+    lines.push('');
+  });
+  if (Array.isArray(d.education) && d.education.filter(Boolean).length) { lines.push('EDUCATION'); d.education.filter(Boolean).forEach(function (x) { lines.push('  ' + x); }); lines.push(''); }
+  if (Array.isArray(d.certifications) && d.certifications.filter(Boolean).length) { lines.push('CERTIFICATIONS'); d.certifications.filter(Boolean).forEach(function (x) { lines.push('  ' + x); }); lines.push(''); }
+  if (d.clearance) lines.push('CLEARANCE: ' + d.clearance);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(lines.join('\n')).catch(function () {});
+}
+
+/* ═══════════════════ Constrained / reverse pricing (Phase 8) — intake + detection ═══════════════════
+   Increment 1: take an arbitrary (partly-built) pricing spreadsheet and DETECT which of the five
+   pricing stages are already populated (fixed constraints) vs. blank (to be solved). Stores the
+   result on window._constrainedIntake for the constrained solver (next increment). Detection only —
+   nothing is solved here. Modeled at the cell/column level: real data present = a constraint. */
+window._constrainedCsv = window._constrainedCsv || '';
+
+async function constrainedFileChosen(event) {
+  const file = event && event.target && event.target.files && event.target.files[0];
+  const nameEl = document.getElementById('constrainedFileName');
+  const btn = document.getElementById('constrainedDetectBtn');
+  const results = document.getElementById('constrainedResults');
+  if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  window._constrainedIntake = null;
+  if (!file) return;
+  if (nameEl) { nameEl.style.color = 'var(--muted)'; nameEl.textContent = 'Reading ' + file.name + '\u2026'; }
+  try {
+    let csv = '';
+    const nm = (file.name || '').toLowerCase();
+    if (nm.endsWith('.csv')) {
+      csv = await file.text();
+    } else {
+      if (typeof XLSX === 'undefined') throw new Error('The spreadsheet reader (XLSX) is not loaded — hard-refresh and try again.');
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      wb.SheetNames.forEach(function (name) {
+        const sheet = wb.Sheets[name];
+        const c = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+        if (c && c.trim().length) csv += '\n=== Sheet: ' + name + ' ===\n' + c + '\n';
+      });
+      csv = csv.trim();
+    }
+    if (!csv || csv.trim().length < 5) throw new Error('That file appears to be empty or unreadable.');
+    window._constrainedCsv = csv.slice(0, 60000);
+    if (nameEl) { nameEl.style.color = 'var(--success)'; nameEl.textContent = '\u2713 ' + file.name + ' loaded'; }
+    if (btn) btn.style.display = 'inline-block';
+  } catch (e) {
+    window._constrainedCsv = '';
+    if (nameEl) { nameEl.style.color = 'var(--error)'; nameEl.textContent = (e && e.message) ? e.message : 'Could not read that file.'; }
+    if (btn) btn.style.display = 'none';
+  }
+}
+
+function _constrainedDetectContent(csv) {
+  return (
+    'You are a federal pricing analyst. A contractor uploaded a pricing spreadsheet that may be only partly built. Your job is ONLY to DETECT which of the five pricing stages are already populated (fixed) vs. blank (to be solved later). Do NOT solve or invent anything.\n\n' +
+    'THE FIVE STAGES:\n' +
+    '1. pws_tasks \u2014 the PWS/SOW task breakdown AND the allocation of hours across those tasks.\n' +
+    '2. lcats \u2014 the labor categories / roles.\n' +
+    '3. gsa_mapping \u2014 each labor category mapped to a GSA Schedule labor category and/or GSA ceiling rates.\n' +
+    '4. ftes \u2014 the headcount (FTEs) per labor category or overall.\n' +
+    '5. pricing \u2014 the labor rates and/or computed totals.\n\n' +
+    'SPREADSHEET (CSV of each sheet):\n' + csv + '\n\n' +
+    'For each stage decide POPULATED (real data present) or BLANK (absent/empty), based ONLY on what is actually in the spreadsheet.\n\n' +
+    'Return ONLY JSON (no prose, no markdown fences):\n' +
+    '{"stages":{"pws_tasks":{"status":"populated|blank","detail":"what was found (which columns/values) or what is missing \u2014 one sentence"},"lcats":{"status":"populated|blank","detail":"..."},"gsa_mapping":{"status":"populated|blank","detail":"..."},"ftes":{"status":"populated|blank","detail":"..."},"pricing":{"status":"populated|blank","detail":"..."}},"detected_lcats":["labor category names found, if any"],"solve_plan":"one or two sentences: given what is fixed, what the tool would need to derive to complete the price","feasibility":"ok","feasibility_note":""}\n\n' +
+    'Rules:\n' +
+    '- Detect only; never invent or solve.\n' +
+    '- A stage is "populated" ONLY if real data for it is present in the spreadsheet.\n' +
+    '- Set "feasibility" to "out_of_scope" ONLY if a final price or total is fixed while the labor categories OR the FTE mix are blank \u2014 reverse-deriving a labor-category mix from a fixed total is not supported. In that case put the reason in "feasibility_note". Otherwise "feasibility" is "ok" and "feasibility_note" is an empty string.'
+  );
+}
+
+async function runConstrainedDetect() {
+  const status = document.getElementById('constrainedStatus');
+  const results = document.getElementById('constrainedResults');
+  const show = function (msg, err) { if (status) { status.style.display = 'block'; status.style.color = err ? 'var(--error)' : 'var(--muted)'; status.textContent = msg; } };
+  if (!window._constrainedCsv) { show('Upload a pricing spreadsheet first.', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
+  if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  show('Detecting which pricing stages are already populated\u2026', false);
+  try {
+    const data = await callClaudeForJson(apiKey, [{ type: 'text', text: _constrainedDetectContent(window._constrainedCsv) }], 1800, 90000, 'Constrained-pricing detection');
+    window._constrainedIntake = data;
+    if (status) status.style.display = 'none';
+    renderConstrainedDetect(data);
+  } catch (e) {
+    show('Detection failed: ' + (e && e.message ? e.message : e), true);
+  }
+}
+
+function renderConstrainedDetect(data) {
+  const results = document.getElementById('constrainedResults');
+  if (!results) return;
+  const esc = escHtml;
+  const STAGES = [
+    ['pws_tasks', 'PWS-task mapping'],
+    ['lcats', 'Labor categories'],
+    ['gsa_mapping', 'GSA-schedule mapping'],
+    ['ftes', 'FTEs / headcount'],
+    ['pricing', 'Rates &amp; pricing']
+  ];
+  const stages = (data && data.stages) || {};
+  const rowFor = function (key, label) {
+    const st = stages[key] || {};
+    const pop = st.status === 'populated';
+    const chipBg = pop ? '#f0fdf4' : '#fffbeb', chipTx = pop ? '#166534' : '#92400e', chipBd = pop ? '#16a34a' : '#d97706';
+    const chipTxt = pop ? 'FIXED' : 'TO SOLVE';
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">' +
+        '<span style="flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:20px;background:' + chipBg + ';color:' + chipTx + ';border:1px solid ' + chipBd + ';min-width:64px;text-align:center">' + chipTxt + '</span>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text)">' + label + '</div>' +
+          (st.detail ? '<div style="margin-top:2px;font-size:12px;color:var(--muted);line-height:1.5">' + esc(String(st.detail)) + '</div>' : '') +
+        '</div></div>';
+  };
+  const nFixed = STAGES.filter(function (s) { return (stages[s[0]] || {}).status === 'populated'; }).length;
+  const nSolve = 5 - nFixed;
+  const detected = Array.isArray(data && data.detected_lcats) ? data.detected_lcats.filter(Boolean) : [];
+  const oos = data && data.feasibility === 'out_of_scope';
+
+  const header = '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">' +
+      '<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:#f0fdf4;color:#166534;border:1px solid #16a34a">' + nFixed + ' fixed</span>' +
+      '<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:#fffbeb;color:#92400e;border:1px solid #d97706">' + nSolve + ' to solve</span>' +
+    '</div>';
+  const rows = '<div style="border-top:1px solid var(--border)">' + STAGES.map(function (s) { return rowFor(s[0], s[1]); }).join('') + '</div>';
+  const detectedHtml = detected.length
+    ? '<div style="margin-top:12px;font-size:12.5px;color:var(--text)"><span style="font-weight:700">Detected labor categories:</span> ' + esc(detected.join(', ')) + '</div>' : '';
+  const planHtml = (data && data.solve_plan)
+    ? '<div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--text);background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:11px 13px"><span style="font-weight:700">Solve plan:</span> ' + esc(String(data.solve_plan)) + '</div>' : '';
+  const oosHtml = oos
+    ? '<div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:11px 13px"><strong>\u26A0 Out of scope:</strong> ' + esc(String(data.feasibility_note || 'A fixed total with a blank labor mix cannot be reverse-solved.')) + '</div>' : '';
+  const solveBtn = (nSolve > 0)
+    ? '<button id="constrainedSolveBtn" onclick="runConstrainedSolve()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">Solve the blank stage' + (nSolve === 1 ? '' : 's') + '</button>' : '';
+  const pwsBtn = '<button id="constrainedPwsBtn" onclick="runConstrainedPwsCheck()" style="padding:9px 18px;font-size:13px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:8px;cursor:pointer">Check the sheet against the PWS</button>';
+  const noSolveNote = (nSolve === 0) ? '<p style="margin:10px 0 0;font-size:11.5px;color:var(--muted)">Every stage is already populated \u2014 nothing to solve, but you can still check it against the PWS.</p>' : '';
+  const nextHtml = oos ? '' :
+    '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' + solveBtn + pwsBtn + '</div>' + noSolveNote
+    + '<div id="constrainedSolveStatus" style="display:none;font-size:13px;color:var(--muted);margin-top:12px"></div>'
+    + '<div id="constrainedSolveResults" style="display:none;margin-top:14px"></div>'
+    + '<div id="constrainedPwsStatus" style="display:none;font-size:13px;color:var(--muted);margin-top:12px"></div>'
+    + '<div id="constrainedPwsResults" style="display:none;margin-top:14px"></div>';
+
+  results.innerHTML = header + rows + detectedHtml + planHtml + oosHtml + nextHtml;
+  results.style.display = 'block';
+}
+
+/* ═══════════════════ Constrained / reverse pricing (Phase 8) — the solver ═══════════════════
+   Increment 2: given a partly-built pricing spreadsheet (detected in increment 1), preserve the
+   FIXED cells verbatim and solve ONLY the blank stages. Reuses pricingApplyAutoBuild for structure,
+   then overlays the upload's fixed rates + GSA mapping (auto-build blanks rates by design, since it
+   never invents them — but here the rates come from the user's sheet, so they are carried). Cell-level:
+   every populated value is a hard constraint; blanks get solved. Never invents an hourly rate. */
+function _constrainedSolveContent(csv, det, taskList, ctx) {
+  const stages = (det && det.stages) || {};
+  const line = function (k, label) { const st = stages[k] || {}; return '- ' + label + ': ' + (st.status === 'populated' ? 'FIXED' : 'BLANK') + (st.detail ? ' \u2014 ' + st.detail : ''); };
+  const fixedBlank = [
+    line('pws_tasks', 'PWS-task mapping'),
+    line('lcats', 'Labor categories'),
+    line('gsa_mapping', 'GSA-schedule mapping'),
+    line('ftes', 'FTEs / headcount'),
+    line('pricing', 'Rates & pricing')
+  ].join('\n');
+  return (
+    'You are a senior U.S. Government cost/price analyst COMPLETING a partly-built pricing model. Some stages are already filled (FIXED constraints you MUST preserve exactly) and some are blank (which you must solve). Do the minimum: carry the fixed values verbatim and solve only the blanks.\n\n' +
+    'STAGE STATUS (from detection):\n' + fixedBlank + '\n\n' +
+    'THE UPLOADED SPREADSHEET (the source of every FIXED value \u2014 preserve verbatim):\n' + csv + '\n\n' +
+    'PWS TASK AREAS to allocate labor across (use these EXACT areas when the task allocation is blank):\n' + taskList + '\n\n' +
+    'OPPORTUNITY CONTEXT:\n' + ctx + '\n\n' +
+    'YOUR JOB:\n' +
+    '- PRESERVE every FIXED value exactly: labor categories, their FTEs/headcount, their GSA-schedule mapping, and their rates as they appear in the spreadsheet. Echo them back unchanged.\n' +
+    '- SOLVE only the BLANK stages. Blank task allocation: distribute each role\u2019s base-period hours across the PWS task areas above, proportional to how much of each task that role performs. Blank GSA mapping: map each role to the best-fit Schedule labor category. Blank FTEs: size them from the scope. \n' +
+    '- NEVER invent an hourly rate. base_rate is the spreadsheet\u2019s exact rate for that role, or null if the spreadsheet has none.\n\n' +
+    'Return ONLY JSON (no prose, no markdown fences):\n' +
+    '{"labor_mix":[{"role_name":"exact labor-category name from the spreadsheet","fte":<the FIXED FTE echoed exactly, or a solved value if FTEs were blank>,"base_rate":<the FIXED hourly rate echoed EXACTLY from the spreadsheet, or null if the spreadsheet has no rate for this role>,"gsa_lcat":"the FIXED GSA LCAT echoed from the spreadsheet, or the best-fit Schedule LCAT if that mapping was blank, or null","hours_by_task":{"<task code or name exactly as listed above>":<hours over the base period>},"allowed_tasks":["<task code or name>"]}],"proposed_tasks":[{"code":"1.1","name":"..."}],"hours_per_fte":<number if the spreadsheet or context states a productive-hours/FTE basis, else null>,"preserved":["one short line per FIXED stage carried verbatim"],"solved":["one short line per BLANK stage solved, and how"],"assumptions":["..."],"notes":"any caveat, or an empty string"}\n\n' +
+    'Rules:\n' +
+    '- Preserve FIXED values EXACTLY \u2014 never change labor categories, FTEs, GSA mapping, or rates already in the spreadsheet.\n' +
+    '- NEVER invent an hourly rate. base_rate is either the spreadsheet\u2019s exact figure or null.\n' +
+    '- Only include "proposed_tasks" if the PWS task areas were blank AND none were provided above.\n' +
+    '- Solve ONLY what is blank; do not re-derive or "improve" a fixed value.'
+  );
+}
+
+function _constrainedApply(a) {
+  pricingApplyAutoBuild(a);   // builds labor categories, FTEs, hours allocation, task masks, tasks
+  // Carry the FIXED rates and GSA mapping from the upload. pricingApplyAutoBuild blanks rates by
+  // design (it never invents them) — but here the rate IS the user's own fixed figure, so carry it.
+  (a.labor_mix || []).forEach(function (m, i) {
+    const nm = String(m.role_name || '').trim().toLowerCase();
+    let l = pricingModel.lcats.find(function (x) { return String(x.name || '').trim().toLowerCase() === nm; });
+    if (!l) l = pricingModel.lcats[i];
+    if (!l) return;
+    const br = parseFloat(m.base_rate);
+    if (br > 0) l.baseRate = br;
+    if (m.gsa_lcat && String(m.gsa_lcat).trim() && !l.gsaLcat) l.gsaLcat = String(m.gsa_lcat).trim();
+  });
+  // An already-rated uploaded sheet is a build-up price — unlock the model if GSA was left undecided.
+  if (pricingModel.gsaDecision == null) pricingModel.gsaDecision = 'na';
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+}
+
+async function runConstrainedSolve() {
+  const det = window._constrainedIntake;
+  const status = document.getElementById('constrainedSolveStatus');
+  const results = document.getElementById('constrainedSolveResults');
+  const btn = document.getElementById('constrainedSolveBtn');
+  const show = function (msg, err) { if (status) { status.style.display = 'block'; status.style.color = err ? 'var(--error)' : 'var(--muted)'; status.textContent = msg; } };
+  if (!det || !window._constrainedCsv) { show('Run detection first.', true); return; }
+  if (det.feasibility === 'out_of_scope') { show('This combination is out of scope (a fixed total with a blank labor mix cannot be reverse-solved).', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
+
+  // Task areas to allocate across (only needed when the task allocation itself is blank).
+  const pwsBlank = ((det.stages || {}).pws_tasks || {}).status !== 'populated';
+  const tasks = (typeof pricingModel !== 'undefined' && pricingModel.tasks) ? pricingModel.tasks.slice() : [];
+  let briefing = (typeof cachedBriefing !== 'undefined') ? cachedBriefing : null;
+  if (pwsBlank && !tasks.length && !briefing) {
+    show('To derive the PWS-task allocation, first pull your RFP analysis on Pricing Step 2 (or add PWS tasks) so the tool has the real task areas to allocate across.', true);
+    return;
+  }
+  const taskList = tasks.length
+    ? tasks.map(function (t) { return '- ' + (t.code ? t.code + ' ' : '') + (t.name || ''); }).join('\n')
+    : '(none entered \u2014 if the task allocation is blank, propose 3\u20137 PWS task areas from the spreadsheet/scope and use those as the allocation columns)';
+  const b = briefing || {};
+  const ctxBits = [];
+  const add = function (label, val) { if (val) ctxBits.push(label + ': ' + (Array.isArray(val) ? val.join('; ') : val)); };
+  add('Title', b.requirement_title); add('Agency', b.agency_name); add('Contract type', b.contract_type);
+  add('Scope', b.scope_summary || b.requirement_summary); add('Periods', b.period_structure); add('Estimated FTEs', b.estimated_ftes);
+  const ctx = ctxBits.join('\n') || '(no structured briefing available \u2014 work from the spreadsheet and the task areas)';
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Solving\u2026'; }
+  if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  show('Solving the blank stages while holding the fixed ones\u2026', false);
+  try {
+    const a = await callClaudeForJson(apiKey, [{ type: 'text', text: _constrainedSolveContent(window._constrainedCsv, det, taskList, ctx) }], 10000, 150000, 'Constrained pricing solve');
+    _constrainedApply(a);
+    window._constrainedSolveLast = a;
+    if (status) status.style.display = 'none';
+    renderConstrainedSolve(a);
+  } catch (e) {
+    show('Solve failed: ' + (e && e.message ? e.message : e), true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Solve the blank stages'; }
+  }
+}
+
+function renderConstrainedSolve(a) {
+  const results = document.getElementById('constrainedSolveResults');
+  if (!results) return;
+  const esc = escHtml;
+  const list = function (label, arr, color) {
+    const items = Array.isArray(arr) ? arr.filter(Boolean) : [];
+    if (!items.length) return '';
+    return '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px">' + label + '</div>' +
+      items.map(function (x) { return '<div style="font-size:12.5px;color:var(--text);line-height:1.5;margin-bottom:2px">\u2022 ' + esc(String(x)) + '</div>'; }).join('') + '</div>';
+  };
+  const notes = (a && a.notes && String(a.notes).trim())
+    ? '<div style="margin-top:6px;font-size:12px;line-height:1.55;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:9px 11px"><strong>Note:</strong> ' + esc(String(a.notes)) + '</div>' : '';
+  results.innerHTML =
+    '<div style="border:1px solid #86efac;background:#f0fdf4;border-radius:8px;padding:12px 14px">' +
+      '<div style="font-size:13px;font-weight:800;color:#166534;margin-bottom:8px">\u2713 Solved \u2014 loaded into the pricing model below</div>' +
+      list('Carried from your sheet', a.preserved, '#166534') +
+      list('Solved', a.solved, '#1e40af') +
+      list('Assumptions', a.assumptions, '#6b7280') +
+      notes +
+      '<p style="margin:8px 0 0;font-size:11.5px;color:var(--muted)">Review and adjust the completed labor \u00d7 task structure in the pricing steps below \u2014 then it exports to Excel and flows into Volume III as usual. Fixed rates were carried verbatim; nothing was invented.</p>' +
+    '</div>';
+  results.style.display = 'block';
+  const step = document.getElementById('pricingStep2') || document.getElementById('pricingStep1');
+  if (step && step.scrollIntoView) { try { step.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
+}
+
+/* ═══════════════════ Constrained / reverse pricing (Phase 8) — PWS-conflict flagging ═══════════════════
+   Increment 3: compare the uploaded pricing sheet against the PWS/solicitation requirements and flag
+   conflicts, coverage-gap style — what the PWS requires, how the upload is non-compliant, the fix.
+   Distinct from the Compliance tab (which checks a GENERATED proposal against shall/must); this checks
+   the priced LABOR STRUCTURE against what the PWS demands. Requirements are assembled from the pulled
+   RFP briefing, the extracted opportunity, and the PWS task areas. Never invents a requirement. */
+function _constrainedPwsContext() {
+  const bits = [];
+  const add = function (label, val) {
+    if (val == null) return;
+    if (Array.isArray(val)) { if (val.length) bits.push(label + ': ' + val.join('; ')); return; }
+    const s = String(val).trim(); if (s) bits.push(label + ': ' + s);
+  };
+  const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) ? cachedBriefing : {};
+  const o = (window._bnaOpp) ? window._bnaOpp : {};
+  add('Requirement', b.requirement_title || o.requirement_title);
+  add('Agency', b.agency_name);
+  add('Contract type', b.contract_type);
+  add('Scope', b.scope_summary || b.requirement_summary);
+  add('Required qualifications', b.required_qualifications);
+  add('Required clearance', o.required_clearance);
+  add('Required certifications', o.required_certifications);
+  add('Key personnel', b.key_personnel);
+  add('Required staffing / FTEs', (o.fte_count != null && o.fte_count !== '') ? o.fte_count : b.estimated_ftes);
+  add('Key capabilities required', o.key_capabilities || o.key_capabilities_needed);
+  add('Period of performance', o.period_of_performance || b.period_structure);
+  add('DCAA-approved accounting required', o.required_dcaa ? 'yes' : '');
+  add('CMMC level required', o.required_cmmc);
+  const tasks = (typeof pricingModel !== 'undefined' && pricingModel.tasks) ? pricingModel.tasks : [];
+  if (tasks.length) bits.push('PWS task areas: ' + tasks.map(function (t) { return (t.code ? t.code + ' ' : '') + (t.name || ''); }).join('; '));
+  return bits.join('\n');
+}
+
+function _constrainedPwsContent(csv, pws) {
+  return (
+    'You are a federal cost/price compliance reviewer. Compare an uploaded pricing spreadsheet against the PWS/solicitation requirements and flag CONFLICTS \u2014 places where the priced labor structure does NOT comply with what the PWS requires. For each, give: what the PWS requires, how the upload is non-compliant, and the recommended fix. Base every finding ONLY on the requirements and the spreadsheet below; never invent a requirement.\n\n' +
+    'PWS / SOLICITATION REQUIREMENTS:\n' + pws + '\n\n' +
+    'THE UPLOADED PRICING SPREADSHEET:\n' + csv + '\n\n' +
+    'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a PWS task area with no labor priced against it; a staffing level (FTEs/hours) below what the scope requires; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
+    'Return ONLY JSON (no prose, no markdown fences):\n' +
+    '{"items":[{"requirement":"what the PWS requires (paraphrase the specific requirement)","category":"Labor mix|Clearance|Certification|Task coverage|Staffing level|Period of performance|Over-scope|Other","issue":"how the uploaded pricing is non-compliant or in conflict with that requirement","fix":"the recommended change to the pricing","severity":"critical|important|minor"}],"summary":"one line: overall assessment of how well the pricing complies with the PWS"}\n\n' +
+    'If the pricing fully complies, return "items":[] and say so in the summary.'
+  );
+}
+
+async function runConstrainedPwsCheck() {
+  const status = document.getElementById('constrainedPwsStatus');
+  const results = document.getElementById('constrainedPwsResults');
+  const btn = document.getElementById('constrainedPwsBtn');
+  const show = function (msg, err) { if (status) { status.style.display = 'block'; status.style.color = err ? 'var(--error)' : 'var(--muted)'; status.textContent = msg; } };
+  if (!window._constrainedCsv) { show('Upload and detect a pricing spreadsheet first.', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
+  const pws = _constrainedPwsContext();
+  if (!pws || pws.trim().length < 10) { show('No PWS/RFP requirements are loaded to check against. Pull your RFP analysis on Pricing Step 2 (or the Proposal tab) first.', true); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking\u2026'; }
+  if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  show('Checking the sheet against the PWS requirements\u2026', false);
+  try {
+    const data = await callClaudeForJson(apiKey, [{ type: 'text', text: _constrainedPwsContent(window._constrainedCsv, pws) }], 2600, 90000, 'PWS-conflict check');
+    window._constrainedPwsData = data;
+    if (status) status.style.display = 'none';
+    renderConstrainedPws(data);
+  } catch (e) {
+    show('Check failed: ' + (e && e.message ? e.message : e), true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Check the sheet against the PWS'; }
+  }
+}
+
+function renderConstrainedPws(data) {
+  const results = document.getElementById('constrainedPwsResults');
+  if (!results) return;
+  const esc = escHtml;
+  const items = Array.isArray(data && data.items) ? data.items.slice() : [];
+  const sev = { critical: 0, important: 1, minor: 2 };
+  const _rank = function (s) { const v = sev[s]; return (v == null) ? 2 : v; };
+  items.sort(function (a, b) { return _rank((a && a.severity) || 'minor') - _rank((b && b.severity) || 'minor'); });
+  const sevStyle = function (s) {
+    if (s === 'critical') return { bg: '#fef2f2', tx: '#991b1b', bd: '#fca5a5', label: 'CRITICAL' };
+    if (s === 'important') return { bg: '#fffbeb', tx: '#92400e', bd: '#fcd34d', label: 'IMPORTANT' };
+    return { bg: '#f3f4f6', tx: '#374151', bd: '#d1d5db', label: 'MINOR' };
+  };
+  const nCrit = items.filter(function (i) { return i && i.severity === 'critical'; }).length;
+  const nImp = items.filter(function (i) { return i && i.severity === 'important'; }).length;
+  const nMin = items.length - nCrit - nImp;
+
+  let head;
+  if (!items.length) {
+    head = '<div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:4px 11px;border-radius:20px;background:#f0fdf4;color:#166534;border:1px solid #16a34a">\u2713 Complies with the PWS</div>';
+  } else {
+    const chip = function (n, st) { return n ? '<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:' + st.bg + ';color:' + st.tx + ';border:1px solid ' + st.bd + '">' + n + ' ' + st.label.toLowerCase() + '</span>' : ''; };
+    head = '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' + chip(nCrit, sevStyle('critical')) + chip(nImp, sevStyle('important')) + chip(nMin, sevStyle('minor')) + '</div>';
+  }
+  const summary = (data && data.summary)
+    ? '<div style="margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--text);background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:11px 13px">' + esc(String(data.summary)) + '</div>' : '';
+  const body = items.map(function (it) {
+    const st = sevStyle((it && it.severity) || 'minor');
+    return '<div style="border:1px solid var(--border);border-left:3px solid ' + st.bd + ';border-radius:8px;padding:11px 13px;margin-top:10px">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">' +
+          '<span style="font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:20px;background:' + st.bg + ';color:' + st.tx + ';border:1px solid ' + st.bd + '">' + st.label + '</span>' +
+          (it && it.category ? '<span style="font-size:11px;font-weight:600;color:var(--muted)">' + esc(String(it.category)) + '</span>' : '') +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.45">' + esc(String((it && it.requirement) || '')) + '</div>' +
+        (it && it.issue ? '<div style="margin-top:4px;font-size:12.5px;color:var(--text);line-height:1.55"><span style="font-weight:600">Non-compliance:</span> ' + esc(String(it.issue)) + '</div>' : '') +
+        (it && it.fix ? '<div style="margin-top:7px;font-size:12px;color:#1e40af;background:#eff6ff;border:1px dashed #93c5fd;border-radius:6px;padding:7px 10px;line-height:1.5"><span style="font-weight:700">Fix \u2192</span> ' + esc(String(it.fix)) + '</div>' : '') +
+      '</div>';
+  }).join('');
+
+  results.innerHTML = '<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:8px">Pricing vs. PWS</div>' + head + summary + body;
+  results.style.display = 'block';
+}
+
 function renderBnaDecisionPanel() {
   const panel = document.getElementById('bnaDecisionPanel');
   if (!panel) return;
@@ -13091,6 +14280,8 @@ async function runBidNoBid() {
 
     // Persist the full scoring result so the PDF report can read factor rationales
     window._bnaResult = result;
+    // A new opportunity was analyzed — clear any prior coverage-gap readout so it can't go stale.
+    if (typeof resetBnaGap === 'function') resetBnaGap();
 
     // Render Tier 1 factor bars
     const t1El = document.getElementById('bnaFactorsTier1');
@@ -13560,6 +14751,34 @@ function downloadBnaPdf() {
       const put = (arr, color) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(color[0], color[1], color[2]); arr.forEach(ln => { doc.text(ln, M + 12, yy); yy += 12; }); };
       put(clrL, [22, 101, 52]); put(whyL, DARK); put(roleL, GREY); put(watchL, AMBER);
       y += cardH + 6;
+    });
+  }
+
+  // ---------- Coverage-gap analysis (only rendered if it was run) ----------
+  const gap = window._bnaGapData;
+  if (gap && Array.isArray(gap.items) && gap.items.length) {
+    heading('Coverage-Gap Analysis');
+    const gapItems = gap.items.slice();
+    const gStatRank = { gap: 0, partial: 1, covered: 2 };
+    const gSevRank = { critical: 0, important: 1, minor: 2 };
+    const gNrm = s => (s === 'covered' || s === 'partial' || s === 'gap') ? s : 'partial';
+    gapItems.forEach(it => { it.status = gNrm(it.status); });
+    gapItems.sort((a, b) => (gStatRank[a.status] - gStatRank[b.status]) || ((gSevRank[a.severity] != null ? gSevRank[a.severity] : 1) - (gSevRank[b.severity] != null ? gSevRank[b.severity] : 1)));
+    const gCov = gapItems.filter(i => i.status === 'covered').length;
+    const gPar = gapItems.filter(i => i.status === 'partial').length;
+    const gGap = gapItems.filter(i => i.status === 'gap').length;
+    const gCrit = gapItems.filter(i => i.status !== 'covered' && i.severity === 'critical').length;
+    para(gCov + ' covered   -   ' + gPar + ' partial   -   ' + gGap + ' gap' + (gGap === 1 ? '' : 's') + (gCrit ? '   (' + gCrit + ' critical)' : ''), { bold: true, size: 9.5, color: DARK, gap: 4 });
+    if (gap.summary) para(gap.summary, { size: 9.5, color: GREY, gap: 7 });
+    const gColor = st => st === 'covered' ? [22, 163, 74] : st === 'partial' ? [180, 83, 9] : [220, 38, 38];
+    gapItems.forEach(it => {
+      const sc = gColor(it.status);
+      ensure(38);
+      const label = it.status.toUpperCase() + (it.category ? '   ' + String(it.category).toUpperCase() : '') + (it.status !== 'covered' && it.severity ? '   (' + it.severity + ')' : '');
+      para(label, { bold: true, size: 8.5, color: sc, gap: 1 });
+      para(it.requirement || '', { bold: true, size: 10, color: DARK, gap: 2 });
+      if (it.evidence) para('Evidence: ' + it.evidence, { size: 9, color: GREY, gap: (it.status !== 'covered' && it.fix) ? 1 : 6 });
+      if (it.status !== 'covered' && it.fix) para('Fix: ' + it.fix, { size: 9, color: sc, gap: 6 });
     });
   }
 
@@ -14549,6 +15768,7 @@ function loadSettingsIntoUI() {
   setVal('s_rec_trackerList', rsp.trackerList);
   setVal('s_rec_applicantsList', rsp.applicantsList);
   loadMeetingLinksIntoUI(rec.meetingLinks || []);
+  var _sm = document.getElementById('s_rec_sourceMode'); if (_sm) _sm.value = rec.sourceMode || 'sharepoint';
   // SharePoint column mappings (advanced)
   const rcols = rsp.columns || {}, acols = rsp.applicantsColumns || {};
   const setC = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
@@ -14725,6 +15945,7 @@ function saveSettings() {
   const _curRec = CLIENT_CONFIG.recruiting || {};
   const _curSp = _curRec.sharePoint || {};
   overrides.recruiting = Object.assign({}, _curRec, {
+    sourceMode: document.getElementById('s_rec_sourceMode') ? document.getElementById('s_rec_sourceMode').value : 'sharepoint',
     meetingLinks: readMeetingLinksFromUI(),
     sharePoint: Object.assign({}, _curSp, {
       site:           document.getElementById('s_rec_spSite')?.value.trim() || '',
@@ -14751,8 +15972,11 @@ function saveSettings() {
   // Apply immediately to CLIENT_CONFIG
   Object.assign(CLIENT_CONFIG, overrides);
   applyClientConfig();
+  if (typeof renderOnboard === 'function') renderOnboard();
   if (window.Rec && Rec.renderMeetGrid) Rec.renderMeetGrid();
   if (window.Rec && Rec.renderMatchLabels) Rec.renderMatchLabels();
+  if (window.Rec && Rec.onAuthChangedT) Rec.onAuthChangedT();   // source-mode / config changes take effect immediately
+  if (window.Rec && Rec.onAuthChangedM) Rec.onAuthChangedM();
 
   // If Azure sign-in settings changed, MSAL must be re-initialized with the new app.
   const newAzure = JSON.stringify({
@@ -14931,6 +16155,19 @@ window.RecAuth = (function () {
   }
   return { scope: scope, ready: ready, tokenSilent: tokenSilent, tokenInteractive: tokenInteractive };
 })();
+
+// ── Shared candidate source (Phase 5: pluggable source) ──────────────────────
+// The recruiting tools read/write candidates through one of two backends, chosen
+// in Settings → Recruiting: 'sharepoint' (a shared SharePoint list) or 'local'
+// (this browser's localStorage — no Microsoft account needed). RecStore is the
+// thin local backend + the mode switch both engines consult.
+window.RecStore = (function () {
+  var KEY = 'recruiting_local_candidates';
+  function mode() { return (CLIENT_CONFIG.recruiting && CLIENT_CONFIG.recruiting.sourceMode) || 'sharepoint'; }
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { return []; } }
+  function save(arr) { try { localStorage.setItem(KEY, JSON.stringify(arr || [])); return true; } catch (e) { return false; } }
+  return { mode: mode, isLocal: function () { return mode() === 'local'; }, load: load, save: save };
+})();
 // ═══ RECRUITING SUITE — Candidate Tracker (SharePoint-backed CRUD + resume parsing) ═══
 // Extends window.Rec. Uses the unified Microsoft session (msalClient / msAccount) to acquire a
 // SharePoint REST token via the shared getGraphToken(); all SharePoint targets are tenant-driven
@@ -14970,6 +16207,41 @@ window.RecAuth = (function () {
     if (!t) { setB('err', 'SharePoint permission was not granted. Try again when ready.'); return; }
     await loadC(true);
   }
+  function showCreateList(msg) {
+    var b = document.getElementById('sp-banner-tracker'); if (!b) return;
+    b.style.display = 'block'; b.className = 'spb warn';
+    b.innerHTML = '<span>' + esc(msg) + '</span> <button type="button" class="spb-btn" onclick="Rec.provisionTrackerList()">Create the list</button>';
+  }
+  // Auto-provision the working list + its columns via the SharePoint REST API.
+  async function provisionTrackerList() {
+    if (!spSite() || !spList()) { toast('Set your SharePoint site and list name in Settings \u2192 Recruiting first.'); return; }
+    var t = await getSpRestToken(true); if (!t) return;
+    setB('info', 'Creating the list \u201c' + spList() + '\u201d in SharePoint\u2026'); toast('Creating SharePoint list\u2026');
+    var H = { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose' };
+    try {
+      var dg = await getDig(t);
+      var HD = Object.assign({}, H, { 'X-RequestDigest': dg });
+      // 1) Create the list (BaseTemplate 100 = custom list). A duplicate is fine — fall through to fields.
+      var lr = await fetch(spSite() + '/_api/web/lists', { method: 'POST', headers: HD, body: JSON.stringify({ '__metadata': { 'type': 'SP.List' }, 'Title': spList(), 'BaseTemplate': 100, 'Description': 'Candidate pipeline \u2014 created by the Sales Tool' }) });
+      if (!lr.ok && lr.status !== 409) { var le = await lr.json().catch(function () { return null; }); var lm = le && le.error ? le.error.message.value : ('HTTP ' + lr.status); if (!/exist/i.test(lm)) { setB('err', 'Could not create the list: ' + lm); return; } }
+      // 2) Create the columns. Title is a built-in field, so skip whichever mapping points to it.
+      var C = spCols();
+      var specs = [[C.role, 'text'], [C.location, 'text'], [C.email, 'text'], [C.status, 'choice'], [C.url, 'text'], [C.source, 'text'], [C.notes, 'note'], [C.phone, 'text'], [C.name, 'text']];
+      var made = 0;
+      for (var i = 0; i < specs.length; i++) {
+        var nm = specs[i][0], ty = specs[i][1];
+        if (!nm || nm.toLowerCase() === 'title') continue;
+        var body = (ty === 'note') ? { '__metadata': { 'type': 'SP.FieldMultiLineText' }, 'FieldTypeKind': 3, 'Title': nm }
+          : (ty === 'choice') ? { '__metadata': { 'type': 'SP.FieldChoice' }, 'FieldTypeKind': 6, 'Title': nm, 'Choices': { 'results': ['New', 'Contacted', 'Added to Repository'] } }
+          : { '__metadata': { 'type': 'SP.FieldText' }, 'FieldTypeKind': 2, 'Title': nm };
+        var fr = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/fields", { method: 'POST', headers: HD, body: JSON.stringify(body) });
+        if (fr.ok) made++;
+      }
+      LT = null;                       // reset cached list item-type so getLT re-reads the new schema
+      setB('ok', '\u2713 List ready (' + made + ' column' + (made !== 1 ? 's' : '') + ' added). Loading\u2026'); toast('SharePoint list created!');
+      await loadC(true);
+    } catch (e) { setB('err', 'Could not create the list: ' + (e.message || 'error')); }
+  }
   async function getDig(t) {
     var r = await fetch(spSite() + '/_api/contextinfo', { method: 'POST', headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
     return (await r.json()).d.GetContextWebInformation.FormDigestValue;
@@ -14981,7 +16253,9 @@ window.RecAuth = (function () {
     LT = (d && d.d && d.d.ListItemEntityTypeFullName) ? d.d.ListItemEntityTypeFullName : null;
     return LT;
   }
+  function nextLocalId() { return cands.length ? Math.max.apply(null, cands.map(function (c) { return c.id || 0; })) + 1 : 1; }
   async function loadC(interactive) {
+    if (window.RecStore.isLocal()) { cands = window.RecStore.load(); _loaded = true; renderC(); setB('ok', '\u2713 ' + cands.length + ' candidate' + (cands.length !== 1 ? 's' : '') + ' \u2014 stored locally in this browser.'); return; }
     if (!signedIn()) { setB('info', 'Sign in with Microsoft (top of the page) to load candidates from SharePoint.'); renderC(); return; }
     if (!spSite() || !spList()) { setB('info', 'SharePoint isn\u2019t configured for this tenant yet. You can still add candidates below, or set the list in Settings \u2192 Recruiting.'); renderC(); return; }
     var t = await getSpRestToken(interactive);
@@ -14995,7 +16269,7 @@ window.RecAuth = (function () {
     try {
       var sel = ['Id', C.name, C.role, C.location, C.email, C.phone, C.status, C.url, C.source, C.notes].join(',');
       var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/items?$orderby=Created desc&$top=500&$select=" + sel, { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
-      if (!r.ok) { var e = await r.json().catch(function () { return null; }); setB('err', 'SharePoint error: ' + (e && e.error ? e.error.message.value : r.status)); return; }
+      if (!r.ok) { if (r.status === 404) { showCreateList('The list \u201c' + spList() + '\u201d wasn\u2019t found. Create it automatically, or fix the name in Settings \u2192 Recruiting \u2014 or use Import CSV to work locally.'); return; } var e = await r.json().catch(function () { return null; }); setB('err', 'SharePoint error: ' + (e && e.error ? e.error.message.value : r.status)); return; }
       var d = await r.json();
       cands = (d.d.results || []).map(function (x) { return { id: x.Id, name: x[C.name] || '', role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '' }; });
       _loaded = true;
@@ -15005,6 +16279,7 @@ window.RecAuth = (function () {
   }
   async function addC() {
     var name = gv('cn'); if (!name) { toast('Name required'); return; }
+    if (window.RecStore.isLocal()) { cands.push({ id: nextLocalId(), name: name, role: gv('cr'), location: gv('cl'), email: gv('ce'), phone: gv('cp'), status: (document.getElementById('cs') || {}).value || 'New', url: gv('cu'), source: gv('cso'), notes: gv('cno') }); window.RecStore.save(cands); renderC(); clrC(); toast('Saved locally!'); return; }
     if (!signedIn()) { toast('Sign in with Microsoft first'); return; }
     var C = spCols();
     var ld = document.getElementById('cld'); if (ld) ld.style.display = 'block';
@@ -15020,6 +16295,7 @@ window.RecAuth = (function () {
     if (ld) ld.style.display = 'none';
   }
   async function updSt(id, val) {
+    if (window.RecStore.isLocal()) { var lc = cands.filter(function (x) { return x.id === id; })[0]; if (lc) { lc.status = val; window.RecStore.save(cands); renderC(); toast('Updated'); } return; }
     if (!signedIn()) { toast('Not signed in'); return; }
     var C = spCols();
     var t = await getSpRestToken(true); if (!t) return;
@@ -15031,6 +16307,7 @@ window.RecAuth = (function () {
     } catch (e) { toast('Update failed'); }
   }
   async function remC(id) {
+    if (window.RecStore.isLocal()) { if (!confirm('Remove this candidate?')) return; cands = cands.filter(function (x) { return x.id !== id; }); window.RecStore.save(cands); renderC(); toast('Removed'); return; }
     if (!confirm('Remove this candidate?')) return;
     var t = await getSpRestToken(true); if (!t) return;
     try {
@@ -15046,7 +16323,7 @@ window.RecAuth = (function () {
     var setTx = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
     setTx('st-total', cands.length); setTx('st-new', cands.filter(function (c) { return c.status === 'New'; }).length); setTx('st-contacted', cands.filter(function (c) { return c.status === 'Contacted'; }).length); setTx('st-added', cands.filter(function (c) { return c.status === 'Added to Repository'; }).length);
     var list = document.getElementById('clist'); if (!list) return;
-    if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet.' : 'No candidates match your filters.') + '</p></div>'; return; }
+    if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet. Add one above, upload a resume, or import a CSV.' : 'No candidates match your filters.') + '</p></div>'; return; }
     var bm = { 'New': 'bn', 'Contacted': 'bc', 'Added to Repository': 'ba' };
     list.innerHTML = f.map(function (c) { return '<div class="cc"><div class="cch"><div><div class="ccn">' + esc(c.name) + '</div><div class="ccr">' + esc(c.role) + '</div></div><span class="cbadge ' + bm[c.status] + '">' + esc(c.status) + '</span></div><div class="ccm">' + (c.location ? '<span>\uD83D\uDCCD ' + esc(c.location) + '</span>' : '') + (c.email ? '<span>\u2709 ' + esc(c.email) + '</span>' : '') + (c.phone ? '<span>\uD83D\uDCDE ' + esc(c.phone) + '</span>' : '') + (c.url ? '<span>\uD83D\uDD17 <a href="' + (c.url.indexOf('http') === 0 ? esc(c.url) : 'https://' + esc(c.url)) + '" target="_blank">Profile</a></span>' : '') + (c.source ? '<span>\u2732 ' + esc(c.source) + '</span>' : '') + '</div>' + (c.notes ? '<div class="ccnt">' + esc(c.notes) + '</div>' : '') + '<div class="cca"><select onchange="Rec.updSt(' + c.id + ',this.value)"><option value="New"' + (c.status === 'New' ? ' selected' : '') + '>New</option><option value="Contacted"' + (c.status === 'Contacted' ? ' selected' : '') + '>Contacted</option><option value="Added to Repository"' + (c.status === 'Added to Repository' ? ' selected' : '') + '>Added to Repository</option></select><button class="btn sm danger" onclick="Rec.remC(' + c.id + ')">\u2715 Remove</button></div></div>'; }).join('');
   }
@@ -15056,6 +16333,101 @@ window.RecAuth = (function () {
     var cols = ['Name', 'Role', 'Location', 'Email', 'Phone', 'Status', 'Profile URL', 'Source', 'Notes'];
     var rows = cands.map(function (c) { return [c.name, c.role, c.location, c.email, c.phone, c.status, c.url, c.source, c.notes].map(function (v) { return '"' + (v || '').replace(/"/g, '""') + '"'; }).join(','); });
     var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent([cols.join(',')].concat(rows).join('\n')); a.download = 'recruiting_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click(); toast('Downloaded!');
+  }
+
+  // ── CSV import (Phase 5: candidate-source fallback) ──────────────────────────
+  // Robust RFC-4180-ish parser: honors quoted fields, escaped quotes (""), and
+  // commas/newlines inside quotes. Returns an array of string arrays (blank rows dropped).
+  function parseCsv(text) {
+    var rows = [], row = [], val = '', inQ = false, i = 0, c;
+    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    while (i < text.length) {
+      c = text[i];
+      if (inQ) {
+        if (c === '"') { if (text[i + 1] === '"') { val += '"'; i++; } else inQ = false; }
+        else val += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ',') { row.push(val); val = ''; }
+        else if (c === '\n') { row.push(val); rows.push(row); row = []; val = ''; }
+        else val += c;
+      }
+      i++;
+    }
+    if (val !== '' || row.length) { row.push(val); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); });
+  }
+  // Case-insensitive header matching with common aliases -> our candidate fields.
+  function mapCsvHeaders(headers) {
+    var alias = {
+      name: ['name', 'full name', 'fullname', 'candidate', 'candidate name'],
+      role: ['role', 'title', 'current role', 'current title', 'job title', 'position'],
+      location: ['location', 'city', 'city/state', 'city, state', 'region', 'state'],
+      email: ['email', 'e-mail', 'email address'],
+      phone: ['phone', 'phone number', 'mobile', 'cell', 'telephone'],
+      status: ['status', 'stage'],
+      url: ['url', 'profile', 'profile url', 'linkedin', 'linkedin url', 'link'],
+      source: ['source', 'origin', 'sourced from'],
+      notes: ['notes', 'note', 'summary', 'comments', 'qualifications']
+    };
+    var map = {};
+    headers.forEach(function (h, idx) {
+      var hn = String(h || '').trim().toLowerCase();
+      for (var field in alias) { if (map[field] === undefined && alias[field].indexOf(hn) >= 0) { map[field] = idx; break; } }
+    });
+    return map;
+  }
+  // Turn parsed rows into candidate records (skips rows with no name; normalizes status).
+  function csvToRecords(rows) {
+    var map = mapCsvHeaders(rows[0]);
+    if (map.name === undefined) return { error: 'Could not find a Name column in the CSV.' };
+    var valid = ['New', 'Contacted', 'Added to Repository'];
+    var recs = rows.slice(1).map(function (r) {
+      var g = function (f) { return map[f] !== undefined ? String(r[map[f]] || '').trim() : ''; };
+      return { name: g('name'), role: g('role'), location: g('location'), email: g('email'), phone: g('phone'), status: valid.indexOf(g('status')) >= 0 ? g('status') : 'New', url: g('url'), source: g('source') || 'CSV import', notes: g('notes') };
+    }).filter(function (c) { return c.name; });
+    return { records: recs };
+  }
+  async function importCsv(file) {
+    if (!file) return;
+    if (!/\.csv$/i.test(file.name)) { toast('CSV files only'); return; }
+    try {
+      var text = await new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { rej(new Error('File read failed')); }; r.readAsText(file); });
+      var rows = parseCsv(text);
+      if (rows.length < 2) { toast('That CSV has a header but no data rows.'); return; }
+      var out = csvToRecords(rows);
+      if (out.error) { toast(out.error); return; }
+      if (!out.records.length) { toast('No rows with a name were found.'); return; }
+      if (window.RecStore.isLocal()) {
+        var lbase = cands.length ? Math.max.apply(null, cands.map(function (c) { return c.id || 0; })) : 0;
+        out.records.forEach(function (c, i) { c.id = lbase + i + 1; cands.push(c); });
+        window.RecStore.save(cands); _loaded = true; renderC();
+        setB('ok', '\u2713 Imported ' + out.records.length + ' candidate' + (out.records.length !== 1 ? 's' : '') + ' \u2014 stored locally.');
+      } else if (spSite() && spList() && signedIn()) {
+        await bulkAddSp(out.records);
+      } else {
+        var base = cands.length ? Math.max.apply(null, cands.map(function (c) { return c.id || 0; })) : 0;
+        out.records.forEach(function (c, i) { c.id = base + i + 1; cands.push(c); });
+        _loaded = true; renderC();
+        setB('ok', '\u2713 Loaded ' + out.records.length + ' candidate' + (out.records.length !== 1 ? 's' : '') + ' from CSV \u2014 working locally. Sign in and configure SharePoint to save them.');
+      }
+    } catch (e) { toast('CSV import failed: ' + (e.message || 'error')); }
+  }
+  async function bulkAddSp(recs) {
+    var t = await getSpRestToken(true); if (!t) return;
+    setB('info', 'Importing ' + recs.length + ' candidate' + (recs.length !== 1 ? 's' : '') + ' to SharePoint\u2026');
+    var C = spCols();
+    try {
+      var dg = await getDig(t), lt = await getLT(t), ok = 0, fail = 0;
+      for (var i = 0; i < recs.length; i++) {
+        var c = recs[i], b = {}; if (lt) b.__metadata = { type: lt };
+        b[C.name] = c.name; b[C.role] = c.role; b[C.location] = c.location; b[C.email] = c.email; b[C.phone] = c.phone; b[C.status] = c.status; b[C.url] = c.url; b[C.source] = c.source; b[C.notes] = c.notes;
+        var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/items", { method: 'POST', headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose', 'X-RequestDigest': dg }, body: JSON.stringify(b) });
+        if (r.ok) ok++; else fail++;
+      }
+      await loadC(true);
+      setB(fail ? 'err' : 'ok', '\u2713 Imported ' + ok + ' to SharePoint' + (fail ? ' \u2014 ' + fail + ' failed' : '') + '.');
+    } catch (e) { setB('err', 'Import error: ' + (e.message || 'unknown')); }
   }
   function fmtP(input) { var d = input.value.replace(/[^0-9]/g, '').slice(0, 10); if (!d) { input.value = ''; return; } if (d.length <= 3) input.value = '(' + d; else if (d.length <= 6) input.value = '(' + d.slice(0, 3) + ') ' + d.slice(3); else input.value = '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6); }
   function dzOv(e) { e.preventDefault(); var d = document.getElementById('dz'); if (d) d.classList.add('over'); }
@@ -15091,7 +16463,7 @@ window.RecAuth = (function () {
       toast('Resume parsed! Review fields below.');
     } catch (e) { if (st) { st.className = 'pdfs er'; st.textContent = 'Error: ' + (e.message || 'Unknown error'); } console.error('PDF error:', e); }
   }
-  function trackerOpened() { renderC(); if (!_loaded) loadC(false); }
+  function trackerOpened() { renderC(); var sb = document.getElementById('saveCandBtn'); if (sb) sb.textContent = window.RecStore.isLocal() ? 'Save candidate' : 'Save to SharePoint'; if (!_loaded) loadC(false); }
   function onAuthChanged() {
     _loaded = false;                                    // force a fresh load when auth state changes
     if (!signedIn()) cands = [];                        // clear stale rows on sign-out
@@ -15100,9 +16472,10 @@ window.RecAuth = (function () {
 
   if (window.Rec) {
     window.Rec.loadC = loadC; window.Rec.addC = addC; window.Rec.updSt = updSt; window.Rec.remC = remC;
-    window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP;
+    window.Rec.currentBench = function () { return (cands || []).slice(); };
+    window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP; window.Rec.importCsv = importCsv;
     window.Rec.dzOv = dzOv; window.Rec.dzLv = dzLv; window.Rec.dzDp = dzDp; window.Rec.handlePdf = handlePdf;
-    window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint; window.Rec.onAuthChangedT = onAuthChanged;
+    window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint; window.Rec.onAuthChangedT = onAuthChanged; window.Rec.provisionTrackerList = provisionTrackerList;
   }
 })();
 
@@ -15145,6 +16518,7 @@ window.RecAuth = (function () {
     else setBM('err', 'Could not connect. Please try again.');
   }
   async function refreshMatchConn() {
+    if (window.RecStore.isLocal()) { setBM('info', 'Local mode \u2014 Match ranks the candidates saved in your Tracker (this browser).'); return; }
     if (!window.RecAuth.ready()) { setBM('info', 'Sign in with Microsoft (top of the page) to search your SharePoint lists.'); return; }
     if (!spSite() || (!appList() && !spList())) { setBM('info', 'SharePoint isn\u2019t configured for this tenant yet \u2014 set it in Settings \u2192 Recruiting.'); return; }
     var t = await window.RecAuth.tokenSilent();
@@ -15190,6 +16564,7 @@ window.RecAuth = (function () {
     if (hint) hint.textContent = (val === 'literal') ? 'Matches exact keywords and phrases across all available fields.' : 'Claude reads each record and infers fit based on skills, experience, and context — not just exact words. Uses your API key.';
   }
   async function runLookup() {
+    if (window.RecStore.isLocal()) { return runLookupLocal(); }
     if (!signedIn()) { toast('Sign in with Microsoft first'); return; }
     if (!spSite() || (!appList() && !spList())) { toast('SharePoint isn\u2019t configured for this tenant yet — set it in Settings.'); return; }
     var role = (document.getElementById('lu-role') || {}).value ? document.getElementById('lu-role').value.trim() : '';
@@ -15215,6 +16590,35 @@ window.RecAuth = (function () {
       if (!getApiKey()) { toast('AI search requires your Anthropic API key — check the header'); if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; } return; }
       if (ldg) ldg.textContent = 'Claude is analyzing ' + broadAll.length + ' candidates...';
       all = await aiRankCandidates(broadAll, role, loc, skills);
+    }
+    luResults = all;
+    if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; }
+    renderLookup();
+  }
+  // Local-source variant of runLookup: rank the candidates saved in the Tracker (localStorage).
+  async function runLookupLocal() {
+    var role = (document.getElementById('lu-role') || {}).value ? document.getElementById('lu-role').value.trim() : '';
+    var loc = (document.getElementById('lu-location') || {}).value ? document.getElementById('lu-location').value.trim() : '';
+    var skills = (document.getElementById('lu-skills') || {}).value ? document.getElementById('lu-skills').value.trim() : '';
+    if (!role && !loc && !skills) { toast('Enter at least one search criterion'); return; }
+    var ldg = document.getElementById('lu-loading'); if (ldg) ldg.style.display = 'block';
+    var res = document.getElementById('lu-results'); if (res) res.style.display = 'none';
+    var pool = window.RecStore.load().map(function (c) {
+      return { name: c.name || 'Unknown', email: c.email || '', phone: c.phone || '', linkedIn: c.url || '', resume: '', title: c.role || '', location: c.location || '', stage: c.status || '', notes: c.notes || '', source: 'local' };
+    });
+    if (!pool.length) { toast('No local candidates yet \u2014 add some in the Candidate Tracker or import a CSV.'); if (ldg) ldg.style.display = 'none'; return; }
+    var all;
+    if (_searchMode === 'ai') {
+      if (!getApiKey()) { toast('AI search requires your Anthropic API key \u2014 check the header'); if (ldg) ldg.style.display = 'none'; return; }
+      if (ldg) ldg.textContent = 'Claude is analyzing ' + pool.length + ' candidates...';
+      all = await aiRankCandidates(pool, role, loc, skills);
+    } else {
+      var rQ = role.toLowerCase(), lQ = loc.toLowerCase();
+      var skArr = skills ? skills.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
+      all = pool.filter(function (c) {
+        var text = (c.name + ' ' + c.title + ' ' + c.notes + ' ' + c.location).toLowerCase();
+        return (!rQ || text.indexOf(rQ) >= 0) && (!lQ || (c.location || '').toLowerCase().indexOf(lQ) >= 0) && (skArr.length === 0 || skArr.every(function (sk) { return text.indexOf(sk) >= 0; }));
+      });
     }
     luResults = all;
     if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; }
@@ -15299,7 +16703,7 @@ window.RecAuth = (function () {
     };
   }
   function getLuCell(c, col) {
-    if (col === 'source') return c.source === 'official' ? 'Applicant' : 'Potential';
+    if (col === 'source') return c.source === 'official' ? 'Applicant' : (c.source === 'local' ? 'Local' : 'Potential');
     if (col === 'name') return c.name || '';
     if (col === 'location') return c.location || '';
     if (col === 'email') return c.email || '';
@@ -15389,7 +16793,7 @@ window.RecAuth = (function () {
     if (p && L.potentials) p.textContent = L.potentials;
     if (b && L.both) b.textContent = L.both;
   }
-  function matchOpened() { renderMatchLabels(); setTimeout(sizeBothListsPill, 50); refreshMatchConn(); }
+  function matchOpened() { renderMatchLabels(); setTimeout(sizeBothListsPill, 50); refreshMatchConn(); if (typeof staffRenderRoster === 'function') staffRenderRoster(); }
   function onAuthChanged() {
     if (((document.querySelector('.tab-pane.active') || {}).id || '') === 'pane-rec-match') refreshMatchConn();
   }
