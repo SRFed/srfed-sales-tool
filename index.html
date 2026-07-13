@@ -908,6 +908,7 @@
       <button class="tab-btn" data-fam="decide" onclick="switchTab('partners')" id="tab-partners">🤝 Partners</button>
       <button class="tab-btn" data-fam="decide-build-present" onclick="switchTab('proposal')" id="tab-proposal">📄 Proposal</button>
       <button class="tab-btn" data-fam="build" onclick="switchTab('pricing')" id="tab-pricing">💵 Pricing</button>
+      <button class="tab-btn" data-fam="build" onclick="switchTab('market')" id="tab-market">📈 Market Rates</button>
       <button class="tab-btn" data-fam="build" onclick="switchTab('compliance')" id="tab-compliance">✅ Compliance</button>
       <button class="tab-btn" data-fam="present" onclick="switchTab('presentation')" id="tab-presentation">📊 Presentation</button>
       <button class="tab-btn" data-fam="edit" onclick="switchTab('editor')" id="tab-editor">✏️ Section Editor</button>
@@ -917,6 +918,7 @@
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Partners</b><span>teaming — your CRM feeds the partner finder</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-decide,#2aa79b) 0 50%,var(--fam-build,#8a93e8) 50%)"></span><div class="sl-txt"><b>Bid/No-Bid ↔ Proposal</b><span>the RFP you analyze carries into the proposal</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Proposal ↔ Pricing ↔ Compliance</b><span>shared RFP; pricing flows into Volume III</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Market Rates → Pricing</b><span>look up prevailing pay; send a percentile to anchor a role</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-build,#8a93e8) 0 50%,var(--fam-present,#a855f7) 50%)"></span><div class="sl-txt"><b>Proposal → Presentation</b><span>your finished proposal builds the oral deck</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Section Editor</b><span>standalone — doesn't feed other tabs</span></div></div>
     </div>
@@ -927,13 +929,15 @@
       <button class="tab-btn" data-fam="decide" onclick="switchTab('rec-search')" id="tab-rec-search">🔍 Candidate Search</button>
       <button class="tab-btn" data-fam="build" onclick="switchTab('rec-tracker')" id="tab-rec-tracker">📇 Candidate Tracker</button>
       <button class="tab-btn" data-fam="build" onclick="switchTab('rec-match')" id="tab-rec-match">🧩 Candidate Match</button>
+      <button class="tab-btn" data-fam="edit" onclick="switchTab('rec-resume')" id="tab-rec-resume">📝 Resume Builder</button>
       <button class="tab-btn" data-fam="edit" onclick="switchTab('rec-outreach')" id="tab-rec-outreach">✉️ Outreach Writer</button>
     </nav>
     <div class="sidebar-legend">
       <div class="sl-title">🔗 How tabs connect</div>
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Candidate Search</b><span>boolean search strings for LinkedIn or Google &mdash; standalone</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Tracker &harr; Match</b><span>your tracked bench is the pool Match ranks against a role</span></div></div>
-      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Outreach Writer</b><span>drafts outreach to candidates you surface &mdash; standalone</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-build,#8a93e8) 0 50%,var(--fam-edit,#e0894a) 50%)"></span><div class="sl-txt"><b>Match &rarr; Resume</b><span>a candidate you surface carries straight into the resume builder</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Resume + Outreach</b><span>produce a tailored resume and outreach for that candidate &mdash; standalone</span></div></div>
     </div>
   </div>
 </header>
@@ -1026,7 +1030,6 @@
   </div>
 </div>
 </div>
-
 
 
 <!-- ══════════════════════════ PROPOSAL TAB ══════════════════════════════ -->
@@ -1872,6 +1875,7 @@
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
       <span><span class="icon">📊</span> Opportunity Details</span>
       <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:11px;font-weight:600;padding:3px 8px;background:#ecfeff;border:1px solid #67e8f9;border-radius:10px;color:#0e7490">◆ Teal = Gov. estimate</span>
         <span style="font-size:11px;font-weight:600;padding:3px 8px;background:#fef9c3;border:1px solid #fde047;border-radius:10px;color:#92400e">🔶 Amber = Inferred</span>
         <button onclick="copyOpportunityIntel()" style="padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--blue)">⎘ Copy</button>
       </div>
@@ -2104,13 +2108,12 @@
 
   <!-- ── Constrained / reverse pricing (Phase 8) — pin populated stages, solve the rest ── -->
   <div class="card" id="constrainedCard" style="margin-bottom:20px">
-    <div class="card-header"><span class="icon">🧩</span> Constrained pricing (reverse-solve)</div>
+    <div class="card-header"><span class="icon">🧩</span> Constrained pricing (reverse-solve) <span style="font-size:11px;font-weight:700;color:#3730a3;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:20px;padding:2px 10px;margin-left:8px;vertical-align:middle">Optional · reverse-solve entry point</span></div>
     <div class="card-body">
       <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.6">Already have a partly-built pricing spreadsheet? Upload it and the tool detects which stages are already populated — PWS-task mapping, labor categories, GSA-schedule mapping, FTEs, and rates — treats those as fixed, and solves only what's blank. <strong>Optional</strong> — skip this and build forward from the steps below if you're starting fresh.</p>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <label style="font-size:12.5px;font-weight:600;background:none;border:1px solid var(--border);border-radius:7px;padding:8px 14px;cursor:pointer;color:var(--text)">📎 Upload pricing spreadsheet<input type="file" id="constrainedFile" accept=".xlsx,.xls,.csv" onchange="constrainedFileChosen(event)" style="display:none"/></label>
+        <label id="constrainedUploadBtn" style="font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">Upload pricing spreadsheet<input type="file" id="constrainedFile" accept=".xlsx,.xls,.csv" onchange="constrainedFileChosen(event)" style="display:none"/></label>
         <span id="constrainedFileName" style="font-size:12px;color:var(--muted)"></span>
-        <button id="constrainedDetectBtn" onclick="runConstrainedDetect()" style="display:none;padding:8px 15px;font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer">Detect what's populated</button>
       </div>
       <div id="constrainedStatus" style="display:none;font-size:13px;color:var(--muted);margin-top:12px"></div>
       <div id="constrainedResults" style="display:none;margin-top:14px"></div>
@@ -2188,6 +2191,7 @@
           <div style="font-weight:700;font-size:13px">👤 Labor Categories &amp; Rates <span style="color:var(--muted);font-weight:400;font-size:11px">— the rows of your matrix</span></div>
           <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
         </div>
+        <div id="pricingWrapBanner"></div>
         <div id="pricingLcatsList" style="display:flex;flex-direction:column;gap:8px"></div>
         <div id="pricingScaByLcat" style="margin-top:10px"></div>
       </div>
@@ -2214,7 +2218,15 @@
           <button onclick="pricingAddPeriod()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Option Year</button>
         </div>
         <div id="pricingPeriodsNote" style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5"></div>
+        <div id="pricingEscModeBar" style="margin:0 0 10px"></div>
         <div id="pricingPeriodsList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Competitive discount (#10) -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">💸 Competitive Discount</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Optional bid-time discount off your billed rates — flows into the period totals and the Excel.</div>
+        <div id="pricingDiscountBox"></div>
       </div>
 
       <!-- Per-period (per-year) staffing -->
@@ -2249,6 +2261,29 @@
 </div>
 
 <!-- ══════════════════════════ SETTINGS TAB ══════════════════════════════ -->
+<!-- ══════════════════════════ MARKET RATES TAB ══════════════════════════ -->
+<div class="tab-pane" id="pane-market">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header"><span class="icon">📈</span> Market Rates <span style="font-size:11px;font-weight:700;color:#3730a3;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:20px;padding:2px 10px;margin-left:8px;vertical-align:middle">Feeds Pricing</span></div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.6">Look up prevailing pay for a role, then send a percentile straight into Pricing as a locked rate anchor. Claude searches public sources — <strong>GSA CALC+</strong>, Salary.com, the Economic Research Institute, BLS OES, and reputable aggregators — and reports the 25th, 50th, and 75th percentile.</p>
+      <p style="font-size:12px;color:var(--warn);margin-bottom:16px;line-height:1.5">⚠ AI-gathered from public data as a sanity check / starting anchor — not an authoritative wage source. Verify against your own data and the solicitation before you submit.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:2;min-width:220px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Position / labor category *</label><input type="text" id="mktRole" placeholder="e.g. Registered Nurse, Senior Software Engineer, Program Manager" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
+        <div style="flex:1.4;min-width:180px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Location</label><input type="text" id="mktLoc" placeholder="e.g. Washington, DC" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text);padding-bottom:9px;white-space:nowrap"><input type="checkbox" id="mktRemote" onchange="mktToggleRemote()" style="width:auto"/> Remote / national</label>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
+        <div style="flex:1;min-width:160px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Seniority <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" id="mktLevel" placeholder="e.g. mid, senior, lead" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
+        <div style="flex:1;min-width:160px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Clearance <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" id="mktClear" placeholder="e.g. Secret, TS/SCI" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
+      </div>
+      <button class="btn btn-primary" onclick="marketRun(this)" id="mktRunBtn" style="margin-top:16px">📈 Look up market rates</button>
+      <div id="mktStatus" style="display:none;font-size:13px;color:var(--muted);margin-top:14px"></div>
+      <div id="mktResults" style="display:none;margin-top:20px"></div>
+    </div>
+  </div>
+</div>
+
 <div class="tab-pane" id="pane-rec-search">
   <div class="rec-scope">
     <div class="rec-title">Candidate Search</div>
@@ -2403,7 +2438,7 @@
         <button class="btn primary" onclick="Rec.runLookup()">Search</button>
         <button class="btn" onclick="Rec.clearLookup()">Clear</button>
       </div>
-      <div class="ldg" id="lu-loading">Searching...</div>
+      <div class="ldg" id="lu-loading"><div style="display:flex;align-items:center;gap:10px"><span class="spinner-dark" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></span><span id="lu-loading-text">Searching&hellip;</span></div><div class="indet-bar" style="margin-top:8px"></div></div>
     </div>
     <div id="lu-results" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -2419,24 +2454,26 @@
       <div id="staffRoster"></div>
       <div class="btn-row" style="margin-top:10px">
         <button class="btn sm" onclick="staffAddRow()">+ Add role</button>
-        <button class="btn sm" onclick="staffPullBench()">Pull from bench</button>
         <button class="btn sm danger" onclick="staffClear()">Clear</button>
       </div>
       <div class="btn-row" style="margin-top:14px">
-        <button class="btn primary" onclick="runStaffingPlan()">Generate staffing plan</button>
+        <button class="btn primary" id="staffGenBtn" onclick="runStaffingPlan()">Generate staffing plan</button>
       </div>
-      <div id="staffStatus" class="ldg" style="display:none">Generating&hellip;</div>
+      <div id="staffStatus" class="ldg" style="display:none"><span id="staffStatusText">Generating&hellip;</span><div class="indet-bar" style="margin-top:8px"></div></div>
       <div id="staffResults" style="display:none;margin-top:16px"></div>
     </div>
-    <!-- ── Compliant Resume Builder (Phase 7 piece 3) — bench candidate -> tailored, compliant resume ── -->
-    <div class="card rec-card" id="resumeCard" style="margin-top:22px">
-      <div class="sec">Compliant resume builder</div>
+  </div>
+</div>
+<div class="tab-pane" id="pane-rec-resume">
+  <div class="rec-scope">
+    <div class="rec-title">Resume Builder</div>
+    <div class="rec-sub">Turn a candidate into a solicitation-tailored, compliant resume &middot; maps their experience to the key-personnel qualifications and flags any gaps</div>
+    <div class="card rec-card" id="resumeCard">
       <p class="hint" style="margin:-4px 0 12px">Turn a bench candidate into a solicitation-tailored resume that maps their experience to the key-personnel qualifications and flags any shortfall. Uses only what you provide &mdash; it never invents credentials.</p>
       <div class="r2">
         <div>
           <label>Candidate name</label>
           <input type="text" id="resName" placeholder="e.g. Paul Scace"/>
-          <p class="hint"><a href="javascript:void(0)" onclick="resumePullBench()">Pull a name from your bench</a></p>
         </div>
         <div>
           <label>Target position / labor category</label>
@@ -2447,12 +2484,12 @@
       <textarea id="resBg" placeholder="Paste the person's experience, education, certifications, and clearance &mdash; or their existing resume text. The more detail, the better the mapping." style="min-height:120px"></textarea>
       <label style="margin-top:10px;display:block">Key-personnel requirements for this position</label>
       <textarea id="resReq" placeholder="Paste the solicitation's qualification requirements for this role &mdash; degree, years of experience, certifications, clearance." style="min-height:90px"></textarea>
-      <p class="hint"><a href="javascript:void(0)" onclick="resumeSeedReq()">Seed requirements from the analyzed opportunity</a></p>
+      <button type="button" class="btn sm" onclick="resumeSeedReq()" style="margin-top:6px">Seed from analyzed opportunity</button>
       <div class="btn-row" style="margin-top:14px">
-        <button class="btn primary" onclick="runResume()">Generate compliant resume</button>
+        <button class="btn primary" id="resumeGenBtn" onclick="runResume()">Generate compliant resume</button>
         <button class="btn sm danger" onclick="resumeClear()">Clear</button>
       </div>
-      <div id="resStatus" class="ldg" style="display:none">Generating&hellip;</div>
+      <div id="resStatus" class="ldg" style="display:none"><span id="resStatusText">Generating&hellip;</span><div class="indet-bar" style="margin-top:8px"></div></div>
       <div id="resResults" style="display:none;margin-top:16px"></div>
     </div>
   </div>
@@ -4733,34 +4770,30 @@ async function runHsMatch() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 3000, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 8000, temperature: 0,
         messages: [{ role: 'user', content: [{ type: 'text', text: matchPrompt }] }] })
     });
     if (!mr.ok) throw new Error(`Claude API error ${mr.status}`);
     const md = await mr.json();
     let mraw = md.content.map(c=>c.text||'').join('').trim()
       .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
-      .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"');
-    // Parse as object {matches, overall_take} or fall back to bare array
-    let matches, overallTake = '';
-    const objM = mraw.match(/\{[\s\S]+\}/);
-    if (objM) {
-      const parsed = JSON.parse(objM[0]);
-      if (parsed.matches) {
-        matches = parsed.matches;
-        overallTake = parsed.overall_take || '';
-      } else if (Array.isArray(parsed)) {
-        matches = parsed;
-      } else {
-        // might be object with numeric keys
-        const arr = mraw.match(/\[[\s\S]+\]/);
-        matches = arr ? JSON.parse(arr[0]) : [];
-      }
-    } else {
-      const arr = mraw.match(/\[[\s\S]+\]/);
-      if (!arr) throw new Error('No results in response');
-      matches = JSON.parse(arr[0]);
+      .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'\\"');
+    // Tolerant parse via parseLooseJson: recovers from trailing prose, a second concatenated
+    // object, or a response truncated mid-array (it closes the open brackets and keeps every
+    // complete match). Accept {matches, overall_take} or a bare array of matches.
+    let matches = [], overallTake = '';
+    const parsed = parseLooseJson(mraw);
+    if (parsed && Array.isArray(parsed.matches)) {
+      matches = parsed.matches;
+      overallTake = parsed.overall_take || '';
+    } else if (Array.isArray(parsed)) {
+      matches = parsed;
+    } else if (parsed && typeof parsed === 'object') {
+      const _arrVal = Object.values(parsed).find(v => Array.isArray(v));
+      matches = _arrVal || [];
+      overallTake = parsed.overall_take || '';
     }
+    if (!Array.isArray(matches) || matches.length === 0) throw new Error('No partner results could be read from the scoring response. Click "Re-run match" to try again.');
     // HARD eligibility gates (deterministic backstop to the prompt) — mirror the BNA prime gates
     // that also apply to a teaming partner: set-aside (must hold the cert), required clearance, and a
     // required (non-open) contract vehicle. Capacity / FTE / value / DCAA gates are prime-specific and
@@ -5118,14 +5151,14 @@ async function runCmpExtraction() {
     }
     content.push({ type: 'text', text:
       `Extract every contractor obligation from these documents — sentences with "shall", "must", "should", "will", or "required to".\n` +
-      `Return ONLY a JSON array of plain strings. Limit to the 80 most important unique requirements.\n` +
+      `Return ONLY a JSON array of plain strings. Extract EVERY distinct requirement - do NOT cap at any number; do NOT invent, pad, or duplicate to reach a count; return only obligations that actually appear, each once.\n` +
       `["The Contractor shall provide weekly status reports to the COR.","All personnel must hold a minimum SECRET clearance."]`
     });
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000, temperature: 0,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 8000, temperature: 0,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}`);
@@ -6237,12 +6270,12 @@ async function ensureBriefing(apiKey) {
     `"option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown",` +
     `"sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
     `"pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated",` +
-    `"estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated. Copy the EXACT figure INCLUDING any decimal or fraction (e.g. 2.5, 0.5, 3.25); do NOT round to a whole number. '' or 'not specified' if it does not state one",` +
+    `"estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES. PRIORITY: (1) if the solicitation states an explicit FTE / level-of-effort figure, copy it EXACTLY including any decimal or fraction (e.g. 2.5, 0.5, 3.25); do NOT round. (2) ELSE if the solicitation gives an estimated-hours / workload / level-of-effort table by labor category, compute the FTEs as (sum of the BASE-YEAR hours column ONLY) divided by 1912, to two decimals; NEVER add the base-year and option-year columns together - option periods are SEPARATE performance periods, not additional concurrent staff. (3) ELSE '' or 'not specified'","workload_hours_base_year":"if the solicitation gives an estimated-hours / workload / level-of-effort table by labor category, the SUM of the BASE-YEAR hours column ONLY as an integer (e.g. 14685); sum ONLY the base-year column and do NOT add any option-year column; '' if no such table is given","workload_by_lcat":[{"lcat":"one row PER labor category from the estimated-hours / workload / level-of-effort table (base-year column ONLY); empty array if no such table is given","base_year_hours":0}],` +
     `"estimated_value":"",` +
     `"pricing_methodology":"exactly one of 'lcat','pws_task','product','simple' — how pricing must be STRUCTURED per Section L/B; '' if unstated",` +
     `"pricing_instructions":"any cost/price-volume format instructions from Section L/B/M; '' if none",` +
     `"pws_task_areas":["list EVERY distinct PWS task/section, prefixed with the PWS's own numbering, e.g. '2.1: Credit card reconciliation'"]}\n` +
-    `Be exact and do not invent an FTE count the solicitation does not give.`;
+    `Be exact. Do not invent an FTE count the solicitation does not give. When a workload / level-of-effort hours table IS given, base the FTEs on the BASE-YEAR hours column ONLY - never the base and option columns added together.`;
   const briefing = await callClaudeForJson(apiKey, [...blocks, { type: 'text', text: prompt }], 4000, 240000, 'Reading the PWS');
   cachedBriefing = briefing;       // becomes the shared briefing
   return briefing;
@@ -7496,7 +7529,7 @@ async function extractShallsViaApi(docContent, apiKey) {
     const content = [...docContent, { type: 'text', text:
       `Extract every sentence or clause from these documents that contains a contractor obligation — specifically sentences with "shall", "must", "should", "will", or "required to".\n` +
       `Return ONLY a JSON array of strings — the full sentences with enough context to understand each requirement.\n` +
-      `Limit to the 80 most important unique requirements.\n` +
+      `Extract EVERY distinct requirement in the documents - do NOT cap the list at any number and do NOT stop early. Do NOT invent, infer, pad, or duplicate to reach a count: return only obligations that actually appear, each once. If there are 150, return all 150; if only 12, return exactly 12.\n` +
       `Example: ["The contractor shall provide weekly status reports to the COR.", "All personnel must hold a minimum SECRET clearance."]\n` +
       `Return ONLY: ["sentence1","sentence2",...]`
     }];
@@ -7505,7 +7538,7 @@ async function extractShallsViaApi(docContent, apiKey) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 8000,
         messages: [{ role: 'user', content }] })
     });
     if (!resp.ok) { finishBar(false, `The AI service returned an error (${resp.status}).`); return; }
@@ -8050,16 +8083,35 @@ function parseLooseJson(raw) {
   if (raw == null) return null;
   let s = String(raw).trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
   const tryP = x => { try { const p = JSON.parse(x); return (p && typeof p === 'object') ? p : null; } catch (_) { return null; } };
-  let p = tryP(s); if (p) return p;
-  const first = s.search(/[\{\[]/); if (first > 0) s = s.slice(first);
-  const lastClose = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
-  let core = lastClose > 0 ? s.slice(0, lastClose + 1) : s;
-  p = tryP(core); if (p) return p;
   const repair = x => x
     .replace(/,\s*([}\]])/g, '$1')
     .replace(/("(?:[^"\\]|\\.)*")(\s+)(?=["{\[])/g, '$1,$2')
     .replace(/([}\]])(\s+)(?=["{\[])/g, '$1,$2')
     .replace(/((?:true|false|null|-?\d(?:\.\d+)?(?:[eE][+-]?\d+)?))(\s*\n\s*)(?=["{\[]|true|false|null|-?\d)/g, '$1,$2');
+  // Extract the first *balanced* JSON value (string-aware): a complete object/array is then
+  // immune to trailing prose or a second object concatenated after it (which is what made the
+  // strict parse throw "Unexpected non-whitespace character after JSON").
+  const balanced = str => {
+    const st = str.search(/[{\[]/); if (st < 0) return null;
+    let d = 0, inStr = false, esc = false;
+    for (let i = st; i < str.length; i++) {
+      const c = str[i];
+      if (esc) { esc = false; continue; }
+      if (c === '\\') { if (inStr) esc = true; continue; }
+      if (c === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (c === '{' || c === '[') d++;
+      else if (c === '}' || c === ']') { if (--d === 0) return str.slice(st, i + 1); }
+    }
+    return null;
+  };
+  let p = tryP(s); if (p) return p;
+  const bal = balanced(s);
+  if (bal) { p = tryP(bal); if (p) return p; p = tryP(repair(bal)); if (p) return p; }
+  const first = s.search(/[\{\[]/); if (first > 0) s = s.slice(first);
+  const lastClose = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+  let core = lastClose > 0 ? s.slice(0, lastClose + 1) : s;
+  p = tryP(core); if (p) return p;
   p = tryP(repair(core)); if (p) return p;
   let b = repair(core);
   let nb = (b.split('{').length - 1) - (b.split('}').length - 1);
@@ -8294,7 +8346,7 @@ async function runGeneration() {
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
-      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated — copy the EXACT figure including any decimal or fraction (e.g. 2.5, 0.5); do NOT round; '' or 'not specified' if none","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
+      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated — copy the EXACT figure including any decimal or fraction (e.g. 2.5, 0.5); do NOT round. If instead a workload / level-of-effort hours table by labor category is given, derive the FTEs from the BASE-YEAR hours column ONLY divided by 1912 (never add base + option columns). '' or 'not specified' if none","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
       `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
@@ -9564,6 +9616,7 @@ let pricingModel = {
   periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }],   // months: term length (e.g. 3 or 6 for partial periods)
   statedFteTotal: null,            // number if the PWS stated it
   fteSource: 'estimated',          // 'stated' | 'estimated'
+  statedWorkloadByLcat: [],        // [{ lcat, hours }] per-category base-year hours when the Government stated a workload table
   directedLabor: false,            // true when the Government directed exact labor categories AND counts (locked verbatim)
   hoursPerFte: null,               // agency-stated billable hours per FTE (e.g. 1920, 2080); null = company default (1912)
   gsaDecision: null,               // null (undecided → locks the rest) | 'schedule' | 'na'
@@ -9721,16 +9774,16 @@ function pricingCell(lid, tid) {
 function pricingRowHours(lid) { return pricingModel.tasks.reduce((s, t) => s + pricingCell(lid, t.id), 0); }
 function pricingColHours(tid) { return pricingModel.lcats.reduce((s, l) => s + pricingCell(l.id, tid), 0); }
 function pricingTotalHours() { return pricingModel.lcats.reduce((s, l) => s + pricingRowHours(l.id), 0); }
-function pricingRowCost(l) { return pricingRowHours(l.id) * pricingLoadedRate(l, 0); }
-function pricingColCost(tid) { return pricingModel.lcats.reduce((s, l) => s + pricingCell(l.id, tid) * pricingLoadedRate(l, 0), 0); }
+function pricingRowCost(l) { return pricingRowHours(l.id) * pricingBilledRate(l, 0); }
+function pricingColCost(tid) { return pricingModel.lcats.reduce((s, l) => s + pricingCell(l.id, tid) * pricingBilledRate(l, 0), 0); }
 function pricingBaseTotal() { return pricingModel.lcats.reduce((s, l) => s + pricingRowCost(l), 0); }
-function pricingMultipliers() { const out = []; let m = 1; pricingModel.periods.forEach((p, i) => { if (i > 0) m = m * (1 + (parseFloat(p.escalation) || 0) / 100); out.push(m); }); return out; }
+function pricingMultipliers() { const out = []; let m = 1; const _mode = pricingModel.escalationMode || 'perPeriod'; const _flat = parseFloat(pricingModel.escalationFlat); pricingModel.periods.forEach((p, i) => { if (i > 0) { const _e = (_mode === 'flat') ? (isNaN(_flat) ? 0 : _flat) : (parseFloat(p.escalation) || 0); m = m * (1 + _e / 100); } out.push(m); }); return out; }
 // Term length of a period in months (default a full year). Partial periods (e.g. a 3-month
 // base, or a 6-month option) scale their cost by months/12 — the matrix hours are a FULL YEAR.
 function pricingPeriodMonths(p) { const m = parseFloat(p && p.months); return (m && m > 0) ? m : 12; }
 function pricingPeriodFraction(p) { return pricingPeriodMonths(p) / 12; }
 // Full-year cost at the rates that apply to period i (GSA: that period's schedule-year rates; build-up: base × wrap).
-function pricingPeriodAnnual(i) { return pricingModel.lcats.reduce((s, l) => s + pricingPeriodRowHours(l.id, i) * pricingLoadedRate(l, i), 0); }
+function pricingPeriodAnnual(i) { return pricingModel.lcats.reduce((s, l) => s + pricingPeriodRowHours(l.id, i) * pricingBilledRate(l, i), 0); }
 // Cost of period i, scaled by its term.
 //  • GSA mode : the schedule-year rates already carry escalation, so cost = that year's annual × (months/12).
 //  • Build-up : base annual × cumulative user escalation × (months/12).
@@ -9740,6 +9793,59 @@ function pricingPeriodCost(i) {
   return pricingPeriodAnnual(i) * (pricingMultipliers()[i] || 1) * frac;   // build-up: period hours × base rate, then compounded escalation
 }
 function pricingGrandTotal() { return pricingModel.periods.reduce((s, p, i) => s + pricingPeriodCost(i), 0); }
+// ═══ Competitive discount (#10) + COLA mode (#11) ═════════════════════════
+let _pxDiscOff = false;
+// Discount multiplier for a role in a given period. Modes: none | holistic | perRole | perPeriod.
+function pricingCompDiscountFactor(l, i) {
+  if (_pxDiscOff) return 1;
+  const M = pricingModel, mode = M.discountMode || 'none';
+  let d = 0;
+  if (mode === 'holistic') d = parseFloat(M.discountPct) || 0;
+  else if (mode === 'perRole') d = parseFloat(l && l.discountPct) || 0;
+  else if (mode === 'perPeriod') { const p = M.periods[i || 0]; d = parseFloat(p && p.discountPct) || 0; }
+  if (!(d > 0)) return 1;
+  d = Math.max(0, Math.min(100, d));
+  return 1 - d / 100;
+}
+// Effective billed rate = pure loaded rate × competitive-discount factor. Used at every cost site.
+function pricingBilledRate(l, i) { return pricingLoadedRate(l, i) * pricingCompDiscountFactor(l, i); }
+function pricingGrandTotalUndiscounted() { _pxDiscOff = true; try { return pricingGrandTotal(); } finally { _pxDiscOff = false; } }
+function pricingDiscountActive() { const M = pricingModel; const m = M.discountMode || 'none'; if (m === 'none') return false; if (m === 'holistic') return (parseFloat(M.discountPct) || 0) > 0; if (m === 'perRole') return M.lcats.some(l => (parseFloat(l.discountPct) || 0) > 0); if (m === 'perPeriod') return M.periods.some(p => (parseFloat(p.discountPct) || 0) > 0); return false; }
+
+// ── setters ──
+function pricingSetEscMode(m) { pricingModel.escalationMode = m; pricingRenderAll(); }
+function pricingSetEscFlat(v) { const n = parseFloat(v); pricingModel.escalationFlat = (v === '' || isNaN(n)) ? '' : n; pricingRenderAll(); }
+function pricingSetCompMode(m) { pricingModel.discountMode = m; pricingRenderAll(); }
+function pricingSetCompPct(v) { pricingModel.discountPct = (v === '' ? '' : Math.max(0, Math.min(100, parseFloat(v) || 0))); pricingRenderAll(); }
+function pricingSetLcatDiscount(id, v) { const l = pricingModel.lcats.find(x => x.id === id); if (l) { l.discountPct = (v === '' ? '' : Math.max(0, Math.min(100, parseFloat(v) || 0))); pricingRenderAll(); } }
+function pricingSetPeriodDiscount(id, v) { const p = pricingModel.periods.find(x => x.id === id); if (p) { p.discountPct = (v === '' ? '' : Math.max(0, Math.min(100, parseFloat(v) || 0))); pricingRenderAll(); } }
+
+// ── renderers ──
+function pricingRenderEscMode() {
+  const el = document.getElementById('pricingEscModeBar'); if (!el) return;
+  if (pricingIsGsa()) { el.innerHTML = '<div style="font-size:11px;color:var(--muted)">Escalation is baked into your GSA Schedule’s yearly rates — set each period’s term below.</div>'; return; }
+  const mode = pricingModel.escalationMode || 'perPeriod';
+  const btn = (m, lbl) => `<button onclick="pricingSetEscMode('${m}')" style="padding:5px 12px;font-size:12px;font-weight:700;border:1px solid ${mode === m ? 'var(--blue)' : 'var(--border)'};background:${mode === m ? 'var(--blue)' : 'white'};color:${mode === m ? '#fff' : 'var(--text)'};border-radius:6px;cursor:pointer">${lbl}</button>`;
+  let flatInput = '';
+  if (mode === 'flat') flatInput = `<div style="display:flex;align-items:center;gap:6px;margin-left:auto"><span style="font-size:11.5px;color:var(--muted)">Annual escalation, every option year</span><input type="number" step="0.1" value="${pricingModel.escalationFlat != null && pricingModel.escalationFlat !== '' ? pricingModel.escalationFlat : ''}" onchange="pricingSetEscFlat(this.value)" placeholder="3" style="width:66px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/><span style="font-size:12px;color:var(--muted)">%</span></div>`;
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px"><span style="font-size:11.5px;font-weight:700;color:var(--text)">COLA</span>${btn('flat', 'Same every year')}${btn('perPeriod', 'Different per year')}${flatInput}</div><div style="font-size:11px;color:var(--muted);margin-top:5px">${mode === 'flat' ? 'One rate compounds across every option year.' : 'Set each option year’s % on its row below.'} Negative values are allowed (a decrease) — but aren’t the default.</div>`;
+}
+function pricingRenderDiscount() {
+  const el = document.getElementById('pricingDiscountBox'); if (!el) return;
+  const M = pricingModel, mode = M.discountMode || 'none';
+  const btn = (m, lbl) => `<button onclick="pricingSetCompMode('${m}')" style="padding:5px 11px;font-size:12px;font-weight:700;border:1px solid ${mode === m ? 'var(--blue)' : 'var(--border)'};background:${mode === m ? 'var(--blue)' : 'white'};color:${mode === m ? '#fff' : 'var(--text)'};border-radius:6px;cursor:pointer">${lbl}</button>`;
+  const pctInput = (val, handler, ph) => `<input type="number" min="0" max="100" step="0.1" value="${val != null && val !== '' ? val : ''}" onchange="${handler}" placeholder="${ph || '0'}" style="width:66px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/>`;
+  let body = '';
+  if (mode === 'holistic') {
+    body = `<div style="display:flex;align-items:center;gap:6px;margin-top:10px"><span style="font-size:12px;color:var(--muted)">Discount off every loaded rate</span>${pctInput(M.discountPct, "pricingSetCompPct(this.value)")}<span style="font-size:12px;color:var(--muted)">%</span></div>`;
+  } else if (mode === 'perRole') {
+    body = `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">` + (M.lcats.length ? M.lcats.map(l => `<div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font-size:12px">${pricingEsc(l.name || '(unnamed)')}</span>${pctInput(l.discountPct, "pricingSetLcatDiscount('" + l.id + "',this.value)")}<span style="font-size:12px;color:var(--muted)">%</span></div>`).join('') : '<span style="font-size:12px;color:var(--muted)">Add labor categories first.</span>') + `</div>`;
+  } else if (mode === 'perPeriod') {
+    body = `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">` + M.periods.map((p, i) => `<div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font-size:12px">${pricingEsc(p.name || ('Period ' + (i + 1)))}</span>${pctInput(p.discountPct, "pricingSetPeriodDiscount('" + p.id + "',this.value)")}<span style="font-size:12px;color:var(--muted)">%</span></div>`).join('') + `</div>`;
+  }
+  const note = mode === 'none' ? '<div style="font-size:11px;color:var(--muted);margin-top:8px">No competitive discount. Pick a mode to shave a percentage off your billed rates.</div>' : `<div style="font-size:11px;color:var(--muted);margin-top:8px">Comes off the loaded/billed rate and flows into the period totals and the Excel.${pricingIsGsa() ? ' Applied on top of your GSA Schedule discount.' : ''}</div>`;
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">${btn('none', 'None')}${btn('holistic', 'Holistic')}${btn('perRole', 'Per role')}${btn('perPeriod', 'Per option period')}</div>${body}${note}`;
+}
 function pricingRowFte(l) { return pricingRowHours(l.id) / pricingHpf(l); }
 // ── Per-period (per-year) staffing ───────────────────────────────────────────
 // DEFAULT: every period uses the base-year headcount (perPeriodFte off → these all collapse to the
@@ -9817,7 +9923,7 @@ function pricingClinPeriodCost(taskIds, i) {
   const frac = pricingPeriodFraction(M.periods[i]);
   const mult = pricingIsGsa() ? 1 : (pricingMultipliers()[i] || 1);
   let c = 0;
-  M.lcats.forEach(l => { const rate = pricingLoadedRate(l, i); M.tasks.forEach(t => { if (taskIds.includes(t.id)) c += pricingPeriodCellHours(l.id, t.id, i) * rate * frac * mult; }); });
+  M.lcats.forEach(l => { const rate = pricingBilledRate(l, i); M.tasks.forEach(t => { if (taskIds.includes(t.id)) c += pricingPeriodCellHours(l.id, t.id, i) * rate * frac * mult; }); });
   return c;
 }
 function pricingClinPeriodHours(taskIds, i) {
@@ -9887,9 +9993,152 @@ function pricingFmtC(n) { return '$' + n.toLocaleString('en-US', { minimumFracti
 function pricingAddTask() { pricingModel.tasks.push({ id: _prId('t_'), code: '', name: '' }); pricingRenderAll(); }
 function pricingRemoveTask(id) { pricingModel.tasks = pricingModel.tasks.filter(t => t.id !== id); pricingModel.lcats.forEach(l => { if (pricingModel.hours[l.id]) delete pricingModel.hours[l.id][id]; if (pricingModel.mask[l.id]) delete pricingModel.mask[l.id][id]; }); pricingRenderAll(); }
 function pricingSetTask(id, field, val) { const t = pricingModel.tasks.find(x => x.id === id); if (t) { t[field] = val; pricingRenderAll(); } }
+// ═══ MARKET RATES TOOL (own tab; feeds Pricing rate anchors) ═══════════════
+function mktToggleRemote() {
+  const loc = document.getElementById('mktLoc'); if (!loc) return;
+  const on = document.getElementById('mktRemote').checked;
+  loc.disabled = on; loc.style.opacity = on ? '0.5' : '1'; if (on) loc.value = '';
+}
+async function marketFetch(apiKey, role, loc, level, clear) {
+  const yr = new Date().getFullYear();
+  const bits = ['Position: ' + role, 'Location: ' + loc];
+  if (level) bits.push('Seniority: ' + level);
+  if (clear) bits.push('Clearance required: ' + clear);
+  const prompt = 'You are a federal-contracting compensation analyst. Use web search to find CURRENT (' + yr + ') prevailing pay for the position below, drawing on public sources — GSA CALC+ (calc.gsa.gov), Salary.com, the Economic Research Institute (salaryexpert.com / erieri.com), BLS OES (bls.gov/oes), and reputable salary aggregators. Run a few searches, then synthesize.\n\n' + bits.join('\n') + '\n\nReport the 25th, 50th, and 75th percentile as ANNUAL BASE SALARY in USD — direct/unburdened pay to the employee, NOT a loaded or billed rate. Also give the equivalent hourly (annual / 2080). Cite the specific sources you used, each with a URL.\n\nRespond with ONLY this JSON and nothing else:\n{"position":"<echo the role>","location":"<echo, or Remote (national US)>","as_of":"' + yr + '","currency":"USD","salary":{"p25":<int>,"p50":<int>,"p75":<int>},"hourly":{"p25":<number 1dp>,"p50":<number 1dp>,"p75":<number 1dp>},"sources":[{"name":"<source>","url":"<url>","note":"<what it contributed>"}],"notes":"<1-2 sentences on the data basis and caveats>","confidence":"high|medium|low"}\nIf location-specific data is unavailable, use national figures and say so in notes. Ensure p25 <= p50 <= p75.';
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 240000);
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000, messages: [{ role: 'user', content: prompt }], tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }] })
+    });
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error('market lookup failed (' + resp.status + '): ' + (await resp.text().catch(() => '')).substring(0, 200));
+    const d = await resp.json();
+    const raw = (d.content || []).map(c => c.text || '').join('');
+    const parsed = parseLooseJson(raw);
+    if (!parsed || !parsed.salary) throw new Error('could not read a rate table from the response — try again or narrow the role.');
+    return parsed;
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('the market lookup timed out — try again.');
+    throw e;
+  }
+}
+async function marketRun(btn) {
+  const role = (document.getElementById('mktRole').value || '').trim();
+  const remote = document.getElementById('mktRemote').checked;
+  const loc = remote ? 'Remote (national US)' : (document.getElementById('mktLoc').value || '').trim();
+  const level = (document.getElementById('mktLevel').value || '').trim();
+  const clear = (document.getElementById('mktClear').value || '').trim();
+  const status = document.getElementById('mktStatus'), results = document.getElementById('mktResults');
+  const show = (m, err) => { status.style.display = 'block'; status.style.color = err ? 'var(--error)' : 'var(--muted)'; status.textContent = m; };
+  if (!role) { show('Enter a position / labor category first.', true); return; }
+  if (!remote && !loc) { show('Enter a location, or check Remote / national.', true); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
+  results.style.display = 'none'; results.innerHTML = '';
+  if (btn) { btn.disabled = true; btn._html = btn.innerHTML; btn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Searching…'; }
+  show('Searching GSA CALC+, Salary.com, ERI, BLS, and others…', false);
+  try {
+    const data = await marketFetch(apiKey, role, loc, level, clear);
+    marketRender(data, { role: role, loc: loc });
+    status.style.display = 'none';
+  } catch (e) {
+    show('Lookup failed: ' + (e.message || e), true);
+  } finally {
+    if (btn) { btn.disabled = false; if (btn._html) btn.innerHTML = btn._html; }
+  }
+}
+function marketRender(data, ctx) {
+  const results = document.getElementById('mktResults'); if (!results) return;
+  const esc = (typeof pricingEsc === 'function') ? pricingEsc : (x => x);
+  const sal = data.salary || {}, hr = data.hourly || {};
+  const fmt$ = n => (n == null || isNaN(n)) ? '—' : '$' + Math.round(n).toLocaleString();
+  const fmtH = n => (n == null || isNaN(n)) ? '—' : '$' + (Math.round(n * 100) / 100).toFixed(2);
+  const hrOf = p => (hr[p] != null && !isNaN(hr[p])) ? hr[p] : ((sal[p] != null) ? sal[p] / 2080 : null);
+  const roleJs = String(data.position || ctx.role || '').replace(/[\\'"]/g, ' ').trim();
+  const col = (label, key, hi) => `
+    <div style="flex:1;min-width:150px;border:1px solid ${hi ? '#8a93e8' : 'var(--border)'};border-radius:10px;padding:12px 14px;background:${hi ? '#f5f6fe' : 'white'}">
+      <div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${label}</div>
+      <div style="font-size:19px;font-weight:800;margin-top:3px">${fmt$(sal[key])}<span style="font-size:12px;font-weight:600;color:var(--muted)">/yr</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:1px">${fmtH(hrOf(key))}/hr paid</div>
+      <button onclick="marketSendToPricing('${roleJs}','salary',${sal[key] || 0})" style="margin-top:9px;width:100%;font-size:11.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:6px 8px;cursor:pointer">Use in Pricing →</button>
+    </div>`;
+  const srcs = (data.sources || []).map(s => {
+    const nm = esc(s.name || 'source'); const u = String(s.url || '').replace(/"/g, '&quot;');
+    return `<li style="margin-bottom:3px">${u ? `<a href="${u}" target="_blank" rel="noopener" style="color:var(--blue)">${nm}</a>` : nm}${s.note ? ` <span style="color:var(--muted)">— ${esc(s.note)}</span>` : ''}</li>`;
+  }).join('');
+  const conf = String(data.confidence || '').toLowerCase();
+  const confColor = conf === 'high' ? '#065f46' : (conf === 'low' ? '#991b1b' : '#92400e');
+  results.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div style="font-weight:800;font-size:15px">${esc(data.position || ctx.role || '')} <span style="font-weight:500;color:var(--muted);font-size:13px">· ${esc(data.location || ctx.loc || '')}${data.as_of ? ' · ' + esc(String(data.as_of)) : ''}</span></div>
+      ${conf ? `<span style="font-size:11px;font-weight:700;color:${confColor}">confidence: ${conf}</span>` : ''}
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">${col('25th percentile', 'p25', false)}${col('50th percentile (median)', 'p50', true)}${col('75th percentile', 'p75', false)}</div>
+    ${data.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5">${esc(data.notes)}</div>` : ''}
+    ${srcs ? `<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;margin-bottom:4px">Sources</div><ul style="font-size:12px;margin:0;padding-left:18px">${srcs}</ul></div>` : ''}
+    <div style="font-size:11px;color:var(--warn);margin-top:12px">⚠ AI-gathered estimate — verify before use. “Use in Pricing” pins the annual salary as a locked anchor on that role (drives build-up rates; in GSA mode the schedule rate still governs, with this kept as the market reference).</div>`;
+  results.style.display = 'block';
+}
+function marketSendToPricing(name, basis, value) {
+  value = parseFloat(value);
+  if (!(value > 0)) { alert('No usable figure to send for this percentile.'); return; }
+  if (typeof pricingModel === 'undefined' || !pricingModel || !pricingModel.lcats) { alert('Open the Pricing tab once, then try again.'); return; }
+  const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  let l = pricingModel.lcats.find(x => norm(x.name) === norm(name)); let created = false;
+  if (!l) { l = { id: (typeof _prId === 'function' ? _prId('l_') : 'l_' + Date.now()), name: name, baseRate: '', hpf: '', advertised: '', gsaLcat: '', rateBasis: basis, rateInput: value }; pricingModel.lcats.push(l); created = true; }
+  else { l.rateBasis = basis; l.rateInput = value; }
+  if (typeof pricingSyncBaseRate === 'function') pricingSyncBaseRate(l);
+  if (typeof switchTab === 'function') switchTab('pricing');
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+  const disp = basis === 'salary' ? ('$' + Math.round(value).toLocaleString() + '/yr') : String(value);
+  if (typeof showStatus === 'function') showStatus('success', 'Sent to Pricing', (created ? 'Added' : 'Updated') + ' “' + name + '” with a locked ' + (basis === 'salary' ? 'salary' : basis) + ' anchor of ' + disp + '. The AI won’t overwrite it.');
+}
 function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '' }); pricingRenderAll(); }
 function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
 function pricingSetLcat(id, field, val) { const l = pricingModel.lcats.find(x => x.id === id); if (l) { l[field] = val; pricingRenderAll(); } }
+// ---- Rate-anchor helpers (P1) ----
+function _lcatBasis(l) { return l.rateBasis || 'paid'; }
+function _lcatRateInput(l) { return (l.rateInput != null && l.rateInput !== '') ? l.rateInput : (l.baseRate != null ? l.baseRate : ''); }
+// Convert the role's current paid-hourly (baseRate) into a chosen basis (for non-destructive basis switching + read-outs).
+function pricingRateInBasis(l, basis) {
+  const paid = parseFloat(l.baseRate) || 0, W = pricingEffectiveWrapFactor(l), H = pricingHpf(l);
+  if (!(paid > 0)) return '';
+  if (basis === 'loaded') return Math.round(paid * W * 100) / 100;
+  if (basis === 'salary') return Math.round(paid * 2080);
+  if (basis === 'annual') return Math.round(paid * W * H);
+  return Math.round(paid * 100) / 100; // paid
+}
+// Derive the canonical paid-hourly (baseRate) from whatever the user pinned. Everything downstream uses baseRate.
+function pricingSyncBaseRate(l) {
+  const basis = _lcatBasis(l), v = parseFloat(_lcatRateInput(l));
+  const W = pricingEffectiveWrapFactor(l), H = pricingHpf(l);
+  if (!(v > 0)) { l.baseRate = ''; return; }
+  let paid;
+  if (basis === 'loaded') paid = W > 0 ? v / W : 0;
+  else if (basis === 'salary') paid = v / 2080;
+  else if (basis === 'annual') paid = (H > 0 && W > 0) ? (v / H) / W : 0;
+  else paid = v; // 'paid'
+  l.baseRate = paid > 0 ? Math.round(paid * 10000) / 10000 : '';
+}
+function pricingSetLcatRate(id, field, val) {
+  const l = pricingModel.lcats.find(x => x.id === id); if (!l) return;
+  if (field === 'rateBasis') { l.rateInput = pricingRateInBasis(l, val); l.rateBasis = val; }
+  else { l.rateInput = val; }
+  pricingSyncBaseRate(l);
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+}
+function pricingResyncAllRates() {
+  if (typeof pricingModel === 'undefined' || !pricingModel || !pricingModel.lcats) return;
+  pricingModel.lcats.forEach(pricingSyncBaseRate);
+}
+function pricingGotoWrapSettings() {
+  if (typeof switchTab === 'function') switchTab('settings');
+  setTimeout(function () { var e = document.getElementById('s_pr_fringe'); if (e && e.scrollIntoView) { e.scrollIntoView({ behavior: 'smooth', block: 'center' }); e.focus(); } }, 80);
+}
 function pricingSetHours(lid, tid, val) {
   if (!pricingModel.hours[lid]) pricingModel.hours[lid] = {};
   const n = (val === '' ? '' : Math.max(0, parseFloat(val) || 0));
@@ -9917,7 +10166,7 @@ function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(
 function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
 function pricingResetModel() {
   if (!confirm('Reset the entire pricing model? This clears the GSA Schedule choice, tasks, labor categories, hours, and periods for this opportunity.')) return;
-  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, statedFteTotal: null, fteSource: 'estimated', directedLabor: false, hoursPerFte: null, gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
+  pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, escalationMode: 'perPeriod', escalationFlat: 3, discountMode: 'none', discountPct: '', statedFteTotal: null, fteSource: 'estimated', statedWorkloadByLcat: [], directedLabor: false, hoursPerFte: null, gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [] } };
   pricingGsaFiles = [];
   pricingRenderAll();
 }
@@ -9943,11 +10192,35 @@ function pricingApplyBriefing(b) {
   // Methodology
   const m = (b.pricing_methodology || '').toLowerCase().trim();
   if (['lcat', 'pws_task', 'product', 'simple'].includes(m)) { pricingModel.methodology = m; const sel = document.getElementById('pricingMethodology'); if (sel) sel.value = m; }
-  // FTE provenance
+  // FTE provenance. A stated workload / level-of-effort table (base-year hours) is the strongest
+  // signal and takes precedence: derive the FTE total from the BASE-YEAR hours ONLY (never base +
+  // option) so the price tracks the government's stated hours exactly, immune to any LLM arithmetic
+  // slip or base+option double-count.
+  const wlHours = parseFloat(String(b.workload_hours_base_year || '').replace(/[^0-9.]/g, '')) || 0;
   const fteRaw = String(b.estimated_ftes || '');
   const fteNum = (fteRaw.match(/(\d+(?:\.\d+)?)/) || [])[1];
-  if (fteNum && !/not\s+specified|tbd|unknown|n\/?a/i.test(fteRaw)) { pricingModel.fteSource = 'stated'; pricingModel.statedFteTotal = parseFloat(fteNum); }
-  else { pricingModel.fteSource = 'estimated'; pricingModel.statedFteTotal = null; }
+  if (wlHours > 0) {
+    pricingModel.fteSource = 'stated';
+    pricingModel.statedFteTotal = Math.round((wlHours / defaultHpf()) * 100) / 100;
+  } else if (fteNum && !/not\s+specified|tbd|unknown|n\/?a/i.test(fteRaw)) {
+    pricingModel.fteSource = 'stated';
+    pricingModel.statedFteTotal = parseFloat(fteNum);
+  } else {
+    pricingModel.fteSource = 'estimated';
+    pricingModel.statedFteTotal = null;
+  }
+  // Per-labor-category stated workload (base-year hours). When present it is authoritative for the
+  // Pricing auto-build and pins the FTE total to the summed hours (deterministic, not model-rounded).
+  const _wbl = Array.isArray(b.workload_by_lcat)
+    ? b.workload_by_lcat.map(r => ({ lcat: String((r && r.lcat) || '').trim(), hours: parseFloat(String(((r && r.base_year_hours) != null ? r.base_year_hours : '')).replace(/[^0-9.]/g, '')) || 0 })).filter(r => r.lcat && r.hours > 0)
+    : [];
+  if (_wbl.length) {
+    pricingModel.statedWorkloadByLcat = _wbl;
+    pricingModel.fteSource = 'stated';
+    pricingModel.statedFteTotal = Math.round((_wbl.reduce((s, r) => s + r.hours, 0) / defaultHpf()) * 100) / 100;
+  } else {
+    pricingModel.statedWorkloadByLcat = [];
+  }
   // Period-of-performance start (drives GSA year selection)
   if (/^\d{4}-\d{2}-\d{2}$/.test(b.pop_start_date || '')) {
     pricingModel.gsaPopStart = b.pop_start_date;
@@ -10143,11 +10416,11 @@ function pricingSetRateCard(id, field, val, yearIdx) {
 }
 function pricingRemoveRateCardRow(id) { pricingModel.gsaRateCard = pricingModel.gsaRateCard.filter(r => r.id !== id); pricingRenderAll(); }
 
-async function pricingParseGsaSchedule() {
+async function pricingParseGsaSchedule(btnEl) {
   const apiKey = getApiKey();
   if (!apiKey) { alert('Enter your Anthropic API key on the Proposal tab (Step 2) first.'); return; }
   if (!pricingGsaFiles.length) { alert('Drop your GSA MAS Schedule file in first.'); return; }
-  const btn = document.getElementById('pricingGsaParseBtn');
+  const btn = btnEl || document.getElementById('pricingGsaParseBtn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></span> Reading schedule…'; }
   try {
     const { blocks, unreadable } = await buildContentBlocks(pricingGsaFiles);
@@ -10207,7 +10480,7 @@ function pricingRenderGate() {
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Optional — import your Schedule now so the awarded rates are ready if you choose GSA MAS:</div>
       ${dropZone}
-      ${pricingGsaFiles.length ? `<div style="margin-top:8px">${filesHtml}</div><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule()" style="margin-top:10px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button>` : ''}
+      ${pricingGsaFiles.length ? `<div style="margin-top:8px">${filesHtml}</div><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule(this)" style="margin-top:10px;padding:7px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button>` : ''}
       ${haveRates ? `<div style="margin-top:8px;font-size:11.5px;color:var(--success);font-weight:600">✓ ${haveRates} labor categor${haveRates > 1 ? 'ies' : 'y'} extracted and ready.</div>` : ''}
     </div>`;
     return;
@@ -10258,7 +10531,7 @@ function pricingRenderGate() {
     <div style="margin-top:12px;font-weight:700;font-size:12px">Schedule rate card ${card.length ? `(${card.length} LCATs × ${nY} yrs)` : ''} <span style="font-weight:400;color:var(--muted)">— extracted from your schedule; review &amp; edit. Highlighted column = applicable year.</span></div>
     ${cardTable}
     <button onclick="pricingAddRateCardRow()" style="margin-top:6px;padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer">+ Add LCAT manually</button>
-    ${pricingGsaFiles.length ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #d1fae5"><button id="pricingGsaParseBtn" class="btn" onclick="pricingParseGsaSchedule()" style="padding:7px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button> <span style="font-size:11px;color:var(--muted)">re-reads your schedule and replaces the rate card above.</span></div>` : ''}
+    ${pricingGsaFiles.length ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #d1fae5"><button id="pricingGsaReparseBtn" class="btn" onclick="pricingParseGsaSchedule(this)" style="padding:7px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer">📑 Read schedule &amp; extract rates</button> <span style="font-size:11px;color:var(--muted)">re-reads your schedule and replaces the rate card above.</span></div>` : ''}
   </div>`;
 }
 
@@ -10293,6 +10566,28 @@ async function pricingAutoBuildStructure() {
     add('Scope', b.scope_summary || b.requirement_summary); add('Required qualifications', b.required_qualifications);
     add('Key personnel', b.key_personnel); add('Periods', b.period_structure); add('Estimated FTEs', b.estimated_ftes);
     const ctx = ctxBits.join('\n') || '(no structured briefing available \u2014 work from the PWS tasks and your judgment)';
+    // GOVERNMENT-STATED WORKLOAD BY LABOR CATEGORY: when the solicitation gives estimated base-year hours
+    // per labor category, that per-category level of effort is authoritative and must be reproduced exactly
+    // (fractional FTEs included). Prefer the briefing's workload_by_lcat; fall back to the BNA Opportunity-
+    // Details extraction (labor_categories[].base_year_hours), which reads the same table. Setting the FTE
+    // total here from the summed hours lets the existing reconciliation lock the total to the Government's
+    // hours regardless of the model's own sizing.
+    let _govWorkload = (Array.isArray(pricingModel.statedWorkloadByLcat) && pricingModel.statedWorkloadByLcat.length)
+      ? pricingModel.statedWorkloadByLcat.map(r => ({ lcat: String((r && r.lcat) || '').trim(), hours: parseFloat(r && r.hours) || 0 })).filter(r => r.lcat && r.hours > 0)
+      : [];
+    if (!_govWorkload.length && window._lastBnaIntel && Array.isArray(window._lastBnaIntel.labor_categories)) {
+      _govWorkload = window._lastBnaIntel.labor_categories
+        .map(c => ({ lcat: String((c && c.lcat) || '').trim(), hours: parseFloat(String(((c && c.base_year_hours) != null ? c.base_year_hours : '')).replace(/[^0-9.]/g, '')) || 0 }))
+        .filter(r => r.lcat && r.hours > 0);
+    }
+    if (_govWorkload.length) {
+      pricingModel.statedWorkloadByLcat = _govWorkload;
+      pricingModel.fteSource = 'stated';
+      pricingModel.statedFteTotal = Math.round((_govWorkload.reduce((s, r) => s + r.hours, 0) / defaultHpf()) * 100) / 100;
+    }
+    const _workloadBlock = _govWorkload.length
+      ? ('\nGOVERNMENT-STATED WORKLOAD BY LABOR CATEGORY (AUTHORITATIVE - reproduce EXACTLY):\nThe solicitation gives an estimated base-year hours figure for each labor category below. Build "labor_mix" as EXACTLY these categories, and set each role\'s "fte" to its stated base-year hours divided by ' + defaultHpf() + ', to 4 decimal places - KEEP the fraction; do NOT round to a whole or half FTE. These per-category levels of effort are mandatory: do not add, merge, drop, or re-balance categories. This is a workload-HOURS table, not a headcount table, so put these in "labor_mix" and leave "directed_labor" empty unless the Government separately states exact headcounts.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ' + Math.round(r.hours) + ' base-year hours (= ' + (r.hours / defaultHpf()).toFixed(4) + ' FTE)').join('\n') + '\n')
+      : '';
 
     const _statedFte = pricingModel.statedFteTotal != null ? pricingModel.statedFteTotal : null;
     const _statedFteStr = _statedFte != null ? pricingFmtFte(_statedFte) : '';
@@ -10332,7 +10627,7 @@ ${taskList}
 OPPORTUNITY CONTEXT:
 ${ctx}
 
-FTE BASIS: ${fteLine} Assume ${hpf} billable hours per FTE per 12-month period UNLESS the solicitation explicitly states a different productive-hours/FTE basis (e.g. 1,920 or 2,080) - if it does, size to the solicitation's figure for all roles and report it in hours_per_fte.
+FTE BASIS: ${fteLine} Assume ${hpf} billable hours per FTE per 12-month period UNLESS the solicitation explicitly states a different productive-hours/FTE basis (e.g. 1,920 or 2,080) - if it does, size to the solicitation's figure for all roles and report it in hours_per_fte.${_workloadBlock}
 PRICING MODE: ${gsa ? 'GSA Schedule (rates come from the Schedule below).' : 'Build-up (the offeror sets base rates; you only propose structure and give market context).'}${schedBlock}${scaBlock}
 
 Return ONLY JSON, no prose:
@@ -10345,7 +10640,7 @@ Return ONLY JSON, no prose:
  "labor_mix":[
    {"role_name":"role as it will appear in the proposal",
     "headcount": <integer 1 or more>,
-    "fte": <the Advertised FTE for this role over the 12-month base period - the staffing level you propose. PREFER WHOLE NUMBERS: default every role to a whole-number FTE (1, 2, 3, ...). Use a fraction (0.5, 0.75, ...) ONLY when it is genuinely warranted - the Government stipulates a fractional level of effort, or the role's scope truly amounts to only part of a full-time person's work; never use a fraction merely to balance a total. The role's total base-period hours are set to exactly fte times the hours-per-FTE basis, so size this to the role's real level of effort>,
+    "fte": <the Advertised FTE for this role over the 12-month base period - the staffing level you propose. If the GOVERNMENT-STATED WORKLOAD block above lists per-category hours, set this to that category's stated hours / hours-per-FTE (fractional, 4 decimals) and IGNORE the whole-number preference that follows. Otherwise: PREFER WHOLE NUMBERS: default every role to a whole-number FTE (1, 2, 3, ...). Use a fraction (0.5, 0.75, ...) ONLY when it is genuinely warranted - the Government stipulates a fractional level of effort, or the role's scope truly amounts to only part of a full-time person's work; never use a fraction merely to balance a total. The role's total base-period hours are set to exactly fte times the hours-per-FTE basis, so size this to the role's real level of effort>,
     ${gsa ? '"gsa_lcat":"EXACT Schedule LCAT title from the list above, or null if none is a reasonable fit",\n    "match_confidence":"high|medium|low|none",\n    "match_rationale":"compare the Government required education/experience/scope to the Schedule LCAT; if none fits, say what is missing",' : '"suggested_rate_basis":"what kind of market rate to expect for this role",'}
     "hours_by_task":{"<task code or name exactly as listed>": <hours for a 12-month base period>},
     "allowed_tasks":["<task code or name>"]${pricingScaActive() ? ',\n    "sca_covered": <true if this role is a non-exempt SCA service employee, false if exempt professional>,\n    "wd_occupation":"matching WD occupation title from the list above, or null",\n    "wd_min_wage": <WD minimum hourly wage for that occupation as a number, or null>' : ''},\n    "fte_by_period":[<OMIT this field entirely unless the solicitation specifies DIFFERENT staffing by year for this role; if it does, give this role's FTE for each period in order (base first, then each option), aligned to the ${pricingModel.periods.length} period(s)>]}
@@ -10361,7 +10656,7 @@ Return ONLY JSON, no prose:
 }
 
 Rules:
-- "fte" is the staffing decision and drives the math: each role's total base-period hours are set to exactly fte times ${hpf}. WHOLE-NUMBER FTEs ARE STRONGLY PREFERRED because they make staffing cleaner - default each role to an integer FTE. Use a fractional fte ONLY when genuinely justified: the Government stipulates a fractional FTE, or a role's scope truly needs only part of a full-time person (a small, well-bounded effort that clearly does not justify a whole FTE). Never split a role into a fraction just to make a total come out even. "headcount" is the number of distinct people (a single part-time person is headcount 1, fte 0.5). Use "hours_by_task" only to show how each role's hours split across its tasks; those per-task numbers are rescaled so the role total equals fte times ${hpf}.
+- "fte" is the staffing decision and drives the math: each role's total base-period hours are set to exactly fte times ${hpf}. When the GOVERNMENT-STATED WORKLOAD block lists per-category hours, reproduce those exact fractional FTEs and DO NOT apply any whole-number preference. Otherwise, WHOLE-NUMBER FTEs ARE STRONGLY PREFERRED because they make staffing cleaner - default each role to an integer FTE. Use a fractional fte ONLY when genuinely justified: the Government stipulates a fractional FTE, or a role's scope truly needs only part of a full-time person (a small, well-bounded effort that clearly does not justify a whole FTE). Never split a role into a fraction just to make a total come out even. "headcount" is the number of distinct people (a single part-time person is headcount 1, fte 0.5). Use "hours_by_task" only to show how each role's hours split across its tasks; those per-task numbers are rescaled so the role total equals fte times ${hpf}.
 - Allocate hours so that EVERY PWS task listed above receives hours from at least one labor category \u2014 the union of all roles' allowed_tasks must cover every task. Only leave a task with no labor if it is genuinely not a labor effort (a pure travel/ODC or materials line); list any such task codes in "non_labor_tasks".
 - Per-year staffing is CONSTANT by default. ONLY if the solicitation explicitly specifies different staffing by ordering period (a manning/staffing table that changes year to year, or wording like "base year: N FTE; option years: M FTE") provide "fte_by_period" for each affected role, aligned in order to the ${pricingModel.periods.length} period(s). If staffing does not change by year, OMIT fte_by_period for every role.
 - ${gsa ? 'Map by EDUCATION, EXPERIENCE, and SCOPE \u2014 never by title alone. If the closest Schedule LCAT does not reasonably meet what the Government requires, set gsa_lcat=null, match_confidence="none", and list it under "unmatched". Be honest; do not force a poor match.' : 'Do not invent specific dollar rates for our cost; market_low/high are rough reference ranges only.'}
@@ -10524,6 +10819,7 @@ function pricingEnsureTaskHoursCovered(lcats, hours, mask, tasks, nonLabor) {
 }
 
 function pricingApplyAutoBuild(a) {
+  var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { if (l.rateInput != null && l.rateInput !== '') { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate }; } });
   // Agency-stated FTE-hour basis (e.g. 2,080 hrs/FTE): honor it for THIS proposal, overriding the
   // company default. Only set when the model reports an explicit figure from the solicitation.
   { const _h = parseFloat(a.hours_per_fte); pricingModel.hoursPerFte = (_h > 0) ? _h : null; }
@@ -10641,6 +10937,7 @@ function pricingApplyAutoBuild(a) {
   pricingModel.lcats = lcats;
   pricingModel.hours = hours;
   pricingModel.mask = mask;
+  pricingModel.lcats.forEach(function (l) { var _k = String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); var _pin = _ratePins[_k]; if (_pin) { l.rateBasis = _pin.rateBasis; l.rateInput = _pin.rateInput; l.baseRate = _pin.baseRate; } });
   if (pricingModel.fteSource !== 'stated') {
     const total = lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
     if (total > 0) { pricingModel.statedFteTotal = total; pricingModel.fteSource = 'estimated'; }
@@ -10695,6 +10992,7 @@ function pricingRenderAutoBuildPanel() {
 }
 
 function pricingRenderAll() {
+  pricingResyncAllRates();
   pricingRenderGate();
   const locked = pricingModel.gsaDecision == null;
   ['pricingStep2', 'pricingStep3', 'pricingStep4'].forEach(id => { const c = document.getElementById(id); if (c) c.classList.toggle('step-locked', locked); });
@@ -10757,6 +11055,7 @@ function pricingRenderTasks() {
 
 function pricingRenderLcats() {
   const el = document.getElementById('pricingLcatsList'); if (!el) return;
+  (function () { var _wb = document.getElementById('pricingWrapBanner'); if (_wb) { var _W = pricingWrapFactor(), _p = CLIENT_CONFIG.pricing || {}; var _mode = ((_p.wrapMode || 'compounded') === 'additive') ? 'additive' : 'compounded'; _wb.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px"><span>Company <strong>wrap factor ' + _W.toFixed(3) + '×</strong> <span style="color:var(--muted)">(fringe ' + (_p.fringe || 0) + '% · OH ' + (_p.overhead || 0) + '% · G&amp;A ' + (_p.ga || 0) + '% · fee ' + (_p.fee || 0) + '%, ' + _mode + ')</span> — derives loaded rate, salary, and gov cost from whatever you enter below.</span><button onclick="pricingGotoWrapSettings()" style="font-size:11.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap">Change wrap rate →</button></div>'; } })();
   if (!pricingModel.lcats.length) {
     el.innerHTML = pricingIsGsa()
       ? '<div style="font-size:12px;color:var(--muted)">No labor categories yet. Add each role you\u2019ll bill, then map it to a category on your GSA Schedule (the rate fills in automatically). <em>(AI mapping of PWS tasks to your Schedule LCATs is coming next.)</em></div>'
@@ -10771,8 +11070,9 @@ function pricingRenderLcats() {
     el.innerHTML = pricingModel.lcats.map(l => {
       const opts = '<option value="">— map to a GSA LCAT —</option>' + card.map(r => `<option value="${pricingEsc(r.lcat)}" ${r.lcat === l.gsaLcat ? 'selected' : ''}>${pricingEsc(r.lcat)} — ${pricingFmtC(rateAtAppl(r))}/hr (Yr ${applYear})</option>`).join('');
       const gsaRate = pricingGsaRateFor(l, applYear);
+      const _gld = pricingLoadedRate(l, 0), _gW = pricingEffectiveWrapFactor(l), _gH = pricingHpf(l), _gpd = _gW > 0 ? _gld / _gW : 0;
       const rateNote = l.gsaLcat
-        ? `Yr ${applYear} ${pricingFmtC(gsaRate)} − ${disc}% = <strong>${pricingFmtC(pricingLoadedRate(l, 0))}/hr</strong>`
+        ? `Yr ${applYear} ${pricingFmtC(gsaRate)} − ${disc}% = <strong>${pricingFmtC(_gld)}/hr loaded</strong> <span style="color:var(--muted)">≈ ${pricingFmtC(_gpd)} paid · ${pricingFmtC(_gpd * 2080)}/yr · ${pricingFmtC(_gld * _gH)}/FTE-yr</span>`
         : '<span style="color:var(--warn)">map to a GSA LCAT →</span>';
       return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
         <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (as named in your proposal)" style="flex:1.4;min-width:150px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
@@ -10785,15 +11085,27 @@ function pricingRenderLcats() {
     }).join('');
     return;
   }
-  el.innerHTML = pricingModel.lcats.map(l => `
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
-      <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (e.g. Registered Nurse)" style="flex:2;min-width:170px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
-      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)">Base $/hr</span><input type="number" min="0" step="0.01" value="${l.baseRate}" onchange="pricingSetLcat('${l.id}','baseRate',this.value)" style="width:84px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)">Adv. FTE</span><input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" style="width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)" title="Override billable hours/FTE for this role; blank = company default">Hrs/FTE</span><input type="number" min="0" step="1" value="${l.hpf}" onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" style="width:68px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
-      <span style="font-size:11px;color:var(--muted);white-space:nowrap">${pricingFmtC(pricingLoadedRate(l))}/hr loaded · ${pricingRowFte(l).toFixed(2)} FTE</span>
+  el.innerHTML = pricingModel.lcats.map(l => {
+    const basis = _lcatBasis(l), rInput = _lcatRateInput(l);
+    const paid = parseFloat(l.baseRate) || 0, W = pricingEffectiveWrapFactor(l), H = pricingHpf(l);
+    const loaded = paid * W, salary = paid * 2080, annual = loaded * H;
+    const opt = (v, lbl) => `<option value="${v}" ${basis === v ? 'selected' : ''}>${lbl}</option>`;
+    const step = (basis === 'salary' || basis === 'annual') ? '100' : '0.01';
+    const readout = paid > 0
+      ? `<span style="font-size:11px;color:var(--muted);white-space:nowrap" title="All derived from your input via the Settings wrap factor (${W.toFixed(3)}×). Your entry is the locked anchor the AI can't change.">🔒 ${pricingFmtC(paid)} paid · <strong>${pricingFmtC(loaded)} loaded</strong> · ${pricingFmtC(salary)}/yr · ${pricingFmtC(annual)}/FTE-yr · ${pricingRowFte(l).toFixed(2)} FTE</span>`
+      : `<span style="font-size:11px;color:var(--warn);white-space:nowrap">enter a rate · ${pricingRowFte(l).toFixed(2)} FTE</span>`;
+    return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+      <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (e.g. Registered Nurse)" style="flex:2;min-width:150px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+      <div style="display:flex;align-items:center;gap:3px">
+        <select onchange="pricingSetLcatRate('${l.id}','rateBasis',this.value)" title="What are you entering? The others derive from your wrap factor, and your entry becomes the anchor the AI can't change." style="padding:6px 18px 6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:white">${opt('paid','Paid $/hr')}${opt('loaded','Loaded $/hr')}${opt('salary','Salary $/yr')}${opt('annual','Loaded $/FTE-yr')}</select>
+        <input type="number" min="0" step="${step}" value="${rInput}" onchange="pricingSetLcatRate('${l.id}','rateInput',this.value)" style="width:96px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)">Adv. FTE</span><input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" style="width:58px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="font-size:11px;color:var(--muted)" title="Override billable hours/FTE for this role; blank = company default">Hrs/FTE</span><input type="number" min="0" step="1" value="${l.hpf}" onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" style="width:62px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/></div>
+      ${readout}
       <button onclick="pricingRemoveLcat('${l.id}')" title="Remove labor category" style="margin-left:auto;background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function pricingRenderMatrix() {
@@ -10811,7 +11123,7 @@ function pricingRenderMatrix() {
   h += '</tr></thead><tbody>';
   pricingModel.lcats.forEach(l => {
     h += '<tr>';
-    h += `<td style="padding:4px 7px;border:1px solid var(--border);position:sticky;left:0;background:white;z-index:1;min-width:115px;max-width:155px"><div style="font-weight:600;font-size:11px;line-height:1.25">${pricingEsc(l.name || '(unnamed)')}</div><div style="font-size:9.5px;color:var(--muted)">${pricingFmtC(pricingLoadedRate(l))}/hr</div></td>`;
+    h += `<td style="padding:4px 7px;border:1px solid var(--border);position:sticky;left:0;background:white;z-index:1;min-width:115px;max-width:155px"><div style="font-weight:600;font-size:11px;line-height:1.25">${pricingEsc(l.name || '(unnamed)')}</div><div style="font-size:9.5px;color:var(--muted)">${pricingFmtC(pricingBilledRate(l, 0))}/hr</div></td>`;
     pricingModel.tasks.forEach(t => {
       const v = pricingCell(l.id, t.id);            // effective hours (0 when none)
       const zero = !(v > 0);
@@ -10884,11 +11196,15 @@ function pricingRenderPeriods() {
     } else if (i === 0) {
       mid = '<span style="font-size:11px;color:var(--muted);width:150px;text-align:right">priced by the matrix above</span>';
     } else {
-      mid = `<div style="display:flex;align-items:center;gap:4px;min-width:150px;justify-content:flex-end"><span style="font-size:11px;color:var(--muted)">Escalation</span><input type="number" step="0.1" value="${p.escalation}" onchange="pricingSetPeriod('${p.id}','escalation',this.value)" style="width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/><span style="font-size:12px;color:var(--muted)">%</span></div>`;
+      const _em = pricingModel.escalationMode || 'perPeriod';
+      if (_em === 'flat') { const _fv = parseFloat(pricingModel.escalationFlat); const _fvs = isNaN(_fv) ? 0 : _fv; mid = `<span style="font-size:11px;color:var(--muted);min-width:150px;text-align:right">+${_fvs}% <span style="opacity:.65">(flat)</span></span>`; }
+      else { mid = `<div style="display:flex;align-items:center;gap:4px;min-width:150px;justify-content:flex-end"><span style="font-size:11px;color:var(--muted)">Escalation</span><input type="number" step="0.1" value="${p.escalation}" onchange="pricingSetPeriod('${p.id}','escalation',this.value)" style="width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right"/><span style="font-size:12px;color:var(--muted)">%</span></div>`; }
     }
     const rm = i === 0 ? '<button tabindex="-1" aria-hidden="true" style="background:none;border:none;color:var(--error);cursor:default;font-size:16px;visibility:hidden">✕</button>' : `<button onclick="pricingRemovePeriod('${p.id}')" title="Remove this option period" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button>`;
     return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="flex:1;min-width:110px;padding:6px 8px;font-size:13px;font-weight:600">${pricingEsc(p.name)}</span>${term}${mid}${rm}</div>`;
   }).join('');
+  pricingRenderEscMode();
+  pricingRenderDiscount();
 }
 
 // Per-year staffing: off by default (every year = base-year staffing). On → an editable FTE-per-role,
@@ -11168,8 +11484,18 @@ function pricingRenderTravel() {
 }
 
 function pricingWorkbookName() {
-  const base = (typeof CLIENT_CONFIG === 'object' && CLIENT_CONFIG.companyShortName) ? (CLIENT_CONFIG.companyShortName + '_Pricing_Workbook') : 'Pricing_Workbook';
-  return base.replace(/[\\/:*?"<>|]/g, '-');
+  const co = (typeof CLIENT_CONFIG === 'object' && CLIENT_CONFIG.companyShortName) ? CLIENT_CONFIG.companyShortName : '';
+  let title = '';
+  try {
+    const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) ? cachedBriefing : {};
+    const o = (typeof window !== 'undefined' && window._bnaOpp) ? window._bnaOpp : {};
+    title = String((b && b.requirement_title) || (o && (o.requirement_name || o.requirement_title)) || '').trim();
+  } catch (e) {}
+  if (title.length > 70) title = title.slice(0, 70).trim();
+  const today = new Date().toISOString().slice(0, 10);
+  const parts = [co, title, 'Pricing', today].filter(function (x) { return x && String(x).trim(); });
+  const name = parts.join('_').replace(/\s+/g, '_');
+  return name.replace(/[\\/:*?"<>|]/g, '-').replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'Pricing_Workbook';
 }
 
 // Apply Excel number formats to whole columns of a worksheet (skips the header row).
@@ -11215,6 +11541,12 @@ function pxStyle(ws, roles) {
 // (by labor category, by task/CLIN, hours-by-task, FTE-by-task, and the labor+wrap summary) whose
 // totals tie exactly to the live price model. Sheets are styled (header fill, borders, zebra rows)
 // and dollar cells are currency-formatted to two decimals. Returns the workbook, or null if empty.
+// Live-formula helpers for the exported workbook: attach an Excel formula to a cell WITHOUT dropping the
+// value SheetJS already computed (that stays as the cached result, so the sheet reads correctly the moment
+// it opens and recalculates live when an input is edited). All references are same-sheet to stay robust.
+function pxSetFormula(ws, r, c, f) { if (typeof XLSX === 'undefined' || !ws) return; const a = XLSX.utils.encode_cell({ r: r, c: c }); if (ws[a] && ws[a].v !== undefined && ws[a].v !== '') ws[a].f = f; }
+function pxSumCol(ws, r, c, r0, r1) { if (r1 < r0) return; pxSetFormula(ws, r, c, 'SUM(' + XLSX.utils.encode_col(c) + (r0 + 1) + ':' + XLSX.utils.encode_col(c) + (r1 + 1) + ')'); }
+function pxSumRow(ws, r, c, c0, c1) { if (c1 < c0) return; pxSetFormula(ws, r, c, 'SUM(' + XLSX.utils.encode_col(c0) + (r + 1) + ':' + XLSX.utils.encode_col(c1) + (r + 1) + ')'); }
 function pricingBuildWorkbook() {
   if (typeof XLSX === 'undefined') return null;
   const M = pricingModel;
@@ -11226,7 +11558,7 @@ function pricingBuildWorkbook() {
   const frac = i => pricingPeriodFraction(P[i]);
   const cellH = (lid, tid) => pricingCell(lid, tid);
   // Effective per-period loaded rate: GSA bakes escalation into the year's rate; build-up applies it via the period multiplier.
-  const effRate = (l, i) => gsa ? pricingLoadedRate(l, i) : pricingLoadedRate(l, 0) * (mult[i] || 1);
+  const effRate = (l, i) => (gsa ? pricingLoadedRate(l, i) : pricingLoadedRate(l, 0) * (mult[i] || 1)) * pricingCompDiscountFactor(l, i);
   const cellCost = (l, tid, i) => pricingPeriodCellHours(l.id, tid, i) * effRate(l, i) * frac(i);
   const pNames = P.map((p, i) => p.name || ('Period ' + (i + 1)));
   const wb = XLSX.utils.book_new();
@@ -11256,11 +11588,13 @@ function pricingBuildWorkbook() {
     ['        •  Price by labor category:             Labor Category → Rows,    Period → Columns,    Price → Values'],
     ['        •  Hours or FTE by category:            Labor Category → Rows,    Task / CLIN Code → Columns,    Hours (or FTE) → Values'],
     ['        •  Cost by type (labor vs travel/ODC):  Category → Rows,    Period → Columns,    Price → Values'],
+    ['        •  Rate & discount build-up:              Labor Category → Rows,    Paid Rate / Salary / Loaded Rate pre-disc / Discount (%) / Price → Values'],
     [''],
     ['The "Category" column tags every row Labor, Travel, ODC, or Materials, so you can show or hide whole cost types in any breakout.'],
     [''],
     ['Notes'],
     ['•  Hours and FTE are full-year-equivalent; partial periods are already term-scaled in the Price column.'],
+    ['•  Derived columns (per row): Paid Rate & Salary (direct labor, term-escalated), Loaded Rate pre-disc (full burden before your competitive discount), Discount (%), COLA (%), Pinned Anchor (the rate input you locked in Step 3), and Gov Price pre-disc (price before the discount). Loaded Rate pre-disc × (1 − Discount%) = the billed rate; Gov Price pre-disc × (1 − Discount%) = Price.'],
     ['•  Travel/ODC rows carry no hours — they are dollar lines tagged with their cost category.'],
     ['•  Figures are estimates for proposal pricing — verify rates against GSA CALC+, BLS OES, and applicable wage determinations before relying on them.']
   ];
@@ -11289,9 +11623,10 @@ function pricingBuildWorkbook() {
   if (_matTot > 0) ps.push(['Materials'].concat(_matPer.map(r2)).concat([r2(_matTot)]));
   ps.push(['TOTAL EVALUATED PRICE'].concat(P.map((p, i) => r2(pricingPeriodCost(i) + (_travPer[i] || 0) + (_matPer[i] || 0)))).concat([r2(_laborTot + _travTot + _matTot)]));
   const wsPS = XLSX.utils.aoa_to_sheet(ps);
+  { const _nP = pNames.length, _last = ps.length - 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsPS, _r, _nP + 1, 1, _nP); for (let _c = 1; _c <= _nP; _c++) pxSumCol(wsPS, _last, _c, 1, _last - 1); }
   wsPS['!cols'] = [{ wch: 36 }].concat(pNames.map(() => ({ wch: 16 }))).concat([{ wch: 18 }]);
   pxStyle(wsPS, { money: pNames.map((_, i) => 1 + i).concat([1 + pNames.length]) });
-  [0, ps.length - 1].forEach(rr => { for (let c = 0; c < ps[0].length; c++) { const a = XLSX.utils.encode_cell({ r: rr, c }); if (wsPS[a]) wsPS[a].s = Object.assign({}, wsPS[a].s, { font: { bold: true } }); } });
+  [0, ps.length - 1].forEach(rr => { for (let c = 0; c < ps[0].length; c++) { const a = XLSX.utils.encode_cell({ r: rr, c }); if (wsPS[a]) wsPS[a].s = Object.assign({}, wsPS[a].s, { font: Object.assign({}, wsPS[a].s && wsPS[a].s.font, { bold: true }) }); } });
   XLSX.utils.book_append_sheet(wb, wsPS, 'Price Summary');
 
   // ---- CLIN Schedule + CLIN Summary (only when the CLIN layer is enabled) ----
@@ -11306,9 +11641,10 @@ function pricingBuildWorkbook() {
       else cs.push([r.clin, r.desc, r.period, r.type, r.qty, r.unit, r2(r.unitPrice), r2(r.total)]);
     });
     const wsCS = XLSX.utils.aoa_to_sheet(cs);
+    for (let _r = 1; _r < cs.length; _r++) { if (typeof cs[_r][4] === 'number' && typeof cs[_r][6] === 'number') pxSetFormula(wsCS, _r, 7, XLSX.utils.encode_col(4) + (_r + 1) + '*' + XLSX.utils.encode_col(6) + (_r + 1)); }
     wsCS['!cols'] = [{ wch: 8 }, { wch: 36 }, { wch: 24 }, { wch: 10 }, { wch: 9 }, { wch: 8 }, { wch: 16 }, { wch: 18 }];
     pxStyle(wsCS, { money: [6, 7] });
-    cs.forEach((row, ri) => { if (ri === 0 || /subtotal|TOTAL CONTRACT|Total evaluated price/.test(String(row[1]))) { for (let c = 0; c < row.length; c++) { const a = XLSX.utils.encode_cell({ r: ri, c }); if (wsCS[a]) wsCS[a].s = Object.assign({}, wsCS[a].s, { font: { bold: true } }); } } });
+    cs.forEach((row, ri) => { if (ri === 0 || /subtotal|TOTAL CONTRACT|Total evaluated price/.test(String(row[1]))) { for (let c = 0; c < row.length; c++) { const a = XLSX.utils.encode_cell({ r: ri, c }); if (wsCS[a]) wsCS[a].s = Object.assign({}, wsCS[a].s, { font: Object.assign({}, wsCS[a].s && wsCS[a].s.font, { bold: true }) }); } } });
     XLSX.utils.book_append_sheet(wb, wsCS, 'CLIN Schedule');
 
     const _pds = pricingClinPeriods().filter(p => !p.isExt);
@@ -11321,19 +11657,24 @@ function pricingBuildWorkbook() {
     _smTot.push(r2(_smTot.slice(1).reduce((s, x) => s + x, 0)));
     sm.push(_smTot);
     const wsSM = XLSX.utils.aoa_to_sheet(sm);
+    { const _nPd = _pds.length, _last = sm.length - 1, _tot = _nPd + 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsSM, _r, _tot, 1, _nPd); for (let _c = 1; _c <= _nPd; _c++) pxSumCol(wsSM, _last, _c, 1, _last - 1); }
     wsSM['!cols'] = [{ wch: 26 }].concat(_pds.map(() => ({ wch: 16 }))).concat([{ wch: 18 }]);
     pxStyle(wsSM, { money: _pds.map((_, i) => 1 + i).concat([1 + _pds.length]) });
-    for (let c = 0; c < sm[0].length; c++) { const a0 = XLSX.utils.encode_cell({ r: 0, c }); if (wsSM[a0]) wsSM[a0].s = Object.assign({}, wsSM[a0].s, { font: { bold: true } }); const aT = XLSX.utils.encode_cell({ r: sm.length - 1, c }); if (wsSM[aT]) wsSM[aT].s = Object.assign({}, wsSM[aT].s, { font: { bold: true } }); }
+    for (let c = 0; c < sm[0].length; c++) { const a0 = XLSX.utils.encode_cell({ r: 0, c }); if (wsSM[a0]) wsSM[a0].s = Object.assign({}, wsSM[a0].s, { font: Object.assign({}, wsSM[a0].s && wsSM[a0].s.font, { bold: true }) }); const aT = XLSX.utils.encode_cell({ r: sm.length - 1, c }); if (wsSM[aT]) wsSM[aT].s = Object.assign({}, wsSM[aT].s, { font: Object.assign({}, wsSM[aT].s && wsSM[aT].s.font, { bold: true }) }); }
     XLSX.utils.book_append_sheet(wb, wsSM, 'CLIN Summary');
   }
 
   // ---- TAB 1: Line-Item Detail (most granular; pivot off this) ----
-  const det = [['Category', 'Labor Category / Item', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Task / CLIN Code', 'Task / CLIN Name', 'Period', 'Term (mo)', 'Hours', 'FTE', 'Loaded Rate ($/hr)', (gsa ? 'GSA Year' : 'Wrap Factor'), 'Price ($)']];
+  const det = [['Category', 'Labor Category / Item', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Task / CLIN Code', 'Task / CLIN Name', 'Period', 'Term (mo)', 'Hours', 'FTE', (gsa ? 'Net Rate ($/hr)' : 'Loaded Rate ($/hr)'), (gsa ? 'GSA Year' : 'Wrap Factor'), 'Price ($)', 'Paid Rate ($/hr)', 'Salary ($/yr)', 'Loaded Rate pre-disc ($/hr)', 'Discount (%)', 'COLA (%)', 'Pinned Anchor', 'Gov Price pre-disc ($)']];
+  const _alab = (l) => { const b = l && l.rateBasis; return b === 'paid' ? 'Paid $/hr' : b === 'loaded' ? 'Loaded $/hr' : b === 'salary' ? 'Salary $/yr' : b === 'annual' ? 'Loaded $/FTE-yr' : '—'; };
   M.lcats.forEach(l => {
     M.tasks.forEach(t => {
       P.forEach((p, i) => {
         const hi = pricingPeriodCellHours(l.id, t.id, i);   // period-aware full-year-equivalent hours
         if (hi <= 0) return;
+        const _wf = pricingEffectiveWrapFactor(l);
+        const _lpre = gsa ? pricingLoadedRate(l, i) : (pricingLoadedRate(l, 0) * (mult[i] || 1));
+        const _paid = _wf > 0 ? _lpre / _wf : 0;
         det.push([
           'Labor',
           l.name || '(unnamed)',
@@ -11346,7 +11687,14 @@ function pricingBuildWorkbook() {
           r2(hi / (defaultHpf() || 1)),     // FTE this role contributes to this task in this period
           r2(effRate(l, i)),
           gsa ? pricingGsaScheduleYearForPeriod(i) : r2(pricingEffectiveWrapFactor(l)),
-          r2(hi * effRate(l, i) * frac(i))
+          r2(hi * effRate(l, i) * frac(i)),
+          r2(_paid),
+          r2(_paid * 2080),
+          r2(_lpre),
+          r2((1 - pricingCompDiscountFactor(l, i)) * 100),
+          gsa ? '' : (i === 0 ? 0 : r2((pricingModel.escalationMode === 'flat') ? (parseFloat(pricingModel.escalationFlat) || 0) : (parseFloat(p.escalation) || 0))),
+          _alab(l),
+          r2(hi * _lpre * frac(i))
         ]);
       });
     });
@@ -11357,23 +11705,25 @@ function pricingBuildWorkbook() {
   const _odcCat = (M.travel && M.travel.odcCategory) || 'Travel & ODC';
   P.forEach((p, i) => {
     const amt = _odcByP[i] || 0; if (amt <= 0) return;
-    det.push([_odcCat, _odcCat, '', '(n/a)', _odcCat + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', r2(amt)]);
+    det.push([_odcCat, _odcCat, '', '(n/a)', _odcCat + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', r2(amt), '', '', '', '', '', '', '']);
   });
   const _matByP = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod() : [];
-  P.forEach((p, i) => { const amt = _matByP[i] || 0; if (amt <= 0) return; det.push(['Materials', 'Materials', '', '(n/a)', 'Materials (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', r2(amt)]); });
+  P.forEach((p, i) => { const amt = _matByP[i] || 0; if (amt <= 0) return; det.push(['Materials', 'Materials', '', '(n/a)', 'Materials (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', r2(amt), '', '', '', '', '', '', '']); });
   const wsDet = XLSX.utils.aoa_to_sheet(det);
-  wsDet['!cols'] = [{ wch: 13 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 32 }, { wch: 16 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 16 }, { wch: 12 }, { wch: 14 }];
-  pxStyle(wsDet, { money: gsa ? [9, 11] : [2, 9, 11], hours: [7], fte: [8] });
+  for (let _r = 1; _r < det.length; _r++) { if (typeof det[_r][7] === 'number' && typeof det[_r][9] === 'number') pxSetFormula(wsDet, _r, 11, XLSX.utils.encode_col(7) + (_r + 1) + '*' + XLSX.utils.encode_col(9) + (_r + 1)); }
+  wsDet['!cols'] = [{ wch: 13 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 32 }, { wch: 16 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 15 }, { wch: 13 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 20 }];
+  pxStyle(wsDet, { money: gsa ? [9, 11, 12, 13, 14, 18] : [2, 9, 11, 12, 13, 14, 18], hours: [7], fte: [8] });
   XLSX.utils.book_append_sheet(wb, wsDet, 'Line-Item Detail');
 
   // ---- TAB 2: By Labor Category ----
-  const bl = [['Labor Category', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Total Hours', 'FTE', 'Loaded Rate base yr ($/hr)', ...pNames, 'Total all periods ($)']];
+  const bl = [['Labor Category', (gsa ? 'GSA LCAT' : 'Base Rate ($/hr)'), 'Total Hours', 'FTE', (gsa ? 'Net Rate base yr ($/hr)' : 'Loaded Rate base yr ($/hr)'), ...pNames, 'Total all periods ($)']];
   M.lcats.forEach(l => {
     const per = P.map((p, i) => r2(pricingPeriodRowHours(l.id, i) * effRate(l, i) * frac(i)));
     bl.push([l.name || '(unnamed)', gsa ? (l.gsaLcat || l.name || '') : r2(parseFloat(l.baseRate) || 0), Math.round(pricingRowHours(l.id)), r2(pricingRowFte(l)), r2(pricingLoadedRate(l, 0)), ...per, r2(per.reduce((s, x) => s + x, 0))]);
   });
   bl.push(['TOTAL', '', Math.round(pricingTotalHours()), '', '', ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
   const wsBL = XLSX.utils.aoa_to_sheet(bl);
+  { const _nP = pNames.length, _last = bl.length - 1, _tot = 5 + _nP; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsBL, _r, _tot, 5, _tot - 1); for (let _c = 5; _c < _tot; _c++) pxSumCol(wsBL, _last, _c, 1, _last - 1); pxSumCol(wsBL, _last, 2, 1, _last - 1); }
   wsBL['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 20 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
   pxStyle(wsBL, { money: (gsa ? [4] : [1, 4]).concat(P.map((_, i) => 5 + i)).concat([5 + P.length]), hours: [2], fte: [3] });
   XLSX.utils.book_append_sheet(wb, wsBL, 'By Labor Category');
@@ -11405,7 +11755,7 @@ function pricingBuildWorkbook() {
     wsRT['!cols'] = [{ wch: 26 }, { wch: 18 }].concat(pNames.map(() => ({ wch: 14 })));
     pxStyle(wsRT, { money: [1].concat(pNames.map((_, i) => 2 + i)) });
   }
-  { const _rng = wsRT['!ref'] ? XLSX.utils.decode_range(wsRT['!ref']) : null; const _nc = _rng ? _rng.e.c + 1 : 0; for (let c = 0; c < _nc; c++) { const a = XLSX.utils.encode_cell({ r: 0, c }); if (wsRT[a]) wsRT[a].s = Object.assign({}, wsRT[a].s, { font: { bold: true } }); } }
+  { const _rng = wsRT['!ref'] ? XLSX.utils.decode_range(wsRT['!ref']) : null; const _nc = _rng ? _rng.e.c + 1 : 0; for (let c = 0; c < _nc; c++) { const a = XLSX.utils.encode_cell({ r: 0, c }); if (wsRT[a]) wsRT[a].s = Object.assign({}, wsRT[a].s, { font: Object.assign({}, wsRT[a].s && wsRT[a].s.font, { bold: true }) }); } }
   XLSX.utils.book_append_sheet(wb, wsRT, 'Loaded Rate Table');
 
   // ---- TABS 3 & 4: by the column dimension (PWS task / CLIN) ----
@@ -11420,6 +11770,7 @@ function pricingBuildWorkbook() {
     });
     rows.push(['TOTAL', '', Math.round(pricingTotalHours()), ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
     const ws = XLSX.utils.aoa_to_sheet(rows);
+    { const _nP = pNames.length, _last = rows.length - 1, _tot = 3 + _nP; for (let _r = 1; _r <= _last; _r++) pxSumRow(ws, _r, _tot, 3, _tot - 1); for (let _c = 3; _c < _tot; _c++) pxSumCol(ws, _last, _c, 1, _last - 1); pxSumCol(ws, _last, 2, 1, _last - 1); }
     ws['!cols'] = [{ wch: 14 }, { wch: 34 }, { wch: 12 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
     return ws;
   }
@@ -11447,6 +11798,7 @@ function pricingBuildWorkbook() {
   _hbTot.push(r2(pricingTotalHours() / defaultHpf()));
   hb.push(_hbTot);
   const wsHB = XLSX.utils.aoa_to_sheet(hb);
+  { const _nT = _taskHdrs.length, _last = hb.length - 1, _tot = _nT + 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsHB, _r, _tot, 1, _nT); for (let _c = 1; _c <= _tot; _c++) pxSumCol(wsHB, _last, _c, 1, _last - 1); }
   wsHB['!cols'] = [{ wch: 26 }].concat(_taskHdrs.map(() => ({ wch: 9 }))).concat([{ wch: 12 }, { wch: 8 }]);
   pxStyle(wsHB, { hours: _taskHdrs.map((_, i) => 1 + i).concat([1 + _taskHdrs.length]), fte: [2 + _taskHdrs.length] });
   XLSX.utils.book_append_sheet(wb, wsHB, 'Hours by Task');
@@ -11465,6 +11817,7 @@ function pricingBuildWorkbook() {
   _fbTot.push(r2(pricingTotalHours() / _hpf));
   fb.push(_fbTot);
   const wsFB = XLSX.utils.aoa_to_sheet(fb);
+  { const _nT = _taskHdrs.length, _last = fb.length - 1, _tot = _nT + 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsFB, _r, _tot, 1, _nT); for (let _c = 1; _c <= _tot; _c++) pxSumCol(wsFB, _last, _c, 1, _last - 1); }
   wsFB['!cols'] = [{ wch: 26 }].concat(_taskHdrs.map(() => ({ wch: 9 }))).concat([{ wch: 10 }]);
   pxStyle(wsFB, { fte: _taskHdrs.map((_, i) => 1 + i).concat([1 + _taskHdrs.length]) });
   XLSX.utils.book_append_sheet(wb, wsFB, 'FTE by Task');
@@ -11616,15 +11969,16 @@ function pricingRenderSummary() {
       pricingModel.tasks.map(t => `<tr><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9">${pricingEsc(t.code || t.name || '—')}</td><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9;text-align:right">${pricingFmt(pricingColCost(t.id))}</td></tr>`).join('') + '</table>';
   } else {
     methodHtml = `<div style="font-size:12px;font-weight:700;margin:4px 0 4px">Base-year price by labor category</div><table style="width:100%;border-collapse:collapse;font-size:12px">` +
-      pricingModel.lcats.map(l => `<tr><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9">${pricingEsc(l.name || '(unnamed)')} <span style="color:var(--muted)">(${pricingFmtC(pricingLoadedRate(l))}/hr × ${pricingRowHours(l.id).toLocaleString()} hrs)</span></td><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9;text-align:right">${pricingFmt(pricingRowCost(l))}</td></tr>`).join('') + '</table>';
+      pricingModel.lcats.map(l => `<tr><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9">${pricingEsc(l.name || '(unnamed)')} <span style="color:var(--muted)">(${pricingFmtC(pricingBilledRate(l, 0))}/hr × ${pricingRowHours(l.id).toLocaleString()} hrs)</span></td><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9;text-align:right">${pricingFmt(pricingRowCost(l))}</td></tr>`).join('') + '</table>';
   }
   const _ppf = !!pricingModel.perPeriodFte;
-  const periodsHtml = pricingModel.periods.map((p, i) => { const mo = pricingPeriodMonths(p); return `<tr><td style="padding:4px 10px;border-bottom:1px solid #eee">${pricingEsc(p.name)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${mo === 12 ? '12 mo' : '<strong>' + mo + ' mo</strong>'}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${i === 0 ? '—' : '+' + (parseFloat(p.escalation) || 0) + '%'}</td>${_ppf ? `<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${pricingPeriodTotalFte(i).toFixed(2)} FTE</td>` : ''}<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${pricingFmt(pricingPeriodCost(i))}</td></tr>`; }).join('');
+  const periodsHtml = pricingModel.periods.map((p, i) => { const mo = pricingPeriodMonths(p); return `<tr><td style="padding:4px 10px;border-bottom:1px solid #eee">${pricingEsc(p.name)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${mo === 12 ? '12 mo' : '<strong>' + mo + ' mo</strong>'}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${i === 0 ? '—' : '+' + ((pricingModel.escalationMode === 'flat') ? (parseFloat(pricingModel.escalationFlat) || 0) : (parseFloat(p.escalation) || 0)) + '%'}</td>${_ppf ? `<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${pricingPeriodTotalFte(i).toFixed(2)} FTE</td>` : ''}<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${pricingFmt(pricingPeriodCost(i))}</td></tr>`; }).join('');
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#f0fdf4">
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">💰 Pricing Summary</div>
     ${methodHtml}
     <div style="font-size:12px;font-weight:700;margin:12px 0 4px">Total contract value (all periods)</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="color:var(--muted)"><th style="text-align:left;padding:4px 10px">Period</th><th style="text-align:right;padding:4px 10px">Term</th><th style="text-align:right;padding:4px 10px">Escalation</th>${pricingModel.perPeriodFte ? '<th style="text-align:right;padding:4px 10px">FTE</th>' : ''}<th style="text-align:right;padding:4px 10px">Price</th></tr></thead><tbody>${periodsHtml}</tbody></table>
+    ${pricingDiscountActive() ? ('<div style="font-size:12px;color:#92400e;margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">Competitive discount (' + pricingModel.discountMode + '): labor ' + pricingFmt(pricingGrandTotalUndiscounted()) + ' &rarr; ' + pricingFmt(pricingGrandTotal()) + ' &mdash; you shave ' + pricingFmt(pricingGrandTotalUndiscounted() - pricingGrandTotal()) + '. Shown prices reflect it.</div>') : ''}
     ${totalBlock}
     <div style="font-size:11px;color:var(--muted);margin-top:6px">${pricingIsGsa() ? `GSA Schedule rates − ${Math.max(0, parseFloat(pricingModel.gsaDiscount) || 0)}% discount (fully burdened; wrap not applied)` : `Wrap factor ${pricingWrapFactor().toFixed(2)} (${pricingWrapModeLabel()})`} · ${pricingModel.lcats.length} labor categories · ${pricingTotalHours().toLocaleString()} full-year hours.${pricingIsGsa() ? '' : ' Edit wrap components in Settings → Pricing Defaults.'}</div>
   </div>`;
@@ -11744,7 +12098,7 @@ let _proposalScrollY = 0;
 // ─── Suite (Proposal / Recruiting) navigation ───────────────────────────────
 // Two module suites share one shell. The suite toggle in the sidebar swaps which
 // set of tabs + legend is shown; Settings sits above both and feeds both.
-const _recTabs = ['rec-search', 'rec-tracker', 'rec-match', 'rec-outreach'];
+const _recTabs = ['rec-search', 'rec-tracker', 'rec-match', 'rec-resume', 'rec-outreach'];
 let _suiteLastTab = { proposal: 'bidnobid', recruiting: 'rec-search' };
 let _activeSuite = 'proposal';
 function _suiteOf(tabName) { return _recTabs.indexOf(tabName) >= 0 ? 'recruiting' : 'proposal'; }
@@ -12764,6 +13118,9 @@ async function runBnaCoverageGap() {
   if (!apiKey) { showMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
   if (empty) empty.style.display = 'none';
   if (results) results.style.display = 'none';
+  const _gapBtn = document.getElementById('bnaGapRunBtn');
+  const _gapOrig = _gapBtn ? _gapBtn.innerHTML : '';
+  if (_gapBtn) { _gapBtn.disabled = true; _gapBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Analyzing\u2026'; }
   showMsg('Analyzing coverage against your capability profile\u2026', false);
   try {
     const cap = (CLIENT_CONFIG && CLIENT_CONFIG.capacity) || {};
@@ -12774,6 +13131,8 @@ async function runBnaCoverageGap() {
   } catch (e) {
     showMsg('Coverage-gap analysis failed: ' + (e && e.message ? e.message : e), true);
     if (empty) empty.style.display = 'block';
+  } finally {
+    if (_gapBtn) { _gapBtn.disabled = false; _gapBtn.innerHTML = _gapOrig; }
   }
 }
 
@@ -12917,27 +13276,6 @@ function staffInvalidate() {
   const res = document.getElementById('staffResults');
   if (res && res.style.display !== 'none') { res.style.display = 'none'; res.innerHTML = ''; }
 }
-function staffPullBench() {
-  let bench = [];
-  try { if (window.Rec && typeof Rec.currentBench === 'function') bench = Rec.currentBench() || []; } catch (e) {}
-  if (!bench.length) { try { bench = (window.RecStore && RecStore.load()) || []; } catch (e) {} }
-  if (!bench.length) {
-    const res = document.getElementById('staffResults');
-    if (res) { res.style.display = 'block'; res.innerHTML = '<div style="font-size:12.5px;color:var(--error)">No candidates are loaded. Load your bench on the Candidate Tracker first (or add roles by hand).</div>'; }
-    return;
-  }
-  const seen = {};
-  window._staffRoster.forEach(function (m) { if (m.name) seen[m.name.trim().toLowerCase()] = 1; });
-  bench.forEach(function (c) {
-    const nm = (c.name || '').trim();
-    if (!nm || seen[nm.toLowerCase()]) return;
-    seen[nm.toLowerCase()] = 1;
-    const quals = [c.location, c.notes].filter(Boolean).join('; ');
-    window._staffRoster.push({ role: c.role || '', name: nm, quals: quals });
-  });
-  staffRenderRoster();
-  staffInvalidate();
-}
 
 function _staffOppContext() {
   const opp = window._bnaOpp || {};
@@ -12991,7 +13329,9 @@ async function runStaffingPlan() {
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
   if (results) { results.style.display = 'none'; results.innerHTML = ''; }
-  if (status) { status.style.display = 'block'; status.textContent = 'Writing the staffing plan\u2026'; }
+  const _sb = document.getElementById('staffGenBtn'); const _sbOrig = _sb ? _sb.innerHTML : '';
+  if (_sb) { _sb.disabled = true; _sb.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Writing\u2026'; }
+  if (status) { status.style.display = 'block'; var _sst = document.getElementById('staffStatusText'); if (_sst) _sst.textContent = 'Writing the staffing plan\u2026'; }
   try {
     const data = await callClaudeForJson(apiKey, _staffContent(roster, _staffOppContext()), 2600, 90000, 'Staffing plan');
     window._staffPlanData = data;
@@ -13000,6 +13340,8 @@ async function runStaffingPlan() {
   } catch (e) {
     if (status) status.style.display = 'none';
     show('Staffing plan failed: ' + (e && e.message ? e.message : e), true);
+  } finally {
+    if (_sb) { _sb.disabled = false; _sb.innerHTML = _sbOrig; }
   }
 }
 
@@ -13064,20 +13406,6 @@ function resumeMsg(msg, err) {
   const res = document.getElementById('resResults');
   if (res) { res.style.display = 'block'; res.innerHTML = '<div style="font-size:12.5px;color:' + (err ? 'var(--error)' : 'var(--muted)') + '">' + escHtml(msg) + '</div>'; }
 }
-function resumePullBench() {
-  let bench = [];
-  try { if (window.Rec && typeof Rec.currentBench === 'function') bench = Rec.currentBench() || []; } catch (e) {}
-  if (!bench.length) { try { bench = (window.RecStore && RecStore.load()) || []; } catch (e) {} }
-  if (!bench.length) { resumeMsg('No candidates are loaded. Load your bench on the Candidate Tracker first (or type the name and background by hand).', true); return; }
-  const nameEl = document.getElementById('resName');
-  const bgEl = document.getElementById('resBg');
-  const typed = (nameEl && nameEl.value.trim().toLowerCase()) || '';
-  let c = typed ? bench.find(function (x) { return (x.name || '').trim().toLowerCase() === typed; }) : null;
-  if (!c) c = bench[0];
-  if (nameEl) nameEl.value = c.name || '';
-  const seed = [c.role ? 'Current role: ' + c.role : '', c.location ? 'Location: ' + c.location : '', c.notes ? 'Notes: ' + c.notes : ''].filter(Boolean).join('\n');
-  if (bgEl && seed && !bgEl.value.trim()) bgEl.value = seed;
-}
 function resumeSeedReq() {
   const opp = window._bnaOpp || {};
   const reqEl = document.getElementById('resReq');
@@ -13124,7 +13452,9 @@ async function runResume() {
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { resumeMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
   const res = document.getElementById('resResults'); if (res) { res.style.display = 'none'; res.innerHTML = ''; }
-  if (status) { status.style.display = 'block'; status.textContent = 'Writing the resume\u2026'; }
+  const _rb = document.getElementById('resumeGenBtn'); const _rbOrig = _rb ? _rb.innerHTML : '';
+  if (_rb) { _rb.disabled = true; _rb.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Writing\u2026'; }
+  if (status) { status.style.display = 'block'; var _rst = document.getElementById('resStatusText'); if (_rst) _rst.textContent = 'Writing the resume\u2026'; }
   try {
     const data = await callClaudeForJson(apiKey, _resumeContent(name.trim(), role.trim(), bg.trim(), req.trim()), 3200, 120000, 'Resume');
     if (!data.candidate_name) data.candidate_name = name.trim();
@@ -13135,6 +13465,8 @@ async function runResume() {
   } catch (e) {
     if (status) status.style.display = 'none';
     resumeMsg('Resume generation failed: ' + (e && e.message ? e.message : e), true);
+  } finally {
+    if (_rb) { _rb.disabled = false; _rb.innerHTML = _rbOrig; }
   }
 }
 
@@ -13271,12 +13603,11 @@ window._constrainedCsv = window._constrainedCsv || '';
 async function constrainedFileChosen(event) {
   const file = event && event.target && event.target.files && event.target.files[0];
   const nameEl = document.getElementById('constrainedFileName');
-  const btn = document.getElementById('constrainedDetectBtn');
   const results = document.getElementById('constrainedResults');
   if (results) { results.style.display = 'none'; results.innerHTML = ''; }
   window._constrainedIntake = null;
   if (!file) return;
-  if (nameEl) { nameEl.style.color = 'var(--muted)'; nameEl.textContent = 'Reading ' + file.name + '\u2026'; }
+  if (nameEl) { nameEl.style.color = 'var(--muted)'; nameEl.innerHTML = '<span class="spinner-dark" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Reading ' + escHtml(file.name) + '\u2026'; }
   try {
     let csv = '';
     const nm = (file.name || '').toLowerCase();
@@ -13296,11 +13627,10 @@ async function constrainedFileChosen(event) {
     if (!csv || csv.trim().length < 5) throw new Error('That file appears to be empty or unreadable.');
     window._constrainedCsv = csv.slice(0, 60000);
     if (nameEl) { nameEl.style.color = 'var(--success)'; nameEl.textContent = '\u2713 ' + file.name + ' loaded'; }
-    if (btn) btn.style.display = 'inline-block';
+    await runConstrainedDetect();
   } catch (e) {
     window._constrainedCsv = '';
     if (nameEl) { nameEl.style.color = 'var(--error)'; nameEl.textContent = (e && e.message) ? e.message : 'Could not read that file.'; }
-    if (btn) btn.style.display = 'none';
   }
 }
 
@@ -13332,6 +13662,9 @@ async function runConstrainedDetect() {
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
   if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+  const _detBtn = document.getElementById('constrainedDetectBtn');
+  const _detOrig = _detBtn ? _detBtn.innerHTML : '';
+  if (_detBtn) { _detBtn.disabled = true; _detBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Detecting\u2026'; }
   show('Detecting which pricing stages are already populated\u2026', false);
   try {
     const data = await callClaudeForJson(apiKey, [{ type: 'text', text: _constrainedDetectContent(window._constrainedCsv) }], 1800, 90000, 'Constrained-pricing detection');
@@ -13340,6 +13673,8 @@ async function runConstrainedDetect() {
     renderConstrainedDetect(data);
   } catch (e) {
     show('Detection failed: ' + (e && e.message ? e.message : e), true);
+  } finally {
+    if (_detBtn) { _detBtn.disabled = false; _detBtn.innerHTML = _detOrig; }
   }
 }
 
@@ -13384,7 +13719,7 @@ function renderConstrainedDetect(data) {
     ? '<div style="margin-top:12px;font-size:12.5px;line-height:1.6;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:11px 13px"><strong>\u26A0 Out of scope:</strong> ' + esc(String(data.feasibility_note || 'A fixed total with a blank labor mix cannot be reverse-solved.')) + '</div>' : '';
   const solveBtn = (nSolve > 0)
     ? '<button id="constrainedSolveBtn" onclick="runConstrainedSolve()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">Solve the blank stage' + (nSolve === 1 ? '' : 's') + '</button>' : '';
-  const pwsBtn = '<button id="constrainedPwsBtn" onclick="runConstrainedPwsCheck()" style="padding:9px 18px;font-size:13px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:8px;cursor:pointer">Check the sheet against the PWS</button>';
+  const pwsBtn = '<button id="constrainedPwsBtn" onclick="runConstrainedPwsCheck()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">Check the sheet against the PWS</button>';
   const noSolveNote = (nSolve === 0) ? '<p style="margin:10px 0 0;font-size:11.5px;color:var(--muted)">Every stage is already populated \u2014 nothing to solve, but you can still check it against the PWS.</p>' : '';
   const nextHtml = oos ? '' :
     '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' + solveBtn + pwsBtn + '</div>' + noSolveNote
@@ -13480,7 +13815,7 @@ async function runConstrainedSolve() {
   add('Scope', b.scope_summary || b.requirement_summary); add('Periods', b.period_structure); add('Estimated FTEs', b.estimated_ftes);
   const ctx = ctxBits.join('\n') || '(no structured briefing available \u2014 work from the spreadsheet and the task areas)';
 
-  if (btn) { btn.disabled = true; btn.textContent = 'Solving\u2026'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Solving\u2026'; }
   if (results) { results.style.display = 'none'; results.innerHTML = ''; }
   show('Solving the blank stages while holding the fixed ones\u2026', false);
   try {
@@ -13560,7 +13895,8 @@ function _constrainedPwsContent(csv, pws) {
     'You are a federal cost/price compliance reviewer. Compare an uploaded pricing spreadsheet against the PWS/solicitation requirements and flag CONFLICTS \u2014 places where the priced labor structure does NOT comply with what the PWS requires. For each, give: what the PWS requires, how the upload is non-compliant, and the recommended fix. Base every finding ONLY on the requirements and the spreadsheet below; never invent a requirement.\n\n' +
     'PWS / SOLICITATION REQUIREMENTS:\n' + pws + '\n\n' +
     'THE UPLOADED PRICING SPREADSHEET:\n' + csv + '\n\n' +
-    'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a PWS task area with no labor priced against it; a staffing level (FTEs/hours) below what the scope requires; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
+    'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a required, recurring base-period PWS task with no labor priced against it; a staffing level (FTEs/hours) below what the scope requires; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
+    'IMPORTANT - do NOT raise a task-coverage conflict merely because the base-period pricing does not staff a task. Many PWS tasks are CONDITIONAL (required only if an option period is exercised, or triggered by a specific event), OPTIONAL, surge, or ONE-TIME / single-use, and legitimately carry no base-period labor. Flag an unstaffed task ONLY when it is plainly a required, recurring base-period effort that the pricing omits; when a task is optional, option-year-only, event-triggered, or one-time / single-use, do NOT flag it. When in doubt, do not flag it.\n\n' +
     'Return ONLY JSON (no prose, no markdown fences):\n' +
     '{"items":[{"requirement":"what the PWS requires (paraphrase the specific requirement)","category":"Labor mix|Clearance|Certification|Task coverage|Staffing level|Period of performance|Over-scope|Other","issue":"how the uploaded pricing is non-compliant or in conflict with that requirement","fix":"the recommended change to the pricing","severity":"critical|important|minor"}],"summary":"one line: overall assessment of how well the pricing complies with the PWS"}\n\n' +
     'If the pricing fully complies, return "items":[] and say so in the summary.'
@@ -13577,7 +13913,7 @@ async function runConstrainedPwsCheck() {
   if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
   const pws = _constrainedPwsContext();
   if (!pws || pws.trim().length < 10) { show('No PWS/RFP requirements are loaded to check against. Pull your RFP analysis on Pricing Step 2 (or the Proposal tab) first.', true); return; }
-  if (btn) { btn.disabled = true; btn.textContent = 'Checking\u2026'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Checking\u2026'; }
   if (results) { results.style.display = 'none'; results.innerHTML = ''; }
   show('Checking the sheet against the PWS requirements\u2026', false);
   try {
@@ -13739,7 +14075,6 @@ function renderBnaDecisionPanel() {
       primePartnerBtn +
     `</div>`;
 }
-
 
 
 // updateBnaBtn — checks both files and weight validity
@@ -14100,7 +14435,7 @@ async function runBidNoBid() {
       `- scope_clarity: How well-defined is the scope? High if clear requirements, low if vague PWS. (CRITICAL factor)\n\n` +
       `OPPORTUNITY FACTS — extract these verbatim where stated, else "" (empty). These drive prime/sub eligibility:\n` +
       `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
-      `- fte_count: number of FTEs/positions if stated (digits only, e.g. "45"), else ""\n` +
+      `- fte_count: number of FTEs/positions. PRIORITY: (1) if an explicit FTE/staffing figure is stated, use it (digits only, e.g. "45"). (2) ELSE if an estimated-hours/workload/level-of-effort table by labor category is given, compute it as (sum of the BASE-YEAR hours column ONLY) / 1912, rounded to a whole number - NEVER add the base-year and option-year columns together (option periods are separate performance periods, not extra concurrent staff). (3) ELSE ""\n` +
       `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated". SDVOSB (52.219-27, service-disabled veteran-owned), WOSB (52.219-30, women-owned), EDWOSB (52.219-29), HUBZone (52.219-3), and 8(a) (52.219-18) are DISTINCT - never substitute one for another. Cross-check your answer against the required certifications: if offerors must be certified SDVOSB / VOSB / WOSB / 8(a) / HUBZone, the set_aside MUST match that certification. Use this SAME set-aside consistently everywhere in your output (risks, win_strategy, summary) - never name a different set-aside category in the narrative than in this structured field.\n` +
       `- required_dcaa: true ONLY if the award is a COST-REIMBURSEMENT contract type (cost-plus / CPFF / CPIF / CPAF / cost-sharing), OR the solicitation EXPLICITLY requires a "DCAA-approved" or "adequate accounting system." Set FALSE for Firm-Fixed-Price, Time-and-Materials (T&M), or Labor-Hour awards. A cost-reimbursable TRAVEL or ODC line alone does NOT make this true (travel is reimbursed per travel regulations). If the contract type is not stated, set false.\n` +
       `- prime_eligible: true or false. Can ${CLIENT_CONFIG.companyShortName} legally and practically compete as the PRIME on this? Weigh EVERY dimension below against the CAPACITY facts in the company profile, and set FALSE if ANY is a hard barrier:\n` +
@@ -14115,7 +14450,7 @@ async function runBidNoBid() {
       `- prime_ineligibility_reason: if prime_eligible is false, ONE sentence naming the SPECIFIC barrier(s) (e.g. "8(a) set-aside; company holds SDVOSB/VOSB, not 8(a)" or "requires Top Secret FCL; company holds Secret"). Else "".\n` +
       `- contract_vehicle: required contract vehicle/IDIQ if any (e.g. "SeaPort-NxG"), else ""\n` +
       `- vehicle_is_open: true if this is open-market / full-and-open / a Schedule anyone can get on; false if it requires holding a specific closed IDIQ/vehicle\n` +
-      `- estimated_value: total contract value across the FULL period of performance. If a dollar figure is stated, use it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE prefixed with "~est " (e.g. "~est $80M-$160M"), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, and agency size, so the size can be sanity-checked against prime capacity. Only use "" if there is genuinely nothing to reason from.\n` +
+      `- estimated_value: total contract value across the FULL period of performance. If a dollar figure is stated, use it verbatim. If a workload / level-of-effort hours table is given, anchor the estimate on the BASE-YEAR hours (base-year column ONLY, never base + option) times a REALISTIC blended fully-loaded labor rate (for analytical / professional-services labor - data analysts, engineers, program managers - roughly $100-$150/hr; do NOT use inflated rates like $250+/hr for standard analyst labor), then multiply by the number of performance periods. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE prefixed with "~est " (e.g. "~est $80M-$160M"), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, and agency size, so the size can be sanity-checked against prime capacity. Only use "" if there is genuinely nothing to reason from.\n` +
       `- required_cmmc: CMMC level required (1/2/3) if stated, else ""\n` +
       `- required_iso: ISO standard(s) required of performers (e.g. "9001"), else ""\n\n` +
       `SCOPE COVERAGE — scope_coverage: an integer 0-100 estimating the percentage of the PWS/required scope ${CLIENT_CONFIG.companyShortName} can credibly SELF-PERFORM, based on its profile/capabilities vs. the task areas. Be realistic: a broad multi-discipline scope where the company covers only part should score lower. This drives the subcontract decision.\n\n` +
@@ -14408,21 +14743,23 @@ function downloadBnaPdf() {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   const PW = 612, PH = 792, M = 50, CW = PW - M * 2;
   const ACCENT = _pdfRgb((CLIENT_CONFIG && CLIENT_CONFIG.primaryColor) || '#1d4ed8');
-  const DARK = [30, 41, 59], GREY = [100, 116, 139], LINE = [226, 232, 240], ZEBRA = [247, 249, 252], WHITE = [255, 255, 255], AMBER = [146, 64, 14];
+  const DARK = [30, 41, 59], GREY = [100, 116, 139], LINE = [226, 232, 240], ZEBRA = [247, 249, 252], WHITE = [255, 255, 255], AMBER = [146, 64, 14], TEAL = [14, 116, 137];
   let y = 0, page = 1;
   const clean = s => String(s == null ? '' : s)
     .replace(/[\u2014\u2013]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
     .replace(/[^\x00-\x7F]+/g, '').replace(/[ \t]+/g, ' ').trim();
   const tint = (rgb, amt) => [Math.round(rgb[0] + (255 - rgb[0]) * amt), Math.round(rgb[1] + (255 - rgb[1]) * amt), Math.round(rgb[2] + (255 - rgb[2]) * amt)];
   const scoreColor = sc => sc == null ? GREY : sc >= 7.5 ? [22, 163, 74] : sc >= 6 ? [37, 99, 235] : sc >= 4 ? [180, 83, 9] : [220, 38, 38];
-  // Mirror the on-screen intel styling: [Inferred] -> amber, missing -> muted grey, else dark.
+  // Mirror the on-screen intel styling: [GovEst] -> teal, [Inferred] -> amber, missing -> muted grey, else dark.
   const fieldVal = raw => {
     if (raw == null) return { t: 'Not stated in documents', color: GREY };
     let s = String(raw).trim();
-    const inf = /^\[Inferred\]/i.test(s);
+    const gov = /^\[GovEst\]/i.test(s);
+    if (gov) s = s.replace(/^\[GovEst\]\s*/i, '');
+    const inf = !gov && /^\[Inferred\]/i.test(s);
     if (inf) s = s.replace(/^\[Inferred\]\s*/i, '');
     if (!s || /^(not stated( in documents)?|null|n\/a|none)$/i.test(s)) return { t: 'Not stated in documents', color: GREY };
-    return { t: inf ? s + '  [inferred]' : s, color: inf ? AMBER : DARK };
+    return { t: gov ? s + '  [gov. estimate]' : inf ? s + '  [inferred]' : s, color: gov ? TEAL : inf ? AMBER : DARK };
   };
   const fcell = key => { const fv = fieldVal(intel[key]); return { t: fv.t, color: fv.color }; };
 
@@ -14523,7 +14860,7 @@ function downloadBnaPdf() {
       // high-quality smoothing gives the crispest result the source allows; a high-resolution uploaded
       // logo is used at full detail. (Sharpness is ultimately capped by the source image's resolution.)
       const targetPx = Math.round((lw / 72) * 300);
-      const cw = Math.min(1400, Math.max(nw, targetPx));
+      const cw = Math.min(1400, Math.max(nw, Math.min(targetPx, nw * 2)));  // cap upscaling of a low-res source at 2x (beyond that it bakes blur; a high-res source uses full native detail)
       const ch = Math.max(1, Math.round(cw * nh / nw));
       const cv = document.createElement('canvas');
       cv.width = cw; cv.height = ch;
@@ -14865,8 +15202,9 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from.
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
+    `WORKLOAD / LEVEL-OF-EFFORT TABLE (OVERRIDES rule 10 whenever such a table is present): If the solicitation gives an estimated-hours / workload / level-of-effort table by labor category, treat those hours as the authoritative basis and do NOT estimate. (a) ANNUAL hours = the sum of the BASE-YEAR hours column ONLY; NEVER add the base-year and option-year columns together (option periods are SEPARATE performance periods, not additional concurrent staff). (b) fte_count = annual hours / 1912, rounded to ONE decimal, PREFIXED with "[GovEst] " because it is derived from the government's STATED workload estimate (an estimate, not a firm requirement) - e.g. "[GovEst] 7.7". (c) For EACH labor category, base_year_fte = that category base-year hours / 1912 to one decimal, and set base_year_hours to that category's base-year hours as an INTEGER exactly as stated in the table. (d) base_year_value and total_contract_value are the government's stated workload priced at a rate WE assume, so PREFIX BOTH with "[Inferred] ". Compute base_year_value = annual hours times a REALISTIC blended fully-loaded hourly rate: for analytical / professional-services labor (data analysts, business process engineers, program managers, and similar) a defensible blended fully-loaded rate is roughly $100-$150/hr - use a higher rate ONLY for genuinely specialized or cleared labor and note that in award_value_rationale. Do NOT use inflated rates (e.g. $250+/hr) for standard analyst / professional labor. Example base_year_value "[Inferred] ~$1.8M/yr". total_contract_value = base_year_value times the number of performance periods, e.g. "[Inferred] ~$3.6M". In award_value_rationale state the hours basis and the assumed blended rate (e.g. "RFQ base-year workload of 14685 hours across 5 labor categories at a blended loaded rate of ~$125/hr").\n\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"per the WORKLOAD / LEVEL-OF-EFFORT rule above when such a table is present (base-year hours only / 1912, one decimal, PREFIXED [GovEst]); else the explicitly stated figure (no prefix); else empty string","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","base_year_hours":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -15296,8 +15634,10 @@ function renderOpportunityIntel(intel, container) {
       }
     } else {
       let displayVal = String(raw).trim();
-      const isInferred = displayVal.startsWith('[Inferred]');
-      displayVal = displayVal.replace(/^\[Inferred\]\s*/, '');
+      const isGovEst = displayVal.startsWith('[GovEst]');
+      if (isGovEst) displayVal = displayVal.replace(/^\[GovEst\]\s*/, '');
+      const isInferred = !isGovEst && displayVal.startsWith('[Inferred]');
+      if (isInferred) displayVal = displayVal.replace(/^\[Inferred\]\s*/, '');
       let isMissing = !displayVal || /^(not stated( in documents)?|null|n\/a|none)$/i.test(displayVal);
       // The pursuit recommendation is a required judgment, never a "blank" — if the
       // model returned nothing usable, say so explicitly instead of rendering empty.
@@ -15308,8 +15648,8 @@ function renderOpportunityIntel(intel, container) {
         displayVal = 'Not stated in documents';
       }
       const isUrl = /^https?:\/\//i.test(displayVal);
-      const valStyle = isInferred ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
-      const badge = isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : '';
+      const valStyle = isGovEst ? 'color:#0e7490;font-style:italic' : isInferred ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
+      const badge = isGovEst ? `<span style="font-size:10px;font-weight:700;background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:1px 6px;color:#0e7490;margin-left:6px">Gov. estimate</span>` : isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : '';
       const valContent = isUrl
         ? `<a href="${escHtml(displayVal)}" target="_blank" style="color:var(--blue)">${escHtml(displayVal)}</a>`
         : `<span style="${valStyle}">${escHtml(displayVal)}</span>`;
@@ -15364,7 +15704,7 @@ function copyOpportunityIntel() {
   if (!intel) return;
   let text = 'OPPORTUNITY INTELLIGENCE\n\n';
   Object.entries(intel).forEach(([k, v]) => {
-    const val = Array.isArray(v) ? v.join(', ') : String(v||'').replace(/^\[Inferred\]\s*/,'');
+    const val = Array.isArray(v) ? v.join(', ') : String(v||'').replace(/^\[(Inferred|GovEst)\]\s*/,'');
     text += `${k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}: ${val}\n`;
   });
   navigator.clipboard.writeText(text).then(() => {
@@ -16132,7 +16472,6 @@ function applySettingsOverrides() {
 })();
 
 
-
 // ── Shared SharePoint REST auth (incremental consent, gesture-safe) ──────────
 // The recruiting tabs use the SharePoint REST API, which needs a token for the
 // SharePoint resource itself (e.g. AllSites.Write on the site host) — a DIFFERENT
@@ -16526,7 +16865,7 @@ window.RecStore = (function () {
   }
 
   var luResults = [], _luList = 'applicants', _searchMode = 'literal';
-  var _luSort = { col: -1, dir: 1 }, _luFilters = {};
+  var _luSort = { col: -1, dir: 1 }, _luFilters = {}, _luPage = 0;
   var _luColWidths = [110, 180, 120, 200, 120, 90, 80], _luResizing = null;
   var LU_COLS = ['source', 'name', 'location', 'email', 'phone', 'linkedIn', 'resume'];
   var LU_LABELS = ['Source', 'Name', 'Location', 'Email', 'Phone', 'LinkedIn', 'Resume'];
@@ -16563,6 +16902,7 @@ window.RecStore = (function () {
     var hint = document.getElementById('search-mode-hint');
     if (hint) hint.textContent = (val === 'literal') ? 'Matches exact keywords and phrases across all available fields.' : 'Claude reads each record and infers fit based on skills, experience, and context — not just exact words. Uses your API key.';
   }
+  function luLoadingMsg(m) { var e = document.getElementById('lu-loading-text'); if (e) e.textContent = m; }
   async function runLookup() {
     if (window.RecStore.isLocal()) { return runLookupLocal(); }
     if (!signedIn()) { toast('Sign in with Microsoft first'); return; }
@@ -16576,23 +16916,23 @@ window.RecStore = (function () {
     var t = await getSpRestToken(true); if (!t) { if (ldg) ldg.style.display = 'none'; return; }
     var all = [];
     try {
-      if (ldg) ldg.textContent = 'Fetching candidates from SharePoint...';
+      if (ldg) luLoadingMsg('Fetching candidates from SharePoint...');
       if ((_luList === 'both' || _luList === 'applicants') && appList()) { all = all.concat(await fetchApplicants(t, role, loc, skills)); }
       if ((_luList === 'both' || _luList === 'potentials') && spList()) { all = all.concat(await fetchPotentials(t, role, loc, skills)); }
-    } catch (e) { toast('Search error: ' + e.message); if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; } return; }
+    } catch (e) { toast('Search error: ' + e.message); if (ldg) { ldg.style.display = 'none'; luLoadingMsg('Searching...'); } return; }
     if (_searchMode === 'ai') {
-      if (ldg) ldg.textContent = 'Fetching broader candidate pool...';
+      if (ldg) luLoadingMsg('Fetching broader candidate pool...');
       var broadAll = [];
       try {
         if ((_luList === 'both' || _luList === 'applicants') && appList()) { broadAll = broadAll.concat(await fetchApplicants(t, '', loc, '')); }
         if ((_luList === 'both' || _luList === 'potentials') && spList()) { broadAll = broadAll.concat(await fetchPotentials(t, '', loc, '')); }
       } catch (e) { broadAll = all; }
-      if (!getApiKey()) { toast('AI search requires your Anthropic API key — check the header'); if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; } return; }
-      if (ldg) ldg.textContent = 'Claude is analyzing ' + broadAll.length + ' candidates...';
+      if (!getApiKey()) { toast('AI search requires your Anthropic API key — check the header'); if (ldg) { ldg.style.display = 'none'; luLoadingMsg('Searching...'); } return; }
+      if (ldg) luLoadingMsg('Claude is analyzing ' + broadAll.length + ' candidates...');
       all = await aiRankCandidates(broadAll, role, loc, skills);
     }
     luResults = all;
-    if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; }
+    if (ldg) { ldg.style.display = 'none'; luLoadingMsg('Searching...'); }
     renderLookup();
   }
   // Local-source variant of runLookup: rank the candidates saved in the Tracker (localStorage).
@@ -16610,7 +16950,7 @@ window.RecStore = (function () {
     var all;
     if (_searchMode === 'ai') {
       if (!getApiKey()) { toast('AI search requires your Anthropic API key \u2014 check the header'); if (ldg) ldg.style.display = 'none'; return; }
-      if (ldg) ldg.textContent = 'Claude is analyzing ' + pool.length + ' candidates...';
+      if (ldg) luLoadingMsg('Claude is analyzing ' + pool.length + ' candidates...');
       all = await aiRankCandidates(pool, role, loc, skills);
     } else {
       var rQ = role.toLowerCase(), lQ = loc.toLowerCase();
@@ -16621,7 +16961,7 @@ window.RecStore = (function () {
       });
     }
     luResults = all;
-    if (ldg) { ldg.style.display = 'none'; ldg.textContent = 'Searching...'; }
+    if (ldg) { ldg.style.display = 'none'; luLoadingMsg('Searching...'); }
     renderLookup();
   }
   async function fetchApplicants(t, role, loc, skills) {
@@ -16713,6 +17053,7 @@ window.RecStore = (function () {
     return '';
   }
   function renderLookup() {
+    _luPage = 0;
     var res = document.getElementById('lu-results'); if (res) res.style.display = 'block';
     var out = document.getElementById('lu-list-output'); if (!out) return;
     if (!luResults.length) { var lc = document.getElementById('lu-count'); if (lc) lc.textContent = '0 results found'; out.innerHTML = '<div class="lu-no-results">No candidates found matching your criteria. Try broadening your search.</div>'; return; }
@@ -16726,32 +17067,75 @@ window.RecStore = (function () {
     var lc = document.getElementById('lu-count'); if (lc) lc.textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' found' + (filtered.length < luResults.length ? ' (' + luResults.length + ' total, filtered)' : '');
     var cg = '<colgroup>';
     for (var ci = 0; ci < _luColWidths.length; ci++) { cg += '<col style="width:' + _luColWidths[ci] + 'px">'; }
+    cg += '<col style="width:172px">';
     cg += '</colgroup>';
     var t = '<div class="lu-table-wrap"><table class="lu-table">' + cg + '<thead><tr>';
     for (var i = 0; i < LU_LABELS.length; i++) {
       var cls = _luSort.col === i ? (_luSort.dir === 1 ? ' class="sort-asc"' : ' class="sort-desc"') : '';
       t += '<th' + cls + ' onclick="Rec.luSortBy(' + i + ')" style="width:' + _luColWidths[i] + 'px">' + LU_LABELS[i] + ' <i class="sort-icon"></i><span class="col-resize" onclick="event.stopPropagation()"></span></th>';
     }
+    t += '<th style="width:172px">Actions</th>';
     t += '</tr><tr class="lu-filter-row">';
     for (var j = 0; j < LU_COLS.length; j++) { t += '<th style="width:' + _luColWidths[j] + 'px"><input class="lu-filter-input" type="text" placeholder="Filter..." value="' + esc(_luFilters[j] || '') + '" oninput="Rec.luFilter(' + j + ',this.value)"/></th>'; }
+    t += '<th style="width:172px"></th>';
     t += '</tr></thead><tbody>';
-    for (var k = 0; k < filtered.length; k++) {
-      var c = filtered[k];
+    var _pgSize = 25, _pgN = Math.max(1, Math.ceil(filtered.length / _pgSize));
+    if (_luPage >= _pgN) _luPage = _pgN - 1; if (_luPage < 0) _luPage = 0;
+    var _pgStart = _luPage * _pgSize, _pgRows = filtered.slice(_pgStart, _pgStart + _pgSize);
+    for (var k = 0; k < _pgRows.length; k++) {
+      var c = _pgRows[k];
       var srcTag = c.source === 'official' ? '<span class="lu-source-tag official">Applicant</span>' : '<span class="lu-source-tag potential">Potential</span>';
       var stageStr = c.stage ? '<br><small style="color:var(--text4);font-style:italic">' + esc(c.stage) + '</small>' : '';
       var emailStr = c.email ? '<a class="lu-link" href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a>' : '&mdash;';
       var liStr = c.linkedIn ? '<a class="lu-link" href="' + esc(c.linkedIn) + '" target="_blank">LinkedIn</a>' : '&mdash;';
       var resStr = c.resume ? '<a class="lu-link" href="' + esc(c.resume) + '" target="_blank">Resume</a>' : '&mdash;';
       var titleStr = c.title ? '<br><small style="color:var(--text3)">' + esc(c.title) + '</small>' : '';
-      t += '<tr><td>' + srcTag + stageStr + '</td><td><strong>' + esc(c.name) + '</strong>' + titleStr + '</td><td>' + esc(c.location) + '</td><td>' + emailStr + '</td><td>' + esc(c.phone) + '</td><td>' + liStr + '</td><td>' + resStr + '</td></tr>';
+      var _ci = luResults.indexOf(c);
+      var _actTd = '<td style="white-space:nowrap"><button type="button" class="btn sm" style="padding:4px 8px;font-size:11px" title="Pre-fill the Resume Builder with this candidate" onclick="Rec.sendToResume(' + _ci + ')">\u2192 Resume</button> <button type="button" class="btn sm" style="padding:4px 8px;font-size:11px" title="Add to the staffing roster below" onclick="Rec.sendToStaffing(' + _ci + ')">\u2192 Staffing</button></td>';
+      t += '<tr><td>' + srcTag + stageStr + '</td><td><strong>' + esc(c.name) + '</strong>' + titleStr + '</td><td>' + esc(c.location) + '</td><td>' + emailStr + '</td><td>' + esc(c.phone) + '</td><td>' + liStr + '</td><td>' + resStr + '</td>' + _actTd + '</tr>';
     }
-    if (!filtered.length) { t += '<tr><td colspan="7" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
+    if (!filtered.length) { t += '<tr><td colspan="8" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
     t += '</tbody></table></div>';
+    if (_pgN > 1) { t += '<div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-size:13px">' + '<button type="button" class="btn sm" onclick="Rec.luGoPage(-1)"' + (_luPage <= 0 ? ' disabled' : '') + '>\u2190 Prev</button>' + '<span style="color:var(--muted)">Showing ' + (_pgStart + 1) + '\u2013' + (_pgStart + _pgRows.length) + ' of ' + filtered.length + '  \u00b7  Page ' + (_luPage + 1) + ' of ' + _pgN + '</span>' + '<button type="button" class="btn sm" onclick="Rec.luGoPage(1)"' + (_luPage >= _pgN - 1 ? ' disabled' : '') + '>Next \u2192</button>' + '</div>'; }
     out.innerHTML = t;
     setTimeout(initLuTableResize, 10);
   }
-  function luSortBy(colIdx) { if (_luSort.col === colIdx) { _luSort.dir *= -1; } else { _luSort.col = colIdx; _luSort.dir = 1; } renderLookupTable(); initLuTableResize(); }
-  function luFilter(colIdx, val) { _luFilters[colIdx] = val; renderLookupTable(); initLuTableResize(); var inputs = document.querySelectorAll('.lu-filter-input'); if (inputs[colIdx]) { var inp = inputs[colIdx]; inp.focus(); var len = inp.value.length; inp.setSelectionRange(len, len); } }
+  function sendToResume(ci) {
+    var c = luResults[ci]; if (!c) { toast('Could not find that candidate'); return; }
+    var nameEl = document.getElementById('resName'), roleEl = document.getElementById('resRole'), bgEl = document.getElementById('resBg');
+    if (nameEl) nameEl.value = c.name || '';
+    if (roleEl && !roleEl.value.trim() && (c.title || c.role)) roleEl.value = c.title || c.role;
+    if (bgEl && !bgEl.value.trim()) {
+      var seed = [];
+      if (c.title || c.role) seed.push('Current title: ' + (c.title || c.role));
+      if (c.location) seed.push('Location: ' + c.location);
+      if (c.email) seed.push('Email: ' + c.email);
+      if (c.phone) seed.push('Phone: ' + c.phone);
+      if (c.linkedIn) seed.push('LinkedIn: ' + c.linkedIn);
+      if (c.resume) seed.push('Resume on file: ' + c.resume);
+      if (c.stage) seed.push('Pipeline stage: ' + c.stage);
+      if (c.notes) seed.push('Notes: ' + c.notes);
+      if (c.skills) seed.push('Skills: ' + (Array.isArray(c.skills) ? c.skills.join(', ') : c.skills));
+      bgEl.value = seed.join('\n');
+    }
+    if (typeof switchTab === 'function') switchTab('rec-resume');
+    toast('Sent ' + (c.name || 'candidate') + ' to the Resume Builder \u2014 add their experience, then generate');
+  }
+  function sendToStaffing(ci) {
+    var c = luResults[ci]; if (!c) { toast('Could not find that candidate'); return; }
+    var nm = (c.name || '').trim();
+    if (!nm) { toast('That record has no name to add'); return; }
+    if (!window._staffRoster) window._staffRoster = [];
+    if (window._staffRoster.some(function (m) { return (m.name || '').trim().toLowerCase() === nm.toLowerCase(); })) { toast(nm + ' is already on the staffing roster'); return; }
+    var quals = [c.title || c.role, c.location, c.notes, (Array.isArray(c.skills) ? c.skills.join(', ') : c.skills)].filter(Boolean).join('; ');
+    window._staffRoster.push({ role: c.role || c.title || '', name: nm, quals: quals });
+    if (typeof staffRenderRoster === 'function') staffRenderRoster();
+    if (typeof staffInvalidate === 'function') staffInvalidate();
+    toast('Added ' + nm + ' to the staffing roster below');
+  }
+  function luSortBy(colIdx) { _luPage = 0; if (_luSort.col === colIdx) { _luSort.dir *= -1; } else { _luSort.col = colIdx; _luSort.dir = 1; } renderLookupTable(); initLuTableResize(); }
+  function luFilter(colIdx, val) { _luPage = 0; _luFilters[colIdx] = val; renderLookupTable(); initLuTableResize(); var inputs = document.querySelectorAll('.lu-filter-input'); if (inputs[colIdx]) { var inp = inputs[colIdx]; inp.focus(); var len = inp.value.length; inp.setSelectionRange(len, len); } }
+  function luGoPage(d) { _luPage += d; renderLookupTable(); initLuTableResize(); }
   function clearLookup() { _luSort = { col: -1, dir: 1 }; _luFilters = {}; ['lu-role', 'lu-location', 'lu-skills'].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; }); _luList = 'applicants'; document.querySelectorAll('#lu-list-group .pill').forEach(function (b, i) { b.classList.remove('on'); if (i === 0) b.classList.add('on'); }); var res = document.getElementById('lu-results'); if (res) res.style.display = 'none'; luResults = []; }
   function exportLookupCSV() {
     if (!luResults.length) { toast('No results to export'); return; }
@@ -16801,7 +17185,7 @@ window.RecStore = (function () {
   if (window.Rec) {
     window.Rec.runLookup = runLookup; window.Rec.clearLookup = clearLookup;
     window.Rec.setLuList = setLuList; window.Rec.setSearchMode = setSearchMode;
-    window.Rec.luSortBy = luSortBy; window.Rec.luFilter = luFilter;
+    window.Rec.luSortBy = luSortBy; window.Rec.luFilter = luFilter; window.Rec.luGoPage = luGoPage; window.Rec.sendToResume = sendToResume; window.Rec.sendToStaffing = sendToStaffing;
     window.Rec.exportLookupCSV = exportLookupCSV; window.Rec.matchOpened = matchOpened; window.Rec.connectSharePointM = connectSharePointM; window.Rec.onAuthChangedM = onAuthChanged;
     window.Rec.renderMatchLabels = renderMatchLabels;
   }
