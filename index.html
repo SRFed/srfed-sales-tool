@@ -10575,25 +10575,31 @@ async function pricingAutoBuildStructure() {
     let _govWorkload = (Array.isArray(pricingModel.statedWorkloadByLcat) && pricingModel.statedWorkloadByLcat.length)
       ? pricingModel.statedWorkloadByLcat.map(r => ({ lcat: String((r && r.lcat) || '').trim(), hours: parseFloat(r && r.hours) || 0 })).filter(r => r.lcat && r.hours > 0)
       : [];
+    let _wlProposed = false;
     if (!_govWorkload.length && window._lastBnaIntel && Array.isArray(window._lastBnaIntel.labor_categories)) {
       _govWorkload = window._lastBnaIntel.labor_categories
         .map(c => ({ lcat: String((c && c.lcat) || '').trim(), hours: parseFloat(String(((c && c.base_year_hours) != null ? c.base_year_hours : '')).replace(/[^0-9.]/g, '')) || 0 }))
         .filter(r => r.lcat && r.hours > 0);
+      _wlProposed = _govWorkload.length > 0 && (window._lastBnaIntel.staffing_source === 'proposed-loe');
     }
     if (_govWorkload.length) {
       pricingModel.statedWorkloadByLcat = _govWorkload;
-      pricingModel.fteSource = 'stated';
+      pricingModel.fteSource = _wlProposed ? 'estimated' : 'stated';
       pricingModel.statedFteTotal = Math.round((_govWorkload.reduce((s, r) => s + r.hours, 0) / defaultHpf()) * 100) / 100;
     }
     const _workloadBlock = _govWorkload.length
-      ? ('\nGOVERNMENT-STATED WORKLOAD BY LABOR CATEGORY (AUTHORITATIVE - reproduce EXACTLY):\nThe solicitation gives an estimated base-year hours figure for each labor category below. Build "labor_mix" as EXACTLY these categories, and set each role\'s "fte" to its stated base-year hours divided by ' + defaultHpf() + ', to 4 decimal places - KEEP the fraction; do NOT round to a whole or half FTE. These per-category levels of effort are mandatory: do not add, merge, drop, or re-balance categories. This is a workload-HOURS table, not a headcount table, so put these in "labor_mix" and leave "directed_labor" empty unless the Government separately states exact headcounts.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ' + Math.round(r.hours) + ' base-year hours (= ' + (r.hours / defaultHpf()).toFixed(4) + ' FTE)').join('\n') + '\n')
+      ? (_wlProposed
+        ? ('\nPROPOSED STARTING TEAM (from the opportunity analysis - a reasoned starting point, NOT a Government mandate):\nThe solicitation does not give a Government workload table; the roles and hours below are a proposed labor mix you may adjust to fit the scope. Use them as the default "labor_mix" and per-role "fte", but you MAY re-balance, add, or drop roles with brief justification. Prefer whole-number FTEs.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ~' + Math.round(r.hours) + ' base-year hours (~' + (r.hours / defaultHpf()).toFixed(2) + ' FTE)').join('\n') + '\n')
+        : ('\nGOVERNMENT-STATED WORKLOAD BY LABOR CATEGORY (AUTHORITATIVE - reproduce EXACTLY):\nThe solicitation gives an estimated base-year hours figure for each labor category below. Build "labor_mix" as EXACTLY these categories, and set each role\'s "fte" to its stated base-year hours divided by ' + defaultHpf() + ', to 4 decimal places - KEEP the fraction; do NOT round to a whole or half FTE. These per-category levels of effort are mandatory: do not add, merge, drop, or re-balance categories. This is a workload-HOURS table, not a headcount table, so put these in "labor_mix" and leave "directed_labor" empty unless the Government separately states exact headcounts.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ' + Math.round(r.hours) + ' base-year hours (= ' + (r.hours / defaultHpf()).toFixed(4) + ' FTE)').join('\n') + '\n'))
       : '';
 
     const _statedFte = pricingModel.statedFteTotal != null ? pricingModel.statedFteTotal : null;
     const _statedFteStr = _statedFte != null ? pricingFmtFte(_statedFte) : '';
     const fteLine = (pricingModel.fteSource === 'stated' && _statedFte != null)
       ? `The Government requires EXACTLY ${_statedFteStr} FTE of level of effort \u2014 this figure is GOSPEL and MAY be fractional (e.g. 2.5). Reproduce it EXACTLY; do NOT round a fractional FTE up or down to a whole number. The sum of the per-role "fte" values MUST equal EXACTLY ${_statedFteStr}, and total base-period billable hours MUST equal ${_statedFteStr} \u00d7 ${defaultHpf()} = ${Math.round(_statedFte * defaultHpf()).toLocaleString('en-US')} hours. A role's "fte" is its level of effort; whole numbers are preferred, but it may be fractional (0.5, 1.5, \u2026); "headcount" is the number of people and need not equal the fte (one half-time person is headcount 1, fte 0.5). Distribute the hours across the PWS tasks. Deviating from the stated FTE \u2014 including rounding a mandated fraction \u2014 is disqualifying.`
-      : `The Government did NOT state an FTE count \u2014 size the team yourself from the scope. PREFER whole-number FTEs (they keep staffing clean); use a fractional FTE only where a role's scope genuinely amounts to part-time work.`;
+      : (_wlProposed && _statedFte != null)
+        ? `A proposed team of about ${_statedFteStr} FTE is provided above as a STARTING POINT (the solicitation defines level of effort in its pricing model, so headcount is the offeror's decision, not a Government mandate). Use it as the default, but size the team to the scope \u2014 adjust, add, or drop roles as the work warrants. PREFER whole-number FTEs.`
+        : `The Government did NOT state an FTE count \u2014 size the team yourself from the scope. PREFER whole-number FTEs (they keep staffing clean); use a fractional FTE only where a role's scope genuinely amounts to part-time work.`;
     const hpf = defaultHpf();
 
     let schedBlock = '';
@@ -15195,16 +15201,16 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `3. For requirement_name: copy the EXACT title from the solicitation cover page — do not reword or expand it.\n` +
     `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated.\n` +
     `5. For stage: look for explicit language like "Request for Quotation", "Request for Proposal", "Sources Sought", "Request for Information".\n` +
-    `6. For labor_categories: list EVERY labor category or position title mentioned anywhere in the solicitation (PWS, staffing plan, Section B, wage determinations, attachments). Sort them alphabetically by lcat name.\n` +
+    `6. For labor_categories, build the REALISTIC STAFFED TEAM you would actually price - NOT a menu of every title or skill mentioned. (a) If the solicitation gives a workload / level-of-effort / staffing table (see the WORKLOAD rule below), reproduce EXACTLY those categories and set loe_basis to "government". (b) Otherwise the labor is quoter-defined (you propose the team in a pricing model), so set loe_basis to "quoter": name each DISTINCT role and CONSOLIDATE overlapping skills under one qualified person. Expertise areas or SME domains (e.g. Records Management, Section 508, FOIA/FACA, Technical Writing, Content Management) are NOT separate labor categories when one senior person - often the PM/SME - would cover several; do NOT reify a list of required skills into one role per skill. Give the team you would actually staff to perform the scope: a small virtual A&AS / advisory / support effort is typically 2-5 people (e.g. a lead/PM plus 1-3 support analysts), not one role per mentioned domain. Assign EVERY role a base_year_fte (whole numbers preferred; fractional only for genuine part-time) and an est_loaded_rate = your realistic fully-loaded hourly rate for that role in USD (integer; e.g. senior PM/SME ~150-190, mid analyst ~95-130, junior/admin ~70-95) unless min_hourly_rate is stated. Sort by base_year_fte descending, then by name.\n` +
     `7. For is_sca: the contract is SCA/SCLS-covered whenever a Wage Determination is attached or referenced, or FAR 52.222-41 applies - treat a WD's presence as DECISIVE evidence of coverage. When the contract is SCA-covered, mark is_sca true for every non-exempt SERVICE position (administrative, technical support, clerical, operations, maintenance, help-desk, and similar roles). Mark a position false ONLY if it is a bona-fide exempt professional/administrative/executive/computer employee under 29 CFR 541, or the contract is genuinely not SCA-covered. Do NOT mark positions false just because the SCA clause does not name each one individually, and do NOT default everything to false when a WD is present.\n` +
     `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
     `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName || 'the company'}${CLIENT_CONFIG.businessType ? ' (a ' + CLIENT_CONFIG.businessType + ')' : ''} and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - the set-aside aligns directly with the company's certifications and the NAICS matches core capabilities."\n\n` +
-    `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from.
+    `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from. When labor is quoter-defined (loe_basis "quoter", no Government hours table), do NOT guess the value from vague scope size - compute base_year_value = the sum over your proposed roles of (base_year_fte x 1912 x est_loaded_rate), prefix "[Inferred] ", and state the team basis in award_value_rationale (e.g. "Proposed team of 1 PM/SME + 2 support analysts = 3.0 FTE at a blended ~$130/hr loaded"). total_contract_value = base_year_value x number of performance periods.
 11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `WORKLOAD / LEVEL-OF-EFFORT TABLE (OVERRIDES rule 10 whenever such a table is present): If the solicitation gives an estimated-hours / workload / level-of-effort table by labor category, treat those hours as the authoritative basis and do NOT estimate. (a) ANNUAL hours = the sum of the BASE-YEAR hours column ONLY; NEVER add the base-year and option-year columns together (option periods are SEPARATE performance periods, not additional concurrent staff). (b) fte_count = annual hours / 1912, rounded to ONE decimal, PREFIXED with "[GovEst] " because it is derived from the government's STATED workload estimate (an estimate, not a firm requirement) - e.g. "[GovEst] 7.7". (c) For EACH labor category, base_year_fte = that category base-year hours / 1912 to one decimal, and set base_year_hours to that category's base-year hours as an INTEGER exactly as stated in the table. (d) base_year_value and total_contract_value are the government's stated workload priced at a rate WE assume, so PREFIX BOTH with "[Inferred] ". Compute base_year_value = annual hours times a REALISTIC blended fully-loaded hourly rate: for analytical / professional-services labor (data analysts, business process engineers, program managers, and similar) a defensible blended fully-loaded rate is roughly $100-$150/hr - use a higher rate ONLY for genuinely specialized or cleared labor and note that in award_value_rationale. Do NOT use inflated rates (e.g. $250+/hr) for standard analyst / professional labor. Example base_year_value "[Inferred] ~$1.8M/yr". total_contract_value = base_year_value times the number of performance periods, e.g. "[Inferred] ~$3.6M". In award_value_rationale state the hours basis and the assumed blended rate (e.g. "RFQ base-year workload of 14685 hours across 5 labor categories at a blended loaded rate of ~$125/hr").\n\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"per the WORKLOAD / LEVEL-OF-EFFORT rule above when such a table is present (base-year hours only / 1912, one decimal, PREFIXED [GovEst]); else the explicitly stated figure (no prefix); else empty string","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","base_year_hours":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exact stage type","next_due_date":"","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"per the WORKLOAD / LEVEL-OF-EFFORT rule above when such a table is present (base-year hours only / 1912, one decimal, PREFIXED [GovEst]); else the explicitly stated figure (no prefix); else empty string","contract_years":"","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the final END date of the period of performance including all option periods if stated, or computed from a stated start plus total duration (prefix [Inferred] if computed); empty if neither stated nor computable","last_possible_performance_date":"","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","loe_basis":"government if the solicitation gives a workload/staffing/hours table, otherwise quoter (you propose the team in a pricing model); empty if unclear","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","base_year_hours":"","est_loaded_rate":"","notes":""}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -15265,6 +15271,7 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
         else { console.warn('Intel JSON strict parse failed, using field extractor. Error:', e2.message); intel = extractIntelFields(jsonStr); }
       }
     }
+    if (typeof reconcileStaffing === 'function') reconcileStaffing(intel);
     window._lastBnaIntel = intel;
     renderOpportunityIntel(intel, body);
     if (window._bnaOpp && Object.keys(window._bnaOpp).length && typeof renderBnaDecisionPanel === 'function') renderBnaDecisionPanel();
@@ -15476,6 +15483,112 @@ async function lookupIncumbentViaWeb(intel, apiKey) {
   return parsed;
 }
 
+// ═══ STAFFING RECONCILIATION ═══════════════════════════════════════════════
+// Makes the LCATs, FTEs and dollar values a single consistent basis: dedups
+// roles, never leaves FTEs blank, and ties base-year value to roles x FTE x
+// rate (Option A - staffing drives value when no hard figure is stated). A
+// hard government-stated dollar value wins (the team is scaled to it); a
+// government workload-hours table stays authoritative. Provenance is tagged so
+// a proposed team is never shown - or priced - as a Government requirement.
+function reconcileStaffing(intel) {
+  try {
+    if (!intel || typeof intel !== 'object') return intel;
+    const HPF = (typeof defaultHpf === 'function') ? (defaultHpf() || 1912) : 1912;
+    const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
+    const dollars = v => { const s = String(v == null ? '' : v); const m = s.match(/([\d,]+(?:\.\d+)?)\s*([mbk])?/i); if (!m) return 0; let n = parseFloat(m[1].replace(/,/g, '')); if (isNaN(n)) return 0; const suf = (m[2] || '').toLowerCase(); if (suf === 'k') n *= 1e3; else if (suf === 'm') n *= 1e6; else if (suf === 'b') n *= 1e9; return n; };
+    const isInf = v => /^\s*\[inferred\]/i.test(String(v == null ? '' : v));
+    const hasNum = v => /\d/.test(String(v == null ? '' : v));
+
+    let cats = (Array.isArray(intel.labor_categories) ? intel.labor_categories : [])
+      .map(c => (c && typeof c === 'object') ? Object.assign({}, c) : { lcat: String(c || '') })
+      .map(c => Object.assign(c, { lcat: String(c.lcat || c.labor_category || c['labor category'] || '').trim() }))
+      .filter(c => c.lcat && c.lcat.toLowerCase() !== 'null' && c.lcat !== 'Exact Labor Category Title');
+    if (!cats.length) return intel;
+
+    // conservative dedup: exact normalized-title match only (never merges distinct roles)
+    const normKey = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const merged = [];
+    cats.forEach(c => {
+      const k = normKey(c.lcat); const ex = k ? merged.find(m => m._k === k) : null;
+      if (ex) {
+        ex.base_year_fte = (num(ex.base_year_fte) + num(c.base_year_fte)) || ex.base_year_fte || c.base_year_fte;
+        ex.base_year_hours = (num(ex.base_year_hours) + num(c.base_year_hours)) || ex.base_year_hours || c.base_year_hours;
+        if (!num(ex.est_loaded_rate) && num(c.est_loaded_rate)) ex.est_loaded_rate = c.est_loaded_rate;
+        if (!num(ex.min_hourly_rate) && num(c.min_hourly_rate)) ex.min_hourly_rate = c.min_hourly_rate;
+        if (c.key_personnel === true || c.key_personnel === 'true') ex.key_personnel = true;
+      } else { c._k = k; merged.push(c); }
+    });
+    cats = merged;
+
+    const govHours = cats.some(c => num(c.base_year_hours) > 0);
+    const declaredQuoter = /quoter/i.test(String(intel.loe_basis || ''));
+    const source = (govHours && !declaredQuoter) ? 'government-workload' : 'proposed-loe';
+    intel.staffing_source = source;
+
+    const rateFor = c => {
+      if (num(c.min_hourly_rate) > 0) return num(c.min_hourly_rate) * 1.7;   // burden a stated wage floor
+      if (num(c.est_loaded_rate) > 0) return num(c.est_loaded_rate);
+      const t = (c.lcat || '').toLowerCase();
+      if (c.key_personnel === true || c.key_personnel === 'true' || /program manager|project manager|\bpm\b|principal|director|\bsme\b|subject matter|architect|\blead\b/.test(t)) return 160;
+      if (/senior|\bsr\b|engineer|advisor|consultant|specialist/.test(t)) return 120;
+      if (/junior|\bjr\b|admin|clerk|assistant|coordinator|clerical/.test(t)) return 80;
+      return 105;
+    };
+
+    cats.forEach(c => {
+      let fte = num(c.base_year_fte);
+      if (fte <= 0 && num(c.base_year_hours) > 0) fte = num(c.base_year_hours) / HPF;
+      if (fte <= 0) fte = 1;                 // never blank
+      c._fte = fte; c._rate = rateFor(c);
+    });
+
+    const laborOf = () => cats.reduce((s, c) => s + c._fte * HPF * c._rate, 0);
+    let labor = laborOf();
+    const statedHard = hasNum(intel.base_year_value) && !isInf(intel.base_year_value) && dollars(intel.base_year_value) > 0;
+    const periods = Math.max(1, Math.round(num(intel.contract_years)) || 5);
+
+    if (statedHard) {                        // a hard Government-stated dollar value is gospel: scale the team to it
+      const target = dollars(intel.base_year_value);
+      if (labor > 0 && target > 0) { const k = target / labor; cats.forEach(c => c._fte = c._fte * k); labor = laborOf(); }
+    }
+
+    const totalFte = cats.reduce((s, c) => s + c._fte, 0);
+    const blended = totalFte > 0 ? labor / (totalFte * HPF) : 0;
+    cats.forEach(c => {
+      const govH = num(c.base_year_hours);
+      if (source === 'government-workload' && govH > 0 && !statedHard) { c.base_year_hours = Math.round(govH); c.base_year_fte = Math.round((govH / HPF) * 100) / 100; }
+      else { c.base_year_fte = Math.round(c._fte * 100) / 100; c.base_year_hours = Math.round(c._fte * HPF); }
+      if (!hasNum(c.est_loaded_rate)) c.est_loaded_rate = Math.round(c._rate);
+      delete c._k; delete c._fte; delete c._rate;
+    });
+    intel.labor_categories = cats;
+    intel.fte_count = (source === 'government-workload' ? '[GovEst] ' : '[Proposed] ') + (Math.round(totalFte * 10) / 10);
+
+    const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
+    if (statedHard) {                        // keep the stated base verbatim; ensure a total exists
+      if (!hasNum(intel.total_contract_value) || isInf(intel.total_contract_value)) intel.total_contract_value = '[Inferred] ~' + fmt(labor * periods);
+    } else {                                 // derive the value from the reconciled team - always ties out
+      intel.base_year_value = '[Inferred] ~' + fmt(labor) + '/yr';
+      intel.total_contract_value = '[Inferred] ~' + fmt(labor * periods);
+      intel.award_value_rationale = 'Reconciled from a ' + (source === 'government-workload' ? 'government-stated workload of ' : 'proposed ' + cats.length + '-role team, ') + (Math.round(totalFte * 10) / 10) + ' FTE (' + Math.round(totalFte * HPF).toLocaleString() + ' base-year hours) at a blended ~$' + Math.round(blended) + '/hr fully-loaded.' + (source === 'proposed-loe' ? ' Quoter-defined LOE \u2014 confirm headcount in Pricing.' : '');
+    }
+    intel._staffingReconciliation = { source: source, nRoles: cats.length, totalFte: Math.round(totalFte * 10) / 10, blended: Math.round(blended), baseValue: Math.round(labor), periods: periods, valueDerived: !statedHard };
+    return intel;
+  } catch (e) { console.warn('reconcileStaffing failed', e); return intel; }
+}
+function _staffingBanner(intel) {
+  const r = intel && intel._staffingReconciliation;
+  if (!r || !r.nRoles) return '';
+  const proposed = r.source === 'proposed-loe';
+  const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
+  const bord = proposed ? '#fcd34d' : '#a5d8ff', bg = proposed ? '#fffbeb' : '#eff6ff', hd = proposed ? '#92400e' : '#1e40af';
+  return '<div style="margin:2px 0 12px;border:1px solid ' + bord + ';background:' + bg + ';border-radius:8px;padding:9px 12px">'
+    + '<div style="font-size:12px;font-weight:800;color:' + hd + '">\u2696 Staffing &amp; value \u2014 reconciled' + (proposed ? ' (proposed team)' : '') + '</div>'
+    + '<div style="font-size:11.5px;color:var(--text);margin-top:3px;line-height:1.55"><strong>' + r.nRoles + '</strong> role' + (r.nRoles === 1 ? '' : 's') + ' \u00b7 <strong>' + r.totalFte + '</strong> FTE \u00b7 blended <strong>~$' + r.blended + '/hr</strong> loaded \u00b7 base year <strong>\u2248 ' + fmt(r.baseValue) + '</strong>. The roles, FTEs and dollars tie out (roles \u00d7 FTE \u00d7 rate = value) and carry into Pricing.'
+    + (proposed ? ' <span style="color:' + hd + '">The solicitation sets level of effort in its pricing model, so this headcount is a reasoned <strong>proposal</strong>, not a Government requirement \u2014 confirm or adjust it in Pricing.</span>' : ' <span style="color:' + hd + '">Derived from the Government-stated workload hours.</span>')
+    + '</div></div>';
+}
+
 function renderOpportunityIntel(intel, container) {
   const SECTIONS = [
     { title:'Opportunity', fields:[
@@ -15638,6 +15751,8 @@ function renderOpportunityIntel(intel, container) {
       if (isGovEst) displayVal = displayVal.replace(/^\[GovEst\]\s*/, '');
       const isInferred = !isGovEst && displayVal.startsWith('[Inferred]');
       if (isInferred) displayVal = displayVal.replace(/^\[Inferred\]\s*/, '');
+      const isProposed = !isGovEst && !isInferred && displayVal.startsWith('[Proposed]');
+      if (isProposed) displayVal = displayVal.replace(/^\[Proposed\]\s*/, '');
       let isMissing = !displayVal || /^(not stated( in documents)?|null|n\/a|none)$/i.test(displayVal);
       // The pursuit recommendation is a required judgment, never a "blank" — if the
       // model returned nothing usable, say so explicitly instead of rendering empty.
@@ -15648,8 +15763,8 @@ function renderOpportunityIntel(intel, container) {
         displayVal = 'Not stated in documents';
       }
       const isUrl = /^https?:\/\//i.test(displayVal);
-      const valStyle = isGovEst ? 'color:#0e7490;font-style:italic' : isInferred ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
-      const badge = isGovEst ? `<span style="font-size:10px;font-weight:700;background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:1px 6px;color:#0e7490;margin-left:6px">Gov. estimate</span>` : isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : '';
+      const valStyle = isGovEst ? 'color:#0e7490;font-style:italic' : (isInferred || isProposed) ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
+      const badge = isGovEst ? `<span style="font-size:10px;font-weight:700;background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:1px 6px;color:#0e7490;margin-left:6px">Gov. estimate</span>` : isInferred ? `<span style="font-size:10px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 6px;color:#92400e;margin-left:6px">Inferred</span>` : isProposed ? `<span style="font-size:10px;font-weight:700;background:#ffedd5;border:1px solid #fdba74;border-radius:8px;padding:1px 6px;color:#9a3412;margin-left:6px">Proposed</span>` : '';
       const valContent = isUrl
         ? `<a href="${escHtml(displayVal)}" target="_blank" style="color:var(--blue)">${escHtml(displayVal)}</a>`
         : `<span style="${valStyle}">${escHtml(displayVal)}</span>`;
@@ -15690,7 +15805,8 @@ function renderOpportunityIntel(intel, container) {
     </div>`;
   };
 
-  container.innerHTML = SECTIONS.map((sec, si) => {
+  const _sbNr = (typeof _staffingBanner === 'function') ? _staffingBanner(intel) : '';
+  container.innerHTML = _sbNr + SECTIONS.map((sec, si) => {
     const rowsHtml = sec.fields.map(renderField).join('');
     if (!rowsHtml) return '';
     return '<div style="margin-top:' + (si === 0 ? 2 : 16) + 'px">' +
