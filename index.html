@@ -594,8 +594,6 @@
   .rec-placeholder p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
   /* ═══ Recruiting suite — scoped styling on the proposal design system ═══ */
   .rec-scope { max-width: 900px; }
-  .rec-scope .rec-title { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: .2px; margin: 2px 0 4px; }
-  .rec-scope .rec-sub { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
   /* 5D: match the Proposal tab look. Card stays padded; ONLY a card's leading .sec becomes a
      full-bleed solid blue banner (like .card-header), so the two tab families read the same.
      Other .sec uses (count labels, in-results sub-headers) keep the plain blue-text style. */
@@ -2024,10 +2022,9 @@
         <div id="bnaQaEmpty" style="font-size:12.5px;color:var(--muted);padding:2px 0 10px">Analyze the opportunity first (Steps 1–2 above), then ask anything about it here.</div>
         <div id="bnaQaMain" style="display:none">
           <label style="display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px">Your question</label>
-          <textarea id="bnaQaInput" placeholder="e.g. What is the page limit for the technical volume? When are questions due? Is this a small-business set-aside? What are the key evaluation factors?" style="width:100%;min-height:66px;resize:vertical;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){runBnaQa();}"></textarea>
+          <textarea id="bnaQaInput" placeholder="e.g. What is the page limit for the technical volume? When are questions due? Is this a small-business set-aside? What are the key evaluation factors?" style="width:100%;min-height:66px;resize:vertical;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></textarea>
           <div class="btn-row" style="margin-top:10px">
-            <button class="btn primary" id="bnaQaBtn" onclick="runBnaQa()">Ask</button>
-            <span style="font-size:11px;color:var(--muted);align-self:center">Ctrl/⌘ + Enter</span>
+            <button id="bnaQaBtn" onclick="runBnaQa()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.12)">Ask</button>
           </div>
           <div id="bnaQaStatus" class="ldg" style="display:none;margin-top:12px"><div style="display:flex;align-items:center;gap:10px"><span class="spinner-dark" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></span><span id="bnaQaStatusText">Reading the solicitation&hellip;</span></div><div class="indet-bar" style="margin-top:8px"></div></div>
           <div id="bnaQaAnswer" style="display:none;margin-top:14px"></div>
@@ -2334,8 +2331,6 @@
 
 <div class="tab-pane" id="pane-rec-search">
   <div class="rec-scope">
-    <div class="rec-title">Candidate Search</div>
-    <div class="rec-sub">Generate boolean search strings to find candidates on any platform</div>
     <div class="card rec-card">
       <div class="sec">Job details</div>
       <label>Job title(s)</label>
@@ -2381,8 +2376,6 @@
 </div>
 <div class="tab-pane" id="pane-rec-tracker">
   <div class="rec-scope">
-    <div class="rec-title">Candidate Tracker</div>
-    <div class="rec-sub">Shared team list &middot; syncs live to SharePoint</div>
     <div id="sp-banner-tracker" class="spb info" style="display:none"></div>
     <div class="rec-stats">
       <div class="rec-stat"><div class="sn" id="st-total">0</div><div class="sl">Total</div></div>
@@ -2440,8 +2433,6 @@
 </div>
 <div class="tab-pane" id="pane-rec-match">
   <div class="rec-scope">
-    <div class="rec-title">Candidate Match</div>
-    <div class="rec-sub">Search your applicant repositories &middot; find candidates who match an open role</div>
     <div id="sp-banner-match" class="spb info" style="display:none"></div>
     <div class="card rec-card">
       <div class="sec">Search criteria</div>
@@ -2499,8 +2490,6 @@
 </div>
 <div class="tab-pane" id="pane-rec-resume">
   <div class="rec-scope">
-    <div class="rec-title">Resume Builder</div>
-    <div class="rec-sub">Produce a solicitation-tailored, compliant resume &middot; maps experience to the key-personnel qualifications and flags any gaps &middot; uses only what you provide, never invents credentials</div>
 
     <div class="card rec-card" id="resumeCard">
       <div class="sec">📝 Build a compliant resume</div>
@@ -2621,8 +2610,6 @@
 </div>
 <div class="tab-pane" id="pane-rec-outreach">
   <div class="rec-scope">
-    <div class="rec-title">Outreach Writer</div>
-    <div class="rec-sub">AI-powered candidate message generation</div>
     <div class="card rec-card">
       <div class="sec">Message details</div>
       <div class="r2">
@@ -3063,6 +3050,7 @@
         <button onclick="resetSettings()" style="padding:8px 16px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--muted)">↺ Reset to Defaults</button>
       </div>
       <div id="settingsSavedMsg" style="display:none;margin-top:10px;padding:8px 14px;background:var(--success-bg);border:1px solid #86efac;border-radius:6px;font-size:13px;color:var(--success)">✅ Settings saved successfully.</div>
+      <div id="appVersionFooter" style="margin-top:24px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--muted)">Sales Tool &middot; Version <span id="appVersionText">—</span></div>
     </div>
   </div>
 </div>
@@ -3082,6 +3070,12 @@ const WORKERS_SUBDOMAIN = 'srfed-svc';
 // you pick in Settings (which is populated live from Anthropic's models API, so it
 // always reflects what actually exists). The value here is only the initial default.
 let CLAUDE_MODEL = 'claude-sonnet-4-6';
+
+// ── App version ───────────────────────────────────────────────────────────────
+// Single source of truth for the build number shown in the Settings footer.
+// Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
+// can confirm which build is live by searching page source for "Version 108".
+const APP_VERSION = '108';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13637,17 +13631,21 @@ function refreshBnaQaAvailability() {
   const empty = document.getElementById('bnaQaEmpty');
   const main = document.getElementById('bnaQaMain');
   if (!empty || !main) return;
-  const ready = !!(window._bnaOpp && Object.keys(window._bnaOpp).length);
+  // Ready as soon as opportunity details exist — from the intel extraction (_lastBnaIntel) OR the
+  // scoring step (_bnaOpp), whichever lands first. Does NOT wait for the coverage-gap analysis.
+  const ready = !!((window._bnaOpp && Object.keys(window._bnaOpp).length) || (window._lastBnaIntel && Object.keys(window._lastBnaIntel).length));
   empty.style.display = ready ? 'none' : 'block';
   main.style.display = ready ? 'block' : 'none';
 }
 function _bnaQaContext() {
-  const opp = window._bnaOpp || {};
+  // Merge both intel sources: the extraction (_lastBnaIntel, available right after Step 1) as the
+  // base, overlaid by the scoring facts (_bnaOpp) when present. Covers both field-name conventions.
+  const opp = Object.assign({}, window._lastBnaIntel || {}, window._bnaOpp || {});
   const g = (k) => (opp[k] != null && String(opp[k]).trim()) ? String(opp[k]).trim() : '';
   const arr = (k) => [].concat(opp[k] || []).filter(Boolean);
   const lines = [];
   const push = (label, val) => { if (val) lines.push(label + ': ' + val); };
-  push('Title', g('requirement_title'));
+  push('Title', g('requirement_title') || g('requirement_name'));
   push('Solicitation number', g('id_number') || g('solicitation_number'));
   push('Department / agency', g('department_agency'));
   push('Sub-agency', g('sub_agency'));
@@ -13658,16 +13656,22 @@ function _bnaQaContext() {
   push('Contract vehicle', g('contract_vehicle'));
   push('Period of performance', g('period_of_performance'));
   push('FTE count', g('fte_count'));
-  push('Estimated value', g('estimated_value'));
-  push('Facility clearance required', g('required_clearance'));
+  push('Estimated value', g('estimated_value') || g('base_year_value') || g('total_contract_value'));
+  push('Facility clearance required', g('required_clearance') || g('facility_clearance_required'));
+  push('Personnel clearance required', g('personnel_clearance_required'));
   push('CMMC level required', g('required_cmmc'));
-  push('Required certifications', arr('required_certifications').join(', ') || arr('certifications').join(', '));
+  push('Required certifications', arr('required_certifications').join(', ') || arr('certifications').join(', ') || arr('certifications_required').join(', '));
   push('Key capabilities / scope', arr('key_capabilities').join('; ') || arr('key_capabilities_needed').join('; '));
-  push('Due date', g('response_due_date') || g('due_date'));
+  push('Incumbent', g('incumbent'));
+  push('New or recompete', g('new_or_recompete'));
+  push('Contract type', g('contract_type'));
+  push('SCA coverage', g('sca_coverage'));
+  push('Due date', g('response_due_date') || g('due_date') || g('next_due_date'));
   push('Questions due', g('questions_due_date'));
   push('Place of performance', g('place_of_performance'));
-  push('Point of contact', g('point_of_contact') || g('contracting_officer'));
-  push('Summary', g('summary'));
+  push('Point of contact', g('point_of_contact') || g('contracting_officer') || g('ko_name_office'));
+  push('Source', g('source'));
+  push('Summary', g('summary') || g('description'));
   return lines.join('\n');
 }
 async function runBnaQa() {
@@ -13676,7 +13680,7 @@ async function runBnaQa() {
   const answer = document.getElementById('bnaQaAnswer');
   const q = (input && input.value || '').trim();
   const showErr = (msg) => { if (answer) { answer.style.display = 'block'; answer.innerHTML = '<div style="font-size:12.5px;color:var(--error)">' + escHtml(msg) + '</div>'; } };
-  if (!window._bnaOpp || !Object.keys(window._bnaOpp).length) { showErr('Analyze the opportunity first (Steps 1\u20132 above).'); return; }
+  if (!(window._bnaOpp && Object.keys(window._bnaOpp).length) && !(window._lastBnaIntel && Object.keys(window._lastBnaIntel).length)) { showErr('Analyze the opportunity first (Steps 1\u20132 above).'); return; }
   if (!q) { if (input) input.focus(); return; }
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { showErr('Enter your Anthropic API key (top of the page) first.'); return; }
@@ -13800,24 +13804,29 @@ async function resumeFileChosen(file) {
   if (!file) return;
   var fname = file.name.toLowerCase();
   var exts = ['.pdf', '.docx', '.doc', '.txt', '.md'];
-  if (!exts.some(function (x) { return fname.endsWith(x); })) { resumeMsg('PDF, Word (.docx), or text files only.', true); return; }
+  if (!exts.some(function (x) { return fname.endsWith(x); })) { resumeMsg('PDF, Word (.docx / .doc), or text files only.', true); return; }
   _resRenderFileChip(file);
-  var apiKey = (typeof getApiKey === 'function') ? getApiKey() : null;
-  if (!apiKey) { resumeMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
   resumeMsg('Reading ' + file.name + '\u2026', false);
   try {
-    var b64 = await new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result.split(',')[1]); }; r.onerror = function () { rej(new Error('File read failed')); }; r.readAsDataURL(file); });
-    var mediaType = fname.endsWith('.pdf') ? 'application/pdf'
-      : fname.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      : fname.endsWith('.doc') ? 'application/msword' : 'text/plain';
-    if (fname.endsWith('.txt') || fname.endsWith('.md')) {
-      window._resumeUploadedText = await new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result || ''); }; r.onerror = function () { rej(new Error('File read failed')); }; r.readAsText(file); });
+    // Route through the tool's shared document reader. It extracts .docx/.doc/.txt text client-side
+    // (the Anthropic document API only accepts PDF + text, never raw Word), and returns a PDF as a
+    // document block we can transcribe. This is what fixes the legacy-.doc 400 error.
+    var block = (typeof fileToContentBlock === 'function') ? await fileToContentBlock(file) : null;
+    if (!block) { resumeMsg('That file type could not be read. Try a PDF, .docx, or plain text file.', true); return; }
+    // Non-PDF paths come back as an already-extracted text block (or an honest "unreadable" note).
+    if (block.type === 'text') {
+      if (block._unreadable) { window._resumeUploadedText = ''; _resClearFile(); resumeMsg(String(block.text || '').replace(/^\[File:[^\]]*\]\s*/, '').replace(/[\[\]]/g, '') || 'That file could not be read. Save it as .docx or PDF and try again, or enter details manually.', true); return; }
+      var t = String(block.text || '').replace(/^\[File:[^\]]*\]\s*/, '').trim();
+      if (t.length < 20) { window._resumeUploadedText = ''; resumeMsg('The file had no readable text. Try a different file, or enter details manually.', true); return; }
+      window._resumeUploadedText = t;
       resumeMsg('\u2713 Loaded ' + file.name + ' \u2014 add any overrides in the fields below, then Generate.', false);
       return;
     }
-    // For PDF/Word, ask the model to transcribe the resume text verbatim (no restructuring yet).
+    // PDF path: the block is a valid document source the API accepts — transcribe it to text.
+    var apiKey = (typeof getApiKey === 'function') ? getApiKey() : null;
+    if (!apiKey) { resumeMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
     var prompt = 'Transcribe the FULL text of this resume/CV verbatim as plain text. Preserve all names, employers, titles, dates, bullet points, education, certifications, and clearances exactly as written. Do not summarize, reformat, or omit anything. Output only the transcribed text.';
-    var payload = { model: (typeof CLAUDE_MODEL !== 'undefined' ? CLAUDE_MODEL : 'claude-sonnet-4-6'), max_tokens: 8000, messages: [{ role: 'user', content: [{ type: 'document', source: { type: 'base64', media_type: mediaType, data: b64 } }, { type: 'text', text: prompt }] }] };
+    var payload = { model: (typeof CLAUDE_MODEL !== 'undefined' ? CLAUDE_MODEL : 'claude-sonnet-4-6'), max_tokens: 8000, messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] };
     var resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', mode: 'cors', credentials: 'omit', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify(payload) });
     if (!resp.ok) { var et = await resp.text(); resumeMsg('Could not read the resume (' + resp.status + '): ' + et.slice(0, 120), true); return; }
     var data = await resp.json();
@@ -13993,7 +14002,7 @@ function renderResume(data) {
 
   const buttons = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px">' +
     '<button class="btn sm" onclick="copyResume()">\u2398 Copy</button>' +
-    '<button class="btn sm" onclick="downloadResumeWord()">\u2193 Download Word</button></div>';
+    '<button class="btn sm" onclick="downloadResumeWord()">\u2193 Download .docx</button></div>';
 
   res.innerHTML = buttons +
     compHtml +
@@ -14001,6 +14010,110 @@ function renderResume(data) {
     gaps +
     '<p class="hint" style="margin-top:8px">The compliance mapping is for your internal review; the Word download contains the resume only.</p>';
   res.style.display = 'block';
+}
+
+// Build a genuine .docx (OOXML ZIP) for the resume — a real modern Word file, not HTML in a .doc
+// wrapper. Simple document, so no template is needed: we assemble the minimal valid package with
+// JSZip. Falls back to the HTML/.doc path if JSZip isn't available.
+function _resumeDocxXmlEscape(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+function _resumeDocxRun(text, opts) {
+  opts = opts || {};
+  var rpr = '';
+  if (opts.bold) rpr += '<w:b/>';
+  if (opts.color) rpr += '<w:color w:val="' + opts.color + '"/>';
+  if (opts.sz) rpr += '<w:sz w:val="' + opts.sz + '"/><w:szCs w:val="' + opts.sz + '"/>';
+  if (opts.caps) rpr += '<w:caps/>';
+  var rprXml = rpr ? ('<w:rPr>' + rpr + '</w:rPr>') : '';
+  return '<w:r>' + rprXml + '<w:t xml:space="preserve">' + _resumeDocxXmlEscape(text) + '</w:t></w:r>';
+}
+function _resumeDocxPara(runsXml, opts) {
+  opts = opts || {};
+  var ppr = '';
+  var pprInner = '';
+  if (opts.spacingBefore != null || opts.spacingAfter != null) {
+    pprInner += '<w:spacing' + (opts.spacingBefore != null ? ' w:before="' + opts.spacingBefore + '"' : '') + (opts.spacingAfter != null ? ' w:after="' + opts.spacingAfter + '"' : '') + '/>';
+  }
+  if (opts.bottomBorder) pprInner += '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="333333"/></w:pBdr>';
+  if (opts.bullet) pprInner += '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>';
+  if (pprInner) ppr = '<w:pPr>' + pprInner + '</w:pPr>';
+  return '<w:p>' + ppr + (runsXml || '') + '</w:p>';
+}
+function _resumeDocxSection(title) {
+  return _resumeDocxPara(_resumeDocxRun(title, { bold: true, caps: true, sz: '22' }), { spacingBefore: '240', spacingAfter: '40', bottomBorder: true });
+}
+function _resumeBuildDocxXml(d) {
+  var body = [];
+  // Name
+  body.push(_resumeDocxPara(_resumeDocxRun(String(d.candidate_name || ''), { bold: true, sz: '32' }), { spacingAfter: '20' }));
+  if (d.target_role) body.push(_resumeDocxPara(_resumeDocxRun(String(d.target_role), { bold: true, color: '005FD5', sz: '24' }), { spacingAfter: '20' }));
+  var contactBits = [d.location, d.email, d.phone, d.linkedin].filter(function (x) { return x && String(x).trim(); });
+  if (contactBits.length) body.push(_resumeDocxPara(_resumeDocxRun(contactBits.join('  |  '), { color: '555555', sz: '18' }), { spacingAfter: '40' }));
+  if (d.summary) body.push(_resumeDocxPara(_resumeDocxRun(String(d.summary)), { spacingBefore: '80', spacingAfter: '40' }));
+  // Experience
+  var exp = Array.isArray(d.experience) ? d.experience : [];
+  if (exp.length) {
+    body.push(_resumeDocxSection('Professional Experience'));
+    exp.forEach(function (e) {
+      var head = String(e.title || '') + (e.org ? ' \u2013 ' + String(e.org) : '') + (e.dates ? ' (' + String(e.dates) + ')' : '');
+      body.push(_resumeDocxPara(_resumeDocxRun(head, { bold: true }), { spacingBefore: '80', spacingAfter: '20' }));
+      (Array.isArray(e.bullets) ? e.bullets.filter(Boolean) : []).forEach(function (b) {
+        body.push(_resumeDocxPara(_resumeDocxRun(String(b)), { bullet: true }));
+      });
+    });
+  }
+  var listSect = function (title, arr) {
+    var items = Array.isArray(arr) ? arr.filter(Boolean) : [];
+    if (!items.length) return;
+    body.push(_resumeDocxSection(title));
+    items.forEach(function (x) { body.push(_resumeDocxPara(_resumeDocxRun(String(x)), { bullet: true })); });
+  };
+  listSect('Education', d.education);
+  listSect('Certifications', d.certifications);
+  listSect('Software & Tools', d.tools);
+  if (d.clearance) {
+    body.push(_resumeDocxSection('Clearance'));
+    body.push(_resumeDocxPara(_resumeDocxRun(String(d.clearance))));
+  }
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:body>' + body.join('') +
+    '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>' +
+    '</w:body></w:document>';
+}
+async function _resumeBuildDocxBlob(d) {
+  if (typeof JSZip === 'undefined') return null;
+  var zip = new JSZip();
+  zip.file('[Content_Types].xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
+    '</Types>');
+  zip.folder('_rels').file('.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>');
+  var wordFolder = zip.folder('word');
+  wordFolder.folder('_rels').file('document.xml.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
+    '</Relationships>');
+  // Minimal bullet-list numbering definition (numId 1).
+  wordFolder.file('numbering.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="\u2022"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr><w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/></w:rPr></w:lvl></w:abstractNum>' +
+    '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>' +
+    '</w:numbering>');
+  wordFolder.file('document.xml', _resumeBuildDocxXml(d));
+  var buf = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  return buf;
 }
 
 function _resumeWordHtml(d) {
@@ -14028,16 +14141,29 @@ function _resumeWordHtml(d) {
     '</body></html>';
 }
 
-function downloadResumeWord() {
+async function downloadResumeWord() {
   const d = window._resumeData;
   if (!d) return;
+  const baseName = ((d.candidate_name || 'Resume') + (d.target_role ? ' - ' + d.target_role : '') + ' Resume').replace(/[\/:*?"<>|\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // Preferred: a genuine modern .docx built with JSZip (a real Word file, opens everywhere and can be
+  // re-uploaded cleanly). Fallback: the Word-compatible HTML .doc if JSZip somehow isn't available.
+  try {
+    const blob = await _resumeBuildDocxBlob(d);
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = baseName + '.docx';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      return;
+    }
+  } catch (e) { console.warn('docx build failed, falling back to .doc', e); }
   try {
     const html = _resumeWordHtml(d);
     const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = ((d.candidate_name || 'Resume') + (d.target_role ? ' - ' + d.target_role : '') + ' Resume').replace(/[\/:*?"<>|\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim() + '.doc';
+    a.href = url; a.download = baseName + '.doc';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
   } catch (e) {}
@@ -14932,9 +15058,14 @@ async function runBidNoBid() {
       `- Use only plain ASCII. No em-dashes, no smart quotes.\n` +
       `- JSON shape: {"data_confidence":"...","factors":{"technical_capability":{"score":N,"rationale":"..."}, ...5 more...},"opportunity":{"required_clearance":"","fte_count":"","set_aside":"","required_dcaa":false,"prime_eligible":true,"prime_ineligibility_reason":"","contract_vehicle":"the NAME of the contract vehicle the work is ordered under (e.g. SEWP V, OASIS+, GSA MAS, CIO-SP4) - a PROPER NAME, not a type/structure; do NOT put IDIQ, MATOC, BPA, GWAC, FFP, or T&M; use N/A if open-market or if this opportunity is itself establishing a vehicle","vehicle_is_open":true,"estimated_value":"","required_cmmc":"","required_iso":""},"scope_coverage":N,"risks":[...],"win_strategy":[...],"summary":"..."}\n` +
       `- Always complete the full JSON — do not stop after factors.\n\n` +
-      `Respond with ONLY the completed JSON. No markdown. No preamble.`
+      `Respond with ONLY the completed JSON object, starting with { and ending with }. No markdown, no code fences, no preamble, no commentary before or after the JSON.`
     });
 
+    // NOTE: do NOT use assistant-message prefill here — not all current/future models accept it
+    // ("This model does not support assistant message prefill"), and this call must work across
+    // whatever model is selected in Settings -> AI Model. Instead, the prompt above instructs
+    // Claude to return ONLY the JSON object, and the tolerant parse/sanitize pipeline below
+    // (same pattern used by extractOpportunityIntel/parseLooseJson) handles any stray formatting.
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey,
@@ -14944,17 +15075,13 @@ async function runBidNoBid() {
         max_tokens: 8000,
         temperature: 0,
         messages: [
-          { role: 'user', content },
-          // Prefill forces Claude to complete THIS JSON with real content — cannot echo a template
-          { role: 'assistant', content: `{"data_confidence":"${hasCompanyDocs ? 'HIGH' : 'LOW'}","factors":{` }
+          { role: 'user', content }
         ]
       })
     });
     if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text().catch(()=>'')}`);
     const d = await resp.json();
-    // Prepend the assistant prefill so we have a complete JSON object
-    let raw = `{"data_confidence":"${hasCompanyDocs ? 'HIGH' : 'LOW'}","factors":{` +
-      d.content.map(c=>c.text||'').join('').trim()
+    let raw = d.content.map(c=>c.text||'').join('').trim()
         .replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/,'').trim()
         .replace(/^#+\s+[^\n]*\n/gm, '').trim();
 
@@ -15774,6 +15901,7 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
     }
     if (typeof reconcileStaffing === 'function') reconcileStaffing(intel);
     window._lastBnaIntel = intel;
+    if (typeof refreshBnaQaAvailability === 'function') refreshBnaQaAvailability();   // Phase 7: reveal the Q&A box as soon as opportunity details are extracted (before scoring / coverage-gap)
     renderOpportunityIntel(intel, body);
     if (window._bnaOpp && Object.keys(window._bnaOpp).length && typeof renderBnaDecisionPanel === 'function') renderBnaDecisionPanel();
     // Live incumbent lookup (non-blocking): when the documents do not clearly name the incumbent,
@@ -17978,6 +18106,7 @@ window.addEventListener('load', () => {
   window._bootBrandColors = { primary: CLIENT_CONFIG.primaryColor, secondary: CLIENT_CONFIG.secondaryColor };
   applyClientConfig();
   loadSettingsIntoUI();
+  try { const _v = document.getElementById('appVersionText'); if (_v) _v.textContent = APP_VERSION; } catch (e) {}
   initMsal();
   initScrollContainment();
   if (window.Rec && Rec.renderMeetGrid) Rec.renderMeetGrid();
