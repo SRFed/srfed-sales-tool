@@ -2249,7 +2249,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
           <div style="font-weight:700;font-size:13px">👤 Labor Categories &amp; Rates <span style="color:var(--muted);font-weight:400;font-size:11px">— the rows of your matrix</span></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button id="pxRecommendBtn" onclick="pricingRecommendRates(this)" title="Look up a market rate for each role and drop it in as a proposed starting point. Edit any to make it yours." style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid #fdba74;color:#9a3412;background:#fff7ed;border-radius:6px;cursor:pointer">✨ Recommend rates</button>
+            <button id="pxRecommendBtn" onclick="pricingRecommendRates(this)" title="Look up a market rate for each role and drop it in as a proposed starting point. Edit any to make it yours." style="padding:7px 15px;font-size:12px;font-weight:700;border:1px solid #c2410c;color:#fff;background:#ea580c;border-radius:6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15)">✨ Recommend rates</button>
             <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
           </div>
         </div>
@@ -2454,6 +2454,8 @@
       </div>
       <div class="ldg" id="cld">Saving to SharePoint...</div>
     </div>
+    <div class="rec-card">
+    <div class="sec">📇 Candidate list <span id="clistCount" style="font-weight:400;font-size:13px;opacity:.85"></span></div>
     <div class="fb">
       <input type="text" id="fsrch" placeholder="Search name, role, location, notes..." oninput="Rec.renderC()"/>
       <select id="fstat" onchange="Rec.renderC()" style="min-width:170px"><option value="">All statuses</option><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select>
@@ -2463,6 +2465,7 @@
       <input type="file" id="csvIn" accept=".csv" style="display:none" onchange="Rec.importCsv(this.files[0]); this.value='';"/>
     </div>
     <div id="clist"></div>
+    </div>
   </div>
 </div>
 <div class="tab-pane" id="pane-rec-match">
@@ -3121,8 +3124,8 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // ── App version ───────────────────────────────────────────────────────────────
 // Single source of truth for the build number shown in the Settings footer.
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
-// can confirm which build is live by searching page source for "Version 137".
-const APP_VERSION = '137';
+// can confirm which build is live by searching page source for "Version 138".
+const APP_VERSION = '138';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -10840,7 +10843,7 @@ function pricingFlashRole(lid) {
 }
 function _mktBind(l, basis, value, name) {
   l.rateBasis = basis; l.rateInput = value;
-  l.rateStatus = 'proposed'; l.evaluated = true;   // #4/#5: a market rate sent in is a proposed anchor and marks the role researched
+  l.rateStatus = 'researched'; l.evaluated = true;   // #31: a rate sent in from Market Rates is RESEARCHED (green) \u2014 this is the only path to green
   if (typeof pricingSyncBaseRate === 'function') pricingSyncBaseRate(l);
   if (typeof switchTab === 'function') switchTab('pricing');
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
@@ -10898,9 +10901,18 @@ async function marketLookupRole(id, btn) {
   const locEl = document.getElementById('mktLoc');
   if (locEl && stName && !locEl.value.trim()) locEl.value = stName;
   _mktLookupRoleId = id;
-  try { document.getElementById('pane-market').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
   const runBtn = document.getElementById('mktRunBtn');
   if (typeof marketRun === 'function') await marketRun(runBtn || btn);
+  // #31: land the user ON the fresh result instead of the top of the pane \u2014 re-running a role that was
+  // already looked up otherwise looks like nothing happened at all.
+  setTimeout(function () {
+    var res = document.getElementById('mktResults');
+    if (!res || res.style.display === 'none') return;
+    try { res.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { try { res.scrollIntoView(); } catch (e2) {} }
+    res.style.animation = 'none'; void res.offsetWidth;
+    res.style.animation = 'pulseOnce 1.2s ease-out 1';
+    setTimeout(function () { res.style.animation = ''; }, 1500);
+  }, 120);
 }
 function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '' }); pricingRenderAll(); }
 function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
@@ -10940,8 +10952,9 @@ function pricingSetLcatRate(id, field, val) {
 //   'proposed' (orange) = tool-suggested (Recommend rates, or a rate sent from Market Rates) awaiting review;
 //   'entered'  (blue)   = the user typed or confirmed it; '' = untouched. l.evaluated (green) = researched on Market Rates.
 function _pxRateCellCss(l) {
-  if (l && l.rateStatus === 'proposed') return 'background:#ffedd5;border:1px solid #fdba74;color:#9a3412;font-weight:700';
-  if (l && l.rateStatus === 'entered')  return 'background:#eff6ff;border:1px solid #93c5fd;color:var(--text)';
+  if (l && l.rateStatus === 'entered')    return 'background:#eff6ff;border:1px solid #93c5fd;color:var(--text)';
+  if (l && l.rateStatus === 'researched') return 'background:#dcfce7;border:1px solid #86efac;color:#15803d;font-weight:700';
+  if (l && l.rateStatus === 'proposed')   return 'background:#ffedd5;border:1px solid #fdba74;color:#9a3412;font-weight:700';
   return 'border:1px solid var(--border)';
 }
 function pricingRenderRateLegend() {
@@ -10955,9 +10968,9 @@ function pricingRenderRateLegend() {
   el.innerHTML = '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:#f8fafc;border:1px solid #eef2f7;border-radius:8px;padding:7px 11px;margin-bottom:10px">' +
     '<span style="font-size:11px;font-weight:700;color:var(--text)">Rate status:</span>' +
     chip('#ffedd5', '#fdba74', '<span style="color:#9a3412;font-weight:600">Proposed</span> \u2014 suggested, review it') +
+    chip('#dcfce7', '#86efac', '<span style="color:#15803d;font-weight:600">Researched</span> \u2014 sent in from Market Rates') +
     chip('#eff6ff', '#93c5fd', '<span style="color:var(--blue);font-weight:600">Entered</span> \u2014 you set it') +
     chip('#ffffff', 'var(--border)', 'Blank \u2014 no rate yet') +
-    '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="color:#15803d;font-weight:700">\u2713</span> Researched on Market Rates</span>' +
     '</div>';
 }
 // #4: look up a market rate for each named role and drop it in as a "proposed" starting anchor.
@@ -10967,7 +10980,7 @@ async function pricingRecommendRates(btn) {
   if (typeof pricingIsGsa === 'function' && pricingIsGsa()) { if (typeof showStatus === 'function') showStatus('warn', 'GSA mode', 'In GSA mode rates come from your Schedule, so there is nothing to recommend \u2014 map each role to a GSA LCAT instead.'); return; }
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { if (typeof showStatus === 'function') showStatus('warn', 'API key needed', 'Enter your Anthropic API key (top of the page) to look up market rates.'); return; }
-  const targets = pricingModel.lcats.filter(l => String(l.name || '').trim() && l.rateStatus !== 'entered');
+  const targets = pricingModel.lcats.filter(l => String(l.name || '').trim() && l.rateStatus !== 'entered' && l.rateStatus !== 'researched');
   if (!targets.length) { if (typeof showStatus === 'function') showStatus('info', 'Nothing to recommend', 'Every named role already has a rate you entered. Clear one to get a fresh suggestion.'); return; }
   const st = (pricingModel.lcats.find(l => l.localityState) || {}).localityState || '';
   const stName = st ? ((typeof PX_STATES !== 'undefined' && (PX_STATES.find(s => s[0] === st) || [])[1]) || '') : '';
@@ -10984,8 +10997,7 @@ async function pricingRecommendRates(btn) {
       if (paid > 0) {
         l.rateBasis = 'paid';
         l.rateInput = Math.round(paid * 100) / 100;
-        l.rateStatus = 'proposed';
-        l.evaluated = true;
+        l.rateStatus = 'proposed';   // #31: a bulk suggestion stays orange; green is earned per-role on Market Rates
         if (typeof pricingSyncBaseRate === 'function') pricingSyncBaseRate(l);
         done++;
       } else { failed++; }
@@ -12040,6 +12052,7 @@ function pricingRenderLcats() {
       : `<span style="color:var(--warn)">enter a rate &middot; ${pricingRowFte(l).toFixed(2)} FTE</span>`;
     let _statusBits = '';
     if (l.rateStatus === 'proposed') _statusBits = ' <span style="color:#9a3412;font-weight:700">&middot; proposed \u2014 review</span>';
+    else if (l.rateStatus === 'researched') _statusBits = ' <span style="color:#15803d;font-weight:700">&middot; researched on Market Rates</span>';
     else if (l.rateStatus === 'entered') _statusBits = ' <span style="color:var(--blue);font-weight:600">&middot; your rate</span>';
     if (l.evaluated) _statusBits += ' <span style="color:#15803d;font-weight:600">&middot; \u2713 researched</span>';
     return `<div id="pxLcat_${l.id}" style="display:flex;gap:6px 8px;align-items:center;flex-wrap:wrap;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
@@ -13505,14 +13518,19 @@ function restoreSession() {
 }
 
 // Auto-save session every 30 seconds and on key fields
-setInterval(saveSession, 30000);
+setInterval(function () { if (!_oppReloading) saveSession(); }, 30000);
 ['winTheme1','winTheme2','winTheme3','discrim1','discrim2','discrim3','discrim4','discrim5','additionalNotes'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', saveSession);
 });
 // Phase 5 (#11): flush both the pricing model (bypassing its debounce) and the session on the
 // way out, so the last edit before a refresh/close is always persisted.
-window.addEventListener('beforeunload', function () { try { if (typeof _pricingWrite === 'function') _pricingWrite(); saveSession(); } catch (e) {} });
+// Set while clearing or restoring an opportunity. Without it the reload at the end of those
+// actions fires beforeunload, which flushes the still-in-memory pricing model and session straight
+// back into localStorage \u2014 silently undoing the clear (labor categories, rates and PWS tasks all
+// came back) and overwriting a restore with the workspace it was meant to replace.
+let _oppReloading = false;
+window.addEventListener('beforeunload', function () { if (_oppReloading) return; try { if (typeof _pricingWrite === 'function') _pricingWrite(); saveSession(); } catch (e) {} });
 
 // ═══════════════════════════════════════════════════════════════════════════
 // OPPORTUNITY WORKSPACE — "Clear for new opportunity" / "Restore previous"
@@ -13579,6 +13597,8 @@ function clearOpportunity() {
     showStatus('error', 'Could not clear', 'Saving the current opportunity failed, so nothing was cleared \u2014 your work is untouched.');
     return;
   }
+  _oppReloading = true;                       // no unload flush may write the old model back
+  try { if (typeof _pricingSaveTimer !== 'undefined' && _pricingSaveTimer) clearTimeout(_pricingSaveTimer); } catch (e) {}
   try {
     localStorage.removeItem(PRICING_KEY);
     localStorage.removeItem('srfed_session');
@@ -13591,6 +13611,8 @@ function restoreOpportunity() {
   try { raw = localStorage.getItem(OPP_BACKUP_KEY); } catch (e) {}
   if (!raw) { showStatus('info', 'Nothing to restore', 'No previously cleared opportunity is saved.'); return; }
   if (!confirm('Restore the opportunity you last cleared?\n\nThis replaces the current workspace. (Files still need re-uploading — browsers can\u2019t save uploaded files.)')) return;
+  _oppReloading = true;                       // same reason as clearOpportunity \u2014 no unload flush
+  try { if (typeof _pricingSaveTimer !== 'undefined' && _pricingSaveTimer) clearTimeout(_pricingSaveTimer); } catch (e) {}
   try {
     var backup = JSON.parse(raw);
     if (backup.pricing != null) localStorage.setItem(PRICING_KEY, backup.pricing); else localStorage.removeItem(PRICING_KEY);
@@ -17334,7 +17356,13 @@ function reconcileStaffing(intel) {
 
     const govHours = cats.some(c => num(c.base_year_hours) > 0);
     const declaredQuoter = /quoter/i.test(String(intel.loe_basis || ''));
-    const source = (govHours && !declaredQuoter) ? 'government-workload' : 'proposed-loe';
+    // #31: the Government can stipulate level of effort as FTE COUNTS rather than a workload-hours
+    // table. Where it explicitly does, those figures are authoritative exactly like stated hours \u2014 used
+    // verbatim, never re-estimated and never snapped to whole numbers, so stated FRACTIONS survive.
+    // Whole-number FTEs are our house rule only for the case where WE pick the number.
+    const declaredGov = /govern|directed|mandat|stipulat|specified|prescrib|stated/i.test(String(intel.loe_basis || ''));
+    const govFte = declaredGov && cats.some(c => num(c.base_year_fte) > 0);
+    const source = ((govHours || govFte) && !declaredQuoter) ? 'government-workload' : 'proposed-loe';
     intel.staffing_source = source;
 
     const rateFor = c => {
@@ -17395,7 +17423,7 @@ function reconcileStaffing(intel) {
       delete c._k; delete c._fte; delete c._rate;
     });
     intel.labor_categories = cats;
-    intel.fte_count = (source === 'government-workload' ? '[GovEst] ' : '[Proposed] ') + (Math.round(totalFte * 10) / 10);
+    intel.fte_count = (source === 'government-workload' ? '[GovEst] ' : '[Proposed] ') + (Math.round(totalFte * 100) / 100);
 
     const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
     const anchorVal = statedHard ? anchorTarget : labor;   // the base-year $ the total ties to
@@ -17404,9 +17432,9 @@ function reconcileStaffing(intel) {
     } else {                                 // derive the value from the reconciled team - always ties out
       intel.base_year_value = '[Inferred] ~' + fmt(labor) + '/yr';
       intel.total_contract_value = '[Inferred] ~' + fmt(labor * periods);
-      intel.award_value_rationale = 'Reconciled from a ' + (source === 'government-workload' ? 'government-stated workload of ' : 'proposed ' + cats.length + '-role team, ') + (Math.round(totalFte * 10) / 10) + ' FTE (' + Math.round(totalFte * HPF).toLocaleString() + ' base-year hours) at a blended ~$' + Math.round(blended) + '/hr fully-loaded.' + (source === 'proposed-loe' ? ' Quoter-defined LOE \u2014 confirm headcount in Pricing.' : '');
+      intel.award_value_rationale = 'Reconciled from a ' + (source === 'government-workload' ? 'government-stated workload of ' : 'proposed ' + cats.length + '-role team, ') + (Math.round(totalFte * 100) / 100) + ' FTE (' + Math.round(totalFte * HPF).toLocaleString() + ' base-year hours) at a blended ~$' + Math.round(blended) + '/hr fully-loaded.' + (source === 'proposed-loe' ? ' Quoter-defined LOE \u2014 confirm headcount in Pricing.' : '');
     }
-    intel._staffingReconciliation = { source: source, nRoles: cats.length, totalFte: Math.round(totalFte * 10) / 10, blended: Math.round(blended), baseValue: Math.round(anchorVal), periods: periods, valueDerived: !statedHard,
+    intel._staffingReconciliation = { source: source, nRoles: cats.length, totalFte: Math.round(totalFte * 100) / 100, blended: Math.round(blended), baseValue: Math.round(anchorVal), periods: periods, valueDerived: !statedHard,
       stated: statedHard ? { low: byRange.low, high: byRange.high, isRange: !!byRange.isRange, from: anchorFrom } : null,
       anchorMode: anchorMode, anchorTarget: Math.round(anchorTarget), impliedLabor: Math.round(labor), hpf: HPF };
     return intel;
@@ -17429,7 +17457,7 @@ function _staffingBanner(intel) {
   return '<div style="margin:2px 0 12px;border:1px solid ' + bord + ';background:' + bg + ';border-radius:8px;padding:9px 12px">'
     + '<div style="font-size:12px;font-weight:800;color:' + hd + '">\u2696 Staffing &amp; value \u2014 reconciled' + (proposed ? ' (proposed team)' : '') + '</div>'
     + '<div style="font-size:11.5px;color:var(--text);margin-top:3px;line-height:1.55"><strong>' + r.nRoles + '</strong> role' + (r.nRoles === 1 ? '' : 's') + ' \u00b7 <strong>' + r.totalFte + '</strong> FTE \u00b7 blended <strong>~$' + r.blended + '/hr</strong> loaded \u00b7 base year <strong>\u2248 ' + fmt(r.baseValue) + '</strong>. The roles, FTEs and dollars tie out (roles \u00d7 FTE \u00d7 rate = value) and carry into Pricing.'
-    + (proposed ? ' <span style="color:' + hd + '">The solicitation sets level of effort in its pricing model, so this headcount is a reasoned <strong>proposal</strong>, not a Government requirement \u2014 confirm or adjust it in Pricing.</span>' : ' <span style="color:' + hd + '">Derived from the Government-stated workload hours.</span>')
+    + (proposed ? ' <span style="color:' + hd + '">The solicitation sets level of effort in its pricing model, so this headcount is a reasoned <strong>proposal</strong>, not a Government requirement \u2014 confirm or adjust it in Pricing.</span>' : ' <span style="color:' + hd + '">Derived from the Government-stated level of effort \u2014 used verbatim, fractions included.</span>')
     + '</div>' + anchorHtml + '</div>';
 }
 
@@ -18819,6 +18847,8 @@ window.RecStore = (function () {
     var f = cands.filter(function (c) { var tx = (c.name + ' ' + c.role + ' ' + c.location + ' ' + c.notes + ' ' + c.source + ' ' + c.email).toLowerCase(); return (!q || tx.indexOf(q) >= 0) && (!fs || c.status === fs); });
     var setTx = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
     setTx('st-total', cands.length); setTx('st-new', cands.filter(function (c) { return c.status === 'New'; }).length); setTx('st-contacted', cands.filter(function (c) { return c.status === 'Contacted'; }).length); setTx('st-added', cands.filter(function (c) { return c.status === 'Added to Repository'; }).length);
+    var cnt = document.getElementById('clistCount');
+    if (cnt) cnt.textContent = cands.length ? ('\u2014 showing ' + f.length + ' of ' + cands.length) : '';
     var list = document.getElementById('clist'); if (!list) return;
     if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet. Add one above, upload a resume, or import a CSV.' : 'No candidates match your filters.') + '</p></div>'; return; }
     var bm = { 'New': 'bn', 'Contacted': 'bc', 'Added to Repository': 'ba' };
@@ -19261,7 +19291,7 @@ window.RecStore = (function () {
     }
     if (!filtered.length) { t += '<tr><td colspan="8" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
     t += '</tbody></table></div>';
-    if (_pgN > 1) { t += '<div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-size:13px">' + '<button type="button" class="btn sm" onclick="Rec.luGoPage(-1)"' + (_luPage <= 0 ? ' disabled' : '') + '>\u2190 Prev</button>' + '<span style="color:var(--muted)">Showing ' + (_pgStart + 1) + '\u2013' + (_pgStart + _pgRows.length) + ' of ' + filtered.length + '  \u00b7  Page ' + (_luPage + 1) + ' of ' + _pgN + '</span>' + '<button type="button" class="btn sm" onclick="Rec.luGoPage(1)"' + (_luPage >= _pgN - 1 ? ' disabled' : '') + '>Next \u2192</button>' + '</div>'; }
+    if (_pgN > 1) { t += '<div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-size:13px">' + (_luPage > 0 ? '<button type="button" class="btn sm" onclick="Rec.luGoPage(-1)">\u2190 Prev</button>' : '') + '<span style="color:var(--muted)">Showing ' + (_pgStart + 1) + '\u2013' + (_pgStart + _pgRows.length) + ' of ' + filtered.length + '  \u00b7  Page ' + (_luPage + 1) + ' of ' + _pgN + '</span>' + (_luPage < _pgN - 1 ? '<button type="button" class="btn sm" onclick="Rec.luGoPage(1)">Next \u2192</button>' : '') + '</div>'; }
     out.innerHTML = t;
     setTimeout(initLuTableResize, 10);
   }
