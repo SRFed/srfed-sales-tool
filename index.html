@@ -3121,8 +3121,8 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // ── App version ───────────────────────────────────────────────────────────────
 // Single source of truth for the build number shown in the Settings footer.
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
-// can confirm which build is live by searching page source for "Version 136".
-const APP_VERSION = '136';
+// can confirm which build is live by searching page source for "Version 137".
+const APP_VERSION = '137';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -8538,12 +8538,23 @@ function updateProposalPricingGate() {
   banner.style.display = 'block';
   if (pricingDone) {
     const title = (typeof cachedBriefing !== 'undefined' && cachedBriefing && cachedBriefing.requirement_title) ? cachedBriefing.requirement_title : '';
-    const total = (typeof pricingGrandTotal === 'function') ? pricingFmt(pricingGrandTotal()) : '';
+    // #30: never mix units in one sentence. Base-period FTE is reported against the BASE-period price;
+    // the whole-contract figure is labelled as such, with the live value tie-out beside it.
+    const _t = (typeof pricingValueTieOut === 'function') ? pricingValueTieOut() : null;
+    const _nP = ((typeof pricingModel === 'object' && pricingModel && pricingModel.periods) || []).length || 1;
     const lc = ((typeof pricingModel === 'object' && pricingModel && pricingModel.lcats) || []).length;
-    const _fteN = (typeof pricingTotalHours === 'function' && typeof defaultHpf === 'function') ? (pricingTotalHours() / (defaultHpf() || 1)) : 0;
+    const _fteN = _t ? _t.fte : 0;
     const _fte = _fteN > 0 ? (Math.abs(_fteN - Math.round(_fteN)) < 0.05 ? String(Math.round(_fteN)) : _fteN.toFixed(1)) : '';
-    banner.innerHTML = `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid #6ee7b7;background:#ecfdf5;border-radius:10px;padding:12px 14px">
-      <div style="font-size:13px;color:#065f46;flex:1;min-width:240px">✓ <strong>Pricing ready.</strong> Volume III will be built from your price model${title ? ' for <strong>' + escHtml(title) + '</strong>' : ''} — ${lc} labor categor${lc === 1 ? 'y' : 'ies'}${_fte ? ', <strong>' + _fte + '</strong> FTE' : ''}, total <strong>${total}</strong>.</div>
+    const _base = _t ? pricingFmt(_t.baseYear) : '';
+    const _tot = _t ? pricingFmt(_t.total) : ((typeof pricingGrandTotal === 'function') ? pricingFmt(pricingGrandTotal()) : '');
+    const _tieOk = !!(_t && _t.hasStated && _t.status === 'inside');
+    const _tieBad = !!(_t && _t.hasStated && _t.status !== 'inside');
+    const _tieLine = _tieBad
+      ? `<div style="font-size:12px;color:#991b1b;margin-top:5px">\u26a0 Base year is <strong>${Math.abs(_t.pct).toFixed(0)}% ${_t.status}</strong> the Government-stated value \u2014 reconcile it on the Pricing tab before you generate.</div>`
+      : (_tieOk ? `<div style="font-size:12px;color:#065f46;margin-top:5px">\u2713 Ties out against the Government-stated value.</div>` : '');
+    const _bc = _tieBad ? '#fca5a5' : '#6ee7b7', _bbg = _tieBad ? '#fffbeb' : '#ecfdf5';
+    banner.innerHTML = `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid ${_bc};background:${_bbg};border-radius:10px;padding:12px 14px">
+      <div style="font-size:13px;color:#065f46;flex:1;min-width:240px">\u2713 <strong>Pricing ready.</strong> Volume III will be built from your price model${title ? ' for <strong>' + escHtml(title) + '</strong>' : ''} \u2014 ${lc} labor categor${lc === 1 ? 'y' : 'ies'}${_fte ? ', <strong>' + _fte + '</strong> FTE' : ''} in the base period at <strong>${_base}</strong>; <strong>${_tot}</strong> across all ${_nP} period${_nP === 1 ? '' : 's'}.${_tieLine}</div>
       <button onclick="switchTab('pricing')" style="font-size:12px;font-weight:600;background:#fff;border:1px solid #6ee7b7;color:#065f46;border-radius:7px;padding:6px 12px;cursor:pointer;white-space:nowrap">Review pricing →</button>
     </div>`;
     if (runBtn) { runBtn.disabled = false; runBtn.removeAttribute('title'); }
@@ -11500,7 +11511,7 @@ async function pricingAutoBuildStructure() {
     }
     const _workloadBlock = _govWorkload.length
       ? (_wlProposed
-        ? ('\nPROPOSED STARTING TEAM (from the opportunity analysis - a reasoned starting point, NOT a Government mandate):\nThe solicitation does not give a Government workload table; the roles and hours below are a proposed labor mix you may adjust to fit the scope. Use them as the default "labor_mix" and per-role "fte", but you MAY re-balance, add, or drop roles with brief justification. Prefer whole-number FTEs.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ~' + Math.round(r.hours) + ' base-year hours (~' + (r.hours / defaultHpf()).toFixed(2) + ' FTE)').join('\n') + '\n')
+        ? ('\nPROPOSED STARTING TEAM (from the opportunity analysis - a reasoned starting point, NOT a Government mandate):\nThere is NO Government workload, staffing, or level-of-effort table anywhere in this solicitation. The roles and hours below were proposed by the offeror and are already sized to the Government-stated contract value. Do NOT describe them as Government-stated, Government-provided, mandated, or authoritative anywhere in your output, and do NOT reproduce them as if they came from a stated workload table. Use them as the default "labor_mix" and per-role "fte", but you MAY re-balance, add, or drop roles with brief justification. Every "fte" you return MUST be a WHOLE NUMBER (1, 2, 3, ...), never a fraction, because no Government figure stipulates one here.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ~' + Math.round(r.hours) + ' base-year hours (~' + (r.hours / defaultHpf()).toFixed(2) + ' FTE)').join('\n') + '\n')
         : ('\nGOVERNMENT-STATED WORKLOAD BY LABOR CATEGORY (AUTHORITATIVE - reproduce EXACTLY):\nThe solicitation gives an estimated base-year hours figure for each labor category below. Build "labor_mix" as EXACTLY these categories, and set each role\'s "fte" to its stated base-year hours divided by ' + defaultHpf() + ', to 4 decimal places - KEEP the fraction; do NOT round to a whole or half FTE. These per-category levels of effort are mandatory: do not add, merge, drop, or re-balance categories. This is a workload-HOURS table, not a headcount table, so put these in "labor_mix" and leave "directed_labor" empty unless the Government separately states exact headcounts.\n' + _govWorkload.map(r => '- ' + r.lcat + ': ' + Math.round(r.hours) + ' base-year hours (= ' + (r.hours / defaultHpf()).toFixed(4) + ' FTE)').join('\n') + '\n'))
       : '';
 
@@ -12683,6 +12694,60 @@ function pricingBuildWorkbook() {
   [0, ps.length - 1].forEach(rr => { for (let c = 0; c < ps[0].length; c++) { const a = XLSX.utils.encode_cell({ r: rr, c }); if (wsPS[a]) wsPS[a].s = Object.assign({}, wsPS[a].s, { font: Object.assign({}, wsPS[a].s && wsPS[a].s.font, { bold: true }) }); } });
   XLSX.utils.book_append_sheet(wb, wsPS, 'Price Summary');
 
+  // ---- Reconciliation (#30): the whole chain, solicitation value -> staffing -> price, on one sheet ----
+  {
+    const _t = (typeof pricingValueTieOut === 'function') ? pricingValueTieOut() : null;
+    const _hpf = defaultHpf() || 1912;
+    const _hrs = pricingTotalHours();
+    const _laborBase = pricingBaseTotal();
+    const rc = [['Reconciliation \u2014 solicitation value to priced model'], [''], ['Item', 'Value', 'Basis']];
+    const _rowOf = {};
+    const push = (k, a, b, c) => { rc.push([a, b, c]); if (k) _rowOf[k] = rc.length - 1; };
+    if (_t && _t.hasStated) {
+      push('low',   'Government-stated base-year value \u2014 low',  r2(_t.low),    'Stated in the solicitation (' + _t.from + ')');
+      push('high',  'Government-stated base-year value \u2014 high', r2(_t.high),   _t.isRange ? 'Stated in the solicitation' : 'Single stated figure');
+      push('anch',  'Anchor point used',                             r2(_t.anchor), _t.isRange ? (pxAnchorLabel(_t.anchorMode) + ' of the stated range') : 'Single stated figure');
+      rc.push(['']);
+    }
+    push('lcats', 'Labor categories',                     M.lcats.length,        'Pricing Step 3');
+    push('fte',   'Total FTE (base period)',              r2(_hrs / _hpf),       'Base-period hours / hours per FTE');
+    push('hpf',   'Hours per FTE',                        _hpf,                  (M.hoursPerFte > 0 ? 'Stated in the solicitation' : 'Company standard'));
+    push('hrs',   'Base-period billable hours',           r2(_hrs),              'Hours allocation matrix');
+    push('bl',    'Blended fully burdened rate ($/hr)',   r2(_hrs > 0 ? _laborBase / _hrs : 0), 'Base-period labor / base-period hours');
+    rc.push(['']);
+    push('lab',   'Base-period labor',                    r2(_laborBase),        'Hours x fully burdened rate');
+    push('nl',    'Base-period travel / ODC / materials', r2((_t ? _t.baseYear : _laborBase) - _laborBase), 'Step 4 travel and materials');
+    push('by',    'BASE-YEAR PRICE',                      r2(_t ? _t.baseYear : _laborBase), 'Labor + non-labor');
+    rc.push(['']);
+    P.forEach((p, i) => push('p' + i, (p.name || ('Period ' + (i + 1))) + '  (' + pricingPeriodMonths(p) + ' mo' + (i === 0 ? '' : ', +' + ((M.escalationMode === 'flat') ? (parseFloat(M.escalationFlat) || 0) : (parseFloat(p.escalation) || 0)) + '%') + ')',
+      r2(pricingPeriodCost(i) + (_travPer[i] || 0) + (_matPer[i] || 0)), i === 0 ? 'Priced by the hours matrix' : 'Base year compounded by escalation'));
+    push('tot',   'TOTAL CONTRACT VALUE',                 r2(_t ? _t.total : (pricingGrandTotal() + _travTot + _matTot)), 'Sum of all periods');
+    if (_t && _t.hasStated) {
+      rc.push(['']);
+      push('slo', 'Government-stated total \u2014 low',  r2(_t.totalLow),  'Stated base-year low x ' + _t.periods + ' periods');
+      push('shi', 'Government-stated total \u2014 high', r2(_t.totalHigh), 'Stated base-year high x ' + _t.periods + ' periods');
+      push('var', 'Variance vs. anchor (base year)',      r2(_t.baseYear - _t.anchor), 'Base-year price less the anchor');
+      push('vpc', 'Variance vs. anchor (%)',              r2(_t.pct),       'Positive is above the anchor');
+      push('vd',  'Verdict',                              (_t.status === 'inside' ? 'INSIDE the stated range' : ('OUTSIDE \u2014 ' + _t.status + ' the stated range')), 'Base-year price against the stated low/high');
+    }
+    const wsRC = XLSX.utils.aoa_to_sheet(rc);
+    // Live formulas so the sheet re-derives if anyone edits it: blended rate, base year, total, variance.
+    if (_rowOf.bl != null && _rowOf.lab != null && _rowOf.hrs != null) pxSetFormula(wsRC, _rowOf.bl, 1, 'IF(B' + (_rowOf.hrs + 1) + '=0,0,B' + (_rowOf.lab + 1) + '/B' + (_rowOf.hrs + 1) + ')');
+    if (_rowOf.fte != null && _rowOf.hrs != null && _rowOf.hpf != null) pxSetFormula(wsRC, _rowOf.fte, 1, 'IF(B' + (_rowOf.hpf + 1) + '=0,0,B' + (_rowOf.hrs + 1) + '/B' + (_rowOf.hpf + 1) + ')');
+    if (_rowOf.by != null && _rowOf.lab != null && _rowOf.nl != null) pxSetFormula(wsRC, _rowOf.by, 1, 'B' + (_rowOf.lab + 1) + '+B' + (_rowOf.nl + 1));
+    if (_rowOf.tot != null && _rowOf.p0 != null) pxSetFormula(wsRC, _rowOf.tot, 1, 'SUM(B' + (_rowOf.p0 + 1) + ':B' + (_rowOf['p' + (P.length - 1)] + 1) + ')');
+    if (_rowOf.var != null && _rowOf.by != null && _rowOf.anch != null) pxSetFormula(wsRC, _rowOf.var, 1, 'B' + (_rowOf.by + 1) + '-B' + (_rowOf.anch + 1));
+    if (_rowOf.vpc != null && _rowOf.by != null && _rowOf.anch != null) pxSetFormula(wsRC, _rowOf.vpc, 1, 'IF(B' + (_rowOf.anch + 1) + '=0,0,(B' + (_rowOf.by + 1) + '/B' + (_rowOf.anch + 1) + '-1)*100)');
+    wsRC['!cols'] = [{ wch: 44 }, { wch: 20 }, { wch: 46 }];
+    const _moneyRows = ['low', 'high', 'anch', 'lab', 'nl', 'by', 'tot', 'slo', 'shi', 'var'].map(k => _rowOf[k]).filter(v => v != null)
+      .concat(P.map((p, i) => _rowOf['p' + i]).filter(v => v != null));
+    _moneyRows.forEach(rw => { const a = XLSX.utils.encode_cell({ r: rw, c: 1 }); if (wsRC[a]) wsRC[a].z = '$#,##0'; });
+    [0, 2].concat(['by', 'tot', 'vd'].map(k => _rowOf[k]).filter(v => v != null)).forEach(rw => {
+      for (let c = 0; c < 3; c++) { const a = XLSX.utils.encode_cell({ r: rw, c: c }); if (wsRC[a]) wsRC[a].s = Object.assign({}, wsRC[a].s, { font: Object.assign({}, wsRC[a].s && wsRC[a].s.font, { bold: true }) }); }
+    });
+    XLSX.utils.book_append_sheet(wb, wsRC, 'Reconciliation');
+  }
+
   // ---- CLIN Schedule + CLIN Summary (only when the CLIN layer is enabled) ----
   if (M.clins && M.clins.enabled && typeof pricingClinScheduleRows === 'function') {
     const _clinRows = pricingClinScheduleRows();
@@ -12955,7 +13020,7 @@ function pricingBuildWorkbook() {
 
   // Tab colors (Instructions + master data stand out; rollups a muted blue) and the one Excel Table.
   wb._tabColors = {
-    'Instructions': 'FFF59E0B', 'Price Summary': 'FF14B8A6', 'Line-Item Detail': 'FF16A34A',
+    'Instructions': 'FFF59E0B', 'Price Summary': 'FF14B8A6', 'Reconciliation': 'FFF59E0B', 'Line-Item Detail': 'FF16A34A',
     'By Labor Category': 'FF93C5FD', 'Fully Burdened Rate Table': 'FF93C5FD', 'By PWS Task': 'FF93C5FD', 'By CLIN': 'FF93C5FD',
     'Hours by Task': 'FF93C5FD', 'FTE by Task': 'FF93C5FD', 'Labor + Wrap': 'FF93C5FD'
   };
@@ -13061,6 +13126,96 @@ function pricingRenderExport() {
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button onclick="pricingExportWorkbook()" style="padding:9px 16px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">⬇ Export pricing workbook (.xlsx)</button><span style="font-size:11.5px;color:var(--muted)">Opens to an <strong>Instructions</strong> tab, then a <strong>Price Summary</strong> (total evaluated price by period). The green <strong>Line-Item Detail</strong> tab is a native Excel Table &mdash; sort, filter, or <em>Insert &#9656; PivotTable</em> to slice it any way the Government asks (by CLIN/task, LCAT, period, or cost type; the Instructions tab lists ready-made pivot recipes). Pre-built views &mdash; Price Summary, a per-period fully burdened <strong>rate table</strong>, by-labor-category and by-task rollups, hours/FTE matrices, and the labor + wrap build-up &mdash; are all included; dollar cells are currency-formatted.</span></div>`;
 }
 
+// ═══ #30 VALUE TIE-OUT ════════════════════════════════════════════════════════
+// The one place the priced model is tested against what the Government said it expects to spend.
+// The BNA banner, this card, the Proposal gate and the Excel Reconciliation tab all read THIS, so a
+// single set of numbers holds from the solicitation through to the workbook.
+function pricingBaseYearPrice() {
+  const t = (typeof pricingTravelByPeriod === 'function') ? (pricingTravelByPeriod()[0] || 0) : 0;
+  const m = (typeof pricingMaterialsByPeriod === 'function') ? (pricingMaterialsByPeriod()[0] || 0) : 0;
+  return pricingPeriodCost(0) + t + m;
+}
+function pricingTotalPrice() {
+  const tc = (typeof pricingTravelTotal === 'function') ? pricingTravelTotal() : { total: 0 };
+  const mt = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod().reduce((s, x) => s + x, 0) : 0;
+  return pricingGrandTotal() + ((tc && tc.total) || 0) + mt;
+}
+function pricingValueTieOut() {
+  const r = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel._staffingReconciliation : null;
+  const hpf = defaultHpf() || 1912;
+  const hrs = pricingTotalHours();
+  const laborBase = pricingBaseTotal();
+  const baseYear = pricingBaseYearPrice();
+  const out = { baseYear: baseYear, total: pricingTotalPrice(), fte: hrs / hpf, hpf: hpf, hours: hrs,
+                blended: hrs > 0 ? (laborBase / hrs) : 0, hasStated: false, status: 'none' };
+  if (!r || !r.stated || !(r.stated.low > 0)) return out;
+  out.hasStated = true;
+  out.low = r.stated.low; out.high = r.stated.high; out.isRange = !!r.stated.isRange; out.from = r.stated.from;
+  out.anchorMode = r.anchorMode; out.anchor = r.anchorTarget; out.periods = r.periods || 1;
+  out.totalLow = r.stated.low * out.periods; out.totalHigh = r.stated.high * out.periods;
+  out.status = baseYear < r.stated.low ? 'below' : (baseYear > r.stated.high ? 'above' : 'inside');
+  out.delta = baseYear - r.anchorTarget;
+  out.pct = r.anchorTarget > 0 ? ((baseYear / r.anchorTarget) - 1) * 100 : 0;
+  // FTE that would land the base year ON the anchor at THIS model's own blended loaded rate. Non-labor
+  // (travel/ODC/materials) is held constant — only the labor block flexes.
+  const nonLabor = baseYear - laborBase;
+  out.fteForAnchor = (out.blended > 0) ? Math.max(0, (r.anchorTarget - nonLabor) / (out.blended * hpf)) : 0;
+  // Roles that carry hours but no rate drag the blended rate down, so fitting to the anchor against it
+  // would inflate the headcount to compensate. Count them and block the fit until every role is priced.
+  out.unrated = pricingModel.lcats.filter(l => pricingRowHours(l.id) > 0 && !(pricingBilledRate(l, 0) > 0)).length;
+  return out;
+}
+// Rescale every role to whole FTEs so the base-year price lands on the anchor at the current rates.
+// Rates, tasks, masks and the per-role proportions are untouched; only the FTE level moves.
+function pricingFitToAnchor() {
+  const t = pricingValueTieOut();
+  if (!t.hasStated || !(t.fteForAnchor > 0) || !pricingModel.lcats.length) return;
+  if (t.unrated > 0) return;                      // every role must be priced before the fit is meaningful
+  const cur = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
+  if (!(cur > 0)) return;
+  const k = t.fteForAnchor / cur;
+  const scaled = pricingModel.lcats.map(l => Math.max(0.0001, (parseFloat(l.advertised) || 0) * k));
+  const ints = pxIntegerFte(scaled, Math.round(t.fteForAnchor));
+  pricingModel.lcats.forEach((l, i) => { l.advertised = ints[i]; });
+  if (pricingModel.tasks.length && typeof pricingDeriveHoursFromFte === 'function') {
+    pricingDeriveHoursFromFte(pricingModel.lcats, pricingModel.hours, pricingModel.mask, pricingModel.tasks, defaultHpf());
+  }
+  pricingModel.statedFteTotal = ints.reduce((s, x) => s + x, 0);
+  pricingModel.fteSource = 'estimated';
+  pricingModel.perPeriodFte = false;
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+  if (typeof updateProposalPricingGate === 'function') updateProposalPricingGate();
+}
+function pricingTieOutHtml() {
+  const t = pricingValueTieOut();
+  if (!t.hasStated) return '';
+  const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
+  const ok = t.status === 'inside';
+  const bord = ok ? '#6ee7b7' : '#fca5a5', bg = ok ? '#ecfdf5' : '#fef2f2', col = ok ? '#065f46' : '#991b1b';
+  const verdict = ok
+    ? '\u2713 Base-year price sits <strong>inside</strong> the Government-stated range. Staffing, rates, periods and the total all tie out.'
+    : (t.status === 'below'
+      ? '\u26a0 Base-year price is <strong>' + Math.abs(t.pct).toFixed(0) + '% below</strong> the anchor and under the Government\u2019s own stated floor of ' + fmt(t.low) + '. Either the team is under-sized for the scope or the rates are too low to be credible.'
+      : '\u26a0 Base-year price is <strong>' + t.pct.toFixed(0) + '% above</strong> the anchor and over the Government\u2019s stated ceiling of ' + fmt(t.high) + '. Expect a realism challenge unless you can justify the delta.');
+  const fitBtn = (ok || !(t.fteForAnchor > 0)) ? ''
+    : (t.unrated > 0
+      ? '<div style="font-size:11.5px;font-weight:600;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:7px 11px;max-width:280px">Set a rate on all roles first \u2014 <strong>' + t.unrated + '</strong> still ' + (t.unrated === 1 ? 'has' : 'have') + ' none, which understates the blended rate and would overstate the headcount needed.</div>'
+      : '<button onclick="pricingFitToAnchor()" style="font-size:12px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;white-space:nowrap">Fit to range \u2192 ' + Math.round(t.fteForAnchor) + ' FTE</button>');
+  const row = (a, b) => '<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.06)">' + a + '</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.06);text-align:right;font-weight:600">' + b + '</td></tr>';
+  return '<div style="margin-top:14px;border:1px solid ' + bord + ';background:' + bg + ';border-radius:10px;padding:12px 14px">'
+    + '<div style="font-weight:800;font-size:13px;color:' + col + ';margin-bottom:6px">\u2696 Value tie-out \u2014 your price vs. the solicitation</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + row('Government-stated base-year value' + (t.isRange ? ' (range)' : '') + (t.from === 'base-year' ? '' : ' \u2014 ' + pricingEsc(t.from)), fmt(t.low) + (t.isRange ? (' \u2013 ' + fmt(t.high)) : ''))
+    + (t.isRange ? row('Anchor point (' + pxAnchorLabel(t.anchorMode) + ')', fmt(t.anchor)) : '')
+    + row('Your base-year price', fmt(t.baseYear))
+    + row('Your total across ' + t.periods + ' period' + (t.periods === 1 ? '' : 's'), fmt(t.total) + ' <span style="font-weight:400;color:var(--muted)">vs stated ' + fmt(t.totalLow) + (t.isRange ? ('\u2013' + fmt(t.totalHigh)) : '') + '</span>')
+    + row('Staffing at your blended loaded rate', t.fte.toFixed(0) + ' FTE \u00d7 ' + Math.round(t.hpf).toLocaleString() + ' hrs @ ' + (t.blended > 0 ? ('$' + t.blended.toFixed(0) + '/hr') : '\u2014'))
+    + '</table>'
+    + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px"><div style="flex:1;min-width:240px;font-size:12px;color:' + col + ';line-height:1.5">' + verdict + '</div>' + fitBtn + '</div>'
+    + '<div style="font-size:10.5px;color:var(--muted);margin-top:7px">The anchor point is set on the Bid/No-Bid tab. \u201cFit to range\u201d rescales every role to whole FTEs so the base year lands on the anchor at your current rates \u2014 rates, tasks and role rules are untouched.</div>'
+    + '</div>';
+}
+
 function pricingRenderSummary() {
   const el = document.getElementById('pricingSummary'); if (!el) return;
   if (!pricingModel.lcats.length || !pricingModel.tasks.length) { el.innerHTML = ''; return; }
@@ -13088,6 +13243,7 @@ function pricingRenderSummary() {
     ${pricingDiscountActive() ? ('<div style="font-size:12px;color:#92400e;margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">Competitive discount (' + pricingModel.discountMode + '): labor ' + pricingFmt(pricingGrandTotalUndiscounted()) + ' &rarr; ' + pricingFmt(pricingGrandTotal()) + ' &mdash; you shave ' + pricingFmt(pricingGrandTotalUndiscounted() - pricingGrandTotal()) + '. Shown prices reflect it.</div>') : ''}
     ${totalBlock}
     <div style="font-size:11px;color:var(--muted);margin-top:6px">${pricingIsGsa() ? `GSA Schedule rates − ${Math.max(0, parseFloat(pricingModel.gsaDiscount) || 0)}% discount (fully burdened; wrap not applied)` : `Wrap factor ${pricingWrapFactor().toFixed(2)} (${pricingWrapModeLabel()})`}${(!pricingIsGsa() && pricingModel.localityEnabled) ? ' + locality (labor vs DC baseline + employer tax)' : ''} · ${pricingModel.lcats.length} labor categories · ${pricingTotalHours().toLocaleString()} full-year hours.${pricingIsGsa() ? '' : ' Edit wrap components in Settings → Pricing Defaults.'}</div>
+    ${pricingTieOutHtml()}
   </div>`;
 }
 
@@ -17066,9 +17222,89 @@ function _bnaContractPeriods(intel) {
   return y ? clamp(y) : 5;
 }
 
+// ═══ #30 VALUE ANCHORING ══════════════════════════════════════════════════════
+// A solicitation usually states its value as a RANGE ("an estimated annual dollar value ranging from
+// $25,000,000 to $40,000,000"). The old dollars() helper matched the FIRST number in the string, so
+// every such range silently collapsed to its FLOOR — and because a proposed team is back-solved from
+// that anchor, the entire staffing model got pinned to the low end with no trace in the UI. We now
+// parse the range and anchor to a chosen point, defaulting to the MIDPOINT.
+let _pxValueAnchor = 'mid';                       // 'low' | 'mid' | 'high'
+function pxAnchorMode() { return (_pxValueAnchor === 'low' || _pxValueAnchor === 'high') ? _pxValueAnchor : 'mid'; }
+function pxAnchorLabel(m) { return m === 'low' ? 'low end' : m === 'high' ? 'top end' : 'midpoint'; }
+// Parse EVERY dollar figure in a string and return the span they cover. Handles digit separators and
+// K/M/B suffixes, and ignores a leading [Inferred]/[GovEst] tag.
+function pxValueRange(v) {
+  const s = String(v == null ? '' : v).replace(/^\s*\[[^\]]*\]\s*/, '');
+  const out = [];
+  // A figure only counts as money if it carries a $ or a K/M/B suffix — otherwise a period-of-
+  // performance year ("2027 through 2032") or a headcount would be read as a contract value. The
+  // suffix must not run into a following word, so "$25,000,000 base" is not read as billions.
+  const re = /(\$)?\s*([\d][\d,]*(?:\.\d+)?)\s*([mbk])?(?![a-z0-9])/gi;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const suf = (m[3] || '').toLowerCase();
+    if (!m[1] && !suf) continue;                   // a bare number is a year or a count, not a value
+    let n = parseFloat(String(m[2]).replace(/,/g, ''));
+    if (isNaN(n) || n <= 0) continue;
+    if (suf === 'k') n *= 1e3; else if (suf === 'm') n *= 1e6; else if (suf === 'b') n *= 1e9;
+    if (n < 1000) continue;                        // too small to be a contract value
+    out.push(n);
+  }
+  if (!out.length) return { ok: false, low: 0, high: 0, isRange: false };
+  const low = Math.min.apply(null, out), high = Math.max.apply(null, out);
+  return { ok: true, low: low, high: high, isRange: high > low * 1.000001 };
+}
+function pxAnchorPoint(r, mode) {
+  if (!r || !r.ok) return 0;
+  const m = mode || pxAnchorMode();
+  if (!r.isRange) return r.low;
+  return m === 'low' ? r.low : m === 'high' ? r.high : (r.low + r.high) / 2;
+}
+// Switch the anchor point. Re-solves BNA staffing from the ORIGINAL model-proposed team (never from an
+// already-scaled one) and refreshes every surface that shows the number.
+function pxSetValueAnchor(mode) {
+  _pxValueAnchor = (mode === 'low' || mode === 'high') ? mode : 'mid';
+  try {
+    const intel = (typeof window !== 'undefined') ? window._lastBnaIntel : null;
+    if (intel && typeof reconcileStaffing === 'function') {
+      reconcileStaffing(intel);
+      if (typeof window !== 'undefined' && window._bnaIntelBody && typeof renderOpportunityIntel === 'function') renderOpportunityIntel(intel, window._bnaIntelBody);
+    }
+  } catch (e) { console.warn('anchor re-solve failed', e); }
+  try { if (typeof pricingRenderSummary === 'function') pricingRenderSummary(); } catch (e) {}
+  try { if (typeof updateProposalPricingGate === 'function') updateProposalPricingGate(); } catch (e) {}
+}
+// Whole-FTE allocation by largest remainder: holds the total on target while giving every role an
+// integer level of effort. Scaling a team by a multiplier otherwise yields fake precision (a 2-FTE role
+// becomes 3.94) that is an artifact of the multiplier, not a staffing judgement.
+function pxIntegerFte(vals, target) {
+  const n = vals.length;
+  if (!n) return [];
+  const tgt = Math.max(n, Math.round(target || vals.reduce((s, x) => s + x, 0)));
+  const fl = vals.map(v => Math.max(1, Math.floor(v)));
+  let rem = tgt - fl.reduce((s, x) => s + x, 0);
+  const order = vals.map((v, i) => ({ i: i, r: v - Math.floor(v) })).sort((a, b) => b.r - a.r);
+  let g = 0;
+  while (rem > 0) { fl[order[g % n].i] += 1; rem--; g++; }
+  let guard = 0;
+  while (rem < 0 && guard++ < 100000) {
+    let bi = -1, bv = 1;
+    for (let i = 0; i < n; i++) if (fl[i] > bv) { bv = fl[i]; bi = i; }
+    if (bi < 0) break;
+    fl[bi] -= 1; rem++;
+  }
+  return fl;
+}
+
 function reconcileStaffing(intel) {
   try {
     if (!intel || typeof intel !== 'object') return intel;
+    // #30: pristine copy of the model's ORIGINAL labor categories, so switching the value anchor
+    // re-solves from scratch instead of compounding one scale factor on top of another.
+    try {
+      if (!intel._lcRaw) { if (Array.isArray(intel.labor_categories)) intel._lcRaw = JSON.parse(JSON.stringify(intel.labor_categories)); }
+      else { intel.labor_categories = JSON.parse(JSON.stringify(intel._lcRaw)); }
+    } catch (e) {}
     const HPF = (typeof defaultHpf === 'function') ? (defaultHpf() || 1912) : 1912;
     const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
     const dollars = v => { const s = String(v == null ? '' : v); const m = s.match(/([\d,]+(?:\.\d+)?)\s*([mbk])?/i); if (!m) return 0; let n = parseFloat(m[1].replace(/,/g, '')); if (isNaN(n)) return 0; const suf = (m[2] || '').toLowerCase(); if (suf === 'k') n *= 1e3; else if (suf === 'm') n *= 1e6; else if (suf === 'b') n *= 1e9; return n; };
@@ -17120,16 +17356,33 @@ function reconcileStaffing(intel) {
 
     const laborOf = () => cats.reduce((s, c) => s + c._fte * HPF * c._rate, 0);
     let labor = laborOf();
-    const statedHard = hasNum(intel.base_year_value) && !isInf(intel.base_year_value) && dollars(intel.base_year_value) > 0;
+    const periods = _bnaContractPeriods(intel);
+    // #30: anchor to the STATED value as a RANGE, not to whichever number appears first in the string.
+    // Prefer a hard base-year figure; fall back to a hard TOTAL divided by the number of periods, so a
+    // solicitation that states only the total still anchors instead of losing the signal entirely.
+    let byRange = pxValueRange((isInf(intel.base_year_value) || !hasNum(intel.base_year_value)) ? '' : intel.base_year_value);
+    let anchorFrom = 'base-year';
+    if (!byRange.ok) {
+      const tr = pxValueRange((isInf(intel.total_contract_value) || !hasNum(intel.total_contract_value)) ? '' : intel.total_contract_value);
+      if (tr.ok && periods > 0) { byRange = { ok: true, low: tr.low / periods, high: tr.high / periods, isRange: tr.isRange }; anchorFrom = 'stated total \u00f7 ' + periods + ' periods'; }
+    }
+    const statedHard = byRange.ok && byRange.low > 0;
+    const anchorMode = pxAnchorMode();
+    const anchorTarget = pxAnchorPoint(byRange, anchorMode);
     // A government workload-hours table is authoritative staffing (tier A) and is NEVER scaled away — even
-    // by a hard value (stated OR incumbent-sourced). Only a PROPOSED (quoter) team flexes to a hard value
+    // by a hard value (stated OR incumbent-sourced). Only a PROPOSED (quoter) team flexes to a value
     // anchor, keeping LCATs + FTEs + dollars consistent under uniform A -> B -> C precedence.
     const scaleTeam = statedHard && source !== 'government-workload';
-    const periods = _bnaContractPeriods(intel);
 
-    if (scaleTeam) {                         // proposed team + a hard value anchor (stated or incumbent): scale the team to it
-      const target = dollars(intel.base_year_value);
-      if (labor > 0 && target > 0) { const k = target / labor; cats.forEach(c => c._fte = c._fte * k); labor = laborOf(); }
+    if (scaleTeam && labor > 0 && anchorTarget > 0) {   // proposed team + a value anchor: scale the team to it
+      const k = anchorTarget / labor; cats.forEach(c => c._fte = c._fte * k); labor = laborOf();
+    }
+    // #30: a PROPOSED team ALWAYS lands on whole FTEs — fractions only where the Government stipulates
+    // them. Government-stated workload hours are left exactly as stated and never snapped.
+    if (source !== 'government-workload') {
+      const _int = pxIntegerFte(cats.map(c => c._fte), cats.reduce((s, c) => s + c._fte, 0));
+      cats.forEach((c, i) => { c._fte = _int[i]; });
+      labor = laborOf();
     }
 
     const totalFte = cats.reduce((s, c) => s + c._fte, 0);
@@ -17145,7 +17398,7 @@ function reconcileStaffing(intel) {
     intel.fte_count = (source === 'government-workload' ? '[GovEst] ' : '[Proposed] ') + (Math.round(totalFte * 10) / 10);
 
     const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
-    const anchorVal = statedHard ? dollars(intel.base_year_value) : labor;   // the base-year $ the total ties to
+    const anchorVal = statedHard ? anchorTarget : labor;   // the base-year $ the total ties to
     if (statedHard) {                        // keep the hard base (stated OR incumbent-sourced) verbatim; derive the total from IT
       if (!hasNum(intel.total_contract_value) || isInf(intel.total_contract_value)) intel.total_contract_value = '[Inferred] ~' + fmt(anchorVal * periods);
     } else {                                 // derive the value from the reconciled team - always ties out
@@ -17153,7 +17406,9 @@ function reconcileStaffing(intel) {
       intel.total_contract_value = '[Inferred] ~' + fmt(labor * periods);
       intel.award_value_rationale = 'Reconciled from a ' + (source === 'government-workload' ? 'government-stated workload of ' : 'proposed ' + cats.length + '-role team, ') + (Math.round(totalFte * 10) / 10) + ' FTE (' + Math.round(totalFte * HPF).toLocaleString() + ' base-year hours) at a blended ~$' + Math.round(blended) + '/hr fully-loaded.' + (source === 'proposed-loe' ? ' Quoter-defined LOE \u2014 confirm headcount in Pricing.' : '');
     }
-    intel._staffingReconciliation = { source: source, nRoles: cats.length, totalFte: Math.round(totalFte * 10) / 10, blended: Math.round(blended), baseValue: Math.round(anchorVal), periods: periods, valueDerived: !statedHard };
+    intel._staffingReconciliation = { source: source, nRoles: cats.length, totalFte: Math.round(totalFte * 10) / 10, blended: Math.round(blended), baseValue: Math.round(anchorVal), periods: periods, valueDerived: !statedHard,
+      stated: statedHard ? { low: byRange.low, high: byRange.high, isRange: !!byRange.isRange, from: anchorFrom } : null,
+      anchorMode: anchorMode, anchorTarget: Math.round(anchorTarget), impliedLabor: Math.round(labor), hpf: HPF };
     return intel;
   } catch (e) { console.warn('reconcileStaffing failed', e); return intel; }
 }
@@ -17163,14 +17418,23 @@ function _staffingBanner(intel) {
   const proposed = r.source === 'proposed-loe';
   const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
   const bord = proposed ? '#fcd34d' : 'var(--info-border)', bg = proposed ? '#fffbeb' : 'var(--info-bg)', hd = proposed ? '#92400e' : 'var(--info-text)';
+  let anchorHtml = '';
+  if (r.stated) {
+    const btn = (m, lbl) => '<button onclick="pxSetValueAnchor(\'' + m + '\')" style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;border:1px solid ' + (r.anchorMode === m ? 'var(--blue)' : '#d1d5db') + ';background:' + (r.anchorMode === m ? 'var(--blue)' : '#fff') + ';color:' + (r.anchorMode === m ? '#fff' : '#374151') + '">' + lbl + '</button>';
+    anchorHtml = '<div style="margin-top:7px;padding-top:7px;border-top:1px dashed ' + bord + ';font-size:11.5px;color:var(--text)">'
+      + 'Government-stated ' + (r.stated.from === 'base-year' ? 'annual value' : 'value (' + r.stated.from + ')') + ': <strong>' + fmt(r.stated.low) + (r.stated.isRange ? (' \u2013 ' + fmt(r.stated.high)) : '') + '/yr</strong>'
+      + (r.stated.isRange ? (' \u00b7 anchored to the <strong>' + pxAnchorLabel(r.anchorMode) + '</strong> (' + fmt(r.anchorTarget) + ')<span style="display:inline-flex;gap:5px;margin-left:8px;vertical-align:middle">' + btn('low', 'Low') + btn('mid', 'Mid') + btn('high', 'High') + '</span>') : '')
+      + '<div style="color:var(--muted);margin-top:3px">The team above is sized to that anchor at a blended ~$' + r.blended + '/hr, in whole FTEs. The binding check is the value tie-out on the Pricing tab, which re-tests this against your real rates.</div></div>';
+  }
   return '<div style="margin:2px 0 12px;border:1px solid ' + bord + ';background:' + bg + ';border-radius:8px;padding:9px 12px">'
     + '<div style="font-size:12px;font-weight:800;color:' + hd + '">\u2696 Staffing &amp; value \u2014 reconciled' + (proposed ? ' (proposed team)' : '') + '</div>'
     + '<div style="font-size:11.5px;color:var(--text);margin-top:3px;line-height:1.55"><strong>' + r.nRoles + '</strong> role' + (r.nRoles === 1 ? '' : 's') + ' \u00b7 <strong>' + r.totalFte + '</strong> FTE \u00b7 blended <strong>~$' + r.blended + '/hr</strong> loaded \u00b7 base year <strong>\u2248 ' + fmt(r.baseValue) + '</strong>. The roles, FTEs and dollars tie out (roles \u00d7 FTE \u00d7 rate = value) and carry into Pricing.'
     + (proposed ? ' <span style="color:' + hd + '">The solicitation sets level of effort in its pricing model, so this headcount is a reasoned <strong>proposal</strong>, not a Government requirement \u2014 confirm or adjust it in Pricing.</span>' : ' <span style="color:' + hd + '">Derived from the Government-stated workload hours.</span>')
-    + '</div></div>';
+    + '</div>' + anchorHtml + '</div>';
 }
 
 function renderOpportunityIntel(intel, container) {
+  try { if (typeof window !== 'undefined') window._bnaIntelBody = container; } catch (e) {}
   const SECTIONS = [
     { title:'Opportunity', fields:[
       { key:'department_agency',            label:'Department / Agency' },
