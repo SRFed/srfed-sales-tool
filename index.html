@@ -3124,8 +3124,8 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // ── App version ───────────────────────────────────────────────────────────────
 // Single source of truth for the build number shown in the Settings footer.
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
-// can confirm which build is live by searching page source for "Version 138".
-const APP_VERSION = '138';
+// can confirm which build is live by searching page source for "Version 139".
+const APP_VERSION = '139';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -8555,9 +8555,11 @@ function updateProposalPricingGate() {
     const _tieLine = _tieBad
       ? `<div style="font-size:12px;color:#991b1b;margin-top:5px">\u26a0 Base year is <strong>${Math.abs(_t.pct).toFixed(0)}% ${_t.status}</strong> the Government-stated value \u2014 reconcile it on the Pricing tab before you generate.</div>`
       : (_tieOk ? `<div style="font-size:12px;color:#065f46;margin-top:5px">\u2713 Ties out against the Government-stated value.</div>` : '');
-    const _bc = _tieBad ? '#fca5a5' : '#6ee7b7', _bbg = _tieBad ? '#fffbeb' : '#ecfdf5';
+    const _oppLine = (typeof pricingOppMismatchHtml === 'function') ? pricingOppMismatchHtml(true) : '';
+    const _bad = _tieBad || !!_oppLine;
+    const _bc = _bad ? '#fca5a5' : '#6ee7b7', _bbg = _bad ? '#fffbeb' : '#ecfdf5';
     banner.innerHTML = `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid ${_bc};background:${_bbg};border-radius:10px;padding:12px 14px">
-      <div style="font-size:13px;color:#065f46;flex:1;min-width:240px">\u2713 <strong>Pricing ready.</strong> Volume III will be built from your price model${title ? ' for <strong>' + escHtml(title) + '</strong>' : ''} \u2014 ${lc} labor categor${lc === 1 ? 'y' : 'ies'}${_fte ? ', <strong>' + _fte + '</strong> FTE' : ''} in the base period at <strong>${_base}</strong>; <strong>${_tot}</strong> across all ${_nP} period${_nP === 1 ? '' : 's'}.${_tieLine}</div>
+      <div style="font-size:13px;color:#065f46;flex:1;min-width:240px">\u2713 <strong>Pricing ready.</strong> Volume III will be built from your price model${title ? ' for <strong>' + escHtml(title) + '</strong>' : ''} \u2014 ${lc} labor categor${lc === 1 ? 'y' : 'ies'}${_fte ? ', <strong>' + _fte + '</strong> FTE' : ''} in the base period at <strong>${_base}</strong>; <strong>${_tot}</strong> across all ${_nP} period${_nP === 1 ? '' : 's'}.${_oppLine}${_tieLine}</div>
       <button onclick="switchTab('pricing')" style="font-size:12px;font-weight:600;background:#fff;border:1px solid #6ee7b7;color:#065f46;border-radius:7px;padding:6px 12px;cursor:pointer;white-space:nowrap">Review pricing →</button>
     </div>`;
     if (runBtn) { runBtn.disabled = false; runBtn.removeAttribute('title'); }
@@ -11066,6 +11068,7 @@ async function pricingPullBriefing() {
     if (btn) { btn.disabled = false; btn.textContent = '⤵ Pull RFP Analysis from Proposal tab'; }
   }
   pricingApplyBriefing(b);
+  pricingStampOpp();                          // #32: seeded from THIS opportunity's analysis
 }
 
 function pricingApplyBriefing(b) {
@@ -11874,6 +11877,7 @@ function pricingApplyAutoBuild(a) {
     });
     if (varies) { pricingModel.perPeriodFte = true; pricingModel.periodFte = pf; }
   })();
+  pricingStampOpp();                          // #32: this model now belongs to the loaded opportunity
   pricingModel.lcats = lcats;
   pricingModel.hours = hours;
   pricingModel.mask = mask;
@@ -13139,6 +13143,48 @@ function pricingRenderExport() {
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><button onclick="pricingExportWorkbook()" style="padding:9px 16px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">⬇ Export pricing workbook (.xlsx)</button><span style="font-size:11.5px;color:var(--muted)">Opens to an <strong>Instructions</strong> tab, then a <strong>Price Summary</strong> (total evaluated price by period). The green <strong>Line-Item Detail</strong> tab is a native Excel Table &mdash; sort, filter, or <em>Insert &#9656; PivotTable</em> to slice it any way the Government asks (by CLIN/task, LCAT, period, or cost type; the Instructions tab lists ready-made pivot recipes). Pre-built views &mdash; Price Summary, a per-period fully burdened <strong>rate table</strong>, by-labor-category and by-task rollups, hours/FTE matrices, and the labor + wrap build-up &mdash; are all included; dollar cells are currency-formatted.</span></div>`;
 }
 
+// ═══ #32 OPPORTUNITY STAMP ════════════════════════════════════════════════════
+// The price model lives in localStorage and survives page loads, so a model built for a PREVIOUS
+// opportunity stays loaded until it is explicitly rebuilt or cleared — and the Proposal tab happily
+// reported it as "Pricing ready". Stamp the model with the opportunity it was built for, then say so
+// loudly when the loaded opportunity is a different one.
+function pricingOppIdentity() {
+  const strip = s => String(s == null ? '' : s).replace(/^\s*\[[^\]]*\]\s*/, '').trim();
+  const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) ? cachedBriefing : null;
+  const i = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel : null;
+  const id = strip(i && (i.id_number || i.solicitation_number));
+  const title = strip((b && b.requirement_title) || (i && (i.requirement_name || i.requirement_title)));
+  const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const key = norm(id) || norm(title);
+  return { key: key, label: title || id || '' };
+}
+function pricingStampOpp() {
+  const o = pricingOppIdentity();
+  if (!o.key) return;
+  pricingModel.oppKey = o.key; pricingModel.oppLabel = o.label;
+}
+// null when there is nothing to say; otherwise { kind, was, now }.
+function pricingOppMismatch() {
+  if (!pricingModel.lcats || !pricingModel.lcats.length) return null;   // nothing built yet
+  const o = pricingOppIdentity();
+  if (!o.key) return null;                                             // no opportunity loaded to compare against
+  if (!pricingModel.oppKey) return { kind: 'unknown', was: '', now: o.label };
+  if (pricingModel.oppKey === o.key) return null;
+  return { kind: 'mismatch', was: pricingModel.oppLabel || 'a different opportunity', now: o.label };
+}
+function pricingOppMismatchHtml(compact) {
+  const m = pricingOppMismatch();
+  if (!m) return '';
+  const body = (m.kind === 'mismatch')
+    ? 'This price model was built for <strong>' + pricingEsc(m.was) + '</strong>, not for <strong>' + pricingEsc(m.now) + '</strong>. Its labor categories, rates and hours are carried over from that opportunity.'
+    : 'This price model predates the opportunity now loaded (<strong>' + pricingEsc(m.now) + '</strong>), so it may be carried over from an earlier one.';
+  const fix = ' Rebuild it on the Pricing tab with <strong>Auto-build structure</strong>, or start clean with <strong>Clear for new opportunity</strong>.';
+  if (compact) return '<div style="font-size:12px;color:#991b1b;margin-top:5px">\u26a0 ' + body + fix + '</div>';
+  return '<div style="margin-top:14px;border:1px solid #fca5a5;background:#fef2f2;border-radius:10px;padding:12px 14px">'
+    + '<div style="font-weight:800;font-size:13px;color:#991b1b;margin-bottom:5px">\u26a0 This price model belongs to another opportunity</div>'
+    + '<div style="font-size:12px;color:#991b1b;line-height:1.55">' + body + fix + '</div></div>';
+}
+
 // ═══ #30 VALUE TIE-OUT ════════════════════════════════════════════════════════
 // The one place the priced model is tested against what the Government said it expects to spend.
 // The BNA banner, this card, the Proposal gate and the Excel Reconciliation tab all read THIS, so a
@@ -13256,6 +13302,7 @@ function pricingRenderSummary() {
     ${pricingDiscountActive() ? ('<div style="font-size:12px;color:#92400e;margin-top:8px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">Competitive discount (' + pricingModel.discountMode + '): labor ' + pricingFmt(pricingGrandTotalUndiscounted()) + ' &rarr; ' + pricingFmt(pricingGrandTotal()) + ' &mdash; you shave ' + pricingFmt(pricingGrandTotalUndiscounted() - pricingGrandTotal()) + '. Shown prices reflect it.</div>') : ''}
     ${totalBlock}
     <div style="font-size:11px;color:var(--muted);margin-top:6px">${pricingIsGsa() ? `GSA Schedule rates − ${Math.max(0, parseFloat(pricingModel.gsaDiscount) || 0)}% discount (fully burdened; wrap not applied)` : `Wrap factor ${pricingWrapFactor().toFixed(2)} (${pricingWrapModeLabel()})`}${(!pricingIsGsa() && pricingModel.localityEnabled) ? ' + locality (labor vs DC baseline + employer tax)' : ''} · ${pricingModel.lcats.length} labor categories · ${pricingTotalHours().toLocaleString()} full-year hours.${pricingIsGsa() ? '' : ' Edit wrap components in Settings → Pricing Defaults.'}</div>
+    ${pricingOppMismatchHtml(false)}
     ${pricingTieOutHtml()}
   </div>`;
 }
