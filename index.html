@@ -2331,6 +2331,10 @@
       <!-- Live summary -->
       <div id="pricingSummary" style="margin-bottom:16px"></div>
 
+      <!-- #5 Wave 4: gap analysis. Its own container, NOT part of pricingRenderSummary(), so a
+           routine re-render never wipes a result the user is still reading. -->
+      <div id="pricingGapPanel" style="margin-bottom:16px"></div>
+
       <!-- Export to Excel -->
       <div id="pricingExportRow" style="margin-bottom:16px"></div>
 
@@ -3146,8 +3150,8 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // ── App version ───────────────────────────────────────────────────────────────
 // Single source of truth for the build number shown in the Settings footer.
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
-// can confirm which build is live by searching page source for "Version 142".
-const APP_VERSION = '142';
+// can confirm which build is live by searching page source for "Version 147".
+const APP_VERSION = '147';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -8582,7 +8586,7 @@ function updateProposalPricingGate() {
     const _bad = _tieBad || !!_oppLine;
     const _bc = _bad ? '#fca5a5' : '#6ee7b7', _bbg = _bad ? '#fffbeb' : '#ecfdf5';
     banner.innerHTML = `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid ${_bc};background:${_bbg};border-radius:10px;padding:12px 14px">
-      <div style="font-size:13px;color:#065f46;flex:1;min-width:240px">\u2713 <strong>Pricing ready.</strong> Volume III will be built from your price model${title ? ' for <strong>' + escHtml(title) + '</strong>' : ''} \u2014 ${lc} labor categor${lc === 1 ? 'y' : 'ies'}${_fte ? ', <strong>' + _fte + '</strong> FTE' : ''} in the base period at <strong>${_base}</strong>; <strong>${_tot}</strong> across all ${_nP} period${_nP === 1 ? '' : 's'}.${_oppLine}${_tieLine}</div>
+      <div style="font-size:13px;color:#065f46;flex:1;min-width:240px">\u2713 <strong>Pricing ready.</strong> Volume III will be built from your price model${title ? ' for <strong>' + escHtml(title) + '</strong>' : ''} \u2014 ${lc} labor categor${lc === 1 ? 'y' : 'ies'}${_fte ? ', <strong>' + _fte + '</strong> FTE' : ''} in the ${(_t && _t.baseMonths && _t.baseMonths !== 12) ? _t.baseMonths + '-month base period' : 'base period'} at <strong>${_base}</strong>; <strong>${_tot}</strong> across all ${_nP} period${_nP === 1 ? '' : 's'}${(_t && _t.contractYears) ? ' (' + _t.contractYearsText + ' contract year' + (_t.contractYears === 1 ? '' : 's') + ')' : ''}.${_oppLine}${_tieLine}</div>
       <button onclick="switchTab('pricing')" style="font-size:12px;font-weight:600;background:#fff;border:1px solid #6ee7b7;color:#065f46;border-radius:7px;padding:6px 12px;cursor:pointer;white-space:nowrap">Review pricing →</button>
     </div>`;
     if (runBtn) { runBtn.disabled = false; runBtn.removeAttribute('title'); }
@@ -10939,6 +10943,7 @@ async function marketRun(btn) {
 }
 function marketRender(data, ctx) {
   const results = document.getElementById('mktResults'); if (!results) return;
+  _mktLastRecord = data;   // #5: kept so a subsequent 'Use in Pricing' can stash the band on the role
   const esc = (typeof pricingEsc === 'function') ? pricingEsc : (x => x);
   const sal = data.salary || {}, hr = data.hourly || {};
   const fmt$ = n => (n == null || isNaN(n)) ? '—' : '$' + Math.round(n).toLocaleString();
@@ -10984,6 +10989,9 @@ function marketRender(data, ctx) {
   results.style.display = 'block';
 }
 let _mktPending = null;
+// #5: the record behind the Market Rates result currently on screen, so a "Use in Pricing" bind can
+// persist that role's p25/p50/p75 band. _mktCache is session-only; pricingModel survives a reload.
+let _mktLastRecord = null;
 let _mktLookupRoleId = null;   // set by marketLookupRole so a successful marketRun marks that Pricing role researched
 function marketSendToPricing(name, basis, value) {
   value = parseFloat(value);
@@ -11029,6 +11037,8 @@ function pricingFlashRole(lid) {
 function _mktBind(l, basis, value, name) {
   l.rateBasis = basis; l.rateInput = value;
   l.rateStatus = 'researched'; l.evaluated = true;   // #31: a rate sent in from Market Rates is RESEARCHED (green) \u2014 this is the only path to green
+  // #5: keep the researched band with the role so the gap analysis can test the rate against it later.
+  try { if (_mktLastRecord && _mktNormName(_mktLastRecord.position || name) === _mktNormName(name)) _pxStashBand(l, _mktLastRecord); } catch (e) {}
   if (typeof pricingSyncBaseRate === 'function') pricingSyncBaseRate(l);
   if (typeof switchTab === 'function') switchTab('pricing');
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
@@ -11192,6 +11202,7 @@ async function pricingRecommendRates(btn) {
     l.rateInput = Math.round(paid * 100) / 100;
     l.rateStatus = 'proposed';   // a bulk suggestion stays orange; green is earned per-role on Market Rates
     if (typeof pricingSyncBaseRate === 'function') pricingSyncBaseRate(l);
+    _pxStashBand(l, rec);        // #5: the band travels with the role for the gap analysis
     done++;
   };
 
@@ -12001,7 +12012,7 @@ function pricingEnsureTaskHoursCovered(lcats, hours, mask, tasks, nonLabor) {
 }
 
 function pricingApplyAutoBuild(a) {
-  var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { if ((l.rateInput != null && l.rateInput !== '') || l.evaluated || l.rateStatus) { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate, rateStatus: l.rateStatus, evaluated: l.evaluated }; } });
+  var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { if ((l.rateInput != null && l.rateInput !== '') || l.evaluated || l.rateStatus || l.mktBand) { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate, rateStatus: l.rateStatus, evaluated: l.evaluated, mktBand: l.mktBand }; } });
   // Agency-stated FTE-hour basis (e.g. 2,080 hrs/FTE): honor it for THIS proposal, overriding the
   // company default. Only set when the model reports an explicit figure from the solicitation.
   { const _h = parseFloat(a.hours_per_fte); pricingModel.hoursPerFte = (_h > 0) ? _h : null; }
@@ -12120,7 +12131,7 @@ function pricingApplyAutoBuild(a) {
   pricingModel.lcats = lcats;
   pricingModel.hours = hours;
   pricingModel.mask = mask;
-  pricingModel.lcats.forEach(function (l) { var _k = String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); var _pin = _ratePins[_k]; if (_pin) { l.rateBasis = _pin.rateBasis; l.rateInput = _pin.rateInput; l.baseRate = _pin.baseRate; l.rateStatus = _pin.rateStatus; l.evaluated = _pin.evaluated; } });
+  pricingModel.lcats.forEach(function (l) { var _k = String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); var _pin = _ratePins[_k]; if (_pin) { l.rateBasis = _pin.rateBasis; l.rateInput = _pin.rateInput; l.baseRate = _pin.baseRate; l.rateStatus = _pin.rateStatus; l.evaluated = _pin.evaluated; if (_pin.mktBand) l.mktBand = _pin.mktBand; } });
   if (pricingModel.fteSource !== 'stated') {
     const total = lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
     if (total > 0) { pricingModel.statedFteTotal = total; pricingModel.fteSource = 'estimated'; }
@@ -12212,6 +12223,7 @@ function pricingRenderAll() {
   pricingRenderClin();
   pricingRenderFteBar();
   pricingRenderSummary();
+  pricingRenderGapPanel();
   pricingRenderExport();
   pricingRenderWarnings();
   pricingRenderFeedStatus();
@@ -12959,43 +12971,87 @@ function pricingBuildWorkbook() {
     const rc = [['Reconciliation \u2014 solicitation value to priced model'], [''], ['Item', 'Value', 'Basis']];
     const _rowOf = {};
     const push = (k, a, b, c) => { rc.push([a, b, c]); if (k) _rowOf[k] = rc.length - 1; };
+    // The hours matrix always holds a FULL YEAR of hours. A partial base period bills months/12 of
+    // them, so every base-period figure below is the full-year figure times that fraction, and each
+    // row says which of the two it is. _bMo/_bFrac drive it; at 12 months the fraction is 1.
+    const _bMo = _t ? _t.baseMonths : pricingPeriodMonths(P[0]);
+    const _bFrac = _t ? _t.baseFraction : pricingPeriodFraction(P[0]);
+    const _hrsBase = _hrs * _bFrac;
+    const _labBase = _laborBase * _bFrac;
+    const _perBasis = _t && _t.statedBasis === 'period';
     if (_t && _t.hasStated) {
-      push('low',   'Government-stated base-year value \u2014 low',  r2(_t.low),    'Stated in the solicitation (' + _t.from + ')');
-      push('high',  'Government-stated base-year value \u2014 high', r2(_t.high),   _t.isRange ? 'Stated in the solicitation' : 'Single stated figure');
-      push('anch',  'Anchor point used',                             r2(_t.anchor), _t.isRange ? (pxAnchorLabel(_t.anchorMode) + ' of the stated range') : 'Single stated figure');
+      push(null,   'Stated figure basis',
+        _perBasis ? ('Fixed budget for the ' + _bMo + '-month base period') : 'Annual rate of spend',
+        _perBasis ? 'Set on the Pricing tab \u2014 the figure is taken as stated and never scaled up'
+                  : (_t.basisLocked ? 'A contract total, spread over ' + _t.contractYearsText + ' contract years'
+                                    : 'Set on the Pricing tab \u2014 scaled to each period by its own length'));
+      push('sraw', 'Government-stated value \u2014 low',          r2(_perBasis ? _t.low : _t.annualLow),  'Stated in the solicitation (' + _t.from + ')');
+      push('srawh','Government-stated value \u2014 high',         r2(_perBasis ? _t.high : _t.annualHigh), _t.isRange ? 'Stated in the solicitation' : 'Single stated figure');
+      push('bmo1', 'Base period length (months)',                 _bMo,              'Pricing Step 6');
+      push('alo',  'Annual rate of spend \u2014 low',             r2(_t.annualLow),  _perBasis ? ('Base-period budget \u00f7 ' + _bMo + '/12 \u2014 back-solved, not stated') : 'As stated');
+      push('ahi',  'Annual rate of spend \u2014 high',            r2(_t.annualHigh), _perBasis ? ('Base-period budget \u00f7 ' + _bMo + '/12 \u2014 back-solved, not stated') : 'As stated');
+      push('low',  'Expected for the base period \u2014 low',     r2(_t.low),        _perBasis ? 'As stated \u2014 a fixed budget is not scaled' : ('Annual low x ' + _bMo + '/12'));
+      push('high', 'Expected for the base period \u2014 high',    r2(_t.high),       _perBasis ? 'As stated \u2014 a fixed budget is not scaled' : ('Annual high x ' + _bMo + '/12'));
+      push('anch', 'Anchor point used (base period)',             r2(_t.anchor),     _t.isRange ? (pxAnchorLabel(_t.anchorMode) + ' of the base-period range') : 'Single stated figure');
       rc.push(['']);
     }
     push('lcats', 'Labor categories',                     M.lcats.length,        'Pricing Step 4');
-    push('fte',   'Total FTE (base period)',              r2(_hrs / _hpf),       'Base-period hours / hours per FTE');
-    push('hpf',   'Hours per FTE',                        _hpf,                  (M.hoursPerFte > 0 ? 'Stated in the solicitation' : 'Company standard'));
-    push('hrs',   'Base-period billable hours',           r2(_hrs),              'Hours allocation matrix');
-    push('bl',    'Blended fully burdened rate ($/hr)',   r2(_hrs > 0 ? _laborBase / _hrs : 0), 'Base-period labor / base-period hours');
+    push('fte',   'Team size (FTE staffing level)',       r2(_hrs / _hpf),       'Full-year hours / hours per FTE \u2014 a staffing level, not a period quantity');
+    push('hpf',   'Hours per FTE (12 months)',            _hpf,                  (M.hoursPerFte > 0 ? 'Stated in the solicitation' : 'Company standard'));
+    push('hrsY',  'Full-year billable hours',             r2(_hrs),              'Hours allocation matrix (always a full 12 months)');
+    push('bmo',   'Base period length (months)',          _bMo,                  'Pricing Step 6');
+    push('hrs',   'Base-period billable hours',           r2(_hrsBase),          'Full-year hours x ' + _bMo + '/12');
+    push('bl',    'Blended fully burdened rate ($/hr)',   r2(_hrs > 0 ? _laborBase / _hrs : 0), 'Labor / hours \u2014 a rate, unaffected by period length');
     rc.push(['']);
-    push('lab',   'Base-period labor',                    r2(_laborBase),        'Hours x fully burdened rate');
-    push('nl',    'Base-period travel / ODC / materials', r2((_t ? _t.baseYear : _laborBase) - _laborBase), 'Step 6 travel and materials');
-    push('by',    'BASE-YEAR PRICE',                      r2(_t ? _t.baseYear : _laborBase), 'Labor + non-labor');
+    push('lab',   'Base-period labor',                    r2(_labBase),          'Base-period hours x fully burdened rate');
+    push('nl',    'Base-period travel / ODC / materials', r2(_t ? _t.nonLabor : 0), 'Step 6 travel and materials');
+    push('by',    'BASE-PERIOD PRICE',                    r2(_t ? _t.baseYear : _labBase), 'Labor + non-labor');
     rc.push(['']);
     P.forEach((p, i) => push('p' + i, (p.name || ('Period ' + (i + 1))) + '  (' + pricingPeriodMonths(p) + ' mo' + (i === 0 ? '' : ', +' + ((M.escalationMode === 'flat') ? (parseFloat(M.escalationFlat) || 0) : (parseFloat(p.escalation) || 0)) + '%') + ')',
       r2(pricingPeriodCost(i) + (_travPer[i] || 0) + (_matPer[i] || 0)), i === 0 ? 'Priced by the hours matrix' : 'Base year compounded by escalation'));
     push('tot',   'TOTAL CONTRACT VALUE',                 r2(_t ? _t.total : (pricingGrandTotal() + _travTot + _matTot)), 'Sum of all periods');
     if (_t && _t.hasStated) {
       rc.push(['']);
-      push('slo', 'Government-stated total \u2014 low',  r2(_t.totalLow),  'Stated base-year low x ' + _t.periods + ' periods');
-      push('shi', 'Government-stated total \u2014 high', r2(_t.totalHigh), 'Stated base-year high x ' + _t.periods + ' periods');
-      push('var', 'Variance vs. anchor (base year)',      r2(_t.baseYear - _t.anchor), 'Base-year price less the anchor');
+      push('cy',  'Contract length (years)',             _t.contractYears, 'Sum of every period\u2019s months / 12 \u2014 NOT a count of periods');
+      push('slo', (_t.totalIsProjected ? 'Projected' : 'Government-stated') + ' total \u2014 low',   r2(_t.totalLow),
+        (_t.totalIsProjected ? 'Base-period budget carried forward at the same rate of spend x ' : 'Annual low x ') + _t.contractYearsText + ' contract years');
+      push('shi', (_t.totalIsProjected ? 'Projected' : 'Government-stated') + ' total \u2014 high',  r2(_t.totalHigh),
+        (_t.totalIsProjected ? 'Base-period budget carried forward at the same rate of spend x ' : 'Annual high x ') + _t.contractYearsText + ' contract years');
+      push('var', 'Variance vs. anchor (base period)',    r2(_t.baseYear - _t.anchor), 'Base-period price less the base-period anchor');
       push('vpc', 'Variance vs. anchor (%)',              r2(_t.pct),       'Positive is above the anchor');
-      push('vd',  'Verdict',                              (_t.status === 'inside' ? 'INSIDE the stated range' : ('OUTSIDE \u2014 ' + _t.status + ' the stated range')), 'Base-year price against the stated low/high');
+      push('vd',  'Verdict',                              (_t.status === 'inside' ? 'INSIDE the stated range' : ('OUTSIDE \u2014 ' + _t.status + ' the stated range')), 'Base-period price against the base-period low/high');
     }
     const wsRC = XLSX.utils.aoa_to_sheet(rc);
     // Live formulas so the sheet re-derives if anyone edits it: blended rate, base year, total, variance.
+    // Every derived cell re-computes from the rows above it, so an edit to hours, months or labor
+    // flows through the whole sheet the way a cost analyst expects.
+    if (_rowOf.hrs != null && _rowOf.hrsY != null && _rowOf.bmo != null) pxSetFormula(wsRC, _rowOf.hrs, 1, 'B' + (_rowOf.hrsY + 1) + '*B' + (_rowOf.bmo + 1) + '/12');
     if (_rowOf.bl != null && _rowOf.lab != null && _rowOf.hrs != null) pxSetFormula(wsRC, _rowOf.bl, 1, 'IF(B' + (_rowOf.hrs + 1) + '=0,0,B' + (_rowOf.lab + 1) + '/B' + (_rowOf.hrs + 1) + ')');
-    if (_rowOf.fte != null && _rowOf.hrs != null && _rowOf.hpf != null) pxSetFormula(wsRC, _rowOf.fte, 1, 'IF(B' + (_rowOf.hpf + 1) + '=0,0,B' + (_rowOf.hrs + 1) + '/B' + (_rowOf.hpf + 1) + ')');
+    if (_rowOf.fte != null && _rowOf.hrsY != null && _rowOf.hpf != null) pxSetFormula(wsRC, _rowOf.fte, 1, 'IF(B' + (_rowOf.hpf + 1) + '=0,0,B' + (_rowOf.hrsY + 1) + '/B' + (_rowOf.hpf + 1) + ')');
+    if (_rowOf.lab != null && _rowOf.hrs != null && _rowOf.bl != null) pxSetFormula(wsRC, _rowOf.lab, 1, 'B' + (_rowOf.hrs + 1) + '*B' + (_rowOf.bl + 1) + '');
+    // The stated-value chain runs in the direction the basis dictates, so the sheet re-derives either
+    // way when someone edits the stated figure or the base period length.
+    if (_perBasis) {
+      // budget is given for the period; the annual rate is the back-solve
+      if (_rowOf.low != null && _rowOf.sraw != null) pxSetFormula(wsRC, _rowOf.low, 1, 'B' + (_rowOf.sraw + 1));
+      if (_rowOf.high != null && _rowOf.srawh != null) pxSetFormula(wsRC, _rowOf.high, 1, 'B' + (_rowOf.srawh + 1));
+      if (_rowOf.alo != null && _rowOf.sraw != null && _rowOf.bmo1 != null) pxSetFormula(wsRC, _rowOf.alo, 1, 'IF(B' + (_rowOf.bmo1 + 1) + '=0,0,B' + (_rowOf.sraw + 1) + '/(B' + (_rowOf.bmo1 + 1) + '/12))');
+      if (_rowOf.ahi != null && _rowOf.srawh != null && _rowOf.bmo1 != null) pxSetFormula(wsRC, _rowOf.ahi, 1, 'IF(B' + (_rowOf.bmo1 + 1) + '=0,0,B' + (_rowOf.srawh + 1) + '/(B' + (_rowOf.bmo1 + 1) + '/12))');
+    } else {
+      // annual rate is given; the period expectation is months/12 of it
+      if (_rowOf.alo != null && _rowOf.sraw != null) pxSetFormula(wsRC, _rowOf.alo, 1, 'B' + (_rowOf.sraw + 1));
+      if (_rowOf.ahi != null && _rowOf.srawh != null) pxSetFormula(wsRC, _rowOf.ahi, 1, 'B' + (_rowOf.srawh + 1));
+      if (_rowOf.low != null && _rowOf.alo != null && _rowOf.bmo1 != null) pxSetFormula(wsRC, _rowOf.low, 1, 'B' + (_rowOf.alo + 1) + '*B' + (_rowOf.bmo1 + 1) + '/12');
+      if (_rowOf.high != null && _rowOf.ahi != null && _rowOf.bmo1 != null) pxSetFormula(wsRC, _rowOf.high, 1, 'B' + (_rowOf.ahi + 1) + '*B' + (_rowOf.bmo1 + 1) + '/12');
+    }
+    if (_rowOf.slo != null && _rowOf.alo != null && _rowOf.cy != null) pxSetFormula(wsRC, _rowOf.slo, 1, 'B' + (_rowOf.alo + 1) + '*B' + (_rowOf.cy + 1));
+    if (_rowOf.shi != null && _rowOf.ahi != null && _rowOf.cy != null) pxSetFormula(wsRC, _rowOf.shi, 1, 'B' + (_rowOf.ahi + 1) + '*B' + (_rowOf.cy + 1));
     if (_rowOf.by != null && _rowOf.lab != null && _rowOf.nl != null) pxSetFormula(wsRC, _rowOf.by, 1, 'B' + (_rowOf.lab + 1) + '+B' + (_rowOf.nl + 1));
     if (_rowOf.tot != null && _rowOf.p0 != null) pxSetFormula(wsRC, _rowOf.tot, 1, 'SUM(B' + (_rowOf.p0 + 1) + ':B' + (_rowOf['p' + (P.length - 1)] + 1) + ')');
     if (_rowOf.var != null && _rowOf.by != null && _rowOf.anch != null) pxSetFormula(wsRC, _rowOf.var, 1, 'B' + (_rowOf.by + 1) + '-B' + (_rowOf.anch + 1));
     if (_rowOf.vpc != null && _rowOf.by != null && _rowOf.anch != null) pxSetFormula(wsRC, _rowOf.vpc, 1, 'IF(B' + (_rowOf.anch + 1) + '=0,0,(B' + (_rowOf.by + 1) + '/B' + (_rowOf.anch + 1) + '-1)*100)');
     wsRC['!cols'] = [{ wch: 44 }, { wch: 20 }, { wch: 46 }];
-    const _moneyRows = ['low', 'high', 'anch', 'lab', 'nl', 'by', 'tot', 'slo', 'shi', 'var'].map(k => _rowOf[k]).filter(v => v != null)
+    const _moneyRows = ['sraw', 'srawh', 'alo', 'ahi', 'low', 'high', 'anch', 'lab', 'nl', 'by', 'tot', 'slo', 'shi', 'var'].map(k => _rowOf[k]).filter(v => v != null)
       .concat(P.map((p, i) => _rowOf['p' + i]).filter(v => v != null));
     _moneyRows.forEach(rw => { const a = XLSX.utils.encode_cell({ r: rw, c: 1 }); if (wsRC[a]) wsRC[a].z = '$#,##0'; });
     [0, 2].concat(['by', 'tot', 'vd'].map(k => _rowOf[k]).filter(v => v != null)).forEach(rw => {
@@ -13438,6 +13494,20 @@ function pricingTotalPrice() {
   const mt = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod().reduce((s, x) => s + x, 0) : 0;
   return pricingGrandTotal() + ((tc && tc.total) || 0) + mt;
 }
+// ── Stated-value BASIS (#5, v146) ────────────────────────────────────────────────────────────────
+// 'annual' — the stated figure is a RATE OF SPEND PER YEAR; a partial base period gets months/12 of it.
+// 'period' — the stated figure IS the budget for the base period; it is taken as-is and never scaled up.
+// State and local awards, and small federal pilots, frequently do the latter: a fixed appropriation for
+// a short base period. Reading that as an annual run rate would inflate the target by 12/months.
+function pricingStatedBasis() { return (pricingModel && pricingModel.statedBasis === 'period') ? 'period' : 'annual'; }
+function pricingSetStatedBasis(v) {
+  if (!pricingModel) return;
+  pricingModel.statedBasis = (v === 'period') ? 'period' : 'annual';
+  if (typeof pricingSave === 'function') pricingSave();
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+  if (typeof updateProposalPricingGate === 'function') updateProposalPricingGate();
+}
+
 function pricingValueTieOut() {
   const r = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel._staffingReconciliation : null;
   const hpf = defaultHpf() || 1912;
@@ -13448,69 +13518,566 @@ function pricingValueTieOut() {
                 blended: hrs > 0 ? (laborBase / hrs) : 0, hasStated: false, status: 'none' };
   if (!r || !r.stated || !(r.stated.low > 0)) return out;
   out.hasStated = true;
-  out.low = r.stated.low; out.high = r.stated.high; out.isRange = !!r.stated.isRange; out.from = r.stated.from;
-  out.anchorMode = r.anchorMode; out.anchor = r.anchorTarget; out.periods = r.periods || 1;
-  out.totalLow = r.stated.low * out.periods; out.totalHigh = r.stated.high * out.periods;
-  out.status = baseYear < r.stated.low ? 'below' : (baseYear > r.stated.high ? 'above' : 'inside');
-  out.delta = baseYear - r.anchorTarget;
-  out.pct = r.anchorTarget > 0 ? ((baseYear / r.anchorTarget) - 1) * 100 : 0;
-  // FTE that would land the base year ON the anchor at THIS model's own blended loaded rate. Non-labor
-  // (travel/ODC/materials) is held constant — only the labor block flexes.
-  const nonLabor = baseYear - laborBase;
-  out.fteForAnchor = (out.blended > 0) ? Math.max(0, (r.anchorTarget - nonLabor) / (out.blended * hpf)) : 0;
+  // ── PERIOD LENGTH (#5, v145) ────────────────────────────────────────────────────────────────
+  // Period structure comes from the PRICING tab, which is where the user actually sets months per
+  // period — not from the Bid/No-Bid tab's period COUNT. A 6-month base plus four 12-month options is
+  // 4.5 contract years across 5 periods; counting periods overstates the contract by 11%.
+  const _P = (pricingModel.periods && pricingModel.periods.length) ? pricingModel.periods : [{ months: 12 }];
+  const baseFrac = pricingPeriodFraction(_P[0]);
+  const contractYears = _P.reduce((s, p) => s + pricingPeriodFraction(p), 0);
+  out.periods = _P.length;
+  out.baseMonths = pricingPeriodMonths(_P[0]);
+  out.baseFraction = baseFrac;
+  out.contractYears = contractYears;                                   // EXACT — used in arithmetic
+  out.contractYearsText = String(Math.round(contractYears * 100) / 100);   // rounded — for display only
+  // Where only a TOTAL was stated, the annual rate is re-derived over the real contract length in years
+  // rather than inheriting a divide-by-period-count. A total is inherently a whole-contract figure, so
+  // the per-period override does not apply to it and the card says so.
+  let rawLow = r.stated.low, rawHigh = r.stated.high, from = r.stated.from;
+  const fromTotal = !!(r.stated.totalRange && r.stated.totalRange.ok && contractYears > 0);
+  out.basisLocked = fromTotal;
+  const basis = fromTotal ? 'annual' : pricingStatedBasis();
+  out.statedBasis = basis;
+  out.statedRawLow = rawLow; out.statedRawHigh = rawHigh;
+  if (fromTotal) {
+    rawLow = r.stated.totalRange.low / contractYears;
+    rawHigh = r.stated.totalRange.high / contractYears;
+    out.statedRawLow = rawLow; out.statedRawHigh = rawHigh;
+    from = 'stated total \u00f7 ' + out.contractYearsText + ' contract years';
+  }
+  // 'annual' — the figure is a yearly rate, so this period gets months/12 of it.
+  // 'period' — the figure IS this period's budget, taken as-is; the implied annual rate is the
+  //             back-solve, used only to project the option years and never to inflate the base.
+  let annualLow, annualHigh, periodLow, periodHigh;
+  if (basis === 'period') {
+    periodLow = rawLow; periodHigh = rawHigh;
+    annualLow = baseFrac > 0 ? rawLow / baseFrac : rawLow;
+    annualHigh = baseFrac > 0 ? rawHigh / baseFrac : rawHigh;
+  } else {
+    annualLow = rawLow; annualHigh = rawHigh;
+    periodLow = rawLow * baseFrac; periodHigh = rawHigh * baseFrac;
+  }
+  const periodRange = { ok: true, low: periodLow, high: periodHigh, isRange: periodHigh > periodLow * 1.000001 };
+  out.annualLow = annualLow; out.annualHigh = annualHigh;
+  out.isRange = !!periodRange.isRange; out.from = from; out.anchorMode = r.anchorMode;
+  // The anchor is taken on the BASE-PERIOD range — that is what the base-period price is judged against.
+  out.low = periodLow; out.high = periodHigh;
+  out.anchor = pxAnchorPoint(periodRange, r.anchorMode);
+  out.annualAnchor = baseFrac > 0 ? (out.anchor / baseFrac) : out.anchor;
+  out.totalLow = annualLow * contractYears; out.totalHigh = annualHigh * contractYears;
+  // With a fixed base-period budget and option years, the contract total is a PROJECTION at the same
+  // rate of spend, not a stated figure. Say so rather than presenting it as the Government's number.
+  out.totalIsProjected = (basis === 'period' && out.periods > 1);
+  out.status = baseYear < out.low ? 'below' : (baseYear > out.high ? 'above' : 'inside');
+  out.delta = baseYear - out.anchor;
+  out.pct = out.anchor > 0 ? ((baseYear / out.anchor) - 1) * 100 : 0;
+  // The hours matrix holds a FULL YEAR of hours; this period bills months/12 of them. Non-labor must be
+  // netted off the SCALED labor, never off the unscaled matrix figure.
+  const nonLabor = baseYear - (laborBase * baseFrac);
+  out.hoursFullYear = hrs;
+  out.hoursBase = hrs * baseFrac;
+  out.laborFullYear = Math.round(laborBase);
+  out.laborBilled = Math.round(laborBase * baseFrac);
+  out.nonLabor = Math.round(nonLabor);
+  // FTE that would land the base period ON the anchor at THIS model's own blended loaded rate.
+  // Non-labor is held constant — only the labor block flexes. Reported as a full-year staffing LEVEL.
+  out.fteForAnchor = (out.blended > 0 && baseFrac > 0) ? Math.max(0, (out.anchor - nonLabor) / (baseFrac * out.blended * hpf)) : 0;
   // Roles that carry hours but no rate drag the blended rate down, so fitting to the anchor against it
   // would inflate the headcount to compensate. Count them and block the fit until every role is priced.
   out.unrated = pricingModel.lcats.filter(l => pricingRowHours(l.id) > 0 && !(pricingBilledRate(l, 0) > 0)).length;
   return out;
 }
-// Rescale every role to whole FTEs so the base-year price lands on the anchor at the current rates.
-// Rates, tasks, masks and the per-role proportions are untouched; only the FTE level moves.
-function pricingFitToAnchor() {
-  const t = pricingValueTieOut();
-  if (!t.hasStated || !(t.fteForAnchor > 0) || !pricingModel.lcats.length) return;
-  if (t.unrated > 0) return;                      // every role must be priced before the fit is meaningful
-  const cur = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
-  if (!(cur > 0)) return;
-  const k = t.fteForAnchor / cur;
-  const scaled = pricingModel.lcats.map(l => Math.max(0.0001, (parseFloat(l.advertised) || 0) * k));
-  const ints = pxIntegerFte(scaled, Math.round(t.fteForAnchor));
-  pricingModel.lcats.forEach((l, i) => { l.advertised = ints[i]; });
-  if (pricingModel.tasks.length && typeof pricingDeriveHoursFromFte === 'function') {
-    pricingDeriveHoursFromFte(pricingModel.lcats, pricingModel.hours, pricingModel.mask, pricingModel.tasks, defaultHpf());
+// ═══ #5 RECOMMENDATIONS ENGINE — "ANALYZE THE GAP" (Wave 4) ═══════════════════
+// This replaces pricingFitToAnchor(), which rescaled every role by one multiplier so the base year
+// landed on the anchor. That closed the arithmetic and destroyed the staffing rationale: a team sized
+// role by role against the scope came back as "every role +14%", which is not a basis of estimate and
+// cannot be defended in a realism review. The gap is almost never uniform — it is usually two roles
+// priced under their market band, a handful of unrated roles dragging the blended rate down, or a task
+// carrying nominal coverage.
+//
+// So: a DETERMINISTIC pre-pass computes the exact facts, then ONE model call turns those facts into
+// ranked, quantified moves. The model never computes a number — every figure it cites comes from
+// pricingGapFacts(). ADVISORY ONLY: nothing here writes to pricingModel.
+//
+// Thresholds used by the thinness flags, stated here and in the panel so nothing is a black box:
+const _PX_THIN_FTE_PER_TASK = 0.25;   // a role under a quarter-FTE per task it covers (and covering 3+ tasks)
+const _PX_THIN_TASK_MIN_TASKS = 3;    // below 3 tasks, a small per-task figure is normal part-time work
+const _PX_THIN_TASK_FTE = 0.5;        // a PWS task carrying under half an FTE in total
+
+// Billed rate this role WOULD carry at a hypothetical paid hourly, through the real rate chain
+// (locality differential, SCA H&W substitution, wrap, competitive discount). Swapping baseRate and
+// restoring it in a finally is exact where re-deriving the algebra is not: the H&W term is a max(),
+// so the loaded rate is not linear in the wage for SCA-covered roles.
+function _pxBilledAtPaid(l, paid) {
+  if (!l || !(paid > 0)) return 0;
+  const prev = l.baseRate;
+  try { l.baseRate = paid; return pricingBilledRate(l, 0); }
+  finally { l.baseRate = prev; }
+}
+
+// Persist a market band on the role so "rate vs its researched band" survives a reload. _mktCache is
+// session-only; pricingModel is not.
+function _pxStashBand(l, rec) {
+  if (!l || !rec) return;
+  const h = rec.hourly || {}, s = rec.salary || {};
+  const hr = k => {
+    const v = parseFloat(h[k]);
+    if (isFinite(v) && v > 0) return Math.round(v * 100) / 100;
+    const a = parseFloat(s[k]);
+    return (isFinite(a) && a > 0) ? Math.round((a / 2080) * 100) / 100 : 0;
+  };
+  const p25 = hr('p25'), p50 = hr('p50'), p75 = hr('p75');
+  if (!(p25 > 0 || p50 > 0 || p75 > 0)) return;
+  l.mktBand = { p25: p25, p50: p50, p75: p75, loc: String(rec.location || ''), asOf: String(rec.as_of || ''), confidence: String(rec.confidence || '') };
+}
+
+// The location string the bulk path keys its cache on — mirrored here so a cache read finds the hit.
+function _pxBandLoc() {
+  try {
+    const st = ((pricingModel.lcats || []).find(l => l.localityState) || {}).localityState || '';
+    const stName = (st && typeof PX_STATES !== 'undefined') ? ((PX_STATES.find(s => s[0] === st) || [])[1] || '') : '';
+    return stName || 'National (US)';
+  } catch (e) { return 'National (US)'; }
+}
+
+// Resolve a market band for a role, best source first. basis matters and is carried through:
+//   'paid'   — unburdened hourly to the employee (Market Rates / Recommend rates). Compare to l.baseRate.
+//   'loaded' — a fully burdened reference range (the auto-build's cost_realism). Compare to the billed rate.
+function _pxRoleBand(l) {
+  if (!l) return null;
+  const num = v => { const x = parseFloat(v); return (isFinite(x) && x > 0) ? x : 0; };
+  const mk = (a, b, c, src, basis, meta) => {
+    a = num(a); b = num(b); c = num(c);
+    if (!(a > 0 || b > 0 || c > 0)) return null;
+    const mid = b > 0 ? b : ((a > 0 && c > 0) ? (a + c) / 2 : (a || c));
+    return { p25: a, p50: mid, p75: c, source: src, basis: basis,
+             loc: String((meta && meta.loc) || ''), asOf: String((meta && meta.asOf) || ''),
+             confidence: String((meta && meta.confidence) || '') };
+  };
+  // 1. persisted on the role by Market Rates / Recommend rates
+  if (l.mktBand) {
+    const b = mk(l.mktBand.p25, l.mktBand.p50, l.mktBand.p75, 'researched', 'paid', l.mktBand);
+    if (b) return b;
   }
-  pricingModel.statedFteTotal = ints.reduce((s, x) => s + x, 0);
-  pricingModel.fteSource = 'estimated';
-  pricingModel.perPeriodFte = false;
-  if (typeof pricingRenderAll === 'function') pricingRenderAll();
-  if (typeof updateProposalPricingGate === 'function') updateProposalPricingGate();
+  // 2. this session's market-rate cache
+  try {
+    if (typeof _mktCacheKey === 'function' && typeof _mktCache !== 'undefined') {
+      const ctx = (typeof _mktRoleContext === 'function') ? _mktRoleContext(l.name) : null;
+      const hit = _mktCache[_mktCacheKey(l.name, _pxBandLoc(), '', '', ctx)];
+      if (hit) {
+        const h = hit.hourly || {}, s = hit.salary || {};
+        const hr = k => (num(h[k]) > 0) ? num(h[k]) : (num(s[k]) > 0 ? num(s[k]) / 2080 : 0);
+        const b = mk(hr('p25'), hr('p50'), hr('p75'), 'researched', 'paid',
+                     { loc: hit.location, asOf: hit.as_of, confidence: hit.confidence });
+        if (b) return b;
+      }
+    }
+  } catch (e) {}
+  // 3. the auto-build's own cost-realism range — a LOADED reference range, not a paid wage
+  try {
+    const cr = (typeof pricingAutoBuildLast !== 'undefined' && pricingAutoBuildLast && pricingAutoBuildLast.cost_realism) ? pricingAutoBuildLast.cost_realism : null;
+    const rows = (cr && Array.isArray(cr.per_role)) ? cr.per_role : [];
+    const nn = (typeof _mktNormName === 'function') ? _mktNormName : (s => String(s == null ? '' : s).toLowerCase());
+    const hit = rows.find(x => x && nn(x.role_name) === nn(l.name));
+    if (hit) {
+      const b = mk(hit.market_low, null, hit.market_high, 'auto-build', 'loaded', { confidence: cr.confidence });
+      if (b) return b;
+    }
+  } catch (e) {}
+  return null;
+}
+
+// ── the deterministic pre-pass ────────────────────────────────────────────────
+// Every figure the model is shown comes from here. No estimation, no judgement — arithmetic only.
+function pricingGapFacts() {
+  const f = { ok: false, reason: '', at: Date.now() };
+  const M = (typeof pricingModel !== 'undefined' && pricingModel) ? pricingModel : null;
+  if (!M || !Array.isArray(M.lcats) || !M.lcats.length) { f.reason = 'No labor categories yet \u2014 run \u2728 Auto-build structure in Step 3 first.'; return f; }
+  if (!Array.isArray(M.tasks) || !M.tasks.length) { f.reason = 'No PWS tasks yet \u2014 add tasks in Step 3, or pull the RFP analysis in Step 2.'; return f; }
+
+  const t = pricingValueTieOut();
+  const hpf = t.hpf || defaultHpf() || 1912;
+  const hours = pricingTotalHours();
+  const laborBase = pricingBaseTotal();
+  // Period-length figures come from the tie-out, which is the single source of truth for them.
+  const baseFrac = (t.baseFraction != null) ? t.baseFraction
+    : ((M.periods && M.periods[0] && typeof pricingPeriodFraction === 'function') ? pricingPeriodFraction(M.periods[0]) : 1);
+  const baseMonths = (t.baseMonths != null) ? t.baseMonths
+    : ((M.periods && M.periods[0] && typeof pricingPeriodMonths === 'function') ? pricingPeriodMonths(M.periods[0]) : 12);
+  const contractYears = (t.contractYears != null) ? t.contractYears
+    : (M.periods || []).reduce((s, p) => s + pricingPeriodFraction(p), 0);
+  const laborBilled = laborBase * baseFrac;
+  const nonLabor = Math.max(0, t.baseYear - laborBilled);
+  const gsa = (typeof pricingIsGsa === 'function') ? !!pricingIsGsa() : false;
+  const r2 = v => Math.round((parseFloat(v) || 0) * 100) / 100;
+  const r1 = v => Math.round((parseFloat(v) || 0) * 10) / 10;
+
+  f.ok = true;
+  f.opp = { label: M.oppLabel || '', mismatch: (typeof pricingOppMismatch === 'function') ? pricingOppMismatch() : null };
+  f.hpf = hpf;
+  f.totals = {
+    fte: r2(hours / hpf), hours: Math.round(hours),
+    laborBase: Math.round(laborBase), laborBilled: Math.round(laborBilled),
+    nonLabor: Math.round(nonLabor), baseMonths: baseMonths, baseFraction: baseFrac,
+    contractYears: contractYears,
+    contractYearsText: (t.contractYearsText != null) ? t.contractYearsText : String(Math.round(contractYears * 100) / 100),
+    baseYear: Math.round(t.baseYear), total: Math.round(t.total),
+    periods: (M.periods || []).length || 1,
+    blended: r2(t.blended), gsaMode: gsa,
+    roles: M.lcats.length, tasks: M.tasks.length
+  };
+
+  f.gap = t.hasStated
+    ? { hasStated: true, statedLow: Math.round(t.low), statedHigh: Math.round(t.high), isRange: !!t.isRange,
+        annualLow: Math.round(t.annualLow || 0), annualHigh: Math.round(t.annualHigh || 0),
+        statedBasis: String(t.statedBasis || 'annual'), totalIsProjected: !!t.totalIsProjected,
+        from: String(t.from || ''), anchorMode: String(t.anchorMode || 'mid'), anchor: Math.round(t.anchor),
+        dollars: Math.round(t.delta), pct: r1(t.pct), status: String(t.status || ''),
+        totalStatedLow: Math.round(t.totalLow || 0), totalStatedHigh: Math.round(t.totalHigh || 0) }
+    : { hasStated: false };
+
+  f.levers = {
+    fteForAnchor: t.hasStated ? r2(t.fteForAnchor) : null,
+    fteDelta: t.hasStated ? r2(t.fteForAnchor - (hours / hpf)) : null,
+    ratePctToClose: (t.hasStated && laborBase > 0 && baseFrac > 0) ? r1(((((t.anchor - nonLabor) / baseFrac) / laborBase) - 1) * 100) : null
+  };
+
+  const rec = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel._staffingReconciliation : null;
+  f.bna = rec ? { blended: Math.round(rec.blended || 0), totalFte: rec.totalFte, nRoles: rec.nRoles,
+                  source: String(rec.source || ''), baseValue: Math.round(rec.baseValue || 0) } : null;
+  f.blendedDelta = (rec && rec.blended > 0 && t.blended > 0)
+    ? { dollars: r2(t.blended - rec.blended), pct: r1(((t.blended / rec.blended) - 1) * 100) }
+    : null;
+
+  // ── per role ──
+  f.roles = M.lcats.map(l => {
+    const rh = pricingRowHours(l.id);
+    const billed = pricingBilledRate(l, 0);
+    const paid = parseFloat(l.baseRate) || 0;
+    const roleHpf = pricingHpf(l) || hpf;
+    const covered = M.tasks.filter(tk => pricingCell(l.id, tk.id) > 0).length;
+    const allowed = M.tasks.filter(tk => !(M.mask[l.id] && M.mask[l.id][tk.id] === false)).length;
+    const fte = rh / roleHpf;
+    const band = _pxRoleBand(l);
+    const o = {
+      name: String(l.name || '').trim() || '(unnamed role)',
+      fte: r2(fte), advertised: (l.advertised === '' || l.advertised == null) ? null : r2(l.advertised),
+      hours: Math.round(rh), cost: Math.round(rh * billed),
+      shareOfHours: hours > 0 ? r1(100 * rh / hours) : 0,
+      paid: r2(paid), loaded: r2(billed),
+      rateStatus: String(l.rateStatus || '') || 'blank',
+      evaluated: !!l.evaluated,
+      unrated: rh > 0 && !(billed > 0),
+      tasksCovered: covered, tasksAllowed: allowed,
+      ftePerTask: covered > 0 ? Math.round((fte / covered) * 1000) / 1000 : null,
+      band: band ? { p25: r2(band.p25), p50: r2(band.p50), p75: r2(band.p75), basis: band.basis, source: band.source, loc: band.loc, asOf: band.asOf, confidence: band.confidence } : null,
+      bandPos: null, bandPct: null, toP50Dollars: null, toP25Dollars: null
+    };
+    if (band) {
+      const cmp = band.basis === 'loaded' ? billed : paid;
+      if (cmp > 0) {
+        if (band.p25 > 0 && cmp < band.p25) { o.bandPos = 'below'; o.bandPct = r1(((cmp / band.p25) - 1) * 100); }
+        else if (band.p75 > 0 && cmp > band.p75) { o.bandPos = 'above'; o.bandPct = r1(((cmp / band.p75) - 1) * 100); }
+        else o.bandPos = 'in';
+      }
+      if (rh > 0) {
+        const at = v => (band.basis === 'loaded') ? v : _pxBilledAtPaid(l, v);
+        if (band.p50 > 0) o.toP50Dollars = Math.round(rh * (at(band.p50) - billed));
+        if (band.p25 > 0) o.toP25Dollars = Math.round(rh * (at(band.p25) - billed));
+      }
+    }
+    return o;
+  });
+
+  f.unrated = f.roles.filter(r => r.unrated).map(r => r.name);
+  f.unnamed = M.lcats.filter(l => !String(l.name || '').trim()).length;
+  f.belowBand = f.roles.filter(r => r.bandPos === 'below');
+  f.aboveBand = f.roles.filter(r => r.bandPos === 'above');
+  f.noBand = f.roles.filter(r => !r.band).map(r => r.name);
+
+  // ── thin coverage ──
+  f.thinRoles = f.roles
+    .filter(r => r.tasksCovered >= _PX_THIN_TASK_MIN_TASKS && r.ftePerTask != null && r.ftePerTask < _PX_THIN_FTE_PER_TASK)
+    .sort((a, b) => a.ftePerTask - b.ftePerTask)
+    .map(r => ({ name: r.name, fte: r.fte, tasksCovered: r.tasksCovered, ftePerTask: r.ftePerTask }));
+  f.thinTasks = []; f.uncoveredTasks = [];
+  M.tasks.forEach(tk => {
+    const h = pricingColHours(tk.id);
+    const label = String(tk.code ? (tk.code + ' ' + (tk.name || '')) : (tk.name || '')).trim() || '(unnamed task)';
+    if (!(h > 0)) { f.uncoveredTasks.push(label); return; }
+    const tf = h / hpf;
+    if (tf < _PX_THIN_TASK_FTE) f.thinTasks.push({ name: label, hours: Math.round(h), fte: r2(tf), pctOfEffort: hours > 0 ? r1(100 * h / hours) : 0 });
+  });
+  f.thinTasks.sort((a, b) => a.fte - b.fte);
+  f.thresholds = { ftePerTask: _PX_THIN_FTE_PER_TASK, minTasks: _PX_THIN_TASK_MIN_TASKS, taskFte: _PX_THIN_TASK_FTE };
+  return f;
+}
+
+// A cheap signature over everything an answer depends on, so a stale analysis says so instead of
+// quietly describing a model that has since changed.
+function pricingGapSig(f) {
+  if (!f || !f.ok) return '';
+  const t = f.totals || {};
+  const head = [t.baseYear, t.total, t.hours, Math.round((t.blended || 0) * 100), t.roles, t.tasks,
+                (f.gap && f.gap.hasStated) ? f.gap.anchor : 0].join('|');
+  const body = (f.roles || []).map(r => Math.round((r.loaded || 0) * 100) + ':' + r.hours).join(',');
+  return head + '#' + body;
+}
+
+// ── the brief the model actually sees ─────────────────────────────────────────
+function pricingGapBrief(f) {
+  if (!f || !f.ok) return '';
+  const $ = v => (v == null || isNaN(v)) ? '\u2014' : ((v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString('en-US'));
+  const pc = v => (v == null || isNaN(v)) ? '\u2014' : ((v > 0 ? '+' : '') + v + '%');
+  const t = f.totals, g = f.gap, L = [];
+  L.push('PRICE MODEL \u2014 DETERMINISTIC FACTS (computed by the tool from the model itself; treat as ground truth)');
+  L.push('');
+  L.push('Opportunity: ' + (f.opp.label || '(model not stamped to an opportunity)'));
+  L.push('Pricing mode: ' + (t.gsaMode
+    ? 'GSA Schedule \u2014 rates come from the Schedule and CANNOT be moved; only hours, staffing, scope and non-labor are available levers.'
+    : 'Build-up \u2014 the offeror sets base rates, so rate moves ARE available.'));
+  L.push('Base-year price: ' + $(t.baseYear) + '  \u00b7  Total across ' + t.periods + ' period(s): ' + $(t.total));
+  if (t.baseMonths === 12) {
+    L.push('Labor ' + $(t.laborBase) + ' + non-labor (travel/ODC/materials) ' + $(t.nonLabor) + ' = base year. Non-labor is held constant in every lever below.');
+  } else {
+    L.push('BASE PERIOD IS ' + t.baseMonths + ' MONTHS, NOT 12. The hours matrix holds a full year of hours (' + $(t.laborBase) + ' of labor); the base period bills ' + t.baseMonths + '/12 of that = ' + $(t.laborBilled) + ', plus non-labor ' + $(t.nonLabor) + ' = base period price ' + $(t.baseYear) + '. Non-labor is held constant in every lever below.');
+    L.push(g.statedBasis === 'period'
+      ? 'The Government figure is a fixed budget for these ' + t.baseMonths + ' months and has NOT been scaled \u2014 every stated and anchor figure below is exactly as the solicitation set it. Do not annualise it.'
+      : 'The Government-stated figure has ALREADY been scaled to this period length \u2014 every stated and anchor figure below covers ' + t.baseMonths + ' months, not a full year. Do not rescale it again.');
+  }
+  L.push('Contract length: ' + t.contractYearsText + ' years across ' + t.periods + ' period(s).');
+  L.push('Staffing: ' + t.fte + ' FTE \u00b7 ' + t.hours.toLocaleString('en-US') + ' hrs @ ' + Math.round(f.hpf).toLocaleString('en-US') + ' hrs/FTE \u00b7 blended loaded $' + t.blended + '/hr');
+  L.push('');
+  if (g.hasStated) {
+    if (g.statedBasis === 'period') {
+      L.push('GOVERNMENT-STATED value: a FIXED BUDGET of ' + $(g.statedLow) + (g.isRange ? (' \u2013 ' + $(g.statedHigh)) : '') + ' for the ' + t.baseMonths + '-month base period. It is NOT an annual rate and must not be annualised or scaled up.');
+      if (t.baseMonths !== 12) L.push('  implied annual rate of spend (back-solved, not a Government figure): ' + $(g.annualLow) + (g.isRange ? (' \u2013 ' + $(g.annualHigh)) : '') + '/yr');
+    } else {
+      L.push('GOVERNMENT-STATED annual value: ' + $(g.annualLow) + (g.isRange ? (' \u2013 ' + $(g.annualHigh)) : '') + '/yr' + (g.from && g.from !== 'base-year' ? ('  (' + g.from + ')') : ''));
+      if (t.baseMonths !== 12) L.push('  scaled to this ' + t.baseMonths + '-month base period: ' + $(g.statedLow) + (g.isRange ? (' \u2013 ' + $(g.statedHigh)) : ''));
+    }
+    if (g.isRange) L.push('Anchored to the ' + g.anchorMode + 'point of that range = ' + $(g.anchor));
+    L.push('GAP TO ANCHOR: ' + $(g.dollars) + ' (' + pc(g.pct) + ') \u2014 the base year is ' + (g.status === 'inside' ? 'INSIDE the stated range' : (g.status === 'below' ? 'BELOW the stated floor' : 'ABOVE the stated ceiling')) + '.');
+  } else {
+    L.push('GOVERNMENT-STATED value: none found in the solicitation. There is no anchor, so judge the model on internal realism \u2014 rates against their bands, coverage, and the blended rate \u2014 not against a dollar target.');
+  }
+  L.push('');
+  L.push('EXACT LEVERS (pure arithmetic, no judgement applied):');
+  if (g.hasStated) {
+    L.push('- FTE that would land the base year exactly on the anchor at today\u2019s blended rate: ' + f.levers.fteForAnchor + ' (\u0394 ' + (f.levers.fteDelta > 0 ? '+' : '') + f.levers.fteDelta + ' FTE)');
+    L.push('- Uniform loaded-rate change that would close the gap at today\u2019s hours: ' + pc(f.levers.ratePctToClose));
+    L.push('  (both are stated so you can size a move against them \u2014 NOT because either is a recommendation)');
+  } else {
+    L.push('- none available: no stated value to anchor against.');
+  }
+  L.push('');
+  if (f.bna) {
+    L.push('BID/NO-BID HEURISTIC COMPARISON:');
+    L.push('- the opportunity analysis sized ' + f.bna.nRoles + ' roles / ' + f.bna.totalFte + ' FTE at a blended $' + f.bna.blended + '/hr loaded (source: ' + f.bna.source + ')');
+    if (f.blendedDelta) L.push('- this price model\u2019s blended rate is ' + pc(f.blendedDelta.pct) + ' against that ($' + t.blended + ' vs $' + f.bna.blended + ')');
+    L.push('');
+  }
+  L.push('ROLES (' + f.roles.length + '). Band basis: "paid" = unburdened hourly to the employee (compare to the paid column); "loaded" = fully burdened reference range (compare to the loaded column).');
+  f.roles.forEach((r, i) => {
+    const b = r.band;
+    const bandTxt = b
+      ? ('band $' + b.p25 + '\u2013$' + b.p75 + ' (p50 $' + b.p50 + ', ' + b.basis + ', ' + b.source + (b.loc ? (', ' + b.loc) : '') + ')'
+         + (r.bandPos ? ('; sits ' + (r.bandPos === 'in' ? 'INSIDE the band' : (r.bandPos.toUpperCase() + ' by ' + pc(r.bandPct)))) : '')
+         + (r.toP50Dollars != null ? ('; moving it to the band p50 changes the base year by ' + $(r.toP50Dollars)) : ''))
+      : 'no researched band on file';
+    L.push(' ' + (i + 1) + '. ' + r.name
+      + ' \u2014 ' + r.fte + ' FTE, ' + r.hours.toLocaleString('en-US') + ' hrs (' + r.shareOfHours + '% of effort), '
+      + (r.paid > 0 ? ('paid $' + r.paid + '/hr') : 'NO RATE') + ', loaded $' + r.loaded + '/hr, cost ' + $(r.cost)
+      + ', rate status ' + r.rateStatus
+      + '; covers ' + r.tasksCovered + ' of ' + f.totals.tasks + ' tasks (' + (r.ftePerTask == null ? '\u2014' : (r.ftePerTask + ' FTE/task')) + '); ' + bandTxt);
+  });
+  L.push('');
+  if (f.unrated.length) L.push('UNRATED ROLES CARRYING HOURS (' + f.unrated.length + '): ' + f.unrated.join(', ') + ' \u2014 these cost $0, so they understate the price AND drag the blended rate down.');
+  if (f.unnamed) L.push('UNNAMED ROLES: ' + f.unnamed);
+  if (f.noBand.length) L.push('NO RESEARCHED BAND ON FILE (' + f.noBand.length + '): ' + f.noBand.join(', ') + ' \u2014 their rates are unverified against the market.');
+  if (f.thinRoles.length) L.push('THIN ROLE COVERAGE (under ' + f.thresholds.ftePerTask + ' FTE per task covered, across ' + f.thresholds.minTasks + '+ tasks): ' + f.thinRoles.map(r => r.name + ' \u2014 ' + r.fte + ' FTE across ' + r.tasksCovered + ' tasks = ' + r.ftePerTask + ' FTE/task').join(' | '));
+  if (f.thinTasks.length) L.push('THIN TASKS (under ' + f.thresholds.taskFte + ' FTE total): ' + f.thinTasks.map(x => x.name + ' \u2014 ' + x.fte + ' FTE, ' + x.hours.toLocaleString('en-US') + ' hrs, ' + x.pctOfEffort + '% of effort').join(' | '));
+  if (f.uncoveredTasks.length) L.push('TASKS WITH NO HOURS AT ALL (' + f.uncoveredTasks.length + '): ' + f.uncoveredTasks.join(' | '));
+  if (f.opp.mismatch) L.push('\u26a0 MODEL PROVENANCE: this price model is stamped to a different opportunity than the one loaded. Say so \u2014 every figure above may belong to another pursuit.');
+  return L.join('\n');
+}
+
+// ── the single model call ─────────────────────────────────────────────────────
+let _pxGapResult = null;      // module state, deliberately NOT persisted: the model is the durable
+                              // artifact, the analysis is a moment-in-time read of it, and keeping it
+                              // out of pricingModel keeps it clear of the beforeunload/storage path.
+let _pxGapBusy = false;
+
+async function pricingAnalyzeGap(btn) {
+  if (_pxGapBusy) return;
+  const f = pricingGapFacts();
+  if (!f.ok) { if (typeof showStatus === 'function') showStatus('warn', 'Nothing to analyze yet', f.reason); return; }
+  const apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { if (typeof showStatus === 'function') showStatus('warn', 'API key needed', 'Enter your Anthropic API key (top of the page) to run the gap analysis.'); return; }
+
+  const brief = pricingGapBrief(f);
+  const prompt =
+'You are a senior U.S. Government cost/price analyst reviewing an offeror\u2019s own price model. Every number below was computed by the pricing tool from the model itself. Treat them as ground truth: do NOT recompute, re-derive, or contradict them, and do NOT introduce a figure that is not derivable from them.\n\n'
++ brief + '\n\n'
++ 'TASK: produce 3\u20136 RANKED, QUANTIFIED moves the offeror could make.\n\n'
++ 'Every move MUST:\n'
++ '- name a specific role, task, or parameter. "Review the rates" and "revisit staffing" are useless; "raise X from $a to $b" and "Y carries N of M tasks at Z FTE" are the standard.\n'
++ '- carry the actual figures from the facts \u2014 from-value, to-value, and the base-year dollar effect where one is given above.\n'
++ '- be actionable inside this tool (rate per role, FTE per role, hours per task, travel/ODC, task coverage, or researching a missing rate).\n\n'
++ 'HARD CONSTRAINTS:\n'
++ '- NEVER propose scaling every role by a uniform multiplier, or "increase all FTE by N%". That approach was removed from this tool precisely because it destroys the staffing rationale. Uniform moves are disqualified.\n'
++ '- The stated FTE-to-anchor and uniform-rate figures are given only so you can size a targeted move against them. Do not recommend either as a move.\n'
++ '- Where the Government stipulated level of effort or labor categories, those are fixed \u2014 do not propose changing them; say so if that is what constrains the answer.\n'
++ '- In GSA Schedule mode, rates are fixed by the Schedule. Do not propose rate changes.\n'
++ '- An unrated role carrying hours is a DATA gap, not a pricing judgement \u2014 rank it on the dollars it hides, and say the rate must be researched rather than guessing one.\n'
++ '- If the facts do not support 3 defensible moves, return fewer. Never pad.\n'
++ '- Rank by (defensible dollar impact) \u00d7 (how well the facts support it), highest first.\n\n'
++ 'Respond with ONLY this JSON and nothing else:\n'
++ '{"diagnosis":"1\u20132 sentences naming the single biggest reason the price sits where it does",'
++ '"moves":[{"rank":<int from 1>,"headline":"<=12 words, imperative","detail":"1\u20133 sentences, quantified, naming the figures",'
++ '"lever":"rates|staffing|hours|non-labor|scope|data","role":"<exact role name from the facts, or null>",'
++ '"impact_dollars":<signed base-year dollar effect as a number, or null where it cannot be derived from the facts>,'
++ '"confidence":"high|medium|low","basis":"which fact(s) above this rests on"}],'
++ '"residual":"what would still be unexplained after every move above, in one sentence (empty string if nothing)",'
++ '"caution":"the thing it would be WRONG to do here, in one sentence (empty string if none)"}';
+
+  _pxGapBusy = true;
+  const prev = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Analyzing\u2026'; }
+  try {
+    const parsed = await callClaudeForJson(apiKey, [{ type: 'text', text: prompt }], 4000, 120000, 'Gap analysis');
+    const moves = (parsed && Array.isArray(parsed.moves)) ? parsed.moves.filter(m => m && (m.headline || m.detail)) : [];
+    if (!moves.length) throw new Error('the analysis came back with no usable moves \u2014 try again.');
+    moves.sort((a, b) => (parseInt(a.rank) || 99) - (parseInt(b.rank) || 99));
+    _pxGapResult = {
+      diagnosis: String((parsed && parsed.diagnosis) || ''),
+      moves: moves,
+      residual: String((parsed && parsed.residual) || ''),
+      caution: String((parsed && parsed.caution) || ''),
+      brief: brief, sig: pricingGapSig(f), at: Date.now(),
+      anchorMode: f.gap.hasStated ? f.gap.anchorMode : '', hasStated: !!f.gap.hasStated
+    };
+    if (typeof showStatus === 'function') showStatus('success', 'Gap analysis ready', moves.length + ' ranked move' + (moves.length === 1 ? '' : 's') + ' below the Pricing Summary. Nothing was applied \u2014 the analysis is advisory.');
+  } catch (e) {
+    console.error('gap analysis failed:', e);
+    if (typeof showStatus === 'function') showStatus('error', 'Gap analysis failed', e.message || String(e));
+  } finally {
+    _pxGapBusy = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = prev; }
+    pricingRenderGapPanel();
+  }
+}
+
+function pricingGapDismiss() { _pxGapResult = null; pricingRenderGapPanel(); }
+
+// ── the panel ─────────────────────────────────────────────────────────────────
+// Its own container, not part of pricingRenderSummary(), so a routine re-render does not wipe an
+// analysis the user is still reading.
+function pricingRenderGapPanel() {
+  const el = document.getElementById('pricingGapPanel'); if (!el) return;
+  const esc = (typeof pricingEsc === 'function') ? pricingEsc : (x => String(x == null ? '' : x));
+  const f = pricingGapFacts();
+  const g = _pxGapResult;
+  if (!g) {
+    // Entry point for the case the tie-out card cannot cover: no Government-stated value, so
+    // pricingTieOutHtml() renders nothing and its button never appears.
+    if (f.ok && !f.gap.hasStated) {
+      el.innerHTML = '<div style="border:1px dashed var(--border);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:240px;font-size:12px;color:var(--muted);line-height:1.5">The solicitation states no dollar value to anchor against, so there is no tie-out to show. The model can still be checked on its own terms \u2014 rates against their researched bands, unrated roles, thin task coverage, and the blended rate.</div>'
+        + '<button onclick="pricingAnalyzeGap(this)" style="font-size:12px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;white-space:nowrap">\uD83D\uDD0E Analyze the price model</button></div>';
+    } else { el.innerHTML = ''; }
+    return;
+  }
+  const $ = v => (v == null || isNaN(v)) ? '' : ((v < 0 ? '\u2212$' : '+$') + Math.abs(Math.round(v)).toLocaleString('en-US'));
+  const stale = f.ok && pricingGapSig(f) !== g.sig;
+  const lever = { rates: ['#eff6ff', '#93c5fd', 'var(--blue)'], staffing: ['#ecfdf5', '#6ee7b7', '#065f46'],
+                  hours: ['#fffbeb', '#fde68a', '#92400e'], 'non-labor': ['#f5f3ff', '#c4b5fd', '#5b21b6'],
+                  scope: ['#fdf2f8', '#f9a8d4', '#9d174d'], data: ['#f1f5f9', '#cbd5e1', '#334155'] };
+  const conf = { high: '#15803d', medium: '#92400e', low: '#991b1b' };
+  const cards = g.moves.map((m, i) => {
+    const lv = String(m.lever || 'data').toLowerCase();
+    const c = lever[lv] || lever.data;
+    const imp = (m.impact_dollars == null || isNaN(parseFloat(m.impact_dollars))) ? '' : $(parseFloat(m.impact_dollars));
+    return '<div style="border:1px solid var(--border);border-left:4px solid ' + c[2] + ';border-radius:8px;padding:10px 13px;margin-top:8px;background:#fff">'
+      + '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">'
+      + '<span style="font-size:11px;font-weight:800;color:var(--muted)">#' + (i + 1) + '</span>'
+      + '<span style="font-size:13px;font-weight:800;flex:1;min-width:180px">' + esc(m.headline || '') + '</span>'
+      + (imp ? '<span style="font-size:13px;font-weight:800;color:' + (parseFloat(m.impact_dollars) < 0 ? '#991b1b' : '#065f46') + '">' + imp + '</span>' : '')
+      + '</div>'
+      + (m.detail ? '<div style="font-size:12px;color:var(--text);line-height:1.55;margin-top:5px">' + esc(m.detail) + '</div>' : '')
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;align-items:center">'
+      + '<span style="font-size:10.5px;font-weight:700;background:' + c[0] + ';border:1px solid ' + c[1] + ';color:' + c[2] + ';border-radius:5px;padding:2px 7px">' + esc(lv) + '</span>'
+      + (m.role ? '<span style="font-size:10.5px;font-weight:600;background:#f8fafc;border:1px solid var(--border);color:var(--text);border-radius:5px;padding:2px 7px">' + esc(m.role) + '</span>' : '')
+      + (m.confidence ? '<span style="font-size:10.5px;font-weight:700;color:' + (conf[String(m.confidence).toLowerCase()] || 'var(--muted)') + '">' + esc(m.confidence) + ' confidence</span>' : '')
+      + '</div>'
+      + (m.basis ? '<div style="font-size:10.5px;color:var(--muted);margin-top:5px">Rests on: ' + esc(m.basis) + '</div>' : '')
+      + '</div>';
+  }).join('');
+  el.innerHTML = '<div style="border:1px solid #c7d2fe;background:#f8fafc;border-radius:10px;padding:13px 15px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
+    + '<div style="font-weight:800;font-size:13px;color:#3730a3">\uD83D\uDD0E Gap analysis \u2014 ' + g.moves.length + ' ranked move' + (g.moves.length === 1 ? '' : 's') + '</div>'
+    + '<div style="display:flex;gap:7px"><button onclick="pricingAnalyzeGap(this)" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:5px 11px;cursor:pointer">Re-run</button>'
+    + '<button onclick="pricingGapDismiss()" style="font-size:11px;font-weight:700;background:#fff;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 11px;cursor:pointer">Dismiss</button></div></div>'
+    + (stale ? '<div style="margin-top:8px;font-size:11.5px;font-weight:600;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:7px 11px">\u26a0 The price model has changed since this ran, so the figures below no longer describe it. Re-run the analysis.</div>' : '')
+    + (g.diagnosis ? '<div style="font-size:12.5px;color:var(--text);line-height:1.55;margin-top:8px"><strong>Diagnosis.</strong> ' + esc(g.diagnosis) + '</div>' : '')
+    + cards
+    + (g.residual ? '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px"><strong>Left unexplained:</strong> ' + esc(g.residual) + '</div>' : '')
+    + (g.caution ? '<div style="font-size:12px;color:#92400e;line-height:1.5;margin-top:6px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:8px 11px"><strong>Caution:</strong> ' + esc(g.caution) + '</div>' : '')
+    + '<details style="margin-top:10px"><summary style="font-size:11px;color:var(--muted);cursor:pointer">Show the exact figures this analysis was given</summary>'
+    + '<pre style="font-size:10.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-top:6px;color:var(--text)">' + esc(g.brief) + '</pre></details>'
+    + '<div style="font-size:10.5px;color:var(--muted);margin-top:8px;line-height:1.5">Advisory only \u2014 nothing here is applied to the model; every change is yours to make. The figures above are computed by the tool; the ranking and wording are the model\u2019s. Thin-coverage flags use a threshold of ' + _PX_THIN_FTE_PER_TASK + ' FTE per task (roles covering ' + _PX_THIN_TASK_MIN_TASKS + '+ tasks) and ' + _PX_THIN_TASK_FTE + ' FTE per task overall.</div>'
+    + '</div>';
 }
 function pricingTieOutHtml() {
   const t = pricingValueTieOut();
   if (!t.hasStated) return '';
   const fmt = v => v >= 1e6 ? ('$' + (Math.round(v / 1e5) / 10) + 'M') : ('$' + Math.round(v / 1000) + 'K');
+  const _partial = t.baseMonths !== 12;
   const ok = t.status === 'inside';
   const bord = ok ? '#6ee7b7' : '#fca5a5', bg = ok ? '#ecfdf5' : '#fef2f2', col = ok ? '#065f46' : '#991b1b';
+  // The override. Which reading is right is a fact about the solicitation, not something the tool can
+  // infer, so it is asked plainly and defaults to the common case.
+  const _bBtn = (v, lbl, tip) => '<button onclick="pricingSetStatedBasis(\'' + v + '\')" title="' + tip + '" style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;border:1px solid '
+    + (t.statedBasis === v ? 'var(--blue)' : '#d1d5db') + ';background:' + (t.statedBasis === v ? 'var(--blue)' : '#fff')
+    + ';color:' + (t.statedBasis === v ? '#fff' : '#374151') + '">' + lbl + '</button>';
+  const basisRow = t.basisLocked
+    ? '<div style="font-size:10.5px;color:var(--muted);margin-bottom:8px">The solicitation states a contract <strong>total</strong>, so it is spread across ' + t.contractYearsText + ' contract year' + (t.contractYears === 1 ? '' : 's') + '. A per-period budget override does not apply to a total.</div>'
+    : '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px">'
+      + '<span style="font-size:10.5px;color:var(--muted)">The Government\u2019s figure is:</span>'
+      + _bBtn('annual', 'per year', 'An annual rate of spend \u2014 a partial base period is judged against months/12 of it. The usual case.')
+      + _bBtn('period', 'the ' + t.baseMonths + '-month base budget', 'A fixed budget for the base period, taken as-is and never scaled up. Common for state, local and small pilot awards.')
+      + (t.statedBasis === 'period' ? '<span style="font-size:10.5px;color:#92400e;font-weight:600">not scaled \u2014 taken as the base-period budget</span>' : '')
+      + '</div>';
+  const _bp = _partial ? ('Base-period (' + t.baseMonths + '-month) price') : 'Base-year price';
   const verdict = ok
-    ? '\u2713 Base-year price sits <strong>inside</strong> the Government-stated range. Staffing, rates, periods and the total all tie out.'
+    ? '\u2713 ' + _bp + ' sits <strong>inside</strong> the Government-stated range' + (_partial ? ', scaled to your ' + t.baseMonths + '-month base period' : '') + '. Staffing, rates, periods and the total all tie out.'
     : (t.status === 'below'
-      ? '\u26a0 Base-year price is <strong>' + Math.abs(t.pct).toFixed(0) + '% below</strong> the anchor and under the Government\u2019s own stated floor of ' + fmt(t.low) + '. Either the team is under-sized for the scope or the rates are too low to be credible.'
-      : '\u26a0 Base-year price is <strong>' + t.pct.toFixed(0) + '% above</strong> the anchor and over the Government\u2019s stated ceiling of ' + fmt(t.high) + '. Expect a realism challenge unless you can justify the delta.');
-  const fitBtn = (ok || !(t.fteForAnchor > 0)) ? ''
-    : (t.unrated > 0
-      ? '<div style="font-size:11.5px;font-weight:600;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:7px 11px;max-width:280px">Set a rate on all roles first \u2014 <strong>' + t.unrated + '</strong> still ' + (t.unrated === 1 ? 'has' : 'have') + ' none, which understates the blended rate and would overstate the headcount needed.</div>'
-      : '<button onclick="pricingFitToAnchor()" style="font-size:12px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;white-space:nowrap">Fit to range \u2192 ' + Math.round(t.fteForAnchor) + ' FTE</button>');
+      ? '\u26a0 ' + _bp + ' is <strong>' + Math.abs(t.pct).toFixed(0) + '% below</strong> the anchor and under the Government\u2019s own stated floor of ' + fmt(t.low) + (_partial ? ' for this period' : '') + '. Either the team is under-sized for the scope or the rates are too low to be credible.'
+      : '\u26a0 ' + _bp + ' is <strong>' + t.pct.toFixed(0) + '% above</strong> the anchor and over the Government\u2019s stated ceiling of ' + fmt(t.high) + (_partial ? ' for this period' : '') + '. Expect a realism challenge unless you can justify the delta.');
+  // #5 (Wave 4): the old "Fit to range" bumped every role by one multiplier, which closed the
+  // arithmetic and destroyed the staffing rationale. This names WHICH roles, rates and tasks account
+  // for the difference instead. Unrated roles no longer block it \u2014 they are one of the findings.
+  const fitBtn = '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;max-width:300px">'
+    + '<button onclick="pricingAnalyzeGap(this)" style="font-size:12px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;white-space:nowrap">\uD83D\uDD0E Analyze the gap</button>'
+    + (t.unrated > 0 ? '<div style="font-size:11px;font-weight:600;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:6px 10px;text-align:right"><strong>' + t.unrated + '</strong> role' + (t.unrated === 1 ? '' : 's') + ' still ' + (t.unrated === 1 ? 'has' : 'have') + ' no rate \u2014 ' + (t.unrated === 1 ? 'it costs' : 'they cost') + ' $0 here, and the analysis will flag ' + (t.unrated === 1 ? 'it' : 'them') + '.</div>' : '')
+    + '</div>';
   const row = (a, b) => '<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.06)">' + a + '</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.06);text-align:right;font-weight:600">' + b + '</td></tr>';
   return '<div style="margin-top:14px;border:1px solid ' + bord + ';background:' + bg + ';border-radius:10px;padding:12px 14px">'
     + '<div style="font-weight:800;font-size:13px;color:' + col + ';margin-bottom:6px">\u2696 Value tie-out \u2014 your price vs. the solicitation</div>'
+    + basisRow
     + '<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    + row('Government-stated base-year value' + (t.isRange ? ' (range)' : '') + (t.from === 'base-year' ? '' : ' \u2014 ' + pricingEsc(t.from)), fmt(t.low) + (t.isRange ? (' \u2013 ' + fmt(t.high)) : ''))
-    + (t.isRange ? row('Anchor point (' + pxAnchorLabel(t.anchorMode) + ')', fmt(t.anchor)) : '')
-    + row('Your base-year price', fmt(t.baseYear))
-    + row('Your total across ' + t.periods + ' period' + (t.periods === 1 ? '' : 's'), fmt(t.total) + ' <span style="font-weight:400;color:var(--muted)">vs stated ' + fmt(t.totalLow) + (t.isRange ? ('\u2013' + fmt(t.totalHigh)) : '') + '</span>')
+    + (t.statedBasis === 'period'
+      ? row('Government-stated <strong>' + t.baseMonths + '-month base budget</strong>' + (t.isRange ? ' (range)' : ''), fmt(t.low) + (t.isRange ? (' \u2013 ' + fmt(t.high)) : '') + ' <span style="font-weight:400;color:var(--muted)">as stated, not scaled</span>')
+        + (_partial ? row('Implied annual rate of spend', fmt(t.annualLow) + (t.isRange ? (' \u2013 ' + fmt(t.annualHigh)) : '') + '<span style="font-weight:400;color:var(--muted)">/yr \u2014 back-solved, used only to project later periods</span>') : '')
+      : row('Government-stated <strong>annual</strong> value' + (t.isRange ? ' (range)' : '') + (t.from === 'base-year' ? '' : ' \u2014 ' + pricingEsc(t.from)), fmt(t.annualLow) + (t.isRange ? (' \u2013 ' + fmt(t.annualHigh)) : '') + '<span style="font-weight:400;color:var(--muted)">/yr</span>')
+        + (_partial ? row('Expected for your <strong>' + t.baseMonths + '-month</strong> base period', fmt(t.low) + (t.isRange ? (' \u2013 ' + fmt(t.high)) : '') + ' <span style="font-weight:400;color:var(--muted)">(' + t.baseMonths + '/12 of the annual figure)</span>') : ''))
+    + (t.isRange ? row('Anchor point (' + pxAnchorLabel(t.anchorMode) + ')', fmt(t.anchor) + (_partial ? ' <span style="font-weight:400;color:var(--muted)">for the base period</span>' : '')) : '')
+    + row('Your base' + (_partial ? '-period' : '-year') + ' price', fmt(t.baseYear))
+    + row('Your total across ' + t.periods + ' period' + (t.periods === 1 ? '' : 's') + ' (' + t.contractYearsText + ' contract year' + (t.contractYears === 1 ? '' : 's') + ')', fmt(t.total) + ' <span style="font-weight:400;color:var(--muted)">vs ' + (t.totalIsProjected ? 'projected ' : 'stated ') + fmt(t.totalLow) + (t.isRange ? ('\u2013' + fmt(t.totalHigh)) : '') + (t.totalIsProjected ? ' (base budget carried forward at the same rate of spend)' : '') + '</span>')
     + row('Staffing at your blended loaded rate', t.fte.toFixed(0) + ' FTE \u00d7 ' + Math.round(t.hpf).toLocaleString() + ' hrs @ ' + (t.blended > 0 ? ('$' + t.blended.toFixed(0) + '/hr') : '\u2014'))
     + '</table>'
     + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px"><div style="flex:1;min-width:240px;font-size:12px;color:' + col + ';line-height:1.5">' + verdict + '</div>' + fitBtn + '</div>'
-    + '<div style="font-size:10.5px;color:var(--muted);margin-top:7px">The anchor point is set on the Bid/No-Bid tab. \u201cFit to range\u201d rescales every role to whole FTEs so the base year lands on the anchor at your current rates \u2014 rates, tasks and role rules are untouched.</div>'
+    + '<div style="font-size:10.5px;color:var(--muted);margin-top:7px">The anchor point is set on the Bid/No-Bid tab. A Government-stated figure is read as an <strong>annual</strong> rate of spend by default and scaled automatically to each period\u2019s own length. Where the solicitation instead sets a <strong>fixed budget for the base period</strong> \u2014 common in state, local and small pilot awards \u2014 switch it above and the figure is taken as-is, never scaled up. \u201cAnalyze the gap\u201d works out which roles, rates and tasks actually account for the difference and ranks what to do about it. It is advisory \u2014 it changes nothing on its own.</div>'
     + '</div>';
 }
 
@@ -13632,8 +14199,35 @@ function buildPricingContextForVol3() {
       s += `  - ${l.name || '(unnamed)'}: base ${pricingFmtC(parseFloat(l.baseRate) || 0)}/hr, loaded ${pricingFmtC(pricingLoadedRate(l, 0))}/hr, ${Math.round(pricingRowHours(l.id)).toLocaleString()} hrs (${pricingRowFte(l).toFixed(2)} FTE), base-year cost ${pricingFmt(pricingRowCost(l))}.\n`;
     }
   });
-  s += `\nBASE-PERIOD COST BY PWS TASK:\n`;
-  pricingModel.tasks.forEach(t => { s += `  - ${t.code ? t.code + ' ' : ''}${t.name || ''}: ${Math.round(pricingColHours(t.id)).toLocaleString()} hrs, ${pricingFmt(pricingColCost(t.id))}.\n`; });
+  // The hours matrix is always a full year. On a partial base period the per-task figures below are
+  // full-year quantities, and the narrative must say so or a reviewer will read them as period costs.
+  const _nbf = (typeof pricingPeriodFraction === 'function' && pricingModel.periods && pricingModel.periods[0]) ? pricingPeriodFraction(pricingModel.periods[0]) : 1;
+  const _nmo = (typeof pricingPeriodMonths === 'function' && pricingModel.periods && pricingModel.periods[0]) ? pricingPeriodMonths(pricingModel.periods[0]) : 12;
+  s += (_nmo === 12)
+    ? `\nBASE-PERIOD COST BY PWS TASK:\n`
+    : `\nCOST BY PWS TASK \u2014 the hours matrix holds a FULL YEAR; the ${_nmo}-month base period bills ${_nmo}/12 of each figure. Both are given:\n`;
+  pricingModel.tasks.forEach(t => {
+    const _fy = pricingColCost(t.id);
+    s += (_nmo === 12)
+      ? `  - ${t.code ? t.code + ' ' : ''}${t.name || ''}: ${Math.round(pricingColHours(t.id)).toLocaleString()} hrs, ${pricingFmt(_fy)}.\n`
+      : `  - ${t.code ? t.code + ' ' : ''}${t.name || ''}: ${Math.round(pricingColHours(t.id)).toLocaleString()} full-year hrs (${Math.round(pricingColHours(t.id) * _nbf).toLocaleString()} in the base period), full-year ${pricingFmt(_fy)}, base-period ${pricingFmt(_fy * _nbf)}.\n`;
+  });
+  // #5 v146: the price narrative must state which reading of the Government's figure was used, or a
+  // reviewer cannot tell a scaled annual rate from a fixed base-period budget.
+  const _tie = (typeof pricingValueTieOut === 'function') ? pricingValueTieOut() : null;
+  if (_tie && _tie.hasStated) {
+    const _mo = _tie.baseMonths;
+    s += `\nGOVERNMENT-STATED VALUE AND HOW IT WAS READ:\n`;
+    if (_tie.statedBasis === 'period') {
+      s += `  - The solicitation sets a FIXED BUDGET of ${pricingFmt(_tie.low)}${_tie.isRange ? ' \u2013 ' + pricingFmt(_tie.high) : ''} for the ${_mo}-month base period. This is taken exactly as stated and is NOT annualised or scaled up. Do not describe it as an annual value.\n`;
+      if (_mo !== 12) s += `  - The implied annual rate of spend is ${pricingFmt(_tie.annualLow)}${_tie.isRange ? ' \u2013 ' + pricingFmt(_tie.annualHigh) : ''}/yr. That figure is a back-solve used only to project later periods \u2014 it is not a Government figure and must not be presented as one.\n`;
+    } else {
+      s += `  - The solicitation states ${pricingFmt(_tie.annualLow)}${_tie.isRange ? ' \u2013 ' + pricingFmt(_tie.annualHigh) : ''} per year${_tie.basisLocked ? ' (derived from a stated contract total over ' + _tie.contractYearsText + ' contract years)' : ''}.\n`;
+      if (_mo !== 12) s += `  - The base period runs ${_mo} months, so the expected spend for it is ${pricingFmt(_tie.low)}${_tie.isRange ? ' \u2013 ' + pricingFmt(_tie.high) : ''} (${_mo}/12 of the annual figure).\n`;
+    }
+    s += `  - Anchor used for realism: ${pricingFmt(_tie.anchor)} (${pxAnchorLabel(_tie.anchorMode)}${_tie.isRange ? ' of the base-period range' : ''}). Our base-period price of ${pricingFmt(_tie.baseYear)} is ${_tie.status === 'inside' ? 'INSIDE the stated range' : (Math.abs(_tie.pct).toFixed(0) + '% ' + _tie.status + ' it')}.\n`;
+    s += `  - Contract length: ${_tie.contractYearsText} year(s) across ${_tie.periods} period(s). ${_tie.totalIsProjected ? 'The whole-contract comparison figure is a PROJECTION carrying the base-period budget forward at the same rate of spend, not a Government-stated total \u2014 label it that way.' : ''}\n`;
+  }
   s += `\nPERIOD TOTALS:\n`;
   pricingModel.periods.forEach((pp, i) => {
     const mo = pricingPeriodMonths(pp);
@@ -17676,9 +18270,10 @@ function reconcileStaffing(intel) {
     // solicitation that states only the total still anchors instead of losing the signal entirely.
     let byRange = pxValueRange((isInf(intel.base_year_value) || !hasNum(intel.base_year_value)) ? '' : intel.base_year_value);
     let anchorFrom = 'base-year';
+    let _totalRange = null;
     if (!byRange.ok) {
       const tr = pxValueRange((isInf(intel.total_contract_value) || !hasNum(intel.total_contract_value)) ? '' : intel.total_contract_value);
-      if (tr.ok && periods > 0) { byRange = { ok: true, low: tr.low / periods, high: tr.high / periods, isRange: tr.isRange }; anchorFrom = 'stated total \u00f7 ' + periods + ' periods'; }
+      if (tr.ok && periods > 0) { byRange = { ok: true, low: tr.low / periods, high: tr.high / periods, isRange: tr.isRange }; anchorFrom = 'stated total \u00f7 ' + periods + ' periods'; _totalRange = tr; }
     }
     const statedHard = byRange.ok && byRange.low > 0;
     const anchorMode = pxAnchorMode();
@@ -17721,7 +18316,7 @@ function reconcileStaffing(intel) {
       intel.award_value_rationale = 'Reconciled from a ' + (source === 'government-workload' ? 'government-stated workload of ' : 'proposed ' + cats.length + '-role team, ') + (Math.round(totalFte * 100) / 100) + ' FTE (' + Math.round(totalFte * HPF).toLocaleString() + ' base-year hours) at a blended ~$' + Math.round(blended) + '/hr fully-loaded.' + (source === 'proposed-loe' ? ' Quoter-defined LOE \u2014 confirm headcount in Pricing.' : '');
     }
     intel._staffingReconciliation = { source: source, nRoles: cats.length, totalFte: Math.round(totalFte * 100) / 100, blended: Math.round(blended), baseValue: Math.round(anchorVal), periods: periods, valueDerived: !statedHard,
-      stated: statedHard ? { low: byRange.low, high: byRange.high, isRange: !!byRange.isRange, from: anchorFrom } : null,
+      stated: statedHard ? { low: byRange.low, high: byRange.high, isRange: !!byRange.isRange, from: anchorFrom, totalRange: _totalRange } : null,
       anchorMode: anchorMode, anchorTarget: Math.round(anchorTarget), impliedLabor: Math.round(labor), hpf: HPF };
     return intel;
   } catch (e) { console.warn('reconcileStaffing failed', e); return intel; }
