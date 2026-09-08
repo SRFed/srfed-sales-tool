@@ -202,6 +202,10 @@
     color: #166534; border-radius: 10px; padding: 1px 8px;
     white-space: nowrap;
   }
+  /* Permanent guard against split pills: every rounded inline badge <span> in this tool is a short atomic
+     label (audited — none hold wrapping sentences), so keep each on one line. If it doesn't fit it wraps
+     whole to the next line instead of tearing the pill across two lines. */
+  span[style*="border-radius:"] { white-space: nowrap; }
   .file-item.template-file { background: #fefce8; border-color: #fde047; }
   .file-item.template-file .file-tokens { background: #fefce8; border-color: #fde047; color: #92400e; }
   .file-item .file-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3275,7 +3279,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '318';
+const APP_VERSION = '330';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -5047,7 +5051,7 @@ async function runHsExtract() {
       `"set_aside":"exact set-aside if stated, else 'Not stated in available documents'","place_of_performance":"city, state or 'Not stated in available documents'",` +
       `"estimated_value":"","period_of_performance":"","clearance_required":"e.g. SECRET / None / 'Not stated in available documents'",` +
       `"key_capabilities_needed":["capability1","capability2","capability3"],` +
-      `"required_certifications":["cert1"],"contract_vehicle":"",` +
+      `"required_certifications":["ONLY certifications the offeror must actually hold to be eligible or responsive; do NOT list a socioeconomic set-aside certification (WOSB, EDWOSB, SDVOSB, VOSB, HUBZone, 8(a)) merely because it appears as an SF-1449/SF-33 checkbox LABEL - include one only when it matches the operative set_aside"],"contract_vehicle":"",` +
       `"partnering_rationale":"2-3 sentences on what an ideal teaming partner would bring to this pursuit"}`
     });
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -5066,7 +5070,7 @@ async function runHsExtract() {
     hsExtractedAttrs = JSON.parse(m[0]
       .replace(/[\u2014\u2013]/g,' - ').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"'));
     // Uniformity: the deterministic set-aside detector overrides the model's guess here too (as in Triage/BNA).
-    try { if (typeof detectSetAside === 'function' && hsRfpFiles && hsRfpFiles.length) { const _hsSa = await detectSetAside(hsRfpFiles, apiKey, null); if (typeof _bnaApplySetAside === 'function') _bnaApplySetAside(hsExtractedAttrs, _hsSa); } } catch (e) {}
+    try { if (typeof detectSetAside === 'function' && hsRfpFiles && hsRfpFiles.length) { const _hsSa = await detectSetAside(hsRfpFiles, apiKey, null); if (typeof _bnaApplySetAside === 'function') _bnaApplySetAside(hsExtractedAttrs, _hsSa); } if (typeof _reconcileSetAsideCerts === 'function') _reconcileSetAsideCerts(hsExtractedAttrs); } catch (e) {}
     renderHsAttributes(hsExtractedAttrs);
     document.getElementById('hsAttributesCard').style.display = 'block';
     setProgress(100, [{ text: 'Reading solicitation documents', status: 'done' }, { text: 'Extracting attributes', status: 'done' }]);
@@ -7087,9 +7091,9 @@ async function ensureBriefing(apiKey) {
   const prompt =
     `You are reading a U.S. government solicitation. Extract a concise JSON briefing focused on scope and pricing. Return ONLY JSON:\n` +
     `{"solicitation_number":"","requirement_title":"","agency_name":"","contract_type":"","period_of_performance":"",` +
-    `"period_structure":"base + option breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
+    `"period_structure":"base + option breakdown counting FAR 52.217-9 option years ONLY, e.g. '1 base year + 4 option years'; do NOT fold a FAR 52.217-8 6-month 'Option to Extend Services' extension into the option count; '' if unstated",` +
     `"base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026), count the months (=9); if a month count is stated, use it; if a full base year with no other length is indicated, use 12; use 0 only if you truly cannot tell",` +
-    `"option_period_count":"number of option periods/years as a number; 0 if none",` +
+    `"option_period_count":"number of FAR 52.217-9 option periods/years as a number; 0 if none. EXCLUDE any FAR 52.217-8 'Option to Extend Services' (the up-to-6-month extension) - it is NOT an option period. A base + 3 option years that also carries a 6-month 52.217-8 extension has option_period_count=3, not 4",` +
     `"option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown",` +
     `"sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''","escalation_rate":"the annual price escalation / COLA percentage the solicitation directs offerors to apply across option years if one is stated (e.g. '3' for 3%/yr), as a plain number; '' if not stated","gsa_discount":"the discount percentage off GSA Schedule rates the solicitation requests, or that the offeror is directed to give, if stated, as a plain number; '' if not stated","odc_nte":"the not-to-exceed dollar ceiling for Other Direct Costs (ODCs) or materials/supplies if one is stated SEPARATELY from travel (e.g. '$10,000'), else ''","materials_required":"'yes' if the solicitation includes a materials/supplies/equipment CLIN or requires priced materials, 'no' if it states none, else ''",` +
     `"wd_number":"if the solicitation states or references a DOL Wage Determination NUMBER, copy it exactly (e.g. '2015-4281'); '' if not stated","wd_revision":"the Wage Determination REVISION number if stated (e.g. '23'); '' if not stated","place_of_performance":"the primary place of performance (county and state, city/state, or installation) if stated; '' if not stated",` +
@@ -9594,10 +9598,10 @@ async function runGeneration() {
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
       `Extract and return a comprehensive JSON briefing:\n` +
-      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; and if MULTIPLE due/closing dates appear because one or more amendments extended the deadline, use the LATEST (maximum) such date - a later amendment supersedes the base date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated — copy the EXACT figure including any decimal or fraction (e.g. 2.5, 0.5); do NOT round. If instead a workload / level-of-effort hours table by labor category is given, derive the FTEs from the BASE-YEAR hours column ONLY divided by 1912 (never add base + option columns). '' or 'not specified' if none","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of option periods/years as a number; 0 if none","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated. If only a month and year are stated ('performance begins February 2027') return YYYY-MM, and if only a year, return YYYY - do NOT invent a day to fill the format, a fabricated date that looks precise is worse than a partial one","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''","escalation_rate":"the annual price escalation / COLA percentage the solicitation directs offerors to apply across option years if one is stated (e.g. '3' for 3%/yr), as a plain number; '' if not stated","gsa_discount":"the discount percentage off GSA Schedule rates the solicitation requests, or that the offeror is directed to give, if stated, as a plain number; '' if not stated","odc_nte":"the not-to-exceed dollar ceiling for Other Direct Costs (ODCs) or materials/supplies if one is stated SEPARATELY from travel (e.g. '$10,000'), else ''","materials_required":"'yes' if the solicitation includes a materials/supplies/equipment CLIN or requires priced materials, 'no' if it states none, else ''",` +
+      `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; and if MULTIPLE due/closing dates appear because one or more amendments extended the deadline, use the LATEST (maximum) such date - a later amendment supersedes the base date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated — copy the EXACT figure including any decimal or fraction (e.g. 2.5, 0.5); do NOT round. If instead a workload / level-of-effort hours table by labor category is given, derive the FTEs from the BASE-YEAR hours column ONLY divided by 1912 (never add base + option columns). '' or 'not specified' if none","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of FAR 52.217-9 option periods/years as a number; 0 if none. EXCLUDE any FAR 52.217-8 'Option to Extend Services' (the up-to-6-month extension) - it is NOT an option period. A base + 3 option years that also carries a 6-month 52.217-8 extension has option_period_count=3, not 4","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated. If only a month and year are stated ('performance begins February 2027') return YYYY-MM, and if only a year, return YYYY - do NOT invent a day to fill the format, a fabricated date that looks precise is worse than a partial one","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''","escalation_rate":"the annual price escalation / COLA percentage the solicitation directs offerors to apply across option years if one is stated (e.g. '3' for 3%/yr), as a plain number; '' if not stated","gsa_discount":"the discount percentage off GSA Schedule rates the solicitation requests, or that the offeror is directed to give, if stated, as a plain number; '' if not stated","odc_nte":"the not-to-exceed dollar ceiling for Other Direct Costs (ODCs) or materials/supplies if one is stated SEPARATELY from travel (e.g. '$10,000'), else ''","materials_required":"'yes' if the solicitation includes a materials/supplies/equipment CLIN or requires priced materials, 'no' if it states none, else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
-      `"period_structure":"the base + option period breakdown, e.g. '1 base year + 4 option years'; '' if unstated",` +
+      `"period_structure":"the base + option period breakdown counting FAR 52.217-9 option years ONLY, e.g. '1 base year + 4 option years'; do NOT fold a FAR 52.217-8 6-month 'Option to Extend Services' extension into the option count; '' if unstated",` +
       `"page_limits":{"vol0":"pages or 'not specified'","vol1":"pages or 'not specified'","vol2":"pages or 'not specified'","vol3":"pages or 'not specified'","vol4":"pages or 'not specified'","notes":"any other format instructions"},` +
       `"section_l_instructions":["exact structural/format requirements from Section L: required headings, font, margins, file format, etc."],` +
       // WAVE E precedence rule, stated before the fields it governs.
@@ -9663,6 +9667,7 @@ async function runGeneration() {
       if (typeof detectSetAside === 'function' && rfpFiles && rfpFiles.length) {
         const _saDet = await detectSetAside(rfpFiles, apiKey, null);
         if (typeof _bnaApplySetAside === 'function') _bnaApplySetAside(briefing, _saDet);
+        if (typeof _reconcileSetAsideCerts === 'function') _reconcileSetAsideCerts(briefing);
       }
     } catch (e) {}
     // Inherit the canonical opportunity facts from the Bid/No-Bid analysis (single source of truth),
@@ -10033,7 +10038,7 @@ Do not over-format — most content stays as prose. The goal is a document a per
           `resume page limits, and any other "shall/must/should" administrative requirements from the solicitation. ` +
           `For each administrative requirement, include a brief affirmative statement that ${CLIENT_CONFIG.companyShortName} understands and will comply.\n\n` +
           `Return ONLY JSON:\n{"cover_letter_additional":"MINIMUM 3 paragraphs: (1) formal acknowledgment of this specific solicitation by number and title, (2) statement of ${CLIENT_CONFIG.companyShortName}'s qualifications, SDVOSB status, and commitment, (3) key differentiators and best value statement.",` +
-          `"additional_fill_ins":["List EVERY specific certification, representation, fill-in, and administrative requirement from this solicitation. Include ALL required SAM/SAM.gov items, small business certifications, SDVOSB certification, CAGE/UEI confirmation, and any solicitation-specific forms or attachments required."],` +
+          `"additional_fill_ins":["List EVERY specific certification, representation, fill-in, and administrative requirement from this solicitation. Include ALL required SAM/SAM.gov items, CAGE/UEI confirmation, and any solicitation-specific forms or attachments required. For socioeconomic set-aside certifications list ONLY those ${CLIENT_CONFIG.companyShortName} actually holds (${(CLIENT_CONFIG.setAsides || []).join(', ') || 'per its SAM.gov registration'}); do NOT list WOSB, EDWOSB, HUBZone, or 8(a) unless the company holds it AND the solicitation requires it - those labels print on every blank SF-1449/SF-33 regardless of the real set-aside."],` +
           `"oci_plan":"MINIMUM 2 paragraphs: (1) affirm no known OCIs exist, (2) describe ongoing monitoring approach.",` +
           `"clearance_plan_additional":"MINIMUM 2 paragraphs on clearance plan: current FCL, plan for personnel clearances, timeline, and contingency.",` +
           `"gfp":"MINIMUM 1 paragraph acknowledging GFP provisions from the solicitation and ${CLIENT_CONFIG.companyShortName}'s approach.",` +
@@ -12259,8 +12264,10 @@ function pricingClin() {
 }
 function pricingClinDefaultLines() {
   const lines = [{ id: _prId('clin_'), title: 'Services', scope: 'labor', type: 'FFP', taskIds: [] }];
-  const tt = (typeof pricingTravelTotal === 'function') ? pricingTravelTotal() : { total: 0 };
-  if (tt && tt.total > 0) lines.push({ id: _prId('clin_'), title: ((pricingModel.travel && pricingModel.travel.odcCategory) || 'Travel & ODC'), scope: 'travelodc', type: 'cost', taskIds: [] });
+  const _tOnly = (typeof pricingTravelOnlyByPeriod === 'function') ? pricingTravelOnlyByPeriod().reduce((s, x) => s + (x || 0), 0) : 0;
+  const _oOnly = (typeof pricingOdcOnlyByPeriod === 'function') ? pricingOdcOnlyByPeriod().reduce((s, x) => s + (x || 0), 0) : 0;
+  if (_tOnly > 0) lines.push({ id: _prId('clin_'), title: ((pricingModel.travel && pricingModel.travel.odcCategory && pricingModel.travel.odcCategory !== 'Travel & ODC') ? pricingModel.travel.odcCategory : 'Travel'), scope: 'travel', type: 'cost', taskIds: [] });
+  if (_oOnly > 0) lines.push({ id: _prId('clin_'), title: ((pricingModel.odc && pricingModel.odc.odcCategory) || 'Other Direct Costs'), scope: 'odc', type: 'cost', taskIds: [] });
   const mt = (typeof pricingMaterialsTotal === 'function') ? pricingMaterialsTotal() : { total: 0 };
   if (mt && mt.total > 0) lines.push({ id: _prId('clin_'), title: 'Materials', scope: 'materials', type: 'cost', taskIds: [] });
   return lines;
@@ -12351,6 +12358,8 @@ function pricingClinLineAmount(line, pd) {
   }
   let amt;
   if (line.scope === 'travelodc') { const tp = (typeof pricingTravelByPeriod === 'function') ? pricingTravelByPeriod() : []; amt = tp[pd.srcIdx] || 0; }
+  else if (line.scope === 'travel') { const tp = (typeof pricingTravelOnlyByPeriod === 'function') ? pricingTravelOnlyByPeriod() : []; amt = tp[pd.srcIdx] || 0; }
+  else if (line.scope === 'odc') { const op = (typeof pricingOdcOnlyByPeriod === 'function') ? pricingOdcOnlyByPeriod() : []; amt = op[pd.srcIdx] || 0; }
   else if (line.scope === 'materials') { const mp = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod() : []; amt = mp[pd.srcIdx] || 0; }
   else if ((line.scope === 'labor' || line.scope === 'tasks') && !pd.isExt && line.clinNo && typeof pricingClinLaborAmountFor === 'function') amt = pricingClinLaborAmountFor(String(line.clinNo), pd.srcIdx);
   else amt = pricingClinPeriodCost(line.scope === 'tasks' ? (line.taskIds || []) : null, pd.srcIdx);
@@ -12358,7 +12367,7 @@ function pricingClinLineAmount(line, pd) {
   return pd.isExt ? amt * (pd.extFactor || 1) : amt;
 }
 function pricingClinLineHours(line, pd) {
-  if (line.scope === 'travelodc' || line.scope === 'custom' || line.scope === 'materials') return 0;
+  if (line.scope === 'travelodc' || line.scope === 'travel' || line.scope === 'odc' || line.scope === 'custom' || line.scope === 'materials') return 0;
   if ((line.scope === 'labor' || line.scope === 'tasks') && !pd.isExt && line.clinNo && typeof pricingFlatRows === 'function') {
     var rows = pricingFlatRows(), hh = 0, want = String(line.clinNo);
     for (var k = 0; k < rows.length; k++) { var r = rows[k]; if (r && r.category === 'Labor' && String(r.clin) === want && r.periodIdx === pd.srcIdx) hh += (r.hours || 0); }
@@ -12385,7 +12394,7 @@ function pricingClinScheduleRows() {
       if (line.scope === 'custom' && amt === 0) return;                 // one-time custom: omit periods where it does not apply
       let qty, unit, unitPrice;
       if (line.scope === 'custom') { qty = 1; unit = 'Lot'; unitPrice = amt; }
-      else if (type === 'T&M' && line.scope !== 'travelodc' && line.scope !== 'materials' && hrs > 0) { qty = Math.round(hrs); unit = 'Hour'; unitPrice = amt / hrs; }
+      else if (type === 'T&M' && line.scope !== 'travelodc' && line.scope !== 'travel' && line.scope !== 'odc' && line.scope !== 'materials' && hrs > 0) { qty = Math.round(hrs); unit = 'Hour'; unitPrice = amt / hrs; }
       else if (type === 'COST') { qty = 1; unit = 'Lot'; unitPrice = amt; }
       else if (monthly) { qty = pd.months; unit = 'Month'; unitPrice = pd.months ? amt / pd.months : amt; }
       else { qty = 1; unit = (pd.months === 12 ? 'Year' : 'Lot'); unitPrice = amt; }
@@ -12411,7 +12420,7 @@ function pricingClinScheduleRows() {
       const _amt = (l.nte != null && l.nte !== '') ? (+l.nte || 0) : (parseFloat(l.amount) || 0);
       rows.push({ opt: true, clin: (l.clinNo ? String(l.clinNo) : ''), desc: l.title || 'Line item',
         period: (l.periodLabel || 'Optional / separately priced'), type: (_t === 'COST' ? 'Cost/NTE' : _t),
-        qty: 1, unit: ((_t === 'COST' || l.scope === 'travelodc') ? 'NTE' : 'Lot'),
+        qty: 1, unit: ((_t === 'COST' || l.scope === 'travelodc' || l.scope === 'travel' || l.scope === 'odc') ? 'NTE' : 'Lot'),
         unitPrice: _amt, total: _amt, nte: (l.nte != null && l.nte !== '') });
     });
   }
@@ -12462,7 +12471,7 @@ function pricingClinBuildFromStated(opts) {
     const label = String(sc.period_label != null ? sc.period_label : '');
     const optional = _pxClinIsTrulyOptional(sc);
     const line = { id: _prId('clin_'), clinNo: num, title: String(sc.title != null ? sc.title : (sc.description != null ? sc.description : ('CLIN ' + num))).trim(), type: type, nte: nte, stated: true, optional: optional, periodLabel: label, taskIds: [] };
-    const scopeFor = h => (h.indexOf('travel') >= 0) ? 'travelodc' : (h.indexOf('material') >= 0) ? 'materials' : 'labor';
+    const scopeFor = h => (h.indexOf('travel') >= 0) ? 'travel' : ((h.indexOf('odc') >= 0 || h.indexOf('other direct') >= 0) ? 'odc' : ((h.indexOf('material') >= 0) ? 'materials' : 'labor'));
     if (optional) {
       line.unpriced = true; line.periodBind = null;
       const sc2 = scopeFor(hint); line.scope = (sc2 === 'labor') ? 'custom' : sc2;
@@ -15301,7 +15310,7 @@ function pricingLcatHeaderBanner() {
     + ';font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)">' + txt + '</div>';
   // GRID, not flex: the header and every row share ONE track definition, so a
   // column sits in the same place on every row whatever its contents measure.
-  return '<div style="display:grid;grid-template-columns:minmax(120px,1.4fr) 210px 172px 60px 60px 112px auto;gap:6px 8px;align-items:center;padding:2px 10px 4px;border-bottom:1px solid #e5e7eb;margin-bottom:2px">'
+  return '<div style="display:grid;grid-template-columns:minmax(120px,1.4fr) 210px 172px 60px 60px 112px 120px;gap:6px 8px;align-items:center;padding:2px 10px 4px;border-bottom:1px solid #e5e7eb;margin-bottom:2px">'
     + th('Labor Category', 'min-width:0;text-align:center')
     + th('Paid Rate', 'min-width:0;text-align:center', 'What you enter, and in which basis. The other three derive from it.')
     + th('Rate Detail', 'min-width:0;text-align:center', 'Company-paid vs fully-burdened, hourly vs annual. Company annual is at 2,080 payroll hours; burdened annual is at this role\u2019s billable Hrs/FTE. All calculated \u2014 not editable.')
@@ -15406,7 +15415,7 @@ function pricingRenderLcats() {
     const _warn = paid > 0 ? '' : '<div style="grid-column:1/-1;font-size:10.5px;color:var(--warn);padding-left:2px">enter a rate to derive the burdened figures</div>';
     const _clinOn = false;   // retired: CLIN is a derived column on the fact table (pricingClinForRow), not entered per row
     const _clinInput = _clinOn ? ('<input value="' + pricingEsc(_lcatClinRaw(l)) + '" onchange="pricingSetLcat(\'' + l.id + '\',\'clin\',this.value)" placeholder="CLIN" title="Base-period CLIN this role bills under (from the solicitation). Option-year CLINs derive automatically. Blank uses the stated labor CLIN." style="width:62px;flex-shrink:0;padding:6px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;text-align:center;box-sizing:border-box;font-variant-numeric:tabular-nums"/>') : '';
-    return `<div id="pxLcat_${l.id}" style="display:grid;grid-template-columns:minmax(120px,1.4fr) 210px 172px 60px 60px 112px auto;gap:6px 8px;align-items:center;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
+    return `<div id="pxLcat_${l.id}" style="display:grid;grid-template-columns:minmax(120px,1.4fr) 210px 172px 60px 60px 112px 120px;gap:6px 8px;align-items:center;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
       <div style="min-width:0;display:flex;gap:4px;align-items:center"><input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (e.g. Registered Nurse)" style="flex:1;min-width:0;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;box-sizing:border-box"/>${_clinInput}</div>
       <div style="min-width:0;display:flex;align-items:center;gap:3px">
         <select onchange="pricingSetLcatRate('${l.id}','rateBasis',this.value)" title="What are you entering? The other three figures derive from it." style="flex:1;min-width:0;padding:6px 16px 6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:white;text-overflow:ellipsis">${opt('paid','Company Paid Hourly Rate')}${opt('salary','Company Paid Annualized Salary')}${opt('loaded','Fully Burdened Hourly Rate')}${opt('annual','Fully Burdened Annualized Salary')}</select>
@@ -15774,7 +15783,7 @@ function pricingClinGenerateFromTasks() {
   const tasks = (M.tasks || []).filter(Boolean);
   if (!tasks.length) { if (typeof showStatus === 'function') showStatus('warn', 'No PWS tasks', 'Add PWS tasks in Step 3 first \u2014 there is nothing to break CLINs out from.'); return; }
   // keep the non-labor lines (travel/ODC, materials, custom); drop existing labor/tasks lines
-  const kept = (c.lines || []).filter(l => l.scope === 'travelodc' || l.scope === 'materials' || l.scope === 'custom');
+  const kept = (c.lines || []).filter(l => l.scope === 'travelodc' || l.scope === 'travel' || l.scope === 'odc' || l.scope === 'materials' || l.scope === 'custom');
   // remember titles the user typed against a task, so regenerating doesn't wipe them
   const priorTitle = {};
   (c.lines || []).forEach(l => { if (l.scope === 'tasks' && (l.taskIds || []).length === 1) priorTitle[l.taskIds[0]] = l.title; });
@@ -16281,7 +16290,7 @@ function pricingBuildWorkbook() {
 
   // ---- Inputs (single source of truth; the Fully Burdened Rate Table's cells are live formulas that read
   // from here, so editing any assumption recalculates the rates). Stage 1: non-GSA fully-burdened build. ----
-  let _ixRole = {}, _ixPer = {}, _ixFringe = '', _ixOH = '', _ixGA = '', _ixFee = '', _ixHW = '', _ixHolDisc = '';
+  let _ixRole = {}, _ixPer = {}, _ixFringe = '', _ixOH = '', _ixGA = '', _ixFee = '', _ixHW = '', _ixHolDisc = '', _ixHpf = '';
   if (gsa) {
     // On a Schedule the wage build-up is not ours to state — the Schedule rate is the input.
     // What IS ours is the discount stack and the escalation curve, and those had no home at
@@ -16297,7 +16306,7 @@ function pricingBuildWorkbook() {
     _gi.push(['Competitive discount mode', pricingModel.discountMode || 'none']);
     _gi.push(['']);
     _gi.push(['Hours basis']);
-    _gi.push(['Billable hours per FTE-year', defaultHpf()]);
+    _ixHpf = 'Inputs!$B$' + _gi.push(['Billable hours per FTE-year (1 FTE = this many billable hrs/yr)', defaultHpf()]);
     _gi.push(['']);
     _gi.push(['Non-labor treatment']);
     _gi.push(['Travel escalation', (typeof _pxStreamEscLabel === 'function') ? _pxStreamEscLabel(pricingTravel()) : 'held flat']);
@@ -16332,6 +16341,9 @@ function pricingBuildWorkbook() {
     _ixFee = _A('B', _inp.length + 1); _inp.push(['Fee', _fe]);
     _ixHW = _A('B', _inp.length + 1); _inp.push(['Health & Welfare ($/hr, SCA-covered roles only)', _hw]);
     _inp.push(['']);
+    _inp.push(['Hours basis']); const _hoursHdrRow = _inp.length;
+    _ixHpf = _A('B', _inp.length + 1); _inp.push(['Billable hours per FTE-year (1 FTE = this many billable hrs/yr)', defaultHpf()]);
+    _inp.push(['']);
     _inp.push(['Wrap method', (_wm === 'additive' ? 'additive' : 'compounded')]);
     _inp.push(['']);
     if (_dm === 'holistic') { _ixHolDisc = _A('B', _inp.length + 1); _inp.push(['Discount factor — all roles (1.00 = none)', pricingCompDiscountFactor(null, 0)]); _inp.push(['']); }
@@ -16359,23 +16371,29 @@ function pricingBuildWorkbook() {
     const _pctRef = (ref) => { const a = ref.split('!')[1].replace(/\$/g, ''); if (wsInp[a]) wsInp[a].z = '0.0%'; };
     [_ixFringe, _ixOH, _ixGA, _ixFee].forEach(_pctRef);
     Object.keys(_ixRole).forEach(id => { _pctRef(_ixRole[id].labor); _pctRef(_ixRole[id].tax); });
-    [1, 3, _roleHdrRow, _perHdrRow].forEach(rw => { for (let c = 0; c < 6; c++) { const a = XLSX.utils.encode_cell({ r: rw - 1, c }); if (wsInp[a]) wsInp[a].s = Object.assign({}, wsInp[a].s, { font: Object.assign({}, wsInp[a].s && wsInp[a].s.font, { bold: true }) }); } });
+    [1, 3, _hoursHdrRow, _roleHdrRow, _perHdrRow].forEach(rw => { for (let c = 0; c < 6; c++) { const a = XLSX.utils.encode_cell({ r: rw - 1, c }); if (wsInp[a]) wsInp[a].s = Object.assign({}, wsInp[a].s, { font: Object.assign({}, wsInp[a].s && wsInp[a].s.font, { bold: true }) }); } });
     XLSX.utils.book_append_sheet(wb, wsInp, 'Inputs');
   }
 
   // ---- Price Summary by Period (headline: Total Evaluated Price; no pivoting needed) ----
-  const _travPer = (typeof pricingTravelByPeriod === 'function') ? pricingTravelByPeriod() : P.map(() => 0);
-  const _travTot = _travPer.reduce((s, x) => s + x, 0);
-  const _odcLabel = (M.travel && M.travel.odcCategory) || 'Travel & ODC';
+  const _travOnlyPer = (typeof pricingTravelOnlyByPeriod === 'function') ? pricingTravelOnlyByPeriod() : P.map(() => 0);
+  const _odcOnlyPer = (typeof pricingOdcOnlyByPeriod === 'function') ? pricingOdcOnlyByPeriod() : P.map(() => 0);
+  const _travTot = _travOnlyPer.reduce((s, x) => s + (x || 0), 0);
+  const _odcTot = _odcOnlyPer.reduce((s, x) => s + (x || 0), 0);
+  // Travel and ODC are DISTINCT price elements; list them separately, and label each EXACTLY as its
+  // Line-Item Detail category so each row's SUMIFS ties to its own detail rows.
+  const _travCat = (M.travel && M.travel.odcCategory && M.travel.odcCategory !== 'Travel & ODC') ? M.travel.odcCategory : 'Travel';
+  const _odcCat = (M.odc && M.odc.odcCategory) || 'Other Direct Costs';
   const _matPer = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod() : P.map(() => 0);
   const _matTot = _matPer.reduce((s, x) => s + x, 0);
   const _laborPer = P.map((p, i) => xv(pricingPeriodCost(i)));
   const _laborTot = xv(pricingGrandTotal());
   const ps = [['Price Element'].concat(pNames).concat(['Total ($)'])]; const _psCat = {};
   ps.push([(gsa ? 'Fully burdened labor (GSA ceiling less discount)' : 'Fully burdened labor')].concat(_laborPer).concat([_laborTot])); _psCat[ps.length - 1] = 'Labor';
-  if (_travTot > 0) { ps.push([_odcLabel].concat(_travPer.map(xv)).concat([xv(_travTot)])); _psCat[ps.length - 1] = _odcLabel; }
+  if (_travTot > 0) { ps.push([_travCat].concat(_travOnlyPer.map(xv)).concat([xv(_travTot)])); _psCat[ps.length - 1] = _travCat; }
+  if (_odcTot > 0) { ps.push([_odcCat].concat(_odcOnlyPer.map(xv)).concat([xv(_odcTot)])); _psCat[ps.length - 1] = _odcCat; }
   if (_matTot > 0) { ps.push(['Materials'].concat(_matPer.map(xv)).concat([xv(_matTot)])); _psCat[ps.length - 1] = 'Materials'; }
-  ps.push(['TOTAL EVALUATED PRICE'].concat(P.map((p, i) => xv(pricingPeriodCost(i) + (_travPer[i] || 0) + (_matPer[i] || 0)))).concat([xv(_laborTot + _travTot + _matTot)]));
+  ps.push(['TOTAL EVALUATED PRICE'].concat(P.map((p, i) => xv(pricingPeriodCost(i) + (_travOnlyPer[i] || 0) + (_odcOnlyPer[i] || 0) + (_matPer[i] || 0)))).concat([xv(_laborTot + _travTot + _odcTot + _matTot)]));
   const wsPS = XLSX.utils.aoa_to_sheet(ps);
   { const _nP = pNames.length, _last = ps.length - 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsPS, _r, _nP + 1, 1, _nP); for (let _c = 1; _c <= _nP; _c++) pxSumCol(wsPS, _last, _c, 1, _last - 1); }
   // #23: each price-element row is a LIVE SUMIFS over the Line-Item Detail by Category + Period.
@@ -16597,12 +16615,12 @@ function pricingBuildWorkbook() {
       const _basis = s => 'Non-labor \u00b7 wrap ' + _wrapTxt(s) + ' \u00b7 escalation ' + ((typeof _pxStreamEscLabel === 'function') ? _pxStreamEscLabel(s) : 'held flat');
       const _tAmt = _tOnly[i] || 0, _oAmt = _oOnly[i] || 0;
       if (_tAmt > 0) {
-        const _c = (_tS && _tS.odcCategory) || 'Travel';
-        det.push([_c, _c, '', '(n/a)', _c + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', xv(_tAmt), '', '', '', '', '', _basis(_tS), ''].concat(_locOn ? [''] : []).concat([_clinDim ? _clinDim.forScope('travelodc', i) : '']));
+        const _c = (_tS && _tS.odcCategory && _tS.odcCategory !== 'Travel & ODC') ? _tS.odcCategory : 'Travel';
+        det.push([_c, _c, '', '(n/a)', _c + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', xv(_tAmt), '', '', '', '', '', _basis(_tS), ''].concat(_locOn ? [''] : []).concat([_clinDim ? _clinDim.forScope('travel', i) : '']));
       }
       if (_oAmt > 0) {
         const _c = (_oS && _oS.odcCategory) || 'Other Direct Costs';
-        det.push([_c, _c, '', '(n/a)', _c + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', xv(_oAmt), '', '', '', '', '', _basis(_oS), ''].concat(_locOn ? [''] : []).concat([_clinDim ? _clinDim.forScope('travelodc', i) : '']));
+        det.push([_c, _c, '', '(n/a)', _c + ' (estimate / NTE)', pNames[i], pricingPeriodMonths(p), '', '', '', '', xv(_oAmt), '', '', '', '', '', _basis(_oS), ''].concat(_locOn ? [''] : []).concat([_clinDim ? _clinDim.forScope('odc', i) : '']));
       }
     }
   });
@@ -16618,6 +16636,7 @@ function pricingBuildWorkbook() {
     const _rtCol = gsa ? (4 + 2 * _m.i) : (_rtColStart + _m.i);
     pxSetFormula(wsDet, _r, 9, "'Fully Burdened Rate Table'!" + XLSX.utils.encode_col(_rtCol) + (_m.li + 2));
     if (!gsa) { const _rf = _ixRole[M.lcats[_m.li].id]; if (_rf) pxSetFormula(wsDet, _r, 2, _rf.base); }
+    { const _lc = M.lcats[_m.li]; if (_ixHpf && _lc && (typeof pricingHpf !== 'function' || pricingHpf(_lc) === defaultHpf())) pxSetFormula(wsDet, _r, 8, 'IF(' + _ixHpf + '=0,0,' + XLSX.utils.encode_col(7) + (_r + 1) + '/' + _ixHpf + ')'); }
   }
   wsDet['!cols'] = [{ wch: 13 }, { wch: 26 }, { wch: 16 }, { wch: 14 }, { wch: 32 }, { wch: 16 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 15 }, { wch: 13 }, { wch: 22 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 20 }].concat(_locOn ? [{ wch: 12 }] : []).concat([{ wch: 12 }]);
   pxStyle(wsDet, { money: gsa ? [9, 11, 12, 13, 14, 18] : [2, 9, 11, 12, 13, 14, 18], hours: [7], fte: [8] });
@@ -16635,6 +16654,14 @@ function pricingBuildWorkbook() {
   const wsBL = XLSX.utils.aoa_to_sheet(bl);
   { const _nP = pNames.length, _last = bl.length - 1, _tot = 5 + _nP; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsBL, _r, _tot, 5, _tot - 1); for (let _c = 5; _c < _tot; _c++) pxSumCol(wsBL, _last, _c, 1, _last - 1); pxSumCol(wsBL, _last, 2, 1, _last - 1); }
   M.lcats.forEach((l, k) => { P.forEach((p, i) => { const _f = _sumRows((_rowsLP[k] || {})[i]); if (_f) pxSetFormula(wsBL, k + 1, 5 + i, _f); }); });
+  // Link the identity columns to their sources so nothing on this rollup is a stranded number.
+  M.lcats.forEach((l, k) => {
+    const _R = k + 1;
+    if (!gsa) { const _rf = _ixRole[l.id]; if (_rf && _rf.base) pxSetFormula(wsBL, _R, 1, _rf.base); }                          // Base Rate <- Inputs
+    pxSetFormula(wsBL, _R, 2, "'Hours by Task'!" + XLSX.utils.encode_col(M.tasks.length + 1) + (k + 2));                        // Total Hours <- Hours by Task
+    if (_ixHpf && (typeof pricingHpf !== 'function' || pricingHpf(l) === defaultHpf())) pxSetFormula(wsBL, _R, 3, 'IF(' + _ixHpf + '=0,0,C' + (_R + 1) + '/' + _ixHpf + ')');   // FTE = Total Hours / hours-per-FTE (roles on the standard hpf)
+    pxSetFormula(wsBL, _R, 4, "'Fully Burdened Rate Table'!" + XLSX.utils.encode_col(gsa ? 4 : _rtColStart) + (k + 2));         // Fully Burdened Rate (base yr) <- Rate Table
+  });
   wsBL['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 20 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
   pxStyle(wsBL, { money: (gsa ? [4] : [1, 4]).concat(P.map((_, i) => 5 + i)).concat([5 + P.length]), hours: [2], fte: [3] });
   XLSX.utils.book_append_sheet(wb, wsBL, 'By Labor Category');
@@ -16642,11 +16669,33 @@ function pricingBuildWorkbook() {
   // so the workbook can be read by contract line item; values are as-priced. The TOTAL row uses the
   // authoritative period costs, and CLIN-less rows appear under "(unmapped)" so nothing is hidden.)
   {
-    const _rowsC = (typeof _pxByClinAgg === 'function') ? _pxByClinAgg(P.length) : [];
+    // Roll the ONE fact table (Line-Item Detail) up by its own CLIN column + period. Cached values come from
+    // the detail so they equal the SUMIFS formulas below exactly; the column totals therefore equal the
+    // detail's total (labor + travel + materials), the same figure as the Price Summary, not a labor-only one.
+    const _clinCol = det[0].length - 1, _clinColA = XLSX.utils.encode_col(_clinCol);
+    const _statedC = (typeof pricingStatedClins === 'function') ? pricingStatedClins() : [];
+    const _cmeta = {}; _statedC.forEach(sc => { if (sc && sc.number != null) { const _kk = String(sc.number).trim(); if (_kk && !_cmeta[_kk]) _cmeta[_kk] = { title: String(sc.title != null ? sc.title : '').trim(), type: String(sc.clin_type != null ? sc.clin_type : '').trim() }; } });
+    const _cagg = {}, _cord = [];
+    for (let _r = 1; _r < det.length; _r++) {
+      const _row = det[_r], _raw = String(_row[_clinCol] == null ? '' : _row[_clinCol]).trim(), _k = _raw || '(unmapped)';
+      if (!_cagg[_k]) { _cagg[_k] = { raw: _raw, baseHours: 0, price: P.map(() => 0) }; _cord.push(_k); }
+      const _pi = pNames.indexOf(_row[5]);
+      if (_pi >= 0 && typeof _row[11] === 'number') _cagg[_k].price[_pi] += _row[11];
+      if (_pi === 0 && typeof _row[7] === 'number') _cagg[_k].baseHours += _row[7];
+    }
+    _cord.sort((a, b) => ((a === '(unmapped)') - (b === '(unmapped)')) || (a < b ? -1 : a > b ? 1 : 0));
     const bc = [['CLIN', 'Description', 'Type', 'Base-Year Hours', ...pNames, 'Total all periods ($)']];
-    _rowsC.forEach(rc => { bc.push([rc.clin, rc.title, rc.type, Math.round(rc.baseHours), ...rc.price.map(x => r2(x)), r2(rc.price.reduce((s, x) => s + x, 0))]); });
-    bc.push(['TOTAL', '', '', '', ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
+    _cord.forEach(_k => { const _a = _cagg[_k], _ttl = (_cmeta[_k] && _cmeta[_k].title) || (_k === '(unmapped)' ? 'Priced rows the solicitation tied to no CLIN' : ''), _typ = (_cmeta[_k] && _cmeta[_k].type) || ''; bc.push([_k, _ttl, _typ, Math.round(_a.baseHours), ..._a.price.map(x => r2(x)), r2(_a.price.reduce((s, x) => s + x, 0))]); });
+    bc.push(['TOTAL', '', '', '', ...P.map((p, i) => r2(_cord.reduce((s, _k) => s + _cagg[_k].price[i], 0))), r2(_cord.reduce((s, _k) => s + _cagg[_k].price.reduce((t, x) => t + x, 0), 0))]);
     const wsBC = XLSX.utils.aoa_to_sheet(bc);
+    { const _q = String.fromCharCode(34), _nP = pNames.length, _p0 = 4, _totC = 4 + _nP;
+      _cord.forEach((_k, ri) => { const _cr = (_k === '(unmapped)') ? '' : String(_cagg[_k].raw);
+        for (let _i = 0; _i < _nP; _i++) pxSetFormula(wsBC, ri + 1, _p0 + _i, "SUMIFS('Line-Item Detail'!$L:$L,'Line-Item Detail'!$" + _clinColA + ":$" + _clinColA + "," + _q + _cr + _q + ",'Line-Item Detail'!$F:$F," + _q + pNames[_i] + _q + ")");
+        pxSumRow(wsBC, ri + 1, _totC, _p0, _totC - 1);
+      });
+      for (let _c = _p0; _c < _totC; _c++) pxSumCol(wsBC, bc.length - 1, _c, 1, bc.length - 2);
+      pxSumRow(wsBC, bc.length - 1, _totC, _p0, _totC - 1);
+    }
     wsBC['!cols'] = [{ wch: 12 }, { wch: 34 }, { wch: 10 }, { wch: 14 }].concat(pNames.map(() => ({ wch: 14 }))).concat([{ wch: 18 }]);
     pxStyle(wsBC, { money: P.map((_, i) => 4 + i).concat([4 + P.length]), hours: [3] });
     XLSX.utils.book_append_sheet(wb, wsBC, 'By CLIN');
@@ -16749,6 +16798,7 @@ function pricingBuildWorkbook() {
   hb.push(_hbTot);
   const wsHB = XLSX.utils.aoa_to_sheet(hb);
   { const _nT = _taskHdrs.length, _last = hb.length - 1, _tot = _nT + 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsHB, _r, _tot, 1, _nT); for (let _c = 1; _c <= _tot; _c++) pxSumCol(wsHB, _last, _c, 1, _last - 1); }
+  { const _nT2 = _taskHdrs.length, _thCol = _nT2 + 1, _fteCol = _nT2 + 2; if (_ixHpf) for (let _r = 1; _r < hb.length; _r++) { const _isTot = (_r === hb.length - 1); const _lc = _isTot ? null : M.lcats[_r - 1]; if (_isTot || (_lc && (typeof pricingHpf !== 'function' || pricingHpf(_lc) === defaultHpf()))) pxSetFormula(wsHB, _r, _fteCol, 'IF(' + _ixHpf + '=0,0,' + XLSX.utils.encode_col(_thCol) + (_r + 1) + '/' + _ixHpf + ')'); } }
   wsHB['!cols'] = [{ wch: 26 }].concat(_taskHdrs.map(() => ({ wch: 9 }))).concat([{ wch: 12 }, { wch: 8 }]);
   pxStyle(wsHB, { hours: _taskHdrs.map((_, i) => 1 + i).concat([1 + _taskHdrs.length]), fte: [2 + _taskHdrs.length] });
   XLSX.utils.book_append_sheet(wb, wsHB, 'Hours by Task');
@@ -16769,7 +16819,7 @@ function pricingBuildWorkbook() {
   const wsFB = XLSX.utils.aoa_to_sheet(fb);
   { const _nT = _taskHdrs.length, _last = fb.length - 1, _tot = _nT + 1; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsFB, _r, _tot, 1, _nT); for (let _c = 1; _c <= _tot; _c++) pxSumCol(wsFB, _last, _c, 1, _last - 1); }
   // #23: each FTE = the matching Hours by Task cell / hours-per-FTE, so it recomputes if hours change.
-  M.lcats.forEach((l, k) => { M.tasks.forEach((t, ti) => { pxSetFormula(wsFB, k + 1, 1 + ti, "'Hours by Task'!" + XLSX.utils.encode_col(1 + ti) + (k + 2) + '/' + _hpf); }); });
+  M.lcats.forEach((l, k) => { M.tasks.forEach((t, ti) => { const _hc = "'Hours by Task'!" + XLSX.utils.encode_col(1 + ti) + (k + 2); pxSetFormula(wsFB, k + 1, 1 + ti, _ixHpf ? ('IF(' + _ixHpf + '=0,0,' + _hc + '/' + _ixHpf + ')') : (_hc + '/' + _hpf)); }); });
   wsFB['!cols'] = [{ wch: 26 }].concat(_taskHdrs.map(() => ({ wch: 9 }))).concat([{ wch: 10 }]);
   pxStyle(wsFB, { fte: _taskHdrs.map((_, i) => 1 + i).concat([1 + _taskHdrs.length]) });
   XLSX.utils.book_append_sheet(wb, wsFB, 'FTE by Task');
@@ -16793,8 +16843,14 @@ function pricingBuildWorkbook() {
   P.forEach((p, i) => { _lwPer.push(lw.length); lw.push([(i === 0 ? 'Base period' : (p.name || ('Option ' + i))), pricingPeriodMonths(p) + '-month term' + (gsa ? (', GSA Yr ' + pricingGsaScheduleYearForPeriod(i)) : (i === 0 ? '' : ', +' + (parseFloat(p.escalation) || 0) + '% escalation')), r2(pricingPeriodCost(i))]); });
   const _lwSub = lw.length; lw.push(['Labor subtotal (all periods)', '', r2(pricingGrandTotal())]);
   let _lwTrav = -1;
-  if (tt.total > 0) { _lwTrav = lw.length; lw.push(['Travel / ODCs', (tt.markup ? ('incl. ' + tt.ga + '% G&A') : 'pass-through') + (tt.capped ? ', NTE-capped' : ''), r2(tt.total)]); }
-  const _lwTot = lw.length; lw.push(['TOTAL CONTRACT VALUE', '', r2(pricingGrandTotal() + (tt.total || 0))]);
+  const _lwTravTot = (typeof pricingTravelOnlyByPeriod === 'function') ? pricingTravelOnlyByPeriod().reduce((s, x) => s + (x || 0), 0) : 0;
+  const _lwOdcTot = (typeof pricingOdcOnlyByPeriod === 'function') ? pricingOdcOnlyByPeriod().reduce((s, x) => s + (x || 0), 0) : 0;
+  const _tSlw = (typeof pricingTravel === 'function') ? pricingTravel() : null, _oSlw = (typeof pricingOdc === 'function') ? pricingOdc() : null;
+  const _wrapNote = s => (s && s.markup === 'markup') ? ('incl. ' + (parseFloat(s.gaPct) || 0) + '% G&A') : 'pass-through';
+  const _lwNon = [];
+  if (_lwTravTot > 0) { const _tc = (_tSlw && _tSlw.odcCategory && _tSlw.odcCategory !== 'Travel & ODC') ? _tSlw.odcCategory : 'Travel'; _lwNon.push(lw.length); lw.push([_tc, _wrapNote(_tSlw), r2(_lwTravTot)]); }
+  if (_lwOdcTot > 0) { const _oc = (_oSlw && _oSlw.odcCategory) || 'Other Direct Costs'; _lwNon.push(lw.length); lw.push([_oc, _wrapNote(_oSlw), r2(_lwOdcTot)]); }
+  const _lwTot = lw.length; lw.push(['TOTAL CONTRACT VALUE', '', r2(pricingGrandTotal() + _lwTravTot + _lwOdcTot)]);
   const wsLW = XLSX.utils.aoa_to_sheet(lw);
   wsLW['!cols'] = [{ wch: 34 }, { wch: 54 }, { wch: 18 }];
   pxStyle(wsLW, { money: [2] });
@@ -16802,7 +16858,13 @@ function pricingBuildWorkbook() {
   // them up on this sheet. The base-year build-up rows above stay a static methodology snapshot.
   _lwPer.forEach((rw, i) => pxSetFormula(wsLW, rw, 2, "'Price Summary'!" + XLSX.utils.encode_col(1 + i) + '2'));
   if (_lwPer.length) pxSetFormula(wsLW, _lwSub, 2, 'SUM(' + _lwPer.map(rw => 'C' + (rw + 1)).join(',') + ')');
-  pxSetFormula(wsLW, _lwTot, 2, 'C' + (_lwSub + 1) + (_lwTrav >= 0 ? ('+C' + (_lwTrav + 1)) : ''));
+  pxSetFormula(wsLW, _lwTot, 2, 'C' + (_lwSub + 1) + (_lwNon.length ? ('+' + _lwNon.map(rw => 'C' + (rw + 1)).join('+')) : ''));
+  if (!gsa && typeof frac === 'function' && frac(0) === 1 && M.lcats.length) {
+    const _n = M.lcats.length, _H = "'By Labor Category'!C2:C" + (_n + 1), _B = "'By Labor Category'!B2:B" + (_n + 1), _Fb = "'By Labor Category'!E2:E" + (_n + 1);
+    pxSetFormula(wsLW, 1, 2, 'SUMPRODUCT(' + _H + ',' + _B + ')');      // Direct labor (unburdened) = hours x base
+    pxSetFormula(wsLW, 3, 2, 'SUMPRODUCT(' + _H + ',' + _Fb + ')');     // Fully burdened labor (base yr) = hours x FBR
+    pxSetFormula(wsLW, 2, 2, 'C4-C2');                                  // Wrap / indirects + fee = burdened - direct
+  }
   XLSX.utils.book_append_sheet(wb, wsLW, 'Labor + Wrap');
 
   // Tab colors (Instructions + master data stand out; rollups a muted blue) and the one Excel Table.
@@ -18894,7 +18956,7 @@ function _triageBarColor(z) {
     if (z.verdict.verdict === 'Maybe') return '#d97706';
     if (z.verdict.verdict === 'Pass') return '#dc2626';
   }
-  return 'var(--fam-decide,#2aa79b)';
+  return 'var(--blue,#005FD5)';
 }
 function _triageZoneHtml(z) {
   const isUn = (z.label === 'Unsorted');
@@ -19131,6 +19193,12 @@ async function triageScreenZone(id) {
         // (Total Small Business) flagged to verify. Fail safe: biddable + verify, never a wrong type.
         z.verdict.set_aside = _saDet.type; z.verdict.set_aside_evidence = _saDet.evidence; z.verdict.set_aside_unverified = true;
       }
+    }
+    // Uniformity: correct the screening rationale prose to the deterministic set-aside too, so the
+    // "Why" line can't state a set-aside type (e.g. WOSB read off checkbox-label soup) that disagrees
+    // with the value shown. Conservative - only rewrites an explicit "<wrong type> set-aside" phrase.
+    if (z.verdict && z.verdict.set_aside && typeof _bnaCorrectSetAsideProse === 'function') {
+      ['rationale', 'why', 'summary'].forEach(function (k) { if (typeof z.verdict[k] === 'string') z.verdict[k] = _bnaCorrectSetAsideProse(z.verdict[k], z.verdict.set_aside); });
     }
     _triageApplyEligibility(z.verdict);   // 4a: deterministic set-aside eligibility overrides the model's guess
     if (!z.ebuyId && z.verdict && z.verdict.ebuy_request_id && z.verdict.ebuy_request_id !== 'not stated') z.ebuyId = String(z.verdict.ebuy_request_id).trim();
@@ -23159,10 +23227,13 @@ async function runBidNoBid() {
     // in the merged opp that Step 3 / the eligibility gate consume - so OVERWRITE the structured
     // field here, not just the prose, or Step 3 keeps classifying a Total-SB/SDVOSB opp as the
     // model's guess. (This is the issue-9 fix: Step 3 was reading the un-corrected scoring field.)
-    if (window._lastBnaIntel && window._lastBnaIntel._set_aside_source && window._lastBnaIntel.set_aside) {
+    if (window._lastBnaIntel && window._lastBnaIntel.set_aside) {
       const _canonSa = window._lastBnaIntel.set_aside;
-      if (result && result.opportunity) { result.opportunity.set_aside = _canonSa; result.opportunity._set_aside_source = window._lastBnaIntel._set_aside_source; delete result.opportunity._set_aside_unverified; delete result.opportunity.set_aside_unverified; }
-      if (window._bnaOpp) { window._bnaOpp.set_aside = _canonSa; window._bnaOpp._set_aside_source = window._lastBnaIntel._set_aside_source; }
+      const _canonSrc = window._lastBnaIntel._set_aside_source || 'default';
+      const _canonUnv = !!window._lastBnaIntel._set_aside_unverified;
+      const _syncSa = (o) => { if (!o) return; o.set_aside = _canonSa; o._set_aside_source = _canonSrc; if (_canonUnv) { o._set_aside_unverified = true; } else { delete o._set_aside_unverified; delete o.set_aside_unverified; } };
+      if (result && result.opportunity) _syncSa(result.opportunity);
+      _syncSa(window._bnaOpp);
       if (typeof _correctSetAsideEverywhere === 'function') {
         _correctSetAsideEverywhere(result, _canonSa);
         if (result && result.opportunity) _correctSetAsideEverywhere(result.opportunity, _canonSa);
@@ -23537,7 +23608,7 @@ function downloadBnaPdf() {
   if (lcats.length) {
     y += 2;
     table(
-      [{ header: 'Labor Category', w: 168, bold: true }, { header: 'Key', w: 30, align: 'center' }, { header: 'SCA', w: 30, align: 'center' }, { header: 'Min Rate', w: 56, align: 'center' }, { header: 'Clearance', w: 66 }, { header: 'Min Education', w: 74 }, { header: 'Min Exp (yrs)', w: 44, align: 'center' }, { header: 'FTE', w: CW - 468, align: 'center' }],
+      [{ header: 'Labor Category', w: 168, bold: true }, { header: 'Key', w: 30, align: 'center' }, { header: 'SCA', w: 36, align: 'center' }, { header: 'Min Rate', w: 56, align: 'center' }, { header: 'Clearance', w: 66 }, { header: 'Min Education', w: 74 }, { header: 'Min Exp (yrs)', w: 44, align: 'center' }, { header: 'FTE', w: CW - 474, align: 'center' }],
       lcats.map(r => [r.lcat, r.key, r.sca, r.rate || '-', r.clr || '-', r.edu || '-', r.exp || '-', r.fte || '-']),
       { zebra: true, fontSize: 8.5 }
     );
@@ -23557,7 +23628,7 @@ function downloadBnaPdf() {
       const roleL = m.potential_role ? doc.splitTextToSize('Role split: ' + clean(m.potential_role), CW - 24) : [];
       const watchL = (m.concerns && m.concerns !== 'None') ? doc.splitTextToSize('Watch: ' + clean(m.concerns), CW - 24) : [];
       const bodyLines = clrL.length + whyL.length + roleL.length + watchL.length;
-      const cardH = 30 + bodyLines * 12 + 6;
+      const cardH = 36 + bodyLines * 12 + 6;
       ensure(cardH + 6);
       doc.setFillColor(252, 253, 255); doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.8);
       doc.roundedRect(M, y, CW, cardH, 5, 5, 'FD');
@@ -23570,7 +23641,7 @@ function downloadBnaPdf() {
         doc.text(sc + '/10', M + CW - 12, y + 19, { align: 'right' });
         if (m.fit_label) { doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.text(clean(m.fit_label), M + CW - 12, y + 28, { align: 'right' }); }
       }
-      let yy = y + 32;
+      let yy = y + 38;
       const put = (arr, color) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(color[0], color[1], color[2]); arr.forEach(ln => { doc.text(ln, M + 12, yy); yy += 12; }); };
       put(clrL, [22, 101, 52]); put(whyL, DARK); put(roleL, GREY); put(watchL, AMBER);
       y += cardH + 6;
@@ -23728,7 +23799,40 @@ function _bnaApplySetAside(intel, det) {
   if (!intel || !det || !det.type) return intel;
   var cur = String(intel.set_aside == null ? '' : intel.set_aside);
   if (det.source !== 'default') { intel.set_aside = det.type; intel._set_aside_source = det.source; delete intel._set_aside_unverified; if (typeof _correctSetAsideEverywhere === 'function') _correctSetAsideEverywhere(intel, det.type); }
-  else if (!cur.trim() || /not stated|unknown|not determinable/i.test(cur)) { intel.set_aside = det.type; intel._set_aside_unverified = true; }
+  else {
+    // Detector fell back: no set-aside box was readable on ANY layer (form field, text, or vision).
+    // Uniform with Triage - DISCARD any specific socioeconomic type the model guessed (on a standard
+    // form that guess is the checkbox-LABEL soup, the unreliable signal) and use the conservative,
+    // biddable default (Total Small Business) flagged to verify. Record source 'default' so the scoring
+    // sync propagates this SAME value, and correct the prose so nothing downstream (the prime/sub
+    // verdict, certs, risks, pursuit recommendation) reads a set-aside the value no longer claims.
+    intel.set_aside = det.type; intel._set_aside_source = 'default'; intel._set_aside_unverified = true;
+    if (typeof _correctSetAsideEverywhere === 'function') _correctSetAsideEverywhere(intel, det.type);
+  }
+  return intel;
+}
+function _reconcileSetAsideCerts(intel) {
+  // The set-aside is ONE canonical fact; the required-certifications list must not contradict it. A blank
+  // SF-1449/SF-33 prints Small Business, WOSB, EDWOSB, SDVOSB, HUBZone and 8(a) as checkbox LABELS on
+  // every form, so the extractor can list e.g. "WOSB certification (set-aside eligibility)" on an
+  // opportunity that is actually SDVOSB or Total Small Business. Drop any socioeconomic set-aside
+  // ELIGIBILITY cert whose type does not match the canonical set_aside (read from the marked box, not the
+  // printed labels). Non-set-aside certs (GSA MAS, NIST 800-171, PMP, FedRAMP, clearances) are untouched.
+  if (!intel || typeof _saClassifyStr !== 'function') return intel;
+  var key = Array.isArray(intel.certifications_required) ? 'certifications_required'
+          : (Array.isArray(intel.required_certifications) ? 'required_certifications'
+          : (Array.isArray(intel.certifications) ? 'certifications' : null));
+  if (!key || !intel[key].length) return intel;
+  var canonFam = _saClassifyStr(String(intel.set_aside == null ? '' : intel.set_aside));
+  var canonSpecific = !!canonFam && canonFam !== 'Total Small Business';   // a specific socioeconomic type
+  intel[key] = intel[key].filter(function (c) {
+    var str = (c && typeof c === 'object') ? String(c.name || c.certification || c.value || '') : String(c == null ? '' : c);
+    var fam = _saClassifyStr(str);
+    var isSpecificSaCert = !!fam && fam !== 'Total Small Business';
+    if (!isSpecificSaCert) return true;      // not a socioeconomic set-aside cert - keep
+    if (!canonSpecific) return false;        // Total SB / unrestricted / unknown - no specific socio cert required
+    return fam === canonFam;                 // keep ONLY the cert matching the canonical set-aside
+  });
   return intel;
 }
 async function runOpportunityIntel() {
@@ -23778,6 +23882,7 @@ async function runOpportunityIntel() {
     if (typeof detectSetAside === 'function' && bnaFiles && bnaFiles.length && window._lastBnaIntel) {
       const _saDet = await detectSetAside(bnaFiles, apiKey, _saSrcText || null);
       if (typeof _bnaApplySetAside === 'function') _bnaApplySetAside(window._lastBnaIntel, _saDet);
+      if (typeof _reconcileSetAsideCerts === 'function') _reconcileSetAsideCerts(window._lastBnaIntel);
       if (typeof renderOpportunityIntel === 'function' && window._bnaIntelBody) renderOpportunityIntel(window._lastBnaIntel, window._bnaIntelBody);
     }
   } catch (e) {}
@@ -23809,7 +23914,7 @@ async function extractOpportunityIntel(docContent, apiKey) {
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `WORKLOAD / LEVEL-OF-EFFORT TABLE (OVERRIDES rule 10 whenever such a table is present): If the solicitation gives an estimated-hours / workload / level-of-effort table by labor category, treat those hours as the authoritative basis and do NOT estimate. (a) ANNUAL hours = the sum of the BASE-YEAR hours column ONLY; NEVER add the base-year and option-year columns together (option periods are SEPARATE performance periods, not additional concurrent staff). (b) fte_count = annual hours / 1912, rounded to ONE decimal, PREFIXED with "[GovEst] " because it is derived from the government's STATED workload estimate (an estimate, not a firm requirement) - e.g. "[GovEst] 7.7". (c) For EACH labor category, base_year_fte = that category base-year hours / 1912 to one decimal, and set base_year_hours to that category's base-year hours as an INTEGER exactly as stated in the table. (d) base_year_value and total_contract_value are the government's stated workload priced at a rate WE assume, so PREFIX BOTH with "[Inferred] ". Compute base_year_value = annual hours times a REALISTIC blended fully-loaded hourly rate: for analytical / professional-services labor (data analysts, business process engineers, program managers, and similar) a defensible blended fully-loaded rate is roughly $100-$150/hr - use a higher rate ONLY for genuinely specialized or cleared labor and note that in award_value_rationale. Do NOT use inflated rates (e.g. $250+/hr) for standard analyst / professional labor. Example base_year_value "[Inferred] ~$1.8M/yr". total_contract_value = base_year_value times the real contract LENGTH IN YEARS, not the number of ordering periods - a 6-month base plus four 12-month option years is 4.5 years, not 5 - e.g. "[Inferred] ~$3.6M". In award_value_rationale state the hours basis and the assumed blended rate (e.g. "RFQ base-year workload of 14685 hours across 5 labor categories at a blended loaded rate of ~$125/hr").\n\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
-    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exactly one of: Sources Sought | RFI | Draft | Pre-solicitation | RFQ | RFP (per rule 5); never 'Draft PWS'; or 'Not stated in documents'","next_due_date":"the next date an action is due from the offeror - normally the proposal/quote DUE (close) date. If the base solicitation and one or more amendments each state a due/close date, use the LATEST (maximum) - amendments push the deadline out; never report a superseded earlier date. Give as YYYY-MM-DD (add time/zone if stated); empty string if not stated","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"per the WORKLOAD / LEVEL-OF-EFFORT rule above when such a table is present (base-year hours only / 1912, one decimal, PREFIXED [GovEst]); else the explicitly stated figure (no prefix); else empty string","contract_years":"total years in the period of performance as a PLAIN INTEGER (base year + all option years), e.g. 5 for a base plus four option years; empty string if not stated - do NOT put hours, dollars, or dates here","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the END date of the BASE period ONLY (the first ordering/performance period, typically ~364-365 days after pop_start_date) as YYYY-MM-DD. This is NOT the end of the option years - if the base period is 12 months and starts 2025-10-01 this is 2026-09-30. Use a stated base-period end if given; else compute it from pop_start_date + the base period length (prefix [Inferred] if computed). Do NOT put the final option-year end date here - that is last_possible_performance_date. Empty if neither stated nor computable","last_possible_performance_date":"the LAST date performance can occur on the contract, INCLUDING every option period - the end of the final option year (typically ~5 years after pop_start_date for a base + four options) as YYYY-MM-DD. This is DISTINCT from pop_end_date: pop_end_date ends the base period, this ends the whole contract. On a single-period contract with no options the two are the SAME. Use a stated final/option end date if given; else compute it from pop_start_date + total contract duration (base + all options), prefix [Inferred]; empty if neither stated nor computable","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. CRITICAL CHECKBOX RULE: standard forms (SF-1449 block 10, SF-33, SF-1442) print Small Business, WOSB, EDWOSB, SDVOSB, HUBZone and 8(a) as checkbox LABELS on EVERY form regardless of the real set-aside, and PDF text extraction routinely drops or misplaces the check-mark - so you often CANNOT tell which box is checked from the raw text. NEVER assign a socioeconomic set-aside (WOSB/EDWOSB/SDVOSB/HUBZone/8(a)) merely because its label appears in that list or a stray mark sits near it. Assign a socioeconomic type ONLY when named unambiguously - by the SAM.gov Set-Aside Type field, an explicit 'set aside 100% for <type> concerns' sentence, or a set-aside FAR clause cited AS the authority. If only the ambiguous checkbox block is present with no such unambiguous naming, classify it as Total Small Business (the broadest small-business reading) - do NOT guess a restrictive socioeconomic type that could wrongly bar the bid, and set prime eligibility to reflect Total Small Business (a small business qualifies). Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","loe_basis":"government if the solicitation gives a workload/staffing/hours table, otherwise quoter (you propose the team in a pricing model); empty if unclear","certifications_required":[],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","base_year_hours":"","est_loaded_rate":"","clin":"the CLIN number from the solicitation's Section B / pricing schedule that THIS labor category's effort is priced under - the base-period number copied verbatim with leading zeros (e.g. '0001','0002AA') - ONLY when the solicitation ties this specific labor to that CLIN; empty string when the solicitation lists CLINs but does not tie this role to one, or lists no CLINs. Never invent, guess, or renumber","notes":""}],"stated_clins":[{"number":"the CLIN number EXACTLY as written in the solicitation's pricing/CLIN schedule (Section B, or a Section 1.2 'Contract Line Item Number' table), preserving ALL leading zeros and the exact width used (e.g. '00010','00011','0001','1001','0002AA'); copy verbatim - never renumber, pad, or normalize. Include EVERY CLIN listed, base and option and optional","title":"the CLIN description/title as written (e.g. 'Activity-Based Costing Support','Travel')","clin_type":"one of 'FFP' (firm-fixed-price), 'reimbursable' (a cost-reimbursable / travel / ODC / not-to-exceed line), 'T&M', or 'cost'; use any explicit FFP-vs-reimbursable CLIN instruction list in the pricing section to classify","nte":"the not-to-exceed / ceiling dollar amount stated for THIS CLIN as a number (e.g. 7500, 25000); '' if none stated","period_label":"the performance period this CLIN sits under, copied from its heading (e.g. 'Base Period','Option Period 1','Option Year 2','Optional Base','Optional Task Option Period 1')","scope_hint":"one of 'labor' (the priced services/effort CLIN), 'travel', 'materials', or 'other'","optional":"true if this CLIN is an OPTIONAL / separately-exercisable line or belongs to a separate optional task track (not part of the primary base+option-year pricing); else false"}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
+    `{"department_agency":"top-level Cabinet Department or independent agency, with abbreviation","sub_agency":"operating division/bureau/command beneath it with abbreviation, or empty string if none","contracting_office":"specific contracting/buying office issuing this action, or empty string if not stated","requirement_name":"EXACT verbatim title from document","id_number":"exact solicitation/RFQ/RFP number","stage":"exactly one of: Sources Sought | RFI | Draft | Pre-solicitation | RFQ | RFP (per rule 5); never 'Draft PWS'; or 'Not stated in documents'","next_due_date":"the next date an action is due from the offeror - normally the proposal/quote DUE (close) date. If the base solicitation and one or more amendments each state a due/close date, use the LATEST (maximum) - amendments push the deadline out; never report a superseded earlier date. Give as YYYY-MM-DD (add time/zone if stated); empty string if not stated","opportunity_url":"","source":"where this opportunity was found/sourced if the user or documents state it - e.g. SAM.gov, GSA eBuy, Unison Marketplace/ORBIT, an agency forecast (APFS/AFPS), GovWin, a direct agency email, or a sources-sought notice. This is the portal/channel it came through, distinct from the contract vehicle. Use the value the user provided if noted; empty string if not stated","description":"2-3 sentence description in your own words; if this opportunity establishes or is itself a contract vehicle (IDIQ/MATOC/BPA/GWAC), state that explicitly","fte_count":"per the WORKLOAD / LEVEL-OF-EFFORT rule above when such a table is present (base-year hours only / 1912, one decimal, PREFIXED [GovEst]); else the explicitly stated figure (no prefix); else empty string","contract_years":"total years in the period of performance as a PLAIN INTEGER = the base year PLUS the FAR 52.217-9 option years ONLY, e.g. 5 for a base plus four option years. A FAR 52.217-8 'Option to Extend Services' (a short extension, up to 6 months, priced at the last period's rates) is NOT an option year - do NOT count it or round it up into this number. Example: a base year + 3 option years that ALSO carries a 6-month 52.217-8 extension is contract_years=4, NOT 5. Empty string if not stated - do NOT put hours, dollars, or dates here","place_of_performance":"","work_setting":"","period_of_performance":"","pop_start_date":"the START date of the base period of performance if the documents state one (e.g. an anticipated award date or base-period start); if only estimated/anticipated, prefix [Inferred]; empty if not stated","pop_end_date":"the END date of the BASE period ONLY (the first ordering/performance period, typically ~364-365 days after pop_start_date) as YYYY-MM-DD. This is NOT the end of the option years - if the base period is 12 months and starts 2025-10-01 this is 2026-09-30. Use a stated base-period end if given; else compute it from pop_start_date + the base period length (prefix [Inferred] if computed). Do NOT put the final option-year end date here - that is last_possible_performance_date. Empty if neither stated nor computable","last_possible_performance_date":"the LAST date performance can occur on the contract, INCLUDING every option period - the end of the final option year (typically ~5 years after pop_start_date for a base + four options) as YYYY-MM-DD. This is DISTINCT from pop_end_date: pop_end_date ends the base period, this ends the whole contract. On a single-period contract with no options the two are the SAME. Use a stated final/option end date if given; else compute it from pop_start_date + total contract duration (base + all options), prefix [Inferred]; empty if neither stated nor computable","facility_clearance_required":"","personnel_clearance_required":"","set_aside":"the EXACT operative set-aside from the solicitation (the SAM.gov Set-Aside Type, the 'Set-Aside:' block, or the FAR clause: 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a)). These are DISTINCT categories - never substitute one for another; a Total Small Business set-aside is NOT WOSB/SDVOSB/8(a)/HUBZone. Cross-check against the required certifications - if offerors must hold a specific certification, the set_aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals, agency socioeconomic goals, or NAICS size-standard eligibility - classify ONLY from the operative set-aside determination. CRITICAL CHECKBOX RULE: standard forms (SF-1449 block 10, SF-33, SF-1442) print Small Business, WOSB, EDWOSB, SDVOSB, HUBZone and 8(a) as checkbox LABELS on EVERY form regardless of the real set-aside, and PDF text extraction routinely drops or misplaces the check-mark - so you often CANNOT tell which box is checked from the raw text. NEVER assign a socioeconomic set-aside (WOSB/EDWOSB/SDVOSB/HUBZone/8(a)) merely because its label appears in that list or a stray mark sits near it. Assign a socioeconomic type ONLY when named unambiguously - by the SAM.gov Set-Aside Type field, an explicit 'set aside 100% for <type> concerns' sentence, or a set-aside FAR clause cited AS the authority. If only the ambiguous checkbox block is present with no such unambiguous naming, classify it as Total Small Business (the broadest small-business reading) - do NOT guess a restrictive socioeconomic type that could wrongly bar the bid, and set prime eligibility to reflect Total Small Business (a small business qualifies). Use 'Not stated in documents' only if genuinely absent","contract_vehicle":"the NAME of the existing contract vehicle this work is ordered under, if any - e.g. SEWP V, OASIS+, Alliant 2, GSA MAS / Federal Supply Schedule, CIO-SP4, 8(a) STARS III, or a specifically named agency IDIQ or BPA. This is a PROPER NAME, not a contract type or structure: do NOT put IDIQ, MATOC, BPA, GWAC, single/multiple award, FFP, or T&M here (those belong in contract_type). If this opportunity is ITSELF establishing a new vehicle (e.g. standing up an IDIQ/MATOC/BPA that is being competed), put N/A here and make that clear in requirement_name and description instead. If the work is open-market/standalone or no named vehicle is identified, put N/A","ko_name_office":"","cor_name_office":"","naics_code":"","sin":"","psc":"","base_year_value":"","total_contract_value":"","award_value_rationale":"","new_or_recompete":"","incumbent":"","contract_type":"","sca_coverage":"whether the contract is covered by the Service Contract Act / Service Contract Labor Standards (SCLS). Answer 'Yes - SCA covered' if a Wage Determination is attached or referenced (a WD document, an SF-98/98a, a WD number such as 2015-XXXX or a state/area WD, or DOL occupation-and-wage tables) OR FAR 52.222-41 applies - the PRESENCE of a Wage Determination is DECISIVE, answer Yes. Answer 'No - exempt' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption). Do NOT answer No merely because the work sounds professional or technical. Use 'Not stated in documents' only if genuinely not addressed","loe_basis":"government if the solicitation gives a workload/staffing/hours table, otherwise quoter (you propose the team in a pricing model); empty if unclear","certifications_required":["ONLY certifications or compliance the offeror must actually hold to be eligible or responsive (e.g. a named FedRAMP/NIST 800-171/CMMC/ISO level, a required contract vehicle, a role-specific PMP). Do NOT list a socioeconomic set-aside certification (WOSB, EDWOSB, SDVOSB, VOSB, HUBZone, 8(a)) merely because it is printed as an SF-1449/SF-33 checkbox LABEL - those labels appear on every blank form regardless of the real set-aside. Include a set-aside eligibility certification ONLY when it matches the operative set_aside determined above; if the set-aside is Total Small Business or unrestricted, list NO socioeconomic set-aside certification"],"labor_categories":[{"lcat":"Exact Labor Category Title","key_personnel":false,"is_sca":false,"min_hourly_rate":"","clearance":"","experience_yrs":"","education":"","base_year_fte":"","base_year_hours":"","est_loaded_rate":"","clin":"the CLIN number from the solicitation's Section B / pricing schedule that THIS labor category's effort is priced under - the base-period number copied verbatim with leading zeros (e.g. '0001','0002AA') - ONLY when the solicitation ties this specific labor to that CLIN; empty string when the solicitation lists CLINs but does not tie this role to one, or lists no CLINs. Never invent, guess, or renumber","notes":""}],"stated_clins":[{"number":"the CLIN number EXACTLY as written in the solicitation's pricing/CLIN schedule (Section B, or a Section 1.2 'Contract Line Item Number' table), preserving ALL leading zeros and the exact width used (e.g. '00010','00011','0001','1001','0002AA'); copy verbatim - never renumber, pad, or normalize. Include EVERY CLIN listed, base and option and optional","title":"the CLIN description/title as written (e.g. 'Activity-Based Costing Support','Travel')","clin_type":"one of 'FFP' (firm-fixed-price), 'reimbursable' (a cost-reimbursable / travel / ODC / not-to-exceed line), 'T&M', or 'cost'; use any explicit FFP-vs-reimbursable CLIN instruction list in the pricing section to classify","nte":"the not-to-exceed / ceiling dollar amount stated for THIS CLIN as a number (e.g. 7500, 25000); '' if none stated","period_label":"the performance period this CLIN sits under, copied from its heading (e.g. 'Base Period','Option Period 1','Option Year 2','Optional Base','Optional Task Option Period 1')","scope_hint":"one of 'labor' (the priced services/effort CLIN), 'travel', 'materials', or 'other'","optional":"true if this CLIN is an OPTIONAL / separately-exercisable line or belongs to a separate optional task track (not part of the primary base+option-year pricing); else false"}],"pursuit_recommendation":"prime/sub/pass with brief rationale"}`;
 
   const content = [...docContent, { type: 'text', text: prompt }];
 
@@ -24250,12 +24355,15 @@ function _bnaContractPeriods(intel) {
   const yearsFromText = (val) => {
     const s = String(val == null ? '' : val);
     if (!s.trim()) return 0;
-    let m = s.match(/(\d+(?:\.\d+)?)\s*-?\s*year/i);            // "5 years", "5-year"
-    if (m) { const y = parseFloat(m[1]); if (y >= 1 && y <= 10) return y; }
-    m = s.match(/(\d+(?:\.\d+)?)\s*month/i);                    // "60 months" -> years
-    if (m) { const mo = parseFloat(m[1]); if (mo >= 1 && mo <= 120) return mo / 12; }
-    m = s.match(/(\d+)\s*(?:option|ol\b|op\b)/i);               // "base + 4 options" -> 1 + 4
+    // Option count FIRST - it is the most reliable signal and inherently excludes a FAR 52.217-8
+    // extension (an extension is not an "option"), so "base + 3 option years" -> 4 even if a
+    // misleading total-months figure that folds in the 6-month extension also appears in the text.
+    let m = s.match(/(\d+)\s*(?:option|ol\b|op\b)/i);           // "base + 4 options" -> 1 + 4
     if (m) { const o = parseInt(m[1], 10); if (o >= 0 && o <= 9) return 1 + o; }
+    m = s.match(/(\d+(?:\.\d+)?)\s*-?\s*year/i);                // "5 years", "5-year"
+    if (m) { const y = parseFloat(m[1]); if (y >= 1 && y <= 10) return y; }
+    m = s.match(/(\d+(?:\.\d+)?)\s*month/i);                    // "60 months" -> years; a 1-6 month TAIL over whole years is a 52.217-8 extension, so drop it rather than rounding up into an extra year
+    if (m) { const mo = parseFloat(m[1]); if (mo >= 1 && mo <= 120) { const whole = Math.floor(mo / 12), rem = mo - whole * 12; return (rem >= 1 && rem <= 6) ? whole : Math.round(mo / 12); } }
     m = s.match(/\b(\d{1,2})\b/);                               // bare small integer 1-10
     if (m) { const y = parseInt(m[1], 10); if (y >= 1 && y <= 10) return y; }
     return 0;
@@ -26506,7 +26614,7 @@ window.RecStore = (function () {
     }).join('\n');
     var criteria = [];
     if (role) criteria.push('Role/title: ' + role);
-    if (loc) criteria.push('Location: ' + loc);
+    if (loc) criteria.push('Location: ' + loc + (loc.indexOf(',') >= 0 ? ' (comma-separated \u2014 match candidates in ANY of these locations)' : ''));
     if (skills) criteria.push('Skills/keywords: ' + skills);
     var prompt = 'You are an HR assistant helping identify qualified candidates from an applicant database. Given the following search criteria and candidate list, return the numbers of ALL candidates who are a reasonable match — including people whose background, experience, or skills suggest they could do this work, even if their exact title doesn\'t match. Be inclusive rather than exclusive. Consider adjacent roles, transferable skills, and related experience.\n\nSEARCH CRITERIA:\n' + criteria.join('\n') + '\n\nCANDIDATES:\n' + candidateList + '\n\nReturn ONLY a JSON array of matching candidate numbers (1-based integers), like: [1, 3, 7, 12]. No explanation, just the JSON array.';
     try {
@@ -26581,11 +26689,11 @@ window.RecStore = (function () {
       if (ldg) luLoadingMsg('Claude is analyzing ' + pool.length + ' candidates...');
       all = await aiRankCandidates(pool, role, loc, skills);
     } else {
-      var rQ = role.toLowerCase(), lQ = loc.toLowerCase();
+      var rQ = role.toLowerCase(), locArr = loc ? loc.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
       var skArr = skills ? skills.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
       all = pool.filter(function (c) {
         var text = (c.name + ' ' + c.title + ' ' + c.notes + ' ' + c.location).toLowerCase();
-        return (!rQ || text.indexOf(rQ) >= 0) && (!lQ || (c.location || '').toLowerCase().indexOf(lQ) >= 0) && (skArr.length === 0 || skArr.every(function (sk) { return text.indexOf(sk) >= 0; }));
+        return (!rQ || text.indexOf(rQ) >= 0) && (locArr.length === 0 || locArr.some(function (lc) { return (c.location || '').toLowerCase().indexOf(lc) >= 0; })) && (skArr.length === 0 || skArr.every(function (sk) { return text.indexOf(sk) >= 0; }));
       });
     }
     luResults = all;
@@ -26608,7 +26716,7 @@ window.RecStore = (function () {
     return filterAndMap((d.d && d.d.results) ? d.d.results : [], role, loc, skills, 'potential');
   }
   function filterAndMap(items, role, loc, skills, source) {
-    var rQ = role.toLowerCase().trim(), lQ = loc.toLowerCase().trim();
+    var rQ = role.toLowerCase().trim(), locArr = loc ? loc.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
     var skArr = skills ? skills.split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean) : [];
     var C = spCols(), A = appCols();
     var skip = {}; (A.skip || []).forEach(function (k) { skip[k] = 1; });
@@ -26631,7 +26739,7 @@ window.RecStore = (function () {
       if (source === 'potential') { locBlob = (x[C.location] || '').toLowerCase(); }
       else { var stRaw = x[A.state] || ''; locBlob = (typeof stRaw === 'string' ? stRaw : (stRaw.Title || stRaw.LookupValue || '')).toLowerCase(); }
       var roleMatch = !rQ || allText.indexOf(rQ) >= 0;
-      var locMatch = !lQ || locBlob.indexOf(lQ) >= 0;
+      var locMatch = locArr.length === 0 || locArr.some(function (lc) { return locBlob.indexOf(lc) >= 0; });
       var skillMatch = skArr.length === 0 || skArr.every(function (sk) { return allText.indexOf(sk) >= 0; });
       return roleMatch && locMatch && skillMatch;
     }).map(function (x) { return getMappedFields(x, source); });
