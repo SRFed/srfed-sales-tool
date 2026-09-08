@@ -3279,7 +3279,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '330';
+const APP_VERSION = '331';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -16449,8 +16449,8 @@ function pricingBuildWorkbook() {
     push('by',    'BASE-PERIOD PRICE',                    xv((_t && _t.baseYear != null) ? _t.baseYear : _labBase), 'Labor + non-labor');
     rc.push(['']);
     P.forEach((p, i) => push('p' + i, (p.name || ('Period ' + (i + 1))) + '  (' + pricingPeriodMonths(p) + ' mo' + (i === 0 ? '' : ', +' + ((M.escalationMode === 'flat') ? (parseFloat(M.escalationFlat) || 0) : (parseFloat(p.escalation) || 0)) + '%') + ')',
-      xv(pricingPeriodCost(i) + (_travPer[i] || 0) + (_matPer[i] || 0)), i === 0 ? 'Priced by the hours matrix' : 'Base year compounded by escalation'));
-    push('tot',   'TOTAL CONTRACT VALUE',                 xv(_t ? _t.total : (pricingGrandTotal() + _travTot + _matTot)), 'Sum of all periods');
+      xv(pricingPeriodCost(i) + (_travOnlyPer[i] || 0) + (_odcOnlyPer[i] || 0) + (_matPer[i] || 0)), i === 0 ? 'Priced by the hours matrix' : 'Base year compounded by escalation'));
+    push('tot',   'TOTAL CONTRACT VALUE',                 xv(_t ? _t.total : (pricingGrandTotal() + _travTot + _odcTot + _matTot)), 'Sum of all periods');
     if (_t && _t.hasStated) {
       rc.push(['']);
       push('cy',  'Contract length (years)',             _t.contractYears, 'Sum of every period\u2019s months / 12 \u2014 NOT a count of periods');
@@ -16889,7 +16889,8 @@ function pricingExportWorkbook() {
   if (typeof XLSX === 'undefined') { if (typeof showStatus === 'function') showStatus('error', 'Excel library not loaded', 'Refresh the page (Ctrl+Shift+R) and try again.'); return; }
   var _scaB = pricingScaExportBlock();
   if (_scaB.length) { if (typeof showStatus === 'function') showStatus('error', 'Resolve SCA compliance before exporting', _scaB.map(function (i) { return i.msg; }).join(' ') + ' Set the Wage Determination (and the H&W rate) in Pricing Step 2 first.'); return; }
-  const wb = pricingBuildWorkbook();
+  let wb;
+  try { wb = pricingBuildWorkbook(); } catch (e) { console.error('pricing workbook build failed', e); if (typeof showStatus === 'function') showStatus('error', 'Export failed', 'The workbook could not be generated \u2014 nothing was changed in your model. (' + ((e && e.message) ? e.message : 'unexpected error') + ')'); return; }
   if (!wb) { if (typeof showStatus === 'function') showStatus('warn', 'Nothing to export', 'Build the price model first (add labor categories, tasks, and rates).'); return; }
   pricingWriteWorkbookWithTables(wb, pricingWorkbookName() + '.xlsx');
 }
