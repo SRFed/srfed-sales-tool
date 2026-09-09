@@ -3279,7 +3279,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '331';
+const APP_VERSION = '333';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19155,7 +19155,7 @@ async function triageScreenZone(id) {
       'You are a federal capture analyst screening a U.S. Government opportunity for a specific company, to decide FAST whether it is worth a full bid/no-bid analysis. '
       + 'Use ONLY the solicitation excerpt and the company profile below. Do NOT invent facts; if a field is not present use "not stated" (or null for days_remaining). Today is ' + today + '. '
       + 'Respond with ONLY a JSON object \u2014 no prose, no markdown, no code fences \u2014 with EXACTLY these keys: '
-      + 'verdict (one of "Pursue","Maybe","Pass"), title, solicitation_number, ebuy_request_id (a GSA eBuy / Unison portal Request ID like "RFQ1827479" if one appears in the text - the portal tracking number, NOT the agency solicitation number; "not stated" if absent), agency, notice_type (e.g. "Sources Sought","RFP","RFQ","Presolicitation","RFI"), set_aside (the OPERATIVE set-aside from the excerpt: the SAM.gov Set-Aside Type, a "Set-Aside:" line, or the controlling FAR clause - 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a); these categories are DISTINCT, never substitute one for another. Cross-check the required certifications - if offerors must hold a specific certification, the set-aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals or NAICS size alone. If the excerpt does not state or clearly establish the set-aside, use "not stated" and do not guess), '
+      + 'verdict (one of "Pursue","Maybe","Pass"), title, solicitation_number, ebuy_request_id (a GSA eBuy / Unison portal Request ID like "RFQ1827479" if one appears in the text - the portal tracking number, NOT the agency solicitation number; "not stated" if absent), agency, notice_type (e.g. "Sources Sought","RFP","RFQ","Presolicitation","RFI"), set_aside (the OPERATIVE set-aside from the excerpt: the SAM.gov Set-Aside Type, a "Set-Aside:" line, or the controlling FAR clause - 52.219-6 = Total Small Business, 52.219-27 = SDVOSB, 52.219-30 = WOSB, 52.219-29 = EDWOSB, 52.219-3 = HUBZone, 52.219-18 = 8(a); these categories are DISTINCT, never substitute one for another. IGNORE any set-aside type that appears only inside a FAR CLAUSE TITLE or a listed clause - e.g. "52.219-3 Notice of HUBZone Set-Aside" among Section I clauses, or a clause name followed by an effective date like "(OCT 2022)" - that is boilerplate, not the determination; solicitations routinely list set-aside clauses that do NOT apply. Cross-check the required certifications - if offerors must hold a specific certification, the set-aside MUST match it. Do NOT infer a socioeconomic set-aside from small-business subcontracting goals or NAICS size alone. If the excerpt does not state or clearly establish the set-aside, use "not stated" and do not guess), '
       + 'eligible (boolean: does the company\u2019s socioeconomic status qualify it to compete? true ONLY if it clearly qualifies - full-and-open, OR the set-aside type matches a certification the company holds per its profile; false if the set-aside is a socioeconomic type the company does NOT hold; null if the set-aside is "not stated" or cannot be determined - NEVER default to true when the set-aside is unknown), '
       + 'naics, naics_fit (one of "strong","partial","weak","unknown"), response_date (the date offers/quotes are DUE; when the base solicitation AND one or more amendments each carry a due/close date, return the LATEST one - an amendment pushes the deadline out and supersedes the earlier date; "not stated" if absent), days_remaining (integer days from today to that response_date, or null), '
       + 'value (rough dollar value or "not stated"), place_of_performance, contract_vehicle (the specific contract vehicle/IDIQ that quotes must be submitted under - e.g. "GSA MAS", "SeaPort-NxG", "CIO-SP4", "DISA SETI" - or "not stated"; "open" if explicitly open to any vehicle/open-market), vehicle_is_open (boolean: true if any vehicle or open-market is allowed, false if a specific vehicle is mandatory, null if not stated), already_awarded (boolean: true ONLY if the document shows the work is sole-source or already awarded to a NAMED contractor - e.g. an SF1449 pre-filled with a company as the contractor/offeror, or a sole-source/limited-sources justification naming a firm - else false), awardee (the named awardee/incumbent if already_awarded is true, else "not stated"), required_clearance (the facility or personnel security clearance required to perform - e.g. "Secret", "Top Secret", "TS/SCI" - or "none"/"not stated"), rationale (ONE short sentence: the single biggest reason for the verdict). '
@@ -20205,6 +20205,20 @@ function _setAsideFromText(text) {
     var n = 0; fams.forEach(function (re) { if (re.test(ctx)) n++; });
     return n >= 4;
   }
+  // A set-aside TYPE phrase can also live inside a FAR CLAUSE TITLE in the Section I boilerplate
+  // (e.g. "52.219-3 Notice of HUBZone Set-Aside (OCT 2022)") - which is NOT the operative determination.
+  // A match is clause-context when a FAR clause number sits just before it, it is introduced by
+  // "Notice of", or a clause effective-date "(MON YYYY)" follows the words "set-aside". A SPECIFIC
+  // socioeconomic type is only trusted OUTSIDE clause-context; Total Small Business (the safe base) may
+  // still come from a clause mention.
+  function _isClauseCtx(idx) {
+    var before = s.slice(Math.max(0, idx - 60), idx).toLowerCase();
+    var after = s.slice(idx, Math.min(s.length, idx + 60)).toLowerCase();
+    if (/\b52\.2\d\d?\s*[-\u2010-\u2015]\s*\d+\b/.test(before)) return true;
+    if (/notice\s+of\s*$/.test(before)) return true;
+    if (/set[-\s]?aside\s*\(\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|dev|deviation|class)/.test(after)) return true;
+    return false;
+  }
   function _classifyForCtx(val) { var t = _saClassifyStr(val); if (!t && /small.?business/i.test(val)) t = 'Total Small Business'; return t; }
   var _hits = [];
   // (a) an explicit "set aside (100%) for <type>" SENTENCE - skip the grid + negated FAR boilerplate.
@@ -20212,13 +20226,13 @@ function _setAsideFromText(text) {
   while ((m1 = re1.exec(s)) !== null) {
     if (_isGrid(m1.index)) continue;
     if (/\bnot\s*$/.test(s.slice(Math.max(0, m1.index - 12), m1.index).toLowerCase())) continue;
-    var t1 = _classifyForCtx(m1[1]); if (t1) _hits.push({ t: t1, ev: m1[0] });
+    var t1 = _classifyForCtx(m1[1]); if (t1 && (t1 === 'Total Small Business' || !_isClauseCtx(m1.index))) _hits.push({ t: t1, ev: m1[0] });
   }
   // (b) "<known type> set-aside" phrasing (the type immediately before the words "set-aside").
   var re0 = /\b(total small business|service.?disabled veteran.?owned(?:\s+small business)?|economically.?disadvantaged women.?owned(?:\s+small business)?|women.?owned(?:\s+small business)?|veteran.?owned(?:\s+small business)?|hub.?zone(?:\s+small business)?|8\s*\(?\s*a\s*\)?|\bsdvosb\b|\bedwosb\b|\bwosb\b|\bvosb\b)\s+set[-\s]?aside\b/ig, m0;
   while ((m0 = re0.exec(s)) !== null) {
     if (_isGrid(m0.index)) continue;
-    var t0 = _saClassifyStr(m0[1]); if (t0) _hits.push({ t: t0, ev: m0[0] });
+    var t0 = _saClassifyStr(m0[1]); if (t0 && (t0 === 'Total Small Business' || !_isClauseCtx(m0.index))) _hits.push({ t: t0, ev: m0[0] });
   }
   if (_hits.length) {
     var _spec = _hits.filter(function (h) { return h.t !== 'Total Small Business'; });
@@ -22956,7 +22970,7 @@ async function runBidNoBid() {
       `OPPORTUNITY FACTS — extract these verbatim where stated, else "" (empty). These drive prime/sub eligibility:\n` +
       `- required_clearance: highest FACILITY clearance the work requires (None/Public Trust/Confidential/Secret/Top Secret/TS-SCI), or "" if none/not stated\n` +
       `- fte_count: number of FTEs/positions. PRIORITY: (1) if an explicit FTE/staffing figure is stated, use it (digits only, e.g. "45"). (2) ELSE if an estimated-hours/workload/level-of-effort table by labor category is given, compute it as (sum of the BASE-YEAR hours column ONLY) / 1912, rounded to a whole number - NEVER add the base-year and option-year columns together (option periods are separate performance periods, not extra concurrent staff). (3) ELSE ""\n` +
-      `- set_aside: the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated". SDVOSB (52.219-27, service-disabled veteran-owned), WOSB (52.219-30, women-owned), EDWOSB (52.219-29), HUBZone (52.219-3), and 8(a) (52.219-18) are DISTINCT - never substitute one for another. CRITICAL CHECKBOX RULE: standard forms (SF-1449 block 10, SF-33, SF-1442) print Small Business, WOSB, EDWOSB, SDVOSB, HUBZone and 8(a) as checkbox LABELS on EVERY form regardless of the real set-aside, and PDF text extraction routinely drops or misplaces the check-mark - so you often CANNOT tell which box is checked from the raw text. NEVER assign a socioeconomic set-aside (WOSB/EDWOSB/SDVOSB/HUBZone/8(a)) merely because its label appears in that list or a stray mark sits near it. Assign a socioeconomic type ONLY when named unambiguously - by the SAM.gov Set-Aside Type field, an explicit 'set aside 100% for <type> concerns' sentence, or a set-aside FAR clause cited AS the authority. If only the ambiguous checkbox block is present with no such unambiguous naming, classify it as Total Small Business (the broadest small-business reading) - do NOT guess a restrictive socioeconomic type that could wrongly bar the bid, and set prime eligibility to reflect Total Small Business (a small business qualifies). Cross-check your answer against the required certifications: if offerors must be certified SDVOSB / VOSB / WOSB / 8(a) / HUBZone, the set_aside MUST match that certification. Use this SAME set-aside consistently everywhere in your output (risks, win_strategy, summary) - never name a different set-aside category in the narrative than in this structured field.\n` +
+      `- set_aside: ${(typeof window !== 'undefined' && window._lastBnaIntel && window._lastBnaIntel.set_aside) ? ('The set-aside for THIS opportunity has ALREADY been authoritatively determined from the solicitation as "' + window._lastBnaIntel.set_aside + '"; use EXACTLY "' + window._lastBnaIntel.set_aside + '" for this field, and keep risks, win_strategy, summary and every eligibility/certification statement consistent with it - never name any other set-aside category anywhere. ') : ''}the OPERATIVE set-aside type. CRITICAL: if an amendment, note, or instruction anywhere in the input changes the set-aside (e.g. "amended to an 8(a) set-aside", "this will be a HUBZone set-aside"), use the AMENDED/most-recent value here — NOT the original. Use "Unrestricted"/"Full and Open" if so, or "Not stated". SDVOSB (52.219-27, service-disabled veteran-owned), WOSB (52.219-30, women-owned), EDWOSB (52.219-29), HUBZone (52.219-3), and 8(a) (52.219-18) are DISTINCT - never substitute one for another. CRITICAL CHECKBOX RULE: standard forms (SF-1449 block 10, SF-33, SF-1442) print Small Business, WOSB, EDWOSB, SDVOSB, HUBZone and 8(a) as checkbox LABELS on EVERY form regardless of the real set-aside, and PDF text extraction routinely drops or misplaces the check-mark - so you often CANNOT tell which box is checked from the raw text. NEVER assign a socioeconomic set-aside (WOSB/EDWOSB/SDVOSB/HUBZone/8(a)) merely because its label appears in that list or a stray mark sits near it. Assign a socioeconomic type ONLY when named unambiguously - by the SAM.gov Set-Aside Type field, an explicit 'set aside 100% for <type> concerns' sentence, or a set-aside FAR clause cited AS the authority. If only the ambiguous checkbox block is present with no such unambiguous naming, classify it as Total Small Business (the broadest small-business reading) - do NOT guess a restrictive socioeconomic type that could wrongly bar the bid, and set prime eligibility to reflect Total Small Business (a small business qualifies). Cross-check your answer against the required certifications: if offerors must be certified SDVOSB / VOSB / WOSB / 8(a) / HUBZone, the set_aside MUST match that certification. Use this SAME set-aside consistently everywhere in your output (risks, win_strategy, summary) - never name a different set-aside category in the narrative than in this structured field.\n` +
       `- required_dcaa: true ONLY if the award is a COST-REIMBURSEMENT contract type (cost-plus / CPFF / CPIF / CPAF / cost-sharing), OR the solicitation EXPLICITLY requires a "DCAA-approved" or "adequate accounting system." Set FALSE for Firm-Fixed-Price, Time-and-Materials (T&M), or Labor-Hour awards. A cost-reimbursable TRAVEL or ODC line alone does NOT make this true (travel is reimbursed per travel regulations). If the contract type is not stated, set false.\n` +
       `- prime_eligible: true or false. Can ${CLIENT_CONFIG.companyShortName} legally and practically compete as the PRIME on this? Weigh EVERY dimension below against the CAPACITY facts in the company profile, and set FALSE if ANY is a hard barrier:\n` +
       `    • Set-aside: operative set-aside is one the company does NOT hold (e.g. 8(a)/HUBZone set-aside when not 8(a)/HUBZone certified).\n` +
@@ -23786,11 +23800,15 @@ function _bnaCorrectSetAsideProse(text, correctType) {
   };
   var target = phras[correctType] || correctType;
   var alt = 'Service-Disabled Veteran-Owned Small Business \\(SDVOSB\\)|Women-Owned Small Business \\(WOSB\\)|Economically Disadvantaged Women-Owned Small Business \\(EDWOSB\\)|Veteran-Owned Small Business \\(VOSB\\)|HUBZone Small Business|Total Small Business|\\bSDVOSB\\b|\\bEDWOSB\\b|\\bWOSB\\b|\\bVOSB\\b|\\bHUBZone\\b|\\b8\\(a\\)';
-  var re = new RegExp('(' + alt + ')(\\s+set[-\\s]?aside)', 'gi');
-  return String(text).replace(re, function (whole, typ) {
-    if (new RegExp(correctType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(typ)) return whole; // already correct
-    return target + whole.slice(typ.length);
-  });
+  var _isRight = function (typ) { return new RegExp(correctType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(typ); };
+  var out = String(text);
+  // (1) "<type> set-aside"
+  out = out.replace(new RegExp('(' + alt + ')(\\s+set[-\\s]?aside)', 'gi'), function (whole, typ) { return _isRight(typ) ? whole : target + whole.slice(typ.length); });
+  // (2) a set-aside DESIGNATION that names the type first: "set aside for X", "set-aside: X", "reserved/restricted/limited to X"
+  out = out.replace(new RegExp('(set[-\\s]?aside\\s+(?:100%\\s+)?(?:for|to)\\s+(?:the\\s+)?|set[-\\s]?aside\\s*[:\\u2013\\-]\\s*|reserved\\s+(?:for|to)\\s+|restricted\\s+to\\s+|limited\\s+to\\s+)(' + alt + ')', 'gi'), function (whole, pre, typ) { return _isRight(typ) ? whole : pre + target; });
+  // (3) "<type>-only"
+  out = out.replace(new RegExp('(' + alt + ')(\\s?-\\s?only\\b)', 'gi'), function (whole, typ, suf) { return _isRight(typ) ? whole : target + suf; });
+  return out;
 }
 function _bnaApplySetAside(intel, det) {
   // Apply the deterministic set-aside detector result to the BNA opportunity intel, authoritative over the
