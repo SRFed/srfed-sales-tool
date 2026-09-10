@@ -3282,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '337';
+const APP_VERSION = '339';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19040,7 +19040,7 @@ function _triageVerdictHtml(z) {
   if (!v) return '';
   if (v.error) return '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--error)">' + escHtml(v.error) + '</div>';
   const _er = (typeof escHtml === 'function') ? escHtml(v.eligible_reason || '') : '';
-  const elig = v.set_aside_unverified ? ' <span style="color:#92400e;font-weight:600" title="Set-aside was not stated in the documents; the tool assumed the broadest reading (Total Small Business) so the opportunity stays biddable. Eligibility depends on the real set-aside \u2014 verify on SAM.gov before relying on it.">\u26a0 not stated in docs \u2014 verify set-aside</span>' : (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#991b1b;font-weight:700">\u2717 not eligible</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '');
+  const elig = v.set_aside_unverified ? ' <span style="color:#92400e;font-weight:600" title="Set-aside was not stated in the documents; the tool assumed the broadest reading (Total Small Business) so the opportunity stays biddable. Eligibility depends on the real set-aside \u2014 verify on SAM.gov before relying on it.">\u26a0 not stated in docs \u2014 verify set-aside</span>' : (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#b45309;font-weight:700">\u2717 not eligible to prime \u00b7 sub path</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '');
   const fit = v.naics_fit ? (' <span style="color:var(--muted)">(' + escHtml(v.naics_fit) + ' fit)</span>') : '';
   const days = (v.days_remaining != null && v.days_remaining !== '') ? (' <span style="color:var(--muted)">(' + escHtml(String(v.days_remaining)) + ' days left)</span>') : '';
   return '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">'
@@ -19066,19 +19066,36 @@ function _triageRenderVerdict(z) {
 }
 async function _triageExtract(files) {
   let text = '';
+  let fullText = '';   // all readable text (bounded), so a date scan can see a later attachment past the snippet cap
   const docBlocks = [];
   let readable = 0, failed = 0;
   for (const f of files) {
     let block = null;
     try { block = await fileToContentBlockLocal(f); } catch (e) { block = null; }
     if (!block) { failed++; continue; }
-    if (block.type === 'text' && block.text) { text += block.text + '\n\n'; if (block._unreadable) failed++; else readable++; }
+    if (block.type === 'text' && block.text) {
+      if (text.length <= 14000) text += block.text + '\n\n';
+      if (fullText.length < 60000) fullText += block.text + '\n\n';
+      if (block._unreadable) failed++; else readable++;
+    }
     else if (block.type === 'document') { if (docBlocks.length < 2) docBlocks.push(block); readable++; }
     else failed++;
-    if (text.length > 14000) break;
+    if (fullText.length > 60000) break;
   }
+  // A deadline EXTENSION often lives in a later amendment/attachment that falls past the 14000-char snippet
+  // (so the screen would otherwise read only the base solicitation's earlier date). Scan ALL collected text
+  // for due-date / amendment lines and surface them up front - the prompt is told to use the LATEST one.
+  const _dateHits = []; const _seen = {};
+  const _re = /\b(?:amend(?:ment|ed)?|extend(?:ed|s)?|(?:offers?|quotes?|proposals?)\s+(?:are\s+)?due|due\s+(?:date|by|no\s+later)|response\s+date|closing\s+date|new\s+(?:due|closing)|revised\s+(?:due|date|deadline)|from:\s*\d[^\n]{0,40}to:\s*\d)\b/ig;
+  let _m;
+  while ((_m = _re.exec(fullText)) !== null && _dateHits.length < 12) {
+    const win = fullText.slice(Math.max(0, _m.index - 24), Math.min(fullText.length, _m.index + 200)).replace(/\s+/g, ' ').trim();
+    const key = win.slice(0, 48).toLowerCase();
+    if (win.length >= 8 && !_seen[key]) { _seen[key] = 1; _dateHits.push(win); }
+  }
+  const _hdr = _dateHits.length ? ('DUE-DATE / AMENDMENT LINES (scanned from ALL attachments - use the LATEST/most-recent due date; an amendment supersedes the base solicitation date):\n- ' + _dateHits.join('\n- ') + '\n\n----------\n\n') : '';
   const realText = text.replace(/\[File:[^\]]*\]/g, '').trim();
-  return { text: text.slice(0, 14000), docBlocks: (realText.length > 200 ? [] : docBlocks), readable: readable, failed: failed };
+  return { text: (_hdr + text.slice(0, 14000)), docBlocks: (realText.length > 200 ? [] : docBlocks), readable: readable, failed: failed };
 }
 function _triageOtherGates(v) {
   // Phase 4b: the HARD bid gates OTHER than the set-aside - so they surface as their OWN reasons instead of
@@ -19124,7 +19141,10 @@ function _triageApplyEligibility(v) {
     if (fit) {
       v.eligible = fit.eligible;
       v.eligible_reason = fit.rationale;
-      if (fit.eligible === false) v.verdict = 'Pass';
+      // Prime-ineligibility from the set-aside is NOT a drop - the opportunity stays in the pipeline as a
+      // subcontract/teaming pursuit. Flag it; the keep-in-pipeline (Pass -> Maybe) is applied AFTER the other
+      // hard gates (4b) below, so a genuine hard drop (vehicle/clearance/sole-source) still Passes.
+      if (fit.eligible === false) v.prime_ineligible = true;
     }
   } catch (e) {}
   // Phase 4b: the OTHER hard gates (sole-source/awarded, contract vehicle, clearance) surface as their
@@ -19133,6 +19153,10 @@ function _triageApplyEligibility(v) {
     var _gates = (typeof _triageOtherGates === 'function') ? _triageOtherGates(v) : [];
     if (_gates && _gates.length) { v.hard_gates = _gates; v.verdict = 'Pass'; v.rationale = _gates.map(function (g) { return g.reason; }).join(' '); }
   } catch (e) {}
+  // Keep-in-pipeline: prime-ineligibility (a set-aside the company can't prime) is a subcontract lead, not a
+  // drop. If that is the ONLY bar (no other hard gate fired), never leave it at Pass - surface it as Maybe so
+  // it stays in the pipeline for a teaming/sub pursuit.
+  if (v.prime_ineligible && v.verdict === 'Pass' && !(v.hard_gates && v.hard_gates.length)) v.verdict = 'Maybe';
   return v;
 }
 async function triageScreenZone(id) {
@@ -19162,7 +19186,7 @@ async function triageScreenZone(id) {
       + 'eligible (boolean: does the company\u2019s socioeconomic status qualify it to compete? true ONLY if it clearly qualifies - full-and-open, OR the set-aside type matches a certification the company holds per its profile; false if the set-aside is a socioeconomic type the company does NOT hold; null if the set-aside is "not stated" or cannot be determined - NEVER default to true when the set-aside is unknown), '
       + 'naics, naics_fit (one of "strong","partial","weak","unknown"), response_date (the date offers/quotes are DUE; when the base solicitation AND one or more amendments each carry a due/close date, return the LATEST one - an amendment pushes the deadline out and supersedes the earlier date; "not stated" if absent), days_remaining (integer days from today to that response_date, or null), '
       + 'value (rough dollar value or "not stated"), place_of_performance, contract_vehicle (the specific contract vehicle/IDIQ that quotes must be submitted under - e.g. "GSA MAS", "SeaPort-NxG", "CIO-SP4", "DISA SETI" - or "not stated"; "open" if explicitly open to any vehicle/open-market), vehicle_is_open (boolean: true if any vehicle or open-market is allowed, false if a specific vehicle is mandatory, null if not stated), already_awarded (boolean: true ONLY if the document shows the work is sole-source or already awarded to a NAMED contractor - e.g. an SF1449 pre-filled with a company as the contractor/offeror, or a sole-source/limited-sources justification naming a firm - else false), awardee (the named awardee/incumbent if already_awarded is true, else "not stated"), required_clearance (the facility or personnel security clearance required to perform - e.g. "Secret", "Top Secret", "TS/SCI" - or "none"/"not stated"), rationale (ONE short sentence: the single biggest reason for the verdict). '
-      + 'Decision guidance: Pursue ONLY when the company is clearly eligible AND the work fits its capabilities AND the timeline is workable; Pass when it is ineligible (a socioeconomic set-aside the company cannot hold), clearly outside its capabilities, or the deadline is past/impossible; Maybe when mixed or uncertain - INCLUDING when the set-aside is not stated (eligibility is unverified, so never Pursue; flag verifying the set-aside). A specific socioeconomic set-aside the company does not hold is an ELIGIBILITY BAR - return Pass, not Maybe.\n\n'
+      + 'Decision guidance: Pursue ONLY when the company is clearly eligible AND the work fits its capabilities AND the timeline is workable; Pass when the work is clearly outside its capabilities, the deadline is past/impossible, or a HARD non-set-aside gate bars it (a mandatory contract vehicle it lacks, a required clearance above its level, or the work is sole-source / already awarded); Maybe when mixed or uncertain - INCLUDING when the set-aside is not stated (eligibility unverified, so never Pursue; flag verifying it). PRIME-INELIGIBILITY IS NOT A DROP: when the ONLY bar is a set-aside the company cannot PRIME (a socioeconomic type it does not hold, or any restricted set-aside it cannot confirm), return Maybe and note the subcontract/teaming path - do NOT Pass for prime-ineligibility alone, since the opportunity stays pursuable as a subcontractor.\n\n'
       + (_saDet && _saDet.source !== 'default' ? 'AUTHORITATIVE SET-ASIDE (read directly from the document via ' + _saDet.source + '): ' + _saDet.type + '. Use this EXACT value for set_aside; do not re-derive it from the text.\n\n' : '')
       + 'COMPANY PROFILE:\n' + capText + '\n\n'
       + 'SOLICITATION EXCERPT:\n' + ex.text;
@@ -19980,6 +20004,9 @@ function _bnaEduShort(v) {
 // set-aside confers nothing either way; and ineligible is a floor, not a 2.
 const _BNA_SA_SPECIFIC = [
   // ORDER MATTERS: SDVOSB before VOSB (it contains "veteran-owned") and EDWOSB before WOSB.
+  // ISBEE first: Buy Indian Act / Indian Economic Enterprise set-aside (IHS/BIA) - a distinct restrictive
+  // category, NOT one of the SF-1449 socioeconomic checkboxes; only Indian Economic Enterprises may bid.
+  { key: 'isbee',   label: 'ISBEE (Buy Indian Act)', re: /indian small business economic enterprise|\bisbee\b|buy indian act|\bindian economic enterprise\b|352\.226-[467]/ },
   { key: 'sdvosb',  label: 'SDVOSB',  re: /service.?disabled|\bsdvosb\b|52\.219-27/ },
   { key: 'vosb',    label: 'VOSB',    re: /\bvosb\b|veteran.?owned/ },
   { key: '8a',      label: '8(a)',    re: /\b8\s*\(?\s*a\s*\)?\b|52\.219-18/ },
@@ -19992,7 +20019,7 @@ const _BNA_SA_SPECIFIC = [
 // an EDWOSB is also a WOSB, and every one of them is a small business.
 // How narrow the field is for each category. Higher = smaller pool of eligible competitors.
 // This encodes the regulatory nesting above, and is the whole basis of the tiered score.
-const _BNA_SA_TIER = { small: 0, '8a': 1, hubzone: 1, vosb: 1, wosb: 1, sdvosb: 2, edwosb: 2 };
+const _BNA_SA_TIER = { small: 0, '8a': 1, hubzone: 1, vosb: 1, wosb: 1, isbee: 1, sdvosb: 2, edwosb: 2 };
 
 // The categories the company DIRECTLY holds, before implication is applied. Needed
 // separately from the implied set: to know whether a firm is over-qualified for a set-aside
@@ -20010,7 +20037,7 @@ function _bnaSaHeldKeys(list) {
 
 const _BNA_SA_IMPLIES = {
   sdvosb: ['sdvosb', 'vosb', 'small'], vosb: ['vosb', 'small'],
-  '8a': ['8a', 'small'], hubzone: ['hubzone', 'small'],
+  '8a': ['8a', 'small'], hubzone: ['hubzone', 'small'], isbee: ['isbee', 'small'],
   edwosb: ['edwosb', 'wosb', 'small'], wosb: ['wosb', 'small'], small: ['small'],
 };
 
@@ -20098,14 +20125,26 @@ function _bnaSetAsideFit(setAside, cap) {
       return { score: 0, category: 'unrestricted', label: 'Unrestricted', eligible: true,
                rationale: 'Unrestricted / full and open \u2014 nothing bars you from bidding, but the field is everyone, including the large primes. On competitive position alone this is the worst case, so it scores 0 here. It does NOT block the pursuit: a strong fit elsewhere can still carry it.' };
     }
+    // WHITELIST default: the set-aside is STATED but is neither open, a plain small-business competition, nor
+    // a category recorded in the profile. If it reads as genuinely absent/undetermined -> neutral; otherwise
+    // it is a real restriction of a type the tool does not specifically model (a Buy-Indian ISBEE, a tribal
+    // 8(a), or any set-aside the Government invents later) -> DEFAULT ineligible to PRIME. The company cannot
+    // be shown to qualify, so it is never assumed eligible - and no new set-aside must be hard-coded for this
+    // to hold. Not a drop: a subcontract/teaming route stays open.
+    var _absent = /\bnot\s+stated|not\s+specified|unspecified|undetermined|\bunknown\b|to\s+be\s+determined|\btbd\b|^n\/?a$/i.test(sa);
+    var _restr = /set[-\s]?aside|reserved\s+(?:for|to)|restricted\s+to|limited\s+to|100\s*%|\bonly\b[^.]*\b(?:concern|enterprise|firm|entit|owned|business)|\bfor\b[^.]*\b(?:enterprise|concern)s?\b/i.test(sa);
+    if (_restr && !_absent) {
+      return { score: 0, category: 'ineligible-prime', label: raw.slice(0, 60), eligible: false, prime_ineligible: true,
+               rationale: 'Set aside for \u201c' + raw + '\u201d \u2014 a restricted category the company is not recorded as holding, so it is not eligible to PRIME (the safe default for any set-aside the tool does not specifically model). This is NOT a drop: a subcontract or teaming route may still be open, so keep it in the pipeline. Verify the exact set-aside and your eligibility on SAM.gov; if the company does hold this status, add it in Settings.' };
+    }
     return { score: 5, category: 'unknown', label: '', eligible: null,
              rationale: 'The set-aside is not stated in the documents, so it neither helps nor hurts. Confirm it on SAM.gov before committing \u2014 a socioeconomic set-aside would change this materially.' };
   }
 
   if (totalSB || openToAll) {
     if (!isSmall) {
-      return { score: 0, category: 'ineligible', label: 'Small business', eligible: false,
-               rationale: 'Set aside for small business, and the company profile is not recorded as a small business. Not eligible to prime.' };
+      return { score: 0, category: 'ineligible-prime', label: 'Small business', eligible: false, prime_ineligible: true,
+               rationale: 'Set aside for small business, and the company profile is not recorded as a small business \u2014 so it is not eligible to PRIME. Not a drop: a subcontract or teaming route under a small-business prime may still be open.' };
     }
     return { score: 7, category: 'small-business', label: openToAll && named.length > 1 ? 'Small business (multiple categories named)' : 'Total small business', eligible: true,
              rationale: 'Set aside for small business, which the company qualifies for \u2014 the large primes are excluded, so the win probability is materially better than an open competition. The field is still every small firm in this market rather than a narrow one, so it scores well without scoring top.' };
@@ -20140,10 +20179,10 @@ function _bnaSetAsideFit(setAside, cap) {
     return { score: 10, category: 'specific-held', label: want.label, eligible: true, heldVia: via,
              rationale: 'Set aside for ' + want.label + ', which the company holds. This is the strongest position available: the field is limited to firms with the same certification, and nothing narrower would qualify.' };
   }
-  return { score: 0, category: 'ineligible', label: want.label, eligible: false,
+  return { score: 0, category: 'ineligible-prime', label: want.label, eligible: false, prime_ineligible: true,
            rationale: 'Set aside for ' + want.label + ', which the company does not hold'
              + (direct_hint(cap, want) ? ' (' + direct_hint(cap, want) + ')' : '')
-             + '. Not eligible to prime \u2014 a teaming or subcontract route is the only way in.' };
+             + '. Not eligible to PRIME \u2014 but not a drop: a teaming or subcontract route is still open, so keep it in the pipeline.' };
 }
 
 function _saClassifyStr(str) {
@@ -20198,6 +20237,11 @@ function _setAsideFromText(text) {
   if (!s0.trim()) return null;
   // Collapse PDF line-wraps so a wrapped phrase ("...for Service\nDisabled Veteran-owned...") isn't truncated.
   var s = s0.replace(/\s+/g, ' ');
+  // ISBEE / Buy Indian Act set-aside (IHS/BIA): unambiguous whenever this language or the HHSAR
+  // 352.226-4/6/7 Indian-Economic-Enterprise clauses appear. It is NOT one of the SF-1449 socioeconomic
+  // checkboxes, so it can't be a stray-grid false positive; it is restrictive (only Indian Economic
+  // Enterprises may bid), so catching it here also drives the correct (in)eligibility downstream.
+  if (/indian small business economic enterprise|\bisbee\b|buy\s+indian\s+act|\bindian economic enterprise\b|352\.226-[467]\b/i.test(s)) return _saHit('ISBEE (Buy Indian Act)', 'Indian Small Business Economic Enterprise (ISBEE) / Buy Indian Act set-aside');
   // The SF-1449/SF-33 block-10 checkbox GRID extracts as a soup of EVERY set-aside label. Detect it by
   // counting DISTINCT set-aside FAMILIES near a match (using family regexes so "wosb" inside "edwosb" and
   // "veteran-owned" inside "service-disabled veteran-owned" don't double-count a single type). 4+ distinct
@@ -20229,7 +20273,20 @@ function _setAsideFromText(text) {
   while ((m1 = re1.exec(s)) !== null) {
     if (_isGrid(m1.index)) continue;
     if (/\bnot\s*$/.test(s.slice(Math.max(0, m1.index - 12), m1.index).toLowerCase())) continue;
-    var t1 = _classifyForCtx(m1[1]); if (t1 && (t1 === 'Total Small Business' || !_isClauseCtx(m1.index))) _hits.push({ t: t1, ev: m1[0] });
+    var t1 = _classifyForCtx(m1[1]);
+    if (t1 && (t1 === 'Total Small Business' || !_isClauseCtx(m1.index))) { _hits.push({ t: t1, ev: m1[0] }); continue; }
+    // An explicit "set aside for <X>" determination whose <X> is a substantive restriction we cannot classify
+    // (a Buy-Indian/tribal/native/Indian-nation/minority category, or any set-aside invented later) is
+    // captured as a restricted, UNRECOGNIZED type - so downstream eligibility defaults to ineligible-to-prime
+    // rather than silently assuming a biddable small-business set-aside. Guarded to a real restrictive noun
+    // phrase and never fired in clause-title context or the checkbox grid.
+    if (!t1 && !_isClauseCtx(m1.index)) {
+      var _x = String(m1[1]).replace(/\s+/g, ' ').trim();
+      if (_x.length >= 4 && /(economic enterprise|tribal|alaska native|native.american|native.owned|\bindian\b|minority.owned|disadvantaged.owned|disadvantaged business)/i.test(_x)
+          && !/small business|full\s+and\s+open|unrestricted|open competition/i.test(_x)) {
+        _hits.push({ t: _x.slice(0, 48) + ' set-aside', ev: m1[0], unrec: true });
+      }
+    }
   }
   // (b) "<known type> set-aside" phrasing (the type immediately before the words "set-aside").
   var re0 = /\b(total small business|service.?disabled veteran.?owned(?:\s+small business)?|economically.?disadvantaged women.?owned(?:\s+small business)?|women.?owned(?:\s+small business)?|veteran.?owned(?:\s+small business)?|hub.?zone(?:\s+small business)?|8\s*\(?\s*a\s*\)?|\bsdvosb\b|\bedwosb\b|\bwosb\b|\bvosb\b)\s+set[-\s]?aside\b/ig, m0;
@@ -20238,8 +20295,10 @@ function _setAsideFromText(text) {
     var t0 = _saClassifyStr(m0[1]); if (t0 && (t0 === 'Total Small Business' || !_isClauseCtx(m0.index))) _hits.push({ t: t0, ev: m0[0] });
   }
   if (_hits.length) {
-    var _spec = _hits.filter(function (h) { return h.t !== 'Total Small Business'; });
-    var _pick = _spec.length ? _spec[0] : _hits[0];
+    var _known = _hits.filter(function (h) { return !h.unrec && h.t !== 'Total Small Business'; });
+    var _unrec = _hits.filter(function (h) { return h.unrec; });
+    var _tsb = _hits.filter(function (h) { return h.t === 'Total Small Business'; });
+    var _pick = _known[0] || _unrec[0] || _tsb[0] || _hits[0];   // known type > unrecognized restriction > Total SB
     return _saHit(_pick.t, _pick.ev);
   }
   // (c) a SAM-style "Set-Aside Type:" / "Type of Set-Aside:" labeled FIELD.
