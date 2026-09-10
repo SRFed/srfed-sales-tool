@@ -3282,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '339';
+const APP_VERSION = '340';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -7693,7 +7693,68 @@ async function checkPdfPageCount(file) {
   }
 }
 
+function _isZipFile(f) {
+  // A dropped .zip archive - but NOT a docx/xlsx/pptx (those are zip-based documents we must keep intact).
+  if (!f) return false;
+  var name = String(f.name || ''), type = String(f.type || '');
+  if (/\.(docx|xlsx|xlsm|pptx|potx|dotx)$/i.test(name)) return false;
+  return /\.zip$/i.test(name) || /(^|\/)zip($|;)|x-zip/i.test(type);
+}
+function _anyZip(files) { for (var i = 0; i < (files || []).length; i++) if (_isZipFile(files[i])) return true; return false; }
+function _mimeForName(name) {
+  var n = String(name || '').toLowerCase();
+  if (/\.pdf$/.test(n)) return 'application/pdf';
+  if (/\.(txt|md)$/.test(n)) return 'text/plain';
+  if (/\.csv$/.test(n)) return 'text/csv';
+  if (/\.html?$/.test(n)) return 'text/html';
+  if (/\.docx$/.test(n)) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (/\.xlsx$/.test(n)) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (/\.pptx$/.test(n)) return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  if (/\.png$/.test(n)) return 'image/png';
+  if (/\.jpe?g$/.test(n)) return 'image/jpeg';
+  if (/\.gif$/.test(n)) return 'image/gif';
+  if (/\.webp$/.test(n)) return 'image/webp';
+  return 'application/octet-stream';
+}
+async function _expandZipFiles(files) {
+  // Transparently unzip any dropped .zip so its members behave exactly as if they had been dropped
+  // individually - PDFs stay PDFs, Excel stays Excel, etc. Nested zips are expanded recursively; OS junk
+  // (__MACOSX, .DS_Store, dot-underscore, hidden files) is dropped. If JSZip is missing or a zip is
+  // corrupt, the offending zip is simply skipped rather than crashing the drop.
+  var list = [].slice.call(files || []);
+  if (typeof JSZip === 'undefined' || !_anyZip(list)) return list;
+  var out = [];
+  for (var i = 0; i < list.length; i++) {
+    var f = list[i];
+    if (!_isZipFile(f)) { out.push(f); continue; }
+    try {
+      var zip = await JSZip.loadAsync(f);
+      var entries = [];
+      zip.forEach(function (path, entry) { entries.push([path, entry]); });
+      for (var j = 0; j < entries.length; j++) {
+        var path = entries[j][0], entry = entries[j][1];
+        if (entry.dir) continue;
+        if (/(^|\/)__MACOSX(\/|$)|(^|\/)\.DS_Store$|(^|\/)\._/.test(path)) continue;
+        var base = path.split('/').pop();
+        if (!base || /^\./.test(base)) continue;
+        var blob = await entry.async('blob');
+        var member = new File([blob], base, { type: _mimeForName(base) });
+        if (_isZipFile(member)) { var nested = await _expandZipFiles([member]); out = out.concat(nested); }
+        else out.push(member);
+      }
+    } catch (e) { /* corrupt/locked zip -> skip it, keep the rest of the drop working */ }
+  }
+  return out;
+}
 function addFilesToArray(newFiles, arr, listId) {
+  // A dropped .zip is unpacked in the background, then re-entered with its member files. Everything else
+  // (already-expanded files re-added internally) takes the fast synchronous path unchanged.
+  if (_anyZip(newFiles)) {
+    _expandZipFiles(newFiles)
+      .then(function (ex) { addFilesToArray(ex, arr, listId); })
+      .catch(function () { addFilesToArray([].slice.call(newFiles).filter(function (f) { return !_isZipFile(f); }), arr, listId); });
+    return;
+  }
   let added = 0;
   newFiles.forEach(f => {
     if (!arr.find(x => x.name === f.name && x.size === f.size)) { arr.push(f); added++; }
@@ -19014,6 +19075,12 @@ function _triageWireZone(z) {
   });
 }
 function _triageAddFiles(z, files) {
+  if (typeof _anyZip === 'function' && _anyZip(files)) {
+    _expandZipFiles(files)
+      .then(function (ex) { _triageAddFiles(z, ex); })
+      .catch(function () { _triageAddFiles(z, [].slice.call(files).filter(function (f) { return !_isZipFile(f); })); });
+    return;
+  }
   files.forEach(f => { if (!z.files.find(x => x.name === f.name && x.size === f.size)) z.files.push(f); });
   z.verdict = null; _triageRenderFiles(z); _triageRenderVerdict(z);
 }
@@ -19213,14 +19280,12 @@ async function triageScreenZone(id) {
     try { z.verdict = JSON.parse(a >= 0 && b2 >= 0 ? rawTxt.slice(a, b2 + 1) : rawTxt); }
     catch (err) { z.verdict = { error: 'Could not parse the screen result. Try again, or deep-dive.' }; }
     if (_saDet && z.verdict && !z.verdict.error) {
-      if (_saDet.source !== 'default') { z.verdict.set_aside = _saDet.type; z.verdict.set_aside_evidence = _saDet.evidence; delete z.verdict.set_aside_unverified; }
-      else {
-        // Detector fell back (no marked box readable on any layer). The screening model's OWN
-        // set-aside guess is exactly the unreliable signal here - SF-1449 checkbox-label soup makes
-        // it read WOSB or Unrestricted - so discard it and use the conservative, biddable default
-        // (Total Small Business) flagged to verify. Fail safe: biddable + verify, never a wrong type.
-        z.verdict.set_aside = _saDet.type; z.verdict.set_aside_evidence = _saDet.evidence; z.verdict.set_aside_unverified = true;
-      }
+      // Reconcile the detector with the model's own read: a SPECIFIC type from either side beats the
+      // detector's conservative default, so a correctly-identified SDVOSB (etc.) is no longer overwritten
+      // by "Total Small Business" merely because no checkbox was machine-readable. (Shared with BNA.)
+      var _res = _resolveSetAside(z.verdict.set_aside, _saDet);
+      z.verdict.set_aside = _res.type; z.verdict.set_aside_evidence = _res.evidence;
+      if (_res.unverified) z.verdict.set_aside_unverified = true; else delete z.verdict.set_aside_unverified;
     }
     // Uniformity: correct the screening rationale prose to the deterministic set-aside too, so the
     // "Why" line can't state a set-aside type (e.g. WOSB read off checkbox-label soup) that disagrees
@@ -23872,24 +23937,45 @@ function _bnaCorrectSetAsideProse(text, correctType) {
   out = out.replace(new RegExp('(' + alt + ')(\\s?-\\s?only\\b)', 'gi'), function (whole, typ, suf) { return _isRight(typ) ? whole : target + suf; });
   return out;
 }
+function _resolveSetAside(aiRaw, det) {
+  // Reconcile the model's own holistic read of the set-aside (aiRaw - extracted the same way it reads the
+  // agency, place of performance, NAICS, etc.) with the deterministic detector (det). Guiding rule: a
+  // SPECIFIC determination beats a generic/absent one, whichever side has it. The detector's conservative
+  // DEFAULT ("Total Small Business", source 'default') only means "no checkbox/text/mark was machine-
+  // readable" - it must NOT overwrite a specific type the model read from the text. (That was the bug: a
+  // correctly-read SDVOSB was being clobbered to Total Small Business because no box scanned.)
+  var ai = String(aiRaw == null ? '' : aiRaw).trim();
+  function specific(t) {
+    var s = String(t == null ? '' : t).toLowerCase().trim();
+    if (!s) return false;
+    if (/^(not stated|not specified|unknown|n\/?a|none|unrestricted|full and open|total small business)/.test(s)) return false;
+    return (typeof _BNA_SA_SPECIFIC !== 'undefined' && _BNA_SA_SPECIFIC.some(function (c) { return c.re.test(s); }))
+        || /set[-\s]?aside|reserved\s+(?:for|to)|restricted\s+to|100\s*%|\bisbee\b|buy\s+indian/.test(s);
+  }
+  var detType = det && det.type, detSpecific = det && det.source !== 'default' && specific(detType);
+  // 1) detector affirmatively READ a specific type (checkbox field / explicit text / vision) -> authoritative
+  if (detSpecific) return { type: detType, evidence: det.evidence, source: det.source, unverified: false };
+  // 2) the model named a specific type -> trust it (a specific read beats a generic fallback); flag to verify
+  if (specific(ai)) return { type: ai, evidence: 'Identified from the solicitation text; verify on SAM.gov.', source: 'model', unverified: true };
+  // 3) detector affirmatively read a NON-specific determination (Unrestricted, or a small-business box) -> use it
+  if (det && det.source !== 'default' && detType) return { type: detType, evidence: det.evidence, source: det.source, unverified: !!det.unverified };
+  // 4) neither side is specific -> the model's own value if it has one, else the conservative default; verify
+  if (ai && !/^(not stated|not specified|unknown|n\/?a|none)$/i.test(ai)) return { type: ai, evidence: 'Identified from the solicitation; verify on SAM.gov.', source: 'model', unverified: true };
+  return { type: (detType || 'Total Small Business'), evidence: (det && det.evidence) || 'defaulting to the broadest reading; verify on SAM.gov.', source: (det && det.source) || 'default', unverified: true };
+}
 function _bnaApplySetAside(intel, det) {
   // Apply the deterministic set-aside detector result to the BNA opportunity intel, authoritative over the
   // model's guess (uniform with Triage). A confident hit (form field / text / vision) OVERRIDES; the
   // conservative default only FILLS an unstated value and flags it unverified - it never overwrites a
   // specific type the model may have read from context.
   if (!intel || !det || !det.type) return intel;
-  var cur = String(intel.set_aside == null ? '' : intel.set_aside);
-  if (det.source !== 'default') { intel.set_aside = det.type; intel._set_aside_source = det.source; delete intel._set_aside_unverified; if (typeof _correctSetAsideEverywhere === 'function') _correctSetAsideEverywhere(intel, det.type); }
-  else {
-    // Detector fell back: no set-aside box was readable on ANY layer (form field, text, or vision).
-    // Uniform with Triage - DISCARD any specific socioeconomic type the model guessed (on a standard
-    // form that guess is the checkbox-LABEL soup, the unreliable signal) and use the conservative,
-    // biddable default (Total Small Business) flagged to verify. Record source 'default' so the scoring
-    // sync propagates this SAME value, and correct the prose so nothing downstream (the prime/sub
-    // verdict, certs, risks, pursuit recommendation) reads a set-aside the value no longer claims.
-    intel.set_aside = det.type; intel._set_aside_source = 'default'; intel._set_aside_unverified = true;
-    if (typeof _correctSetAsideEverywhere === 'function') _correctSetAsideEverywhere(intel, det.type);
-  }
+  // Reconcile the detector with the model's own extracted set_aside (uniform with Triage via _resolveSetAside):
+  // a SPECIFIC type from EITHER side beats the detector's conservative default, so a correctly-read socio-
+  // economic set-aside is never overwritten by "Total Small Business" just because no checkbox was readable.
+  var _res = _resolveSetAside(intel.set_aside, det);
+  intel.set_aside = _res.type; intel._set_aside_source = _res.source;
+  if (_res.unverified) intel._set_aside_unverified = true; else delete intel._set_aside_unverified;
+  if (typeof _correctSetAsideEverywhere === 'function') _correctSetAsideEverywhere(intel, _res.type);
   return intel;
 }
 function _reconcileSetAsideCerts(intel) {
@@ -25023,20 +25109,27 @@ function bnaSetValueBasis(basis) {
 function _valueBasisToggleHtml(intel) {
   if (!intel) return '';
   var _tcv = String(intel.total_contract_value || '');
-  var hasVal = (/\d/.test(_tcv) && !/^\s*\[inferred\]/i.test(_tcv)) || !!intel._found_award_value;
+  // Show the toggle whenever there is ANY dollar figure to anchor to (a found award, a stated value, OR an
+  // estimate) together with a quoter-proposed team - those are the two different ways to size the value, so
+  // there is something to toggle between. (Previously an [Inferred] estimate was excluded, which is why the
+  // toggle almost never appeared.) A government-stated workload table is authoritative -> nothing to toggle.
+  var hasVal = /\d/.test(_tcv) || !!intel._found_award_value;
   if (!hasVal) return '';
-  if (String(intel.loe_basis || '').toLowerCase() === 'government') return '';   // a stated workload table is authoritative - nothing to toggle
+  if (String(intel.loe_basis || '').toLowerCase() === 'government') return '';
   if (!(Array.isArray(intel.labor_categories) && intel.labor_categories.length)) return '';
   var team = intel._value_basis === 'team';
+  var hasFound = !!intel._found_award_value;
+  var valLbl = hasFound ? 'Found award' : 'Value in docs';
+  var valWord = hasFound ? 'found award' : 'value in the documents';
   var src = intel.value_source_name ? (' (' + escHtml(intel.value_source_name) + ')') : (intel._found_award_source ? (' (' + escHtml(intel._found_award_source) + ')') : '');
   var btn = function (mode, label, on) { return '<button onclick="bnaSetValueBasis(\'' + mode + '\')" style="padding:6px 13px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:' + (on ? 'var(--blue)' : '#fff') + ';color:' + (on ? '#fff' : 'var(--blue)') + '">' + label + '</button>'; };
   return '<div style="border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:14px;background:#f8fafc">'
     + '<div style="font-size:12px;font-weight:800;letter-spacing:0.03em;color:var(--text);margin-bottom:7px">VALUE BASIS</div>'
-    + '<div style="display:inline-flex;border:1px solid var(--mid-blue);border-radius:8px;overflow:hidden">' + btn('found', 'Found award', !team) + '<span style="width:1px;background:var(--mid-blue)"></span>' + btn('team', 'Proposed team', team) + '</div>'
+    + '<div style="display:inline-flex;border:1px solid var(--mid-blue);border-radius:8px;overflow:hidden">' + btn('found', valLbl, !team) + '<span style="width:1px;background:var(--mid-blue)"></span>' + btn('team', 'Proposed team', team) + '</div>'
     + '<div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
     + (team
-        ? 'Sizing by the <strong>proposed team</strong> \u2014 base year, total and FTE come from the roles below, and the Pricing tab re-prices to match. Use this when the new SOW is larger or differently sized than the incumbent\u2019s prior award' + src + '.'
-        : 'Anchored to the <strong>found award</strong>' + src + ' \u2014 the team is sized to that value, so base year, total and FTE all tie to it, and the Pricing tab re-prices to match. Switch to <strong>Proposed team</strong> if the new SOW is bigger.')
+        ? 'Sizing by the <strong>proposed team</strong> \u2014 base year, total and FTE come from the roles below, and the Pricing tab re-prices to match. Use this when the new SOW is larger or differently sized than the ' + valWord + src + '.'
+        : 'Anchored to the <strong>' + valWord + '</strong>' + src + ' \u2014 the team is sized to that value, so base year, total and FTE all tie to it, and the Pricing tab re-prices to match. Switch to <strong>Proposed team</strong> if the new SOW is bigger.')
     + '</div></div>';
 }
 function renderOpportunityIntel(intel, container) {
