@@ -1852,7 +1852,10 @@
           <button onclick="triageScreenAll()" style="padding:10px 20px;font-size:13.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">▶ Screen all opportunities</button>
           <button onclick="triageAddZone()" style="padding:10px 16px;font-size:13px;font-weight:600;background:#fff;color:var(--blue);border:1px solid var(--mid-blue);border-radius:8px;cursor:pointer">+ Add opportunity</button>
         </div>
-        <div id="triageZones"></div>
+        <div style="border-top:3px solid var(--mid-blue);margin-top:8px;padding-top:16px">
+          <div style="font-size:12px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:var(--blue);margin-bottom:12px">Opportunities to screen</div>
+          <div id="triageZones"></div>
+        </div>
       </div>
 
       <div id="triageListView" style="display:none">
@@ -3279,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '333';
+const APP_VERSION = '337';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19037,7 +19040,7 @@ function _triageVerdictHtml(z) {
   if (!v) return '';
   if (v.error) return '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--error)">' + escHtml(v.error) + '</div>';
   const _er = (typeof escHtml === 'function') ? escHtml(v.eligible_reason || '') : '';
-  const elig = (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#991b1b;font-weight:700">\u2717 not eligible</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '') + (v.set_aside_unverified && v.eligible !== null ? ' <span style="color:#92400e;font-weight:600" title="Set-aside could not be read from the document; defaulted to the broadest reading - verify on SAM.gov">\u26a0 verify set-aside</span>' : '');
+  const elig = v.set_aside_unverified ? ' <span style="color:#92400e;font-weight:600" title="Set-aside was not stated in the documents; the tool assumed the broadest reading (Total Small Business) so the opportunity stays biddable. Eligibility depends on the real set-aside \u2014 verify on SAM.gov before relying on it.">\u26a0 not stated in docs \u2014 verify set-aside</span>' : (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#991b1b;font-weight:700">\u2717 not eligible</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '');
   const fit = v.naics_fit ? (' <span style="color:var(--muted)">(' + escHtml(v.naics_fit) + ' fit)</span>') : '';
   const days = (v.days_remaining != null && v.days_remaining !== '') ? (' <span style="color:var(--muted)">(' + escHtml(String(v.days_remaining)) + ' days left)</span>') : '';
   return '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">'
@@ -24043,7 +24046,7 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
                   return !s || /^\[inferred\]/i.test(s) || /^(not stated( in documents)?|n\/a|none|tbd|unknown)$/i.test(s);
                 };
                 var _vApplied = false;
-                if (_hasNum(found.total_contract_value) && _infOrMiss(intel.total_contract_value)) { intel.total_contract_value = String(found.total_contract_value).trim(); _vApplied = true; }
+                if (_hasNum(found.total_contract_value) && _infOrMiss(intel.total_contract_value)) { intel.total_contract_value = String(found.total_contract_value).trim(); intel._found_award_value = String(found.total_contract_value).trim(); intel._found_award_url = found.source_url || ''; intel._found_award_source = found.source_name || ''; _vApplied = true; }
                 if (_hasNum(found.base_year_value) && _infOrMiss(intel.base_year_value)) { intel.base_year_value = String(found.base_year_value).trim(); _vApplied = true; }
                 if (_vApplied) {
                   intel.value_source_url = found.source_url;
@@ -24597,6 +24600,14 @@ function reconcileStaffing(intel) {
     const dollars = v => { const s = String(v == null ? '' : v); const m = s.match(/([\d,]+(?:\.\d+)?)\s*([mbk])?/i); if (!m) return 0; let n = parseFloat(m[1].replace(/,/g, '')); if (isNaN(n)) return 0; const suf = (m[2] || '').toLowerCase(); if (suf === 'k') n *= 1e3; else if (suf === 'm') n *= 1e6; else if (suf === 'b') n *= 1e9; return n; };
     const isInf = v => /^\s*\[inferred\]/i.test(String(v == null ? '' : v));
     const hasNum = v => /\d/.test(String(v == null ? '' : v));
+    const _teamMode = intel._value_basis === 'team';   // user toggled to size by the proposed team, ignoring any found/stated value
+    // Round-trip safe: in 'found' mode, if a prior 'team' pass overwrote the total with a team-derived
+    // estimate, restore the real found/stated value so the money anchor is recovered.
+    if (!_teamMode && intel._found_award_value && (isInf(intel.total_contract_value) || !hasNum(intel.total_contract_value))) {
+      intel.total_contract_value = intel._found_award_value;
+      if (intel._found_award_url) intel.value_source_url = intel._found_award_url;
+      if (intel._found_award_source) intel.value_source_name = intel._found_award_source;
+    }
 
     let cats = (Array.isArray(intel.labor_categories) ? intel.labor_categories : [])
       .map(c => (c && typeof c === 'object') ? Object.assign({}, c) : { lcat: String(c || '') })
@@ -24681,7 +24692,7 @@ function reconcileStaffing(intel) {
       const tr = pxValueRange((isInf(intel.total_contract_value) || !hasNum(intel.total_contract_value)) ? '' : intel.total_contract_value);
       if (tr.ok && periods > 0) { byRange = { ok: true, low: tr.low / periods, high: tr.high / periods, isRange: tr.isRange }; anchorFrom = 'stated total \u00f7 ' + periods + ' periods'; _totalRange = tr; }
     }
-    const statedHard = byRange.ok && byRange.low > 0;
+    const statedHard = byRange.ok && byRange.low > 0 && !_teamMode;
     const anchorMode = pxAnchorMode();
     const anchorTarget = pxAnchorPoint(byRange, anchorMode);
     // A government workload-hours table is authoritative staffing (tier A) and is NEVER scaled away — even
@@ -24689,12 +24700,13 @@ function reconcileStaffing(intel) {
     // anchor, keeping LCATs + FTEs + dollars consistent under uniform A -> B -> C precedence.
     const scaleTeam = statedHard && source !== 'government-workload';
 
-    if (scaleTeam && labor > 0 && anchorTarget > 0) {   // proposed team + a value anchor: scale the team to it
+    const _moneyAnchored = scaleTeam && labor > 0 && anchorTarget > 0;
+    if (_moneyAnchored) {   // proposed team + a value anchor: scale the team TO the money (Choice A)
       const k = anchorTarget / labor; cats.forEach(c => c._fte = c._fte * k); labor = laborOf();
     }
     // #30: a PROPOSED team ALWAYS lands on whole FTEs — fractions only where the Government stipulates
     // them. Government-stated workload hours are left exactly as stated and never snapped.
-    if (source !== 'government-workload') {
+    if (source !== 'government-workload' && !_moneyAnchored) {
       const _int = pxIntegerFte(cats.map(c => c._fte), cats.reduce((s, c) => s + c._fte, 0));
       cats.forEach((c, i) => { c._fte = _int[i]; });
       labor = laborOf();
@@ -24754,13 +24766,34 @@ function reconcileStaffing(intel) {
       const _iso = _d.getUTCFullYear() + '-' + String(_d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(_d.getUTCDate()).padStart(2, '0');
       intel.last_possible_performance_date = '[Inferred] ' + _iso;
     })();
-    if (statedHard) {                        // keep the hard base (stated OR incumbent-sourced) verbatim; derive the total from IT
-      if (!hasNum(intel.total_contract_value) || isInf(intel.total_contract_value)) intel.total_contract_value = '[Inferred] ~' + fmt(anchorVal * contractYears);
-      // The stated figure is left verbatim — it is the Government's number, not ours — but
-      // a partial base period gets the derived period figure appended so the reader is not
-      // left to assume an annual figure covers a period that is shorter than a year.
-      if (_partial) intel.base_year_value = String(intel.base_year_value || '').trim()
-        + ' \u2014 \u2248' + fmt(anchorVal * _baseFrac) + ' over the ' + _bl.months + '-month base period';
+    if (statedHard) {                        // ONE value frame: base-year x contract-years = total, team SIZED to the money
+      const _tcvHard = hasNum(intel.total_contract_value) && !isInf(intel.total_contract_value);
+      if (!_tcvHard) intel.total_contract_value = '[Inferred] ~' + fmt(anchorVal * contractYears);
+      const _trT = _tcvHard ? pxValueRange(intel.total_contract_value) : null;
+      const _annualBase = (anchorFrom !== 'base-year' && _trT && _trT.ok && contractYears > 0) ? (_trT.low / contractYears) : anchorVal;
+      if (anchorFrom !== 'base-year' && _tcvHard) {
+        // Anchor came from the TOTAL, not a stated base-year, so re-derive base = total / contract-years:
+        // base x contract-years = total. The actual/stated TOTAL stays verbatim; base inherits its
+        // provenance (no "[Inferred]" when sourced), so base and total show the same source badge.
+        const _lead = intel.value_source_url ? '~' : '[Inferred] ~';
+        intel.base_year_value = _partial
+          ? (_lead + fmt(_annualBase * _baseFrac) + ' for the ' + _bl.months + '-month base period (\u2248' + fmt(_annualBase) + '/yr annualised)')
+          : (_lead + fmt(_annualBase) + '/yr');
+      } else if (_partial) {
+        intel.base_year_value = String(intel.base_year_value || '').trim()
+          + ' \u2014 \u2248' + fmt(anchorVal * _baseFrac) + ' over the ' + _bl.months + '-month base period';
+      }
+      if (_moneyAnchored) {
+        // Say WHY: the figures are sized to the found/stated value. Flag when that value supports materially
+        // fewer FTE than the scope's role count (a signal the new SOW may be larger than the incumbent's).
+        const _fteR = Math.round(totalFte * 10) / 10;
+        const _blR = Math.round(totalFte > 0 ? labor / (totalFte * HPF) : 0);
+        const _srcTxt = intel.value_source_name ? ('the incumbent\u2019s actual prior award (via ' + intel.value_source_name + ')') : 'the Government-stated value';
+        const _totTxt = _tcvHard ? String(intel.total_contract_value).replace(/^\s*\[[^\]]*\]\s*/, '') : ('~' + fmt(_annualBase * contractYears));
+        const _mismatch = (cats.length >= 2 && _fteR > 0 && _fteR < cats.length * 0.75);
+        intel.award_value_rationale = 'DERIVED FROM ' + _srcTxt + '. The proposed team is SIZED TO that value: base year \u2248' + fmt(_annualBase * _baseFrac) + ' at a blended ~$' + _blR + '/hr fully-loaded \u2248 ' + _fteR + ' FTE, carried across ' + contractYears + ' contract year' + (contractYears === 1 ? '' : 's') + ' to the ' + _totTxt + ' total.'
+          + (_mismatch ? ' \u26A0 The scope names ' + cats.length + ' roles, but this value supports only \u2248' + _fteR + ' FTE \u2014 the new SOW may be larger than the incumbent\u2019s prior award. Use the Value basis toggle above to size by the proposed team instead.' : '');
+      }
     } else {                                 // derive the value from the reconciled team - always ties out
       // For a partial base period the headline figure is what the BASE PERIOD costs. The
       // annual rate is still shown, but explicitly as a rate rather than as a period value.
@@ -24879,7 +24912,8 @@ function _bnaOriginBadge(kind) {
               govest: ['Gov. estimate', '#ecfeff', '#67e8f9', '#0e7490'],
               inferred: ['Inferred', '#fef9c3', '#fde047', '#92400e'],
               proposed: ['Proposed', '#ffedd5', '#fdba74', '#9a3412'],
-              ai: ['AI summary', '#ffedd5', '#fdba74', '#9a3412'] };
+              ai: ['AI summary', '#ffedd5', '#fdba74', '#9a3412'],
+              assumed: ['Not stated \u2014 assumed', '#fef9c3', '#fde047', '#92400e'] };
   const c = M[kind]; if (!c) return '';
   return '<span style="font-size:10px;font-weight:700;white-space:nowrap;display:inline-block;background:' + c[1] + ';border:1px solid ' + c[2] + ';border-radius:8px;padding:1px 6px;color:' + c[3] + ';margin-left:6px">' + c[0] + '</span>';
 }
@@ -24895,6 +24929,56 @@ function _bnaFormatPoP(s) {
     const m = seg.match(/^([^:]+?):\s*(.+)$/);
     return m ? { label: m[1].trim(), range: m[2].trim() } : { label: '', range: seg };
   });
+}
+function _pricingSyncValueBasis(intel) {
+  // Live re-price: push the toggled basis into the Pricing model so its FTE/hours/total follow the same
+  // decision as the Opportunity Details value story. Safe by design: skip when nothing is priced yet, when
+  // the price model belongs to a DIFFERENT opportunity, or when its FTE basis is Government-stated/directed
+  // (authoritative - never overridden by an offeror sizing choice). Rate/GSA/market pins are preserved by
+  // pricingApplyAutoBuild (it re-attaches them by role name); the team is simply resized to the basis.
+  try {
+    if (typeof pricingModel !== 'object' || !pricingModel) return;
+    if (!Array.isArray(pricingModel.lcats) || !pricingModel.lcats.length) return;   // nothing priced yet
+    if (typeof pricingOppMismatch === 'function') { var mm = pricingOppMismatch(); if (mm && mm.kind === 'mismatch') return; }   // belongs to another opportunity
+    if (pricingModel.fteSource === 'stated' || pricingModel.directedLabor || pricingModel.workloadSource === 'government') return;   // a Government/stated basis is authoritative
+    var cats = (intel && Array.isArray(intel.labor_categories)) ? intel.labor_categories : [];
+    var mix = cats.map(function (c) {
+      return { role_name: String((c && (c.lcat || c.labor_category)) || '').trim(),
+               fte: parseFloat(String(((c && c.base_year_fte) != null) ? c.base_year_fte : '').replace(/[^0-9.]/g, '')) || 0 };
+    }).filter(function (m) { return m.role_name && m.fte > 0; });
+    if (!mix.length) return;
+    pricingModel.fteSource = 'estimated'; pricingModel.statedFteTotal = null; pricingModel.directedLabor = false;
+    if (typeof pricingApplyAutoBuild === 'function') pricingApplyAutoBuild({ labor_mix: mix });
+    if (typeof pricingRenderAll === 'function') pricingRenderAll();
+  } catch (e) {}
+}
+function bnaSetValueBasis(basis) {
+  var intel = (typeof window !== 'undefined') ? window._lastBnaIntel : null;
+  if (!intel) return;
+  intel._value_basis = (basis === 'team') ? 'team' : 'found';
+  if (typeof reconcileStaffing === 'function') reconcileStaffing(intel);
+  _pricingSyncValueBasis(intel);   // re-price the Pricing tab live to match the chosen basis
+  var host = ((typeof window !== 'undefined') ? window._bnaIntelBody : null) || ((typeof document !== 'undefined') ? document.getElementById('bnaIntelBody') : null);
+  if (host && typeof renderOpportunityIntel === 'function') renderOpportunityIntel(intel, host);
+}
+function _valueBasisToggleHtml(intel) {
+  if (!intel) return '';
+  var _tcv = String(intel.total_contract_value || '');
+  var hasVal = (/\d/.test(_tcv) && !/^\s*\[inferred\]/i.test(_tcv)) || !!intel._found_award_value;
+  if (!hasVal) return '';
+  if (String(intel.loe_basis || '').toLowerCase() === 'government') return '';   // a stated workload table is authoritative - nothing to toggle
+  if (!(Array.isArray(intel.labor_categories) && intel.labor_categories.length)) return '';
+  var team = intel._value_basis === 'team';
+  var src = intel.value_source_name ? (' (' + escHtml(intel.value_source_name) + ')') : (intel._found_award_source ? (' (' + escHtml(intel._found_award_source) + ')') : '');
+  var btn = function (mode, label, on) { return '<button onclick="bnaSetValueBasis(\'' + mode + '\')" style="padding:6px 13px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:' + (on ? 'var(--blue)' : '#fff') + ';color:' + (on ? '#fff' : 'var(--blue)') + '">' + label + '</button>'; };
+  return '<div style="border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:14px;background:#f8fafc">'
+    + '<div style="font-size:12px;font-weight:800;letter-spacing:0.03em;color:var(--text);margin-bottom:7px">VALUE BASIS</div>'
+    + '<div style="display:inline-flex;border:1px solid var(--mid-blue);border-radius:8px;overflow:hidden">' + btn('found', 'Found award', !team) + '<span style="width:1px;background:var(--mid-blue)"></span>' + btn('team', 'Proposed team', team) + '</div>'
+    + '<div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
+    + (team
+        ? 'Sizing by the <strong>proposed team</strong> \u2014 base year, total and FTE come from the roles below, and the Pricing tab re-prices to match. Use this when the new SOW is larger or differently sized than the incumbent\u2019s prior award' + src + '.'
+        : 'Anchored to the <strong>found award</strong>' + src + ' \u2014 the team is sized to that value, so base year, total and FTE all tie to it, and the Pricing tab re-prices to match. Switch to <strong>Proposed team</strong> if the new SOW is bigger.')
+    + '</div></div>';
 }
 function renderOpportunityIntel(intel, container) {
   try { if (typeof window !== 'undefined') window._bnaIntelBody = container; } catch (e) {}
@@ -25119,11 +25203,12 @@ function renderOpportunityIntel(intel, container) {
       }
       if (_OPP_DATE_KEYS[f.key] && !isMissing) displayVal = _fmtOppDate(displayVal);   // #33
       const isUrl = /^https?:\/\//i.test(displayVal);
-      const valStyle = isGovEst ? 'color:#0e7490;font-style:italic' : (isInferred || isProposed) ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
+      const _saAssumed = (f.key === 'set_aside') && intel && intel._set_aside_unverified && !isMissing;
+      const valStyle = _saAssumed ? 'color:#92400e;font-style:italic' : isGovEst ? 'color:#0e7490;font-style:italic' : (isInferred || isProposed) ? 'color:#92400e;font-style:italic' : isMissing ? 'color:var(--muted);font-style:italic' : 'color:var(--text)';
       const _aiField = !!_BNA_AI_AUTHORED[f.key];
       const isAiSummary = !isGovEst && !isInferred && !isProposed && !isMissing && _aiField;
       const isStated = !isGovEst && !isInferred && !isProposed && !isMissing && !_aiField;
-      const badge = _bnaOriginBadge(isGovEst ? 'govest' : isInferred ? 'inferred' : isProposed ? 'proposed' : isAiSummary ? 'ai' : isStated ? 'govstated' : '');
+      const badge = _saAssumed ? _bnaOriginBadge('assumed') : _bnaOriginBadge(isGovEst ? 'govest' : isInferred ? 'inferred' : isProposed ? 'proposed' : isAiSummary ? 'ai' : isStated ? 'govstated' : '');
       const valContent = isUrl
         ? `<a href="${escHtml(displayVal)}" target="_blank" style="color:var(--blue)">${escHtml(displayVal)}</a>`
         : `<span style="${valStyle}">${escHtml(displayVal)}</span>`;
@@ -25178,7 +25263,7 @@ function renderOpportunityIntel(intel, container) {
   };
 
   const _sbNr = (typeof _staffingBanner === 'function') ? _staffingBanner(intel) : '';
-  container.innerHTML = _sbNr + SECTIONS.map((sec, si) => {
+  container.innerHTML = _valueBasisToggleHtml(intel) + _sbNr + SECTIONS.map((sec, si) => {
     const rowsHtml = sec.fields.map(renderField).join('');
     if (!rowsHtml) return '';
     return '<div style="margin-top:' + (si === 0 ? 2 : 16) + 'px">' +
