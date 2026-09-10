@@ -3282,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '340';
+const APP_VERSION = '341';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19107,7 +19107,7 @@ function _triageVerdictHtml(z) {
   if (!v) return '';
   if (v.error) return '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--error)">' + escHtml(v.error) + '</div>';
   const _er = (typeof escHtml === 'function') ? escHtml(v.eligible_reason || '') : '';
-  const elig = v.set_aside_unverified ? ' <span style="color:#92400e;font-weight:600" title="Set-aside was not stated in the documents; the tool assumed the broadest reading (Total Small Business) so the opportunity stays biddable. Eligibility depends on the real set-aside \u2014 verify on SAM.gov before relying on it.">\u26a0 not stated in docs \u2014 verify set-aside</span>' : (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#b45309;font-weight:700">\u2717 not eligible to prime \u00b7 sub path</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '');
+  const elig = v.set_aside_unverified ? ' <span style="color:#92400e;font-weight:600" title="Set-aside was not stated in the documents; the tool defaulted to unrestricted / full and open (anyone may bid) so the opportunity stays biddable. Eligibility depends on the real set-aside \u2014 verify on SAM.gov before relying on it.">\u26a0 not stated in docs \u2014 verify set-aside</span>' : (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#b45309;font-weight:700">\u2717 not eligible to prime \u00b7 sub path</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '');
   const fit = v.naics_fit ? (' <span style="color:var(--muted)">(' + escHtml(v.naics_fit) + ' fit)</span>') : '';
   const days = (v.days_remaining != null && v.days_remaining !== '') ? (' <span style="color:var(--muted)">(' + escHtml(String(v.days_remaining)) + ' days left)</span>') : '';
   return '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">'
@@ -20450,7 +20450,7 @@ async function detectSetAside(files, apiKey, preExtractedText) {
     try { var f3 = await _setAsideFromVision(pdfs[0], apiKey); if (f3 && f3.type) return f3; } catch (e) {}
   }
   // Conservative fallback: broadest reading, explicitly UNVERIFIED (never a guessed socioeconomic type).
-  return { type: 'Total Small Business', evidence: 'No set-aside checkbox, field, or mark could be read - defaulting to the broadest reading; verify on SAM.gov.', source: 'default', unverified: true };
+  return { type: 'Unrestricted', evidence: 'No set-aside checkbox, field, or mark could be read - defaulting to unrestricted / full and open (biddable); verify on SAM.gov.', source: 'default', unverified: true };
 }
 function evaluateBnaGates(opp, cap) {
   opp = opp || {}; cap = cap || {};
@@ -23959,9 +23959,13 @@ function _resolveSetAside(aiRaw, det) {
   if (specific(ai)) return { type: ai, evidence: 'Identified from the solicitation text; verify on SAM.gov.', source: 'model', unverified: true };
   // 3) detector affirmatively read a NON-specific determination (Unrestricted, or a small-business box) -> use it
   if (det && det.source !== 'default' && detType) return { type: detType, evidence: det.evidence, source: det.source, unverified: !!det.unverified };
-  // 4) neither side is specific -> the model's own value if it has one, else the conservative default; verify
-  if (ai && !/^(not stated|not specified|unknown|n\/?a|none)$/i.test(ai)) return { type: ai, evidence: 'Identified from the solicitation; verify on SAM.gov.', source: 'model', unverified: true };
-  return { type: (detType || 'Total Small Business'), evidence: (det && det.evidence) || 'defaulting to the broadest reading; verify on SAM.gov.', source: (det && det.source) || 'default', unverified: true };
+  // 4) Nothing specific, and no affirmative machine-read on either side: the set-aside CANNOT be determined.
+  //    The default is now unrestricted / full and open - the safe, biddable assumption (anyone may bid, and
+  //    the field is everyone, so it is also the most conservative competitive read). We deliberately do NOT
+  //    keep a bare model guess such as "Total Small Business" here: with no supporting text (which the
+  //    detector already scanned for), that guess would falsely imply the large primes are excluded.
+  if (/unrestricted|full.?and.?open|open competition/i.test(ai)) return { type: 'Unrestricted', evidence: 'Identified as unrestricted / full and open; verify on SAM.gov.', source: 'model', unverified: true };
+  return { type: 'Unrestricted', evidence: (det && det.source === 'default' && det.evidence) || 'Set-aside not found in the documents - defaulting to unrestricted / full and open (biddable); verify on SAM.gov.', source: 'default', unverified: true };
 }
 function _bnaApplySetAside(intel, det) {
   // Apply the deterministic set-aside detector result to the BNA opportunity intel, authoritative over the
@@ -25396,7 +25400,7 @@ function renderOpportunityIntel(intel, container) {
     // Phase 6: when the deterministic detector could not read the set-aside and fell back to the broadest
     // default, flag it here on the BNA card exactly as Triage does - an unverified default is visible, not silent.
     if (f.key === 'set_aside' && intel && intel._set_aside_unverified) {
-      displayHtml += ' <span style="font-size:10.5px;font-weight:600;color:#92400e;white-space:nowrap" title="Set-aside could not be definitively read from the documents (no checkbox field, authoritative text, or visible mark) - defaulted to the broadest reading. Verify on SAM.gov before bidding.">\u26a0 verify set-aside</span>';
+      displayHtml += ' <span style="font-size:10.5px;font-weight:600;color:#92400e;white-space:nowrap" title="Set-aside could not be definitively read from the documents (no checkbox field, authoritative text, or visible mark) - defaulted to unrestricted / full and open. Verify on SAM.gov before bidding.">\u26a0 verify set-aside</span>';
     }
     const isWide = f.key === 'labor_categories' || f.key === 'certifications_required';
 
