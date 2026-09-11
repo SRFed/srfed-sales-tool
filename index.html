@@ -3282,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '341';
+const APP_VERSION = '342';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -25132,8 +25132,8 @@ function _valueBasisToggleHtml(intel) {
     + '<div style="display:inline-flex;border:1px solid var(--mid-blue);border-radius:8px;overflow:hidden">' + btn('found', valLbl, !team) + '<span style="width:1px;background:var(--mid-blue)"></span>' + btn('team', 'Proposed team', team) + '</div>'
     + '<div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
     + (team
-        ? 'Sizing by the <strong>proposed team</strong> \u2014 base year, total and FTE come from the roles below, and the Pricing tab re-prices to match. Use this when the new SOW is larger or differently sized than the ' + valWord + src + '.'
-        : 'Anchored to the <strong>' + valWord + '</strong>' + src + ' \u2014 the team is sized to that value, so base year, total and FTE all tie to it, and the Pricing tab re-prices to match. Switch to <strong>Proposed team</strong> if the new SOW is bigger.')
+        ? 'Sizing by the <strong>proposed team</strong> \u2014 base year, total and FTE come from the roles below, and the Pricing tab re-prices to match. Use this when the new SOW is a different size (larger or smaller) than the ' + valWord + src + '.'
+        : 'Anchored to the <strong>' + valWord + '</strong>' + src + ' \u2014 the team is sized to that value, so base year, total and FTE all tie to it, and the Pricing tab re-prices to match. Switch to <strong>Proposed team</strong> if the new SOW is a different size \u2014 larger or smaller.')
     + '</div></div>';
 }
 function renderOpportunityIntel(intel, container) {
