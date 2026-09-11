@@ -3282,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '342';
+const APP_VERSION = '344';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19279,10 +19279,11 @@ async function triageScreenZone(id) {
     const a = rawTxt.indexOf('{'), b2 = rawTxt.lastIndexOf('}');
     try { z.verdict = JSON.parse(a >= 0 && b2 >= 0 ? rawTxt.slice(a, b2 + 1) : rawTxt); }
     catch (err) { z.verdict = { error: 'Could not parse the screen result. Try again, or deep-dive.' }; }
-    if (_saDet && z.verdict && !z.verdict.error) {
-      // Reconcile the detector with the model's own read: a SPECIFIC type from either side beats the
-      // detector's conservative default, so a correctly-identified SDVOSB (etc.) is no longer overwritten
-      // by "Total Small Business" merely because no checkbox was machine-readable. (Shared with BNA.)
+    if (z.verdict && !z.verdict.error) {
+      // v344: the deterministic detector is the SINGLE source, uniform with BNA. Resolve ALWAYS (even when
+      // _saDet is null because detection threw) so the screening model's own set_aside guess - which lifts a
+      // socioeconomic type off the SF-1449 block-10 label menu - is DROPPED, not left standing. A null detector
+      // resolves to the Unrestricted / verify default; a real form-field / text read still wins as before.
       var _res = _resolveSetAside(z.verdict.set_aside, _saDet);
       z.verdict.set_aside = _res.type; z.verdict.set_aside_evidence = _res.evidence;
       if (_res.unverified) z.verdict.set_aside_unverified = true; else delete z.verdict.set_aside_unverified;
@@ -20381,8 +20382,11 @@ function _setAsideFromText(text) {
     if (/^(none|n\/?a|not\s+applicable|not\s+set|un-?restricted|full\s+and\s+open)\b/i.test(val)) return _saHit('Unrestricted', m3[0]);
     var tv = _classifyForCtx(val); if (tv) return _saHit(tv, m3[0]);
   }
-  // (e) a plain unrestricted / full-and-open STATEMENT (narrow - must NOT fire on FAR boilerplate).
-  if (/\b(?:this\s+(?:acquisition|requirement|procurement|solicitation|award)\s+is\s+(?:being\s+)?(?:conducted\s+|solicited\s+)?(?:as\s+)?(?:un-?restricted|full\s+and\s+open)|full\s+and\s+open\s+competition|unrestricted\s+competition)\b/i.test(s)) return _saHit('Unrestricted', 'unrestricted / full-and-open');
+  // (e) a plain unrestricted / full-and-open STATEMENT (narrow - must NOT fire on FAR boilerplate, and must NOT
+  //     read the SF-1449/SF-33 block-10 "THIS ACQUISITION IS UNRESTRICTED OR SET ASIDE" TEMPLATE line as a
+  //     determination: that clause is the checkbox grid, so it is grid-guarded exactly like every other branch).
+  var _reU = /\b(?:this\s+(?:acquisition|requirement|procurement|solicitation|award)\s+is\s+(?:being\s+)?(?:conducted\s+|solicited\s+)?(?:as\s+)?(?:un-?restricted|full\s+and\s+open)|full\s+and\s+open\s+competition|unrestricted\s+competition)\b/ig, _mU;
+  while ((_mU = _reU.exec(s)) !== null) { if (_isGrid(_mU.index)) continue; return _saHit('Unrestricted', 'unrestricted / full-and-open'); }
   return null;
 }
 function _saParseVisionResult(data) {
@@ -23954,9 +23958,22 @@ function _resolveSetAside(aiRaw, det) {
   }
   var detType = det && det.type, detSpecific = det && det.source !== 'default' && specific(detType);
   // 1) detector affirmatively READ a specific type (checkbox field / explicit text / vision) -> authoritative
-  if (detSpecific) return { type: detType, evidence: det.evidence, source: det.source, unverified: false };
-  // 2) the model named a specific type -> trust it (a specific read beats a generic fallback); flag to verify
-  if (specific(ai)) return { type: ai, evidence: 'Identified from the solicitation text; verify on SAM.gov.', source: 'model', unverified: true };
+  if (detSpecific) {
+    // v343: a specific SOCIOECONOMIC type read only from a rendered image (vision, Layer 3) is an
+    // INFERENCE from a checkbox we merely SAW - not a document-STATED determination - so flag it
+    // "verify" and never present it as fact. A form-field VALUE (Layer 1) or an explicit text / SAM
+    // field / active clause (Layer 2) stays confident. The printed SF-1449 block-10 menu is never the
+    // answer; only a genuine mark is, and an image-read mark is confirmed on SAM.gov before it is asserted.
+    var _visInferred = det.source === 'vision' && detType !== 'Total Small Business' && detType !== 'Unrestricted';
+    return { type: detType, evidence: det.evidence, source: det.source, unverified: _visInferred };
+  }
+  // 2) A bare MODEL guess of a specific socioeconomic set-aside is NOT trusted on its own. The extraction model
+  //    routinely lifts WOSB/SDVOSB/EDWOSB/HUBZone/8(a) straight off the SF-1449 block-10 checkbox LABEL menu
+  //    (printed on every form regardless of the real set-aside), so a SPECIFIC type is asserted ONLY from the
+  //    deterministic detector - an affirmative read (step 1) or an affirmative non-specific read (step 3). With
+  //    no deterministic support we fall through to the honest Unrestricted / verify default rather than inventing
+  //    a restrictive type the documents never marked. (A genuine set-aside in the prose is caught by the detector's
+  //    own text layer; the model's UNRESTRICTED / full-and-open reading is still honored at step 4 below.)
   // 3) detector affirmatively read a NON-specific determination (Unrestricted, or a small-business box) -> use it
   if (det && det.source !== 'default' && detType) return { type: detType, evidence: det.evidence, source: det.source, unverified: !!det.unverified };
   // 4) Nothing specific, and no affirmative machine-read on either side: the set-aside CANNOT be determined.
@@ -23972,7 +23989,12 @@ function _bnaApplySetAside(intel, det) {
   // model's guess (uniform with Triage). A confident hit (form field / text / vision) OVERRIDES; the
   // conservative default only FILLS an unstated value and flags it unverified - it never overwrites a
   // specific type the model may have read from context.
-  if (!intel || !det || !det.type) return intel;
+  if (!intel) return intel;
+  // v344: the extraction model is NEVER a trustworthy source of the set-aside - it lifts socioeconomic types
+  // straight off the SF-1449 block-10 checkbox LABEL menu. So a NULL / typeless detector result is treated as
+  // the Unrestricted / verify DEFAULT (which _resolveSetAside then uses to DROP the model's bare guess) instead
+  // of a no-op that would leave the model's value standing. Applied uniformly (BNA + HubSpot + Proposal briefing).
+  if (!det || !det.type) det = { type: 'Unrestricted', source: 'default', unverified: true, evidence: 'Set-aside not read from the documents (no marked checkbox, authoritative text, or visible mark) - defaulting to unrestricted / full and open (biddable); verify on SAM.gov.' };
   // Reconcile the detector with the model's own extracted set_aside (uniform with Triage via _resolveSetAside):
   // a SPECIFIC type from EITHER side beats the detector's conservative default, so a correctly-read socio-
   // economic set-aside is never overwritten by "Total Small Business" just because no checkbox was readable.
@@ -24046,17 +24068,26 @@ async function runOpportunityIntel() {
   // actual solicitation documents (not just the extracted fields). Self-contained — read only.
   window._bnaRfpContent = rfpContent;
   await extractOpportunityIntel(rfpContent, apiKey);
-  // Uniformity fix: the deterministic set-aside detector (Layer 1 form-field VALUES -> Layer 2 text ->
-  // Layer 3 vision) is authoritative over the model's set_aside guess in BNA, exactly as it is in Triage.
-  // It reads the RAW files (real checkbox state), so a checkbox-driven set-aside is READ, not guessed.
-  try {
-    if (typeof detectSetAside === 'function' && bnaFiles && bnaFiles.length && window._lastBnaIntel) {
-      const _saDet = await detectSetAside(bnaFiles, apiKey, _saSrcText || null);
+  // SET-ASIDE = DETERMINISTIC SINGLE SOURCE, FAIL-SAFE (v344). The extraction model must NEVER supply the
+  // set_aside value - it reliably hallucinates a socioeconomic type (e.g. WOSB) off the SF-1449 block-10
+  // checkbox LABEL menu. So DISCARD the model's specific guess up front and populate the field ONLY from the
+  // deterministic detector (Layer 1 form-field VALUES -> Layer 2 authoritative text -> Layer 3 vision). If the
+  // detector cannot run or THROWS, _bnaApplySetAside applies the Unrestricted / verify default - never the
+  // model's guess. Everything downstream (scoring, assumptions, certs, briefing) reads
+  // window._lastBnaIntel.set_aside, so this one deterministic value is uniform tool-wide.
+  if (window._lastBnaIntel) {
+    const _aiSa = String(window._lastBnaIntel.set_aside == null ? '' : window._lastBnaIntel.set_aside);
+    // keep ONLY an explicit model "unrestricted / full and open" reading as a resolver hint; drop any specific guess
+    window._lastBnaIntel.set_aside = /unrestricted|full.?and.?open|open competition/i.test(_aiSa) ? _aiSa : '';
+    let _saDet = null;
+    try { if (typeof detectSetAside === 'function' && bnaFiles && bnaFiles.length) _saDet = await detectSetAside(bnaFiles, apiKey, _saSrcText || null); }
+    catch (e) { _saDet = null; }
+    try {
       if (typeof _bnaApplySetAside === 'function') _bnaApplySetAside(window._lastBnaIntel, _saDet);
       if (typeof _reconcileSetAsideCerts === 'function') _reconcileSetAsideCerts(window._lastBnaIntel);
       if (typeof renderOpportunityIntel === 'function' && window._bnaIntelBody) renderOpportunityIntel(window._lastBnaIntel, window._bnaIntelBody);
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
   if (typeof refreshBnaQaAvailability === 'function') refreshBnaQaAvailability();
   // Persist the analysis, bound to the exact documents it was derived from.
   try { if (typeof _anaSave === 'function') _anaSave(); } catch (e) {}
