@@ -3282,7 +3282,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '344';
+const APP_VERSION = '347';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -20077,8 +20077,8 @@ const _BNA_SA_SPECIFIC = [
   { key: 'vosb',    label: 'VOSB',    re: /\bvosb\b|veteran.?owned/ },
   { key: '8a',      label: '8(a)',    re: /\b8\s*\(?\s*a\s*\)?\b|52\.219-18/ },
   { key: 'hubzone', label: 'HUBZone', re: /hub.?zone|52\.219-3\b/ },
-  { key: 'edwosb',  label: 'EDWOSB',  re: /\bedwosb\b|economically.?disadvantaged.?women|52\.219-29/ },
-  { key: 'wosb',    label: 'WOSB',    re: /\bwosb\b|women.?owned|52\.219-30/ },
+  { key: 'edwosb',  label: 'EDWOSB',  re: /\bedwosb\b|economically.?disadvantaged.?wom[ae]n|52\.219-29/ },
+  { key: 'wosb',    label: 'WOSB',    re: /\bwosb\b|wom[ae]n.?owned|52\.219-30/ },
 ];
 
 // Holding a certification satisfies the categories it implies: an SDVOSB is also a VOSB,
@@ -20333,6 +20333,23 @@ function _setAsideFromText(text) {
     return false;
   }
   function _classifyForCtx(val) { var t = _saClassifyStr(val); if (!t && /small.?business/i.test(val)) t = 'Total Small Business'; return t; }
+  // Multi-set-aside notice guard (v345): an umbrella / multi-constellation notice can DECLARE several
+  // DIFFERENT set-asides (e.g. an SSSV-style BPA family - Financial=SDVOSB, Security=WOSB, Engineering=WOSB).
+  // Silently taking the FIRST "Set-Aside:" line and asserting it - with a confident eligibility - is wrong for
+  // the notice as a whole (and it can read SDVOSB, which the company IS eligible for, off a notice whose other
+  // constellations are WOSB). Scan EVERY labeled declaration ("Set-Aside: <type>", "<type> Set-Aside", "set
+  // aside for <type>"), grid- and clause-guarded, collect DISTINCT specific families, and if 2+ appear return a
+  // "multiple - verify" result (unverified) so no single set-aside - and no single eligibility - is asserted.
+  var _saDeclFams = {}, _reMulti = /(?:set[-\s]?aside\s*[:\u2012\u2013\u2014\-]\s*|set[-\s]?aside\s+(?:100%\s+)?(?:for|to)\s+)([^\n\r]{2,90})|\b(sdvosb|edwosb|wosb|vosb|hub-?zone|8\s*\(?\s*a\s*\)?|service.?disabled|wom[ae]n.?owned|economically.?disadvantaged|veteran.?owned)\s+(?:small\s+business\s+)?set[-\s]?aside\b/ig, _mMulti;
+  while ((_mMulti = _reMulti.exec(s)) !== null) {
+    if (_isGrid(_mMulti.index) || _isClauseCtx(_mMulti.index)) continue;
+    var _segMulti = _mMulti[1] || _mMulti[2] || '', _famMulti = _saClassifyStr(_segMulti);
+    if (_famMulti && _famMulti !== 'Total Small Business') _saDeclFams[_famMulti] = true;
+  }
+  var _multiFams = Object.keys(_saDeclFams);
+  if (_multiFams.length >= 2) {
+    return { type: 'Multiple set-asides \u2014 verify which applies', evidence: 'This notice declares multiple set-asides (' + _multiFams.join(', ') + ') - likely a multi-constellation / umbrella notice; verify which one applies to the specific RFQ before treating any as the set-aside.', source: 'text', unverified: true };
+  }
   var _hits = [];
   // (a) an explicit "set aside (100%) for <type>" SENTENCE - skip the grid + negated FAR boilerplate.
   var re1 = /set[-\s]?aside\s+(?:100%\s+)?for\s+([^\n\r.;()]{2,90})/ig, m1;
@@ -20355,7 +20372,7 @@ function _setAsideFromText(text) {
     }
   }
   // (b) "<known type> set-aside" phrasing (the type immediately before the words "set-aside").
-  var re0 = /\b(total small business|service.?disabled veteran.?owned(?:\s+small business)?|economically.?disadvantaged women.?owned(?:\s+small business)?|women.?owned(?:\s+small business)?|veteran.?owned(?:\s+small business)?|hub.?zone(?:\s+small business)?|8\s*\(?\s*a\s*\)?|\bsdvosb\b|\bedwosb\b|\bwosb\b|\bvosb\b)\s+set[-\s]?aside\b/ig, m0;
+  var re0 = /\b(total small business|service.?disabled veteran.?owned(?:\s+small business)?|economically.?disadvantaged wom[ae]n.?owned(?:\s+small business)?|wom[ae]n.?owned(?:\s+small business)?|veteran.?owned(?:\s+small business)?|hub.?zone(?:\s+small business)?|8\s*\(?\s*a\s*\)?|\bsdvosb\b|\bedwosb\b|\bwosb\b|\bvosb\b)\s+set[-\s]?aside\b/ig, m0;
   while ((m0 = re0.exec(s)) !== null) {
     if (_isGrid(m0.index)) continue;
     var t0 = _saClassifyStr(m0[1]); if (t0 && (t0 === 'Total Small Business' || !_isClauseCtx(m0.index))) _hits.push({ t: t0, ev: m0[0] });
@@ -20375,7 +20392,7 @@ function _setAsideFromText(text) {
     var tt = _classifyForCtx(v); if (tt) return _saHit(tt, typed[0]);
   }
   // (d) a bare "Set-Aside: <type>" line - ONLY when it is NOT the checkbox grid.
-  var re3 = /\bset[-\s]?aside\s*[:\-]\s*([^\n\r]{1,60})/ig, m3;
+  var re3 = /\bset[-\s]?aside\s*[:\-]\s*([^\n\r]{1,90})/ig, m3;
   while ((m3 = re3.exec(s)) !== null) {
     if (_isGrid(m3.index)) continue;
     var val = String(m3[1]).trim();
@@ -23071,6 +23088,21 @@ async function runBidNoBid() {
         ? `\n\n--- COMPANY CAPABILITY STATEMENT (authoritative company-provided narrative; use it to inform technical_capability and past_performance scoring) ---\n${CLIENT_CONFIG.capabilityStatementText.trim()}`
         : '');
 
+    // v347: the SCORING model must reason EVERY field from the authoritative (Opportunity-Details
+    // detector) set-aside, not re-guess it off the SF-1449 block-10 checkbox menu. Hand it the canonical
+    // set-aside AND the deterministic eligibility conclusion so the rationales cannot invert.
+    const _bnaCanonSa = (typeof window !== 'undefined' && window._lastBnaIntel && window._lastBnaIntel.set_aside) ? String(window._lastBnaIntel.set_aside) : '';
+    let _bnaCanonSaBlock = '';
+    if (_bnaCanonSa) {
+      const _bnaCanonCo = CLIENT_CONFIG.companyShortName;
+      const _bnaCanonFit = (typeof _bnaSetAsideFit === 'function') ? _bnaSetAsideFit(_bnaCanonSa, _cap) : null;
+      const _bnaCanonEligLine = (_bnaCanonFit && _bnaCanonFit.eligible === true)
+        ? `${_bnaCanonCo} HOLDS a qualifying certification for this set-aside and IS eligible to prime it - reflect that in the eligibility, competition and strategic rationales: the set-aside NARROWS the field in ${_bnaCanonCo}'s favor, and you must NOT state ${_bnaCanonCo} cannot prime for a set-aside or certification reason.`
+        : ((_bnaCanonFit && _bnaCanonFit.eligible === false)
+          ? `${_bnaCanonCo} does NOT hold a qualifying certification for this set-aside, so it cannot prime on set-aside grounds - reflect that consistently (a teaming or subcontract route may still exist).`
+          : `Whether ${_bnaCanonCo} holds this set-aside is not established here; do not assert prime ineligibility on set-aside grounds without a stated barrier.`);
+      _bnaCanonSaBlock = `CANONICAL SET-ASIDE (AUTHORITATIVE - overrides anything the raw forms appear to show): this opportunity's operative set-aside was ALREADY determined from the solicitation as "${_bnaCanonSa}". Treat "${_bnaCanonSa}" as the ONLY set-aside anywhere in your output - the set_aside field AND every factor rationale, every risk, every win_strategy item, and the summary. Standard forms (SF-1449 block 10, SF-33, SF-1442) print WOSB / EDWOSB / SDVOSB / HUBZone / 8(a) / Small-Business as checkbox LABELS on every form regardless of the real set-aside, and PDF extraction misplaces the checkmark - so NEVER describe any other label as "the set-aside", "the designation" or "the label"; the operative set-aside is "${_bnaCanonSa}". ${_bnaCanonEligLine}\n\n`;
+    }
     content.push({ type: 'text', text:
       `You are a senior government BD analyst conducting a bid/no-bid evaluation for ${CLIENT_CONFIG.companyFullName}.\n\n` +
       `COMPANY PROFILE:\n${companyProfile}\n\n` +
@@ -23082,7 +23114,7 @@ async function runBidNoBid() {
       (someSolUnreadable
         ? `WARNING: One or more solicitation files could not be read (marked UNREADABLE above). Base your analysis ONLY on readable content. Do NOT guess the set-aside type, NAICS, value, clearance, or scope from an unreadable file.\n\n`
         : '') +
-      `ABSOLUTE RULE — NO FABRICATION: Only state facts that appear in the readable solicitation text. NEVER invent or assume the set-aside type, NAICS code, place of performance, clearance level, or incumbent (these are factual and must be taken from the documents). EXCEPTION - contract SIZE: you MAY give a reasoned order-of-magnitude ESTIMATE of the contract VALUE for prime-capacity sizing, but it MUST be clearly labeled with a "~est " prefix and never presented as a stated figure. If the solicitation does not state something, say so explicitly in the rationale (e.g. "set-aside not stated in available documents") rather than guessing. A Sources Sought notice often has NO set-aside determined yet — do not assume SDVOSB or any other set-aside unless it is explicitly written.\n\n` +
+      `ABSOLUTE RULE — NO FABRICATION: Only state facts that appear in the readable solicitation text. NEVER invent or assume the set-aside type, NAICS code, place of performance, clearance level, or incumbent (these are factual and must be taken from the documents). EXCEPTION - contract SIZE: you MAY give a reasoned order-of-magnitude ESTIMATE of the contract VALUE for prime-capacity sizing, but it MUST be clearly labeled with a "~est " prefix and never presented as a stated figure. If the solicitation does not state something, say so explicitly in the rationale (e.g. "set-aside not stated in available documents") rather than guessing. A Sources Sought notice often has NO set-aside determined yet — do not assume SDVOSB or any other set-aside unless it is explicitly written.\n\n` + _bnaCanonSaBlock +
       `TASK: Read the solicitation carefully, then (A) extract key opportunity facts, (B) estimate how much of the work ${CLIENT_CONFIG.companyShortName} can self-perform, and (C) score 6 fit factors from 0 to 10.\n\n` +
       `SCORING SCALE — USE THE FULL 0-10 RANGE AND SPREAD YOUR SCORES. Clustering everything at 5-7 is a failure mode: most factors should land below 4 or above 7. Score genuine strengths high and genuine weaknesses low even when the evidence is mixed.\n` +
       `  0-2 = severe deficiency / near-disqualifying weakness\n` +
@@ -23268,6 +23300,24 @@ async function runBidNoBid() {
     // Store extracted opportunity facts + scope coverage for the decisive engine
     window._bnaOpp = result.opportunity || {};
     window._bnaScopeCoverage = (result.scope_coverage != null) ? Number(result.scope_coverage) : null;
+
+    // v347: set-aside is ONE canonical fact from the Opportunity-Details detector. The SCORING model
+    // re-guesses it (SF-1449 block-10 checkbox-label soup reads WOSB on an SDVOSB notice), and that guess
+    // otherwise floors the eligibility gate to 0 and leaks a wrong set-aside into the factor rationales /
+    // summary / risks. Sync the structured field AND scrub the prose to the authoritative value HERE -
+    // before the eligibility gate consumes _bnaOpp and before anything renders.
+    if (window._lastBnaIntel && window._lastBnaIntel.set_aside) {
+      const _canonSa = window._lastBnaIntel.set_aside;
+      const _canonSrc = window._lastBnaIntel._set_aside_source || 'default';
+      const _canonUnv = !!window._lastBnaIntel._set_aside_unverified;
+      const _syncSa = (o) => { if (!o) return; o.set_aside = _canonSa; o._set_aside_source = _canonSrc; if (_canonUnv) { o._set_aside_unverified = true; } else { delete o._set_aside_unverified; delete o.set_aside_unverified; } };
+      if (result && result.opportunity) _syncSa(result.opportunity);
+      _syncSa(window._bnaOpp);
+      if (typeof _correctSetAsideEverywhere === 'function') {
+        _correctSetAsideEverywhere(result, _canonSa);
+        if (result && result.opportunity) _correctSetAsideEverywhere(result.opportunity, _canonSa);
+      }
+    }
     if (typeof refreshBnaQaAvailability === 'function') refreshBnaQaAvailability();   // Phase 7: reveal the ad-hoc Q&A box once an opportunity is analyzed
     // Eligibility is now a GATE, not an AI-scored fit factor. Derive its bar from the
     // prime gate so the legacy display stays coherent (the verdict uses gates directly).
@@ -23367,24 +23417,8 @@ async function runBidNoBid() {
 
     document.getElementById('bnaResults').style.display = 'block';
     document.getElementById('bnaResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // Correct any set-aside the scoring model named in prose to the authoritative (detector) value.
-    // The set-aside is ONE canonical fact from the Opportunity-Details detector. The SCORING model
-    // re-guesses it (SF-1449 checkbox-label soup can read WOSB), and _bnaOpp OVERRIDES _lastBnaIntel
-    // in the merged opp that Step 3 / the eligibility gate consume - so OVERWRITE the structured
-    // field here, not just the prose, or Step 3 keeps classifying a Total-SB/SDVOSB opp as the
-    // model's guess. (This is the issue-9 fix: Step 3 was reading the un-corrected scoring field.)
-    if (window._lastBnaIntel && window._lastBnaIntel.set_aside) {
-      const _canonSa = window._lastBnaIntel.set_aside;
-      const _canonSrc = window._lastBnaIntel._set_aside_source || 'default';
-      const _canonUnv = !!window._lastBnaIntel._set_aside_unverified;
-      const _syncSa = (o) => { if (!o) return; o.set_aside = _canonSa; o._set_aside_source = _canonSrc; if (_canonUnv) { o._set_aside_unverified = true; } else { delete o._set_aside_unverified; delete o.set_aside_unverified; } };
-      if (result && result.opportunity) _syncSa(result.opportunity);
-      _syncSa(window._bnaOpp);
-      if (typeof _correctSetAsideEverywhere === 'function') {
-        _correctSetAsideEverywhere(result, _canonSa);
-        if (result && result.opportunity) _correctSetAsideEverywhere(result.opportunity, _canonSa);
-      }
-    }
+    // Set-aside was already synced to the authoritative detector value + prose scrubbed above (v347),
+    // BEFORE the eligibility gate and render - nothing to re-correct here.
     window._lastBnaResult  = result;
     window._lastBnaContent = content.slice(0, -1);
     window._lastBnaApiKey  = apiKey;
@@ -23909,7 +23943,8 @@ function _correctSetAsideEverywhere(obj, type) {
     if (skip[k]) return;
     var val = obj[k];
     if (typeof val === 'string') obj[k] = _bnaCorrectSetAsideProse(val, type);
-    else if (Array.isArray(val)) obj[k] = val.map(function (x) { return typeof x === 'string' ? _bnaCorrectSetAsideProse(x, type) : x; });
+    else if (Array.isArray(val)) obj[k] = val.map(function (x) { return typeof x === 'string' ? _bnaCorrectSetAsideProse(x, type) : (x && typeof x === 'object' ? _correctSetAsideEverywhere(x, type) : x); });
+    else if (val && typeof val === 'object') _correctSetAsideEverywhere(val, type);
   });
   return obj;
 }
@@ -23965,7 +24000,7 @@ function _resolveSetAside(aiRaw, det) {
     // field / active clause (Layer 2) stays confident. The printed SF-1449 block-10 menu is never the
     // answer; only a genuine mark is, and an image-read mark is confirmed on SAM.gov before it is asserted.
     var _visInferred = det.source === 'vision' && detType !== 'Total Small Business' && detType !== 'Unrestricted';
-    return { type: detType, evidence: det.evidence, source: det.source, unverified: _visInferred };
+    return { type: detType, evidence: det.evidence, source: det.source, unverified: !!det.unverified || _visInferred };
   }
   // 2) A bare MODEL guess of a specific socioeconomic set-aside is NOT trusted on its own. The extraction model
   //    routinely lifts WOSB/SDVOSB/EDWOSB/HUBZone/8(a) straight off the SF-1449 block-10 checkbox LABEL menu
