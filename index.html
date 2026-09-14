@@ -1015,6 +1015,7 @@
         <div id="gsbMinPct" style="font-size:11px;font-weight:700;color:var(--blue);flex-shrink:0;min-width:28px;text-align:right">0%</div>
         <div id="gsbMinEta" style="font-size:11px;color:var(--muted);flex-shrink:0"></div>
       </div>
+      <button id="gsbMinStopBtn" onclick="event.stopPropagation();stopAnalysis()" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;color:#dc2626;padding:1px 8px;line-height:1.4;flex-shrink:0" title="Stop this analysis">⏹ Stop</button>
       <span style="font-size:11px;color:var(--muted);padding:1px 6px;border:1px solid var(--border);border-radius:4px;flex-shrink:0">▼ show</span>
     </div>
     <!-- Full expanded view -->
@@ -1025,6 +1026,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="status-title" id="gsbTitle" style="font-size:13px;font-weight:700"></div>
             <div style="display:flex;gap:6px;flex-shrink:0">
+              <button id="gsbStopBtn" onclick="stopAnalysis()" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;color:#dc2626;padding:1px 9px;line-height:1.4" title="Stop this analysis">⏹ Stop</button>
               <button onclick="_gsbMinimize()" 
                 style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px;color:var(--muted);padding:1px 7px;line-height:1.4" title="Minimize">▲ hide</button>
               <button onclick="_gsbHide()" 
@@ -3282,7 +3284,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '347';
+const APP_VERSION = '348';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -9544,6 +9546,7 @@ async function runGeneration() {
 
   _genStartTime = null; _clearEtaTimer(); // reset ETA timer
   setRunning(true);
+  _analysisBegin('Generating your proposal');
   document.getElementById('downloadCard').style.display = 'none';
 
   // Estimate total time: ~90s for briefing + ~60s per volume (avg) + ~20s tone profiling if used
@@ -10192,8 +10195,11 @@ Do not over-format — most content stays as prose. The goal is a document a per
     // Reset the approve button if generation was started from the outline panel
     const approveBtn = document.querySelector('#outlinePreviewPanel .btn-primary');
     if (approveBtn) { approveBtn.disabled = false; approveBtn.innerHTML = '✅ Approve &amp; Generate Proposal'; }
+    _analysisEnd();
 
   } catch(err) {
+    _analysisEnd();
+    if (_isAbortError(err)) { setRunning(false); const _ab = document.querySelector('#outlinePreviewPanel .btn-primary'); if (_ab) { _ab.disabled = false; _ab.innerHTML = '✅ Approve &amp; Generate Proposal'; } showStatus('warn', 'Generation stopped', 'You stopped proposal generation. You can start it again when ready.'); return; }
     showStatus('error', 'Generation failed', err.message);
     console.error(err);
     setRunning(false);
@@ -20990,6 +20996,7 @@ async function runBnaCoverageGap() {
   const _gapBtn = document.getElementById('bnaGapRunBtn');
   const _gapOrig = _gapBtn ? _gapBtn.innerHTML : '';
   if (_gapBtn) { _gapBtn.disabled = true; _gapBtn.innerHTML = '<span class="spinner-auto" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Analyzing\u2026'; }
+  _analysisBegin('Coverage-gap analysis');
   if (status) {
     status.style.display = 'block'; status.style.color = 'var(--muted)';
     status.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:10px"><span class="spinner-dark" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></span><span>Analyzing coverage against your capability profile\u2026 this can take up to ~90 seconds.</span></div><div class="indet-bar" style="margin:10px auto 0;max-width:440px"></div>';
@@ -21001,9 +21008,11 @@ async function runBnaCoverageGap() {
     if (status) status.style.display = 'none';
     renderBnaCoverageGap(data);
   } catch (e) {
+    if (_isAbortError(e)) { showMsg('Analysis stopped. Run it again when ready.'); if (empty) empty.style.display = 'block'; return; }
     showMsg('Coverage-gap analysis failed: ' + (e && e.message ? e.message : e), true);
     if (empty) empty.style.display = 'block';
   } finally {
+    _analysisEnd(true);
     if (_gapBtn) { _gapBtn.disabled = false; _gapBtn.innerHTML = _gapOrig; }
   }
 }
@@ -21254,6 +21263,7 @@ async function runBnaQa() {
   if (answer) answer.style.display = 'none';
   if (status) { status.style.display = 'block'; const t = document.getElementById('bnaQaStatusText'); if (t) t.textContent = 'Reading the solicitation\u2026'; }
   try {
+    _analysisBegin('Answering your question');
     const ctx = _bnaQaContext();
     const promptText =
       'You are helping a government-contracting professional understand a specific solicitation they are evaluating. ' +
@@ -21279,9 +21289,11 @@ async function runBnaQa() {
       answer.innerHTML = '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.6">' + _bnaQaMd(text) + '</div>';
     }
   } catch (e) {
+    if (_isAbortError(e)) { if (status) status.style.display = 'none'; if (answer) { answer.style.display = 'block'; answer.innerHTML = '<div style="font-size:12.5px;color:var(--muted)">Stopped. Ask again when ready.</div>'; } return; }
     if (status) status.style.display = 'none';
     showErr('Something went wrong: ' + (e && e.message ? e.message : e));
   } finally {
+    _analysisEnd(true);
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
   }
 }
@@ -21365,6 +21377,7 @@ async function askToolHelp() {
   if (answer) answer.style.display = 'none';
   if (status) { status.style.display = 'block'; const t = document.getElementById('toolHelpStatusText'); if (t) t.textContent = 'Looking it up\u2026'; }
   try {
+    _analysisBegin('Answering your question');
     const promptText =
       'You are the built-in help assistant for a single-page, browser-based U.S. Government contracting proposal-and-pricing tool. ' +
       'Answer the user\'s question about HOW THE TOOL ITSELF works \u2014 its features, where to find things, how to set it up, and the logic behind its pricing, compliance, and proposal features \u2014 using the REFERENCE below. ' +
@@ -21385,9 +21398,11 @@ async function askToolHelp() {
       answer.innerHTML = '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.6">' + _bnaQaMd(text) + '</div>';
     }
   } catch (e) {
+    if (_isAbortError(e)) { if (status) status.style.display = 'none'; if (answer) { answer.style.display = 'block'; answer.innerHTML = '<div style="font-size:12.5px;color:var(--muted)">Stopped. Ask again when ready.</div>'; } return; }
     if (status) status.style.display = 'none';
     showErr('Something went wrong: ' + (e && e.message ? e.message : e));
   } finally {
+    _analysisEnd(true);
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
   }
 }
@@ -22823,6 +22838,51 @@ let _bnaTotalSecs = null;
 let _bnaPct = 0;
 
 // BNA helpers — thin wrappers around the global bar
+// -- Stop-analysis control ----------------------------------------------------
+// One global AbortController per running analysis (only one runs at a time).
+// A flow calls _analysisBegin() at the start and _analysisEnd() when it ends.
+// The fetch wrapper below auto-attaches _analysisSignal() to every Anthropic API
+// call while an analysis is active, and long multi-step flows gate on
+// _analysisAborted() between steps. The Stop button in the global status bar
+// calls stopAnalysis(). Note: a request already in flight keeps generating (and
+// billing) server-side -- abort stops the browser from waiting and cancels every
+// remaining step, which is where the time/cost saving comes from.
+let _analysisAbort = null;
+function _showStopBtn(show){ ['gsbStopBtn','gsbMinStopBtn'].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display = show ? 'inline-block' : 'none'; }); }
+function _analysisBegin(title){
+  _analysisAbort = new AbortController();
+  try { if (typeof showStatus === 'function') showStatus('info', title || 'Working\u2026', 'Running\u2026 you can stop this at any time with the Stop button above.', false); } catch(e){}
+  _showStopBtn(true);
+  return _analysisAbort.signal;
+}
+function _analysisEnd(hideBar){ _analysisAbort = null; _showStopBtn(false); if (hideBar) { try { _gsbHide(); } catch(e){} } }
+function _analysisSignal(){ return _analysisAbort ? _analysisAbort.signal : undefined; }
+function _analysisAborted(){ return !!(_analysisAbort && _analysisAbort.signal.aborted); }
+function stopAnalysis(){ if (_analysisAbort) { try { _analysisAbort.abort(); } catch(e){} } _showStopBtn(false); }
+function _isAbortError(e){ return !!(e && (e.name === 'AbortError' || (e.message && /abort/i.test(e.message)))); }
+(function(){
+  if (window._fetchAbortPatched || typeof window.fetch !== 'function') return;
+  window._fetchAbortPatched = true;
+  var _origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    try {
+      var url = (typeof input === 'string') ? input : (input && input.url) || '';
+      if (/api\.anthropic\.com/.test(url)) {
+        var s = _analysisSignal();
+        if (s) {
+          init = init ? Object.assign({}, init) : {};
+          if (init.signal) {
+            try { init.signal = AbortSignal.any([init.signal, s]); }
+            catch(e){ var c = new AbortController(); var relay = function(){ try{c.abort();}catch(_){} }; if (init.signal.aborted || s.aborted) c.abort(); else { init.signal.addEventListener('abort', relay, {once:true}); s.addEventListener('abort', relay, {once:true}); } init.signal = c.signal; }
+          } else {
+            init.signal = s;
+          }
+        }
+      }
+    } catch(e){}
+    return _origFetch(input, init);
+  };
+})();
 function showBnaStatus(type, title, msg, showProgress = false) {
   showStatus(type, title, msg, showProgress);
 }
@@ -22997,12 +23057,15 @@ async function runBnaCombined() {
   const _runBtnHtml = _runBtn ? _runBtn.innerHTML : '';
   if (_runBtn) { _runBtn.disabled = true; _runBtn.innerHTML = '<span class="spinner-auto" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Analyzing…'; }
   try {
+    _analysisBegin('Analyzing opportunity');
     // 1) Opportunity details — renders into the card above as soon as it returns.
     try { await runOpportunityIntel(); } catch (e) { console.error('Opportunity intel failed', e); }
+    if (_analysisAborted()) { stopBnaEta(); showBnaStatus('warn', 'Analysis stopped', 'You stopped the analysis. Adjust anything and run it again when ready.'); return; }
     // 2) Scoring analysis — renders the decision matrix below.
     await runBidNoBid();
   } finally {
     if (_runBtn) { _runBtn.disabled = false; _runBtn.innerHTML = _runBtnHtml; }
+    _analysisEnd();
   }
 }
 
@@ -23428,6 +23491,7 @@ async function runBidNoBid() {
     showBnaStatus('success', 'Analysis complete', `Automated Tier scored. Adjust Manual Tier sliders and confirm to get your final bid/no-bid score.`);
 
   } catch(e) {
+    if (_isAbortError(e)) { stopBnaEta(); showBnaStatus('warn', 'Analysis stopped', 'You stopped the analysis. Adjust anything and run it again when ready.'); return; }
     stopBnaEta();
     showBnaStatus('error', 'Analysis failed', e.message);
     console.error('BNA error:', e);
@@ -25573,6 +25637,7 @@ async function runSectionEdit() {
   const btn = document.getElementById('editorRunBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-auto" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle"></span> Rewriting…';
+  _analysisBegin('Rewriting section');
   showStatus('info', 'Rewriting section…', 'Claude is revising your section. Takes ~20 seconds.', true);
   setProgress(5, [{ text: 'Rewriting section', status: 'active' }]);
   _startEtaTimer(25);
@@ -25607,9 +25672,11 @@ async function runSectionEdit() {
     setProgress(100, [{ text: 'Rewriting section', status: 'done' }]);
     showStatus('success', 'Section rewritten', 'Review the revised text below. Copy it or adjust your instructions and rerun.');
   } catch(e) {
+    if (_isAbortError(e)) { _clearEtaTimer(); showStatus('warn', 'Section edit stopped', 'You stopped the rewrite. Adjust your instructions and run it again when ready.'); return; }
     showStatus('error', 'Section edit failed', e.message);
     _clearEtaTimer();
   } finally {
+    _analysisEnd();
     btn.disabled = false;
     btn.innerHTML = '✏️ Rewrite Section';
   }
