@@ -715,6 +715,7 @@
   .rec-scope .ccm a { color: var(--blue); text-decoration: none; }
   .rec-scope .ccm a:hover { text-decoration: underline; }
   .rec-scope .ccnt { margin-top: 10px; font-size: 13px; color: #475569; line-height: 1.5; background: #f8fafc; border-radius: 6px; padding: 8px 12px; }
+  .rec-scope .ccnt-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
   .rec-scope .cca { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
   .rec-scope .cca select { width: auto; min-width: 150px; padding: 6px 10px; font-size: 13px; }
   .rec-scope .btn.danger { border-color: #e6b0b0; color: #a12020; }
@@ -981,15 +982,15 @@
   <!-- Recruiting suite (module scaffold; the tools are migrated in a later phase) -->
   <div class="suite-panel" id="suite-recruiting" style="display:none">
     <nav class="tab-nav">
-      <button class="tab-btn" data-fam="decide" onclick="switchTab('rec-search')" id="tab-rec-search">🔍 Candidate Search</button>
+      <button class="tab-btn" data-fam="decide" onclick="switchTab('rec-search')" id="tab-rec-search">🔍 External Candidate Search</button>
       <button class="tab-btn" data-fam="build" onclick="switchTab('rec-tracker')" id="tab-rec-tracker">📇 Candidate Tracker</button>
-      <button class="tab-btn" data-fam="build" onclick="switchTab('rec-match')" id="tab-rec-match">🧩 Candidate Match</button>
+      <button class="tab-btn" data-fam="build" onclick="switchTab('rec-match')" id="tab-rec-match">🧩 Position / Candidate Match</button>
       <button class="tab-btn" data-fam="edit" onclick="switchTab('rec-resume')" id="tab-rec-resume">📝 Resume Builder</button>
       <button class="tab-btn" data-fam="edit" onclick="switchTab('rec-outreach')" id="tab-rec-outreach">✉️ Outreach Writer</button>
     </nav>
     <div class="sidebar-legend">
       <div class="sl-title">🔗 How tabs connect</div>
-      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>Candidate Search</b><span>boolean search strings for LinkedIn or Google &mdash; standalone</span></div></div>
+      <div class="sl-row"><span class="sl-dot" style="background:var(--fam-decide,#2aa79b)"></span><div class="sl-txt"><b>External Candidate Search</b><span>boolean search strings for LinkedIn or Google &mdash; standalone</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-build,#8a93e8)"></span><div class="sl-txt"><b>Tracker &harr; Match</b><span>your tracked bench is the pool Match ranks against a role</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:linear-gradient(135deg,var(--fam-build,#8a93e8) 0 50%,var(--fam-edit,#e0894a) 50%)"></span><div class="sl-txt"><b>Match &rarr; Resume</b><span>a candidate you surface carries straight into the resume builder</span></div></div>
       <div class="sl-row"><span class="sl-dot" style="background:var(--fam-edit,#e0894a)"></span><div class="sl-txt"><b>Resume Builder</b><span>build a compliant, tailored resume &mdash; standalone</span></div></div>
@@ -2319,6 +2320,7 @@
           <div style="font-size:12.5px;color:var(--text);max-width:560px"><strong>✨ Draft the staffing plan.</strong> <span style="color:var(--muted)">Your PWS task list above is the input — confirm it first, then build.</span> Claude proposes a labor mix, integer headcount, an hours allocation across your PWS tasks, and the role rules — and, in GSA mode, maps each role to the best-fit Schedule LCAT by education, experience, and scope. It also runs a cost-realism check. <span style="color:var(--muted)">You review and adjust everything; rates are never invented.</span></div>
           <button onclick="pricingAutoBuildStructure()" id="pricingAutoBuildBtn" style="padding:8px 15px;font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer;white-space:nowrap">✨ Draft the staffing plan</button>
         </div>
+        <div id="pricingRedraftWarn"></div>
         <div id="pricingAutoBuildProgress" style="display:none;margin-top:10px"></div>
         <div id="pricingAutoBuildPanel" style="margin-top:12px"></div>
       </div>
@@ -2340,7 +2342,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
           <div style="font-weight:700;font-size:13px">👤 Labor Categories &amp; Rates <span style="color:var(--muted);font-weight:400;font-size:11px">— the rows of your matrix</span></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button id="pxRecommendBtn" onclick="pricingRecommendRates(this)" title="Look up a market rate for each role and drop it in as a proposed starting point. Edit any to make it yours." style="padding:7px 15px;font-size:12px;font-weight:700;border:1px solid #c2410c;color:#fff;background:#ea580c;border-radius:6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15)">✨ Recommend rates</button><div id="pxRecommendProgress" style="display:none;flex-basis:100%;margin-top:8px"></div>
+            <button id="pxRecommendBtn" onclick="pricingRecommendRates(this)" title="Drops the market MEDIAN (50th percentile) into every un-priced role as an orange 'proposed' starting point - edit any to make it yours. It can differ from a per-role 'Look up': that runs the full Market Rates search with the role's own location/seniority and lets you send the percentile you choose (25th/50th/75th), which lands as a green 'researched' rate." style="padding:7px 15px;font-size:12px;font-weight:700;border:1px solid #c2410c;color:#fff;background:#ea580c;border-radius:6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15)">✨ Recommend rates</button><div id="pxRecommendProgress" style="display:none;flex-basis:100%;margin-top:8px"></div>
             <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
           </div>
         </div>
@@ -2349,6 +2351,9 @@
         <div id="pricingBulkBasis"></div>
         <div id="pricingLcatHeader"></div>
         <div id="pricingLcatsList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div style="margin-top:10px">
+          <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
+        </div>
         <div id="pricingScaByLcat" style="margin-top:10px"></div>
       </div>
 
@@ -2569,7 +2574,7 @@
         <div><label>Phone</label><input type="tel" id="cp" placeholder="(555) 867-5309" oninput="Rec.fmtP(this)"/></div>
       </div>
       <div class="r3">
-        <div><label>Status</label><select id="cs"><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select></div>
+        <div><label>Status</label><select id="cs"><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select> <label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;margin-left:8px"><input type="checkbox" id="trkInclApplicants" onchange="Rec.loadC(true)"/> Also show applicant repository</label></div>
         <div><label>Profile URL</label><input type="text" id="cu" placeholder="linkedin.com/in/..."/></div>
         <div><label>Source</label><input type="text" id="cso" placeholder="Resume upload, LinkedIn..."/></div>
       </div>
@@ -2592,6 +2597,7 @@
       <input type="file" id="csvIn" accept=".csv" style="display:none" onchange="Rec.importCsv(this.files[0]); this.value='';"/>
     </div>
     <div id="clist"></div>
+    <div id="clistPager" style="display:none;align-items:center;justify-content:center;gap:14px;margin-top:12px"></div>
     </div>
   </div>
 </div>
@@ -3284,7 +3290,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '348';
+const APP_VERSION = '366';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -6106,7 +6112,23 @@ function postProcessDocXml(xml) {
 // HOOK CALENDAR + CHECKLIST INTO GENERATION COMPLETION
 // ═══════════════════════════════════════════════════════════════════════════
 // These are called from within runGeneration after briefing is parsed
+function _sanitizeExtractedFacts(obj) {
+  // P7 deterministic anti-fabrication pass on machine-extracted CONTACT + code fields: a MALFORMED value
+  // is unambiguously junk, so strip it (a well-formed fabrication is the prompt guardrails' job). "Not
+  // stated" placeholders pass through untouched, and fields the object does not carry are ignored.
+  if (!obj || typeof obj !== 'object') return obj;
+  const _ph = function (s) { return /^\s*(not stated|not specified|unspecified|unknown|n\/?a|tbd|none|null|not applicable)\b/i.test(String(s == null ? '' : s)); };
+  if (obj.agency_poc_email && !_ph(obj.agency_poc_email) && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(obj.agency_poc_email).trim())) obj.agency_poc_email = '';
+  if (obj.agency_poc_phone && !_ph(obj.agency_poc_phone) && String(obj.agency_poc_phone).replace(/\D/g, '').length < 7) obj.agency_poc_phone = '';
+  ['naics', 'naics_code'].forEach(function (k) {
+    const x = obj[k];
+    if (x == null || x === '' || _ph(x)) return;
+    if (!/\b\d{6}\b/.test(String(x)) && /\d/.test(String(x))) obj[k] = '';   // digit-bearing but no valid 6-digit NAICS -> garbled/fabricated
+  });
+  return obj;
+}
 function onBriefingExtracted(briefing) {
+  if (typeof _sanitizeExtractedFacts === 'function') _sanitizeExtractedFacts(briefing);
   renderProposalCalendar(briefing);
   // The submission checklist that used to be called here was superseded by the
   // mandatory-items panel (buildMandatoryItems / renderMandatoryItems), which renders
@@ -6163,6 +6185,20 @@ function restoreApiKey() {
 
 // ─── STATUS / PROGRESS / UTILITIES ───────────────────────────────────────────
 function showStatus(type, title, msg, showProgress = false) {
+  // Uniform Stop control: ANY long-running op that shows the progress bar becomes stoppable
+  // here, so every analysis flow gets the Stop button without per-flow wiring. A terminal
+  // status ends it; if the user pressed Stop, the flow's resulting error is shown as a
+  // neutral "stopped" message instead of an error.
+  try {
+    if (type === 'info' && showProgress === true) {
+      if (!_analysisAbort) _analysisAbort = new AbortController();
+      _analysisStopped = false;
+      _showStopBtn(true);
+    } else if (type === 'success' || type === 'error') {
+      if (_analysisStopped) { type = 'warn'; title = 'Stopped'; msg = 'You stopped this. Adjust anything you need and run it again when ready.'; }
+      _analysisAbort = null; _analysisStopped = false; _showStopBtn(false);
+    }
+  } catch(e){}
   // Route everything through the global sticky bar
   if (typeof _gsb === 'function') {
     _gsb(type, title, msg, showProgress);
@@ -6356,6 +6392,7 @@ async function _propMapLimit(items, limit, fn) {
   let next = 0;
   const runner = async () => {
     for (;;) {
+      if (typeof _analysisAborted === 'function' && _analysisAborted()) return;
       const i = next++;
       if (i >= items.length) return;
       try { out[i] = { ok: true, value: await fn(items[i], i) }; }
@@ -7015,8 +7052,12 @@ const _CANON_FACTS = [
   { brief: 'period_of_performance', intel: 'period_of_performance', label: 'period of performance' },
   { brief: 'sca_coverage',          intel: 'sca_coverage',          label: 'SCA coverage' },
   { brief: 'set_aside',             intel: 'set_aside',             label: 'set-aside' },
-  { brief: 'naics_code',            intel: 'naics_code',            label: 'NAICS code' },
+  { brief: 'naics',                 intel: 'naics_code',            label: 'NAICS code' },
   { brief: 'submission_date',       intel: 'next_due_date',         label: 'proposal due date' },
+  { brief: 'pop_start_date',        intel: 'pop_start_date',        label: 'PoP start date' },
+  { brief: 'place_of_performance',  intel: 'place_of_performance',  label: 'place of performance' },
+  { brief: 'solicitation_number',   intel: 'id_number',             label: 'solicitation number' },
+  { brief: 'requirement_title',     intel: 'requirement_name',      label: 'requirement title' },
 ];
 
 function _canonUseful(v) {
@@ -7082,6 +7123,22 @@ function _canonSummaryLine(briefing) {
   return s;
 }
 
+function _canonPrefillBlock() {
+  // P4c inherit-and-skip: when the opportunity was already analyzed (BNA), hand the model the REVIEWED
+  // canonical facts so it carries them through verbatim instead of RE-READING the documents to re-derive
+  // them. Returns '' when there is no analysis to inherit from (the briefing then extracts as before), so
+  // this is purely additive - and _canonApplyToBriefing still overwrites the shared fields afterward.
+  var intel = (typeof window !== 'undefined') ? window._lastBnaIntel : null;
+  if (!intel || typeof _CANON_FACTS === 'undefined') return '';
+  var lines = [];
+  _CANON_FACTS.forEach(function (f) {
+    var v = intel[f.intel];
+    var useful = (typeof _canonUseful === 'function') ? _canonUseful(v) : (v != null && String(v).trim() !== '');
+    if (useful) lines.push('- ' + f.label + ': ' + String(v).trim());
+  });
+  if (!lines.length) return '';
+  return 'ALREADY-ESTABLISHED FACTS about this same solicitation - extracted and REVIEWED in a prior step, and AUTHORITATIVE. Use each verbatim for its corresponding field below; do NOT re-read the documents to re-derive these (they will not change). Spend your effort on the OTHER fields - scope, pricing method/instructions, Section L/M format, page limits, evaluation factors, CLIN/task detail - that are NOT listed here:\n' + lines.join('\n') + '\n\n';
+}
 async function ensureBriefing(apiKey) {
   if (typeof cachedBriefing !== 'undefined' && cachedBriefing) return cachedBriefing;
   if (!rfpFiles || rfpFiles.length === 0) throw new Error('No RFP/PWS documents are loaded. Add them on the Proposal tab (Step 4).');
@@ -7094,6 +7151,7 @@ async function ensureBriefing(apiKey) {
   // Read EVERY doc; condense (scope + pricing preserved) instead of skipping when the bundle is large.
   blocks = await _fitOrCondense(apiKey, blocks, RFP_BUDGET, _DIGEST_GEN);
   const prompt =
+    _canonPrefillBlock() +
     `You are reading a U.S. government solicitation. Extract a concise JSON briefing focused on scope and pricing. Return ONLY JSON:\n` +
     `{"solicitation_number":"","requirement_title":"","agency_name":"","contract_type":"","period_of_performance":"",` +
     `"period_structure":"base + option breakdown counting FAR 52.217-9 option years ONLY, e.g. '1 base year + 4 option years'; do NOT fold a FAR 52.217-8 6-month 'Option to Extend Services' extension into the option count; '' if unstated",` +
@@ -8036,15 +8094,17 @@ function setAssumption(id, status) {
   const a = assumptions.find(x => x.id === id);
   if (!a) return;
   a.status = status;
-  const card  = document.getElementById(`acard-${id}`);
-  const edit  = document.getElementById(`aedit-${id}`);
-  const accBtn = card.querySelector('.assumption-btn.accept');
-  const rejBtn = card.querySelector('.assumption-btn.reject');
-  card.className  = `assumption-card ${status}`;
-  accBtn.classList.toggle('active', status === 'accepted');
-  rejBtn.classList.toggle('active', status === 'rejected');
-  edit.style.display = status === 'rejected' ? 'block' : 'none';
-  updateAssumptionSummary();
+  const card = document.getElementById(`acard-${id}`);
+  const edit = document.getElementById(`aedit-${id}`);
+  if (card) {
+    card.className = `assumption-card ${status}`;
+    const accBtn = card.querySelector('.assumption-btn.accept');
+    const rejBtn = card.querySelector('.assumption-btn.reject');
+    if (accBtn) accBtn.classList.toggle('active', status === 'accepted');
+    if (rejBtn) rejBtn.classList.toggle('active', status === 'rejected');
+  }
+  if (edit) edit.style.display = status === 'rejected' ? 'block' : 'none';
+  updateAssumptionSummary();   // always reflect the change in the counters + gate, even if the card lookup missed
 }
 
 function updateCorrection(id, value) {
@@ -8379,6 +8439,14 @@ async function runAnalysis() {
     setProgress(100, [{ text: 'Reading RFP documents', status: 'done' }, { text: 'Analyzing with AI', status: 'done' }, { text: 'Building review panels', status: 'done' }]);
     document.getElementById('analysisResults').style.display = 'block';
 
+    // PA: the assumption ids come from the model ("rfp_N"/"co_N") and can COLLIDE or be malformed. A
+    // duplicate id makes two cards share one DOM id, so clicking one silently updates the OTHER card
+    // (the accept registers + the summary moves, but the clicked card does not change). Re-key every
+    // assumption to a guaranteed-unique id here - after the final set (SA inject + filtering) and BEFORE
+    // render - so each card id is unique. The rendered subsets are filtered from this same array (same
+    // object refs), so their ids stay in sync.
+    assumptions.forEach((a, i) => { a.id = 'asm_' + i; });
+
     const rfpConfirmed = assumptions.filter(a => a.category === 'rfp');
 
     const rfpEmpty = document.getElementById('rfpAssumptionsEmpty');
@@ -8638,6 +8706,9 @@ async function runComplianceCheck() {
       `- ADDRESSED: proposal clearly responds to this requirement\n` +
       `- PARTIAL: proposal mentions it but doesn't fully respond\n` +
       `- MISSING: proposal does not address this at all\n\n` +
+      `IMPORTANT - do NOT flag correct work as MISSING:\n` +
+      `- Many listed requirements are PERFORMANCE obligations the contractor carries out DURING the contract (PWS "shall" tasks), Government responsibilities, definitions, or conditional/optional ("if applicable") items - NOT content the PROPOSAL must restate. Mark such an item ADDRESSED when the proposal's technical/management approach demonstrates the ability to perform it; do NOT mark it MISSING merely because the proposal does not quote it verbatim.\n` +
+      `- Reserve MISSING for a requirement the PROPOSAL was actually obligated to satisfy - a Section L instruction, a required volume/format/content item, or an evaluation-driven response - that the proposal genuinely omits. A requirement addressed to the Government, or one that is conditional/optional/not-applicable, is NOT a proposal gap. When unsure, prefer PARTIAL with a specific, real issue over MISSING.\n\n` +
       `Return ONLY JSON (no markdown):\n` +
       `{"addressed":["req text",...],"partial":[{"req":"text","issue":"what is missing"},...],"missing":["req text",...],"summary":"one sentence overall assessment"}`
     });
@@ -9664,7 +9735,8 @@ async function runGeneration() {
       `You are an expert government proposal writer for ${CLIENT_CONFIG.companyFullName}.\n\n` +
       companyCtx + `\n\n` +
       `Read ALL documents above thoroughly — including the PWS, RFP, Section L (Instructions to Offerors), Section M (Evaluation Criteria), and all attachments.\n\n` +
-      `Extract and return a comprehensive JSON briefing:\n` +
+      _canonPrefillBlock() +
+      `Extract and return a comprehensive JSON briefing. NEVER fabricate a POC name, email, phone number, FAR/DFARS clause number, or NAICS code - copy each VERBATIM from the documents or leave it blank; a plausible-looking value not literally in the documents is a fabrication:\n` +
       `{"solicitation_number":"","requirement_title":"","agency_name":"","agency_address":"","agency_poc":"","agency_poc_email":"","agency_poc_phone":"","submission_date":"the EXACT date (include the local time and time zone if stated) that offers/proposals are DUE to the Government. Copy the digits exactly as written; do NOT infer, shift, or round. Give the date part as YYYY-MM-DD. This is the proposal/offer due or closing date (e.g. SF-1449 Block 8, SF-33 Block 9, or the Section L due-no-later-than date) - NOT the questions/Q&A deadline, NOT the period-of-performance start, NOT the solicitation issue date. If several dates appear, choose only the one explicitly labeled as the offer/proposal due or closing date; and if MULTIPLE due/closing dates appear because one or more amendments extended the deadline, use the LATEST (maximum) such date - a later amendment supersedes the base date; empty string if genuinely not stated","contract_type":"","period_of_performance":"","naics":"","set_aside":"","place_of_performance":"","estimated_ftes":"the FTE / level-of-effort the solicitation REQUIRES if stated — copy the EXACT figure including any decimal or fraction (e.g. 2.5, 0.5); do NOT round. If instead a workload / level-of-effort hours table by labor category is given, derive the FTEs from the BASE-YEAR hours column ONLY divided by 1912 (never add base + option columns). '' or 'not specified' if none","estimated_value":"","base_period_months":"the BASE period length in WHOLE MONTHS as a number. Compute it: if a date range is given (e.g. base period 01 Oct 2025 to 30 Jun 2026) count the months (=9); if a month count is stated use it; if a full base year with no other length is indicated use 12; use 0 only if you truly cannot tell","option_period_count":"number of FAR 52.217-9 option periods/years as a number; 0 if none. EXCLUDE any FAR 52.217-8 'Option to Extend Services' (the up-to-6-month extension) - it is NOT an option period. A base + 3 option years that also carries a 6-month 52.217-8 extension has option_period_count=3, not 4","option_period_months":"length of EACH option period in WHOLE months as a number (12 for option years); 0 if none/unknown","pop_start_date":"period-of-performance START date as YYYY-MM-DD if the solicitation states or implies one; '' if not stated. If only a month and year are stated ('performance begins February 2027') return YYYY-MM, and if only a year, return YYYY - do NOT invent a day to fill the format, a fabricated date that looks precise is worse than a partial one","sca_coverage":"'yes' if the contract is covered by the Service Contract Act / SCLS - treat the PRESENCE of a Wage Determination (a WD document, SF-98/98a, a WD number, DOL wage tables) or FAR 52.222-41 as DECISIVE, answer 'yes'; 'no' ONLY if the solicitation affirmatively states the work is exempt (e.g. a bona-fide professional-services exemption), not merely because it sounds professional; '' if not addressed","travel_required":"'yes' if the solicitation includes a travel CLIN or requires reimbursable travel/trips, 'no' if it states no travel is required, else ''","travel_nte":"the travel not-to-exceed dollar ceiling if one is stated (e.g. '$50,000'), else ''","escalation_rate":"the annual price escalation / COLA percentage the solicitation directs offerors to apply across option years if one is stated (e.g. '3' for 3%/yr), as a plain number; '' if not stated","gsa_discount":"the discount percentage off GSA Schedule rates the solicitation requests, or that the offeror is directed to give, if stated, as a plain number; '' if not stated","odc_nte":"the not-to-exceed dollar ceiling for Other Direct Costs (ODCs) or materials/supplies if one is stated SEPARATELY from travel (e.g. '$10,000'), else ''","materials_required":"'yes' if the solicitation includes a materials/supplies/equipment CLIN or requires priced materials, 'no' if it states none, else ''",` +
       `"pricing_methodology":"how the Government wants pricing STRUCTURED — exactly one of 'lcat' (fully burdened rates by labor category), 'pws_task' (price broken out per PWS task/section), 'product' (per product/deliverable/CLIN), or 'simple' (total labor + wrap). Pick the closest match from Section L/B; if unstated, ''",` +
       `"pricing_instructions":"verbatim or close paraphrase of any cost/price-volume format instructions from Section L/B/M — required rate tables, CLIN structure, escalation rules, format/page limits; '' if none",` +
@@ -10134,6 +10206,8 @@ Do not over-format — most content stays as prose. The goal is a document a per
           throw e;
         }
       });
+
+      if (typeof _analysisAborted === 'function' && _analysisAborted()) throw Object.assign(new Error('Stopped'), { name: 'AbortError' });
 
       const failed = [];
       jobs.forEach((job, i) => {
@@ -10933,8 +11007,10 @@ function buildPricingTotalTableOoxml() {
       r3 += _pxRow([pp.name || ('Period ' + (i + 1)), String(pricingPeriodMonths(pp)), mid, fmt(pricingPeriodCost(i))], w3);
     });
     const _tt2 = (typeof pricingTravelTotal === 'function') ? pricingTravelTotal() : { total: 0 };
+    const _mt3 = (typeof pricingMaterialsTotal === 'function') ? (pricingMaterialsTotal().total || 0) : 0;
     if (_tt2.total > 0) r3 += _pxRow(['Travel / ODCs', '', '', fmt(_tt2.total)], w3);
-    r3 += _pxRow(['Total Evaluated Price', '', '', fmt(pricingGrandTotal() + _tt2.total)], w3, { bold: true, fill: 'EDF2FB' });
+    if (_mt3 > 0) r3 += _pxRow(['Materials', '', '', fmt(_mt3)], w3);
+    r3 += _pxRow(['Total Evaluated Price', '', '', fmt(pricingGrandTotal() + _tt2.total + _mt3)], w3, { bold: true, fill: 'EDF2FB' });
     out += _pxTable(w3, r3);
     return out + '<w:p/>';
   } catch (e) { console.error('buildPricingTotalTableOoxml failed:', e); return ''; }
@@ -13106,6 +13182,7 @@ async function _mktMapLimit(items, limit, fn) {
   let next = 0;
   const runner = async () => {
     for (;;) {
+      if (typeof _analysisAborted === 'function' && _analysisAborted()) return;
       const i = next++;
       if (i >= items.length) return;
       try { out[i] = { ok: true, value: await fn(items[i], i) }; }
@@ -13659,9 +13736,22 @@ function pricingRenderBulkBasis() {
       '<option value="annual">Fully Burdened Annualized Salary</option>' +
     '</select></div>';
 }
-function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '' }); pricingRenderAll(); }
+function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
 function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
-function pricingSetLcat(id, field, val) { const l = pricingModel.lcats.find(x => x.id === id); if (l) { l[field] = val; pricingRenderAll(); } }
+function pricingSetLcat(id, field, val) {
+  const l = pricingModel.lcats.find(x => x.id === id); if (!l) return;
+  l[field] = val;
+  if (field === 'advertised') {
+    // The user is now directing the sizing. Capture the Government-stated baseline ONCE (so the button
+    // warning can show "you vs Gov"), then take the model off the 'stated' path so a re-draft builds the
+    // matrix around the user's entered FTEs (free-sizing) rather than reconciling back to the Gov total.
+    if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal;
+    pricingModel.fteSource = 'user';
+    var _ut = pricingModel.lcats.reduce(function (s, x) { return s + (parseFloat(x.advertised) || 0); }, 0);
+    pricingModel.statedFteTotal = _ut > 0 ? Math.round(_ut * 100) / 100 : null;
+  }
+  pricingRenderAll();
+}
 // ---- Rate-anchor helpers (P1) ----
 function _lcatBasis(l) { return l.rateBasis || 'paid'; }
 function _lcatRateInput(l) { return (l.rateInput != null && l.rateInput !== '') ? l.rateInput : (l.baseRate != null ? l.baseRate : ''); }
@@ -14778,7 +14868,7 @@ async function pricingAutoBuildStructure() {
       : ('\nSTRUCTURE ALREADY IN THE MODEL (from an earlier build): '
          + _existing.length + ' labor categories totalling ' + (Math.round(_exFte * 100) / 100)
          + ' FTE \u2014 ' + _existing.map(l => l.name).join(', ')
-         + '. This is the user\u2019s own established sizing, NOT a Government mandate: treat that FTE total as a FLOOR unless the PWS scope genuinely warrants fewer, and say so explicitly if you propose fewer.\n'));
+         + '. This is the user\u2019s own established sizing and is PRESERVED: copy each existing role name CHARACTER-FOR-CHARACTER (so its already-entered rate and FTE carry over) and keep its FTE \u2014 do NOT drop, rename, or shrink an existing role. Your job is the HOURS allocation across the PWS tasks, plus any ADDITIONAL roles the scope genuinely needs.\n'));
     const _statedFte = pricingModel.statedFteTotal != null ? pricingModel.statedFteTotal : null;
     const _statedFteStr = _statedFte != null ? pricingFmtFte(_statedFte) : '';
     const fteLine = (pricingModel.fteSource === 'stated' && _statedFte != null)
@@ -15053,7 +15143,7 @@ function pricingEnsureTaskHoursCovered(lcats, hours, mask, tasks, nonLabor) {
 }
 
 function pricingApplyAutoBuild(a) {
-  var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { if ((l.rateInput != null && l.rateInput !== '') || l.evaluated || l.rateStatus || l.mktBand) { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate, rateStatus: l.rateStatus, evaluated: l.evaluated, mktBand: l.mktBand }; } });
+  var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { var _adv = (l.advertised != null && l.advertised !== '' && parseFloat(l.advertised) > 0) ? parseFloat(l.advertised) : null; if ((l.rateInput != null && l.rateInput !== '') || l.evaluated || l.rateStatus || l.mktBand || _adv != null) { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate, rateStatus: l.rateStatus, evaluated: l.evaluated, mktBand: l.mktBand, advertised: _adv }; } });
   // Agency-stated FTE-hour basis (e.g. 2,080 hrs/FTE): honor it for THIS proposal, overriding the
   // company default. Only set when the model reports an explicit figure from the solicitation.
   { const _h = parseFloat(a.hours_per_fte); pricingModel.hoursPerFte = (_h > 0) ? _h : null; }
@@ -15135,6 +15225,11 @@ function pricingApplyAutoBuild(a) {
       if (best) mask[best.id][t.id] = true;
     });
   })();
+  // PD/PE: restore each surviving role's user-set FTE from the pins BEFORE hours are derived, so a re-draft
+  // cannot shrink the user's manually-sized team (16.5 FTE must not become the AI's 9.46). Matched by
+  // normalized name. (Rate provenance is re-restored after the rebuild below.) The stated-FTE path still
+  // reconciles to the Government total; only the free-sizing path keeps the user's advertised FTE.
+  lcats.forEach(function (l) { var _p = _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()]; if (_p && _p.advertised != null && _p.advertised > 0) l.advertised = _p.advertised; });
   if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && pricingModel.tasks.length) {
     pricingReconcileStatedFte(lcats, hours, mask, pricingModel.tasks, pricingModel.statedFteTotal, defaultHpf());
     if (!pricingModel.directedLabor) (a.labor_mix || []).forEach((m, i) => { if (lcats[i]) m.headcount = lcats[i].advertised; });
@@ -15258,8 +15353,27 @@ function pricingRenderAutoBuildPanel() {
   el.innerHTML = h;
 }
 
+function pricingRedraftWarning() {
+  // Shown next to "Draft the staffing plan" ONLY when the user's sizing is in play: they added a role, or
+  // their FTE total differs from the Government-stated figure. Makes it obvious that a re-draft anchors to
+  // THEIR entered FTEs (rebuilding the whole hours matrix around them), not the Government's or the AI's.
+  var M = pricingModel; if (!M || !Array.isArray(M.lcats)) return '';
+  var named = M.lcats.filter(function (l) { return String(l.name || '').trim(); });
+  if (!named.length) return '';
+  var curFte = Math.round(named.reduce(function (s, l) { return s + (parseFloat(l.advertised) || 0); }, 0) * 100) / 100;
+  var gov = (M.govStatedFteTotal != null) ? M.govStatedFteTotal
+          : ((M.fteSource === 'stated' && M.statedFteTotal != null) ? M.statedFteTotal : null);
+  var userAdded = named.some(function (l) { return l._userAdded; });
+  var diverged = (gov != null && Math.abs(curFte - gov) > 0.05);
+  if (!userAdded && !diverged) return '';
+  var msg = diverged
+    ? ('Your staffing is <strong>' + curFte + ' FTE</strong>, which differs from the Government-stated <strong>' + (Math.round(gov * 100) / 100) + ' FTE</strong>. Re-drafting rebuilds the hours matrix around <strong>YOUR ' + curFte + ' FTE</strong> \u2014 not the Government figure.')
+    : ('You have set the staffing yourself (<strong>' + curFte + ' FTE</strong>). Re-drafting rebuilds the hours matrix around <strong>your entered FTEs</strong>.');
+  return '<div style="margin-top:10px;font-size:12px;line-height:1.5;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 11px">\u26a0\ufe0f ' + msg + '</div>';
+}
 function pricingRenderAll() {
   if (typeof pricingNormalizeLcatClins === 'function') pricingNormalizeLcatClins();
+  { var _rw = document.getElementById('pricingRedraftWarn'); if (_rw) { var _wtxt = (typeof pricingRedraftWarning === 'function') ? pricingRedraftWarning() : ''; _rw.innerHTML = _wtxt; } }
   { const _db = document.getElementById('pricingAutoBuildBtn'); if (_db && !_db.disabled) _db.innerHTML = (typeof pricingModel !== 'undefined' && pricingModel && pricingModel._reverseSolved) ? '\u21ba Re-draft from scratch' : '\u2728 Draft the staffing plan'; }   // (#4) label reflects whether a sheet has been applied
   // Phase 5: seed the GSA rate card from the company default (Settings) the first time this
   // pricing session touches an empty rate card, and keep the shared default in sync with
@@ -16920,7 +17034,9 @@ function pricingBuildWorkbook() {
   const _lwNon = [];
   if (_lwTravTot > 0) { const _tc = (_tSlw && _tSlw.odcCategory && _tSlw.odcCategory !== 'Travel & ODC') ? _tSlw.odcCategory : 'Travel'; _lwNon.push(lw.length); lw.push([_tc, _wrapNote(_tSlw), r2(_lwTravTot)]); }
   if (_lwOdcTot > 0) { const _oc = (_oSlw && _oSlw.odcCategory) || 'Other Direct Costs'; _lwNon.push(lw.length); lw.push([_oc, _wrapNote(_oSlw), r2(_lwOdcTot)]); }
-  const _lwTot = lw.length; lw.push(['TOTAL CONTRACT VALUE', '', r2(pricingGrandTotal() + _lwTravTot + _lwOdcTot)]);
+  const _lwMatTot = (typeof pricingMaterialsByPeriod === 'function') ? pricingMaterialsByPeriod().reduce((s, x) => s + (x || 0), 0) : 0;
+  if (_lwMatTot > 0) { _lwNon.push(lw.length); lw.push(['Materials', 'direct materials', r2(_lwMatTot)]); }
+  const _lwTot = lw.length; lw.push(['TOTAL CONTRACT VALUE', '', r2(pricingGrandTotal() + _lwTravTot + _lwOdcTot + _lwMatTot)]);
   const wsLW = XLSX.utils.aoa_to_sheet(lw);
   wsLW['!cols'] = [{ wch: 34 }, { wch: 54 }, { wch: 18 }];
   pxStyle(wsLW, { money: [2] });
@@ -19104,6 +19220,19 @@ function _triageBadge(v) {
   const c = map[v] || ['#e2e8f0', '#334155'];
   return '<span style="display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:800;background:' + c[0] + ';color:' + c[1] + ';letter-spacing:0.3px">' + escHtml(v || '\u2014') + '</span>';
 }
+function _daysUntil(dateStr) {
+  // Deterministic days-until-due. The extraction model is unreliable at date ARITHMETIC, so recompute the
+  // countdown from the (model-read) due DATE + today rather than trusting its days_remaining. Strips a
+  // [Inferred]/[GovEst] prefix and any time/zone tail; UTC-midnight diff avoids a TZ off-by-one. Returns an
+  // integer (negative = already closed) or null when there is no parseable date.
+  var s = String(dateStr == null ? '' : dateStr).replace(/^\s*\[[^\]]*\]\s*/, '').trim();
+  if (!s || /^(not\s+stated|n\/?a|unknown|tbd|not\s+specified)\b/i.test(s)) return null;
+  var y, mo, d, m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) { y = +m[1]; mo = +m[2] - 1; d = +m[3]; }
+  else { var p = Date.parse(s); if (isNaN(p)) return null; var dd = new Date(p); y = dd.getFullYear(); mo = dd.getMonth(); d = dd.getDate(); }
+  var due = Date.UTC(y, mo, d), n = new Date(), today = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+  return Math.round((due - today) / 86400000);
+}
 function _triageField(label, val, extra) {
   if (val == null || val === '') return '';
   return '<div style="font-size:12px;line-height:1.5"><span style="color:var(--muted)">' + label + ':</span> <strong>' + escHtml(String(val)) + '</strong>' + (extra || '') + '</div>';
@@ -19115,7 +19244,9 @@ function _triageVerdictHtml(z) {
   const _er = (typeof escHtml === 'function') ? escHtml(v.eligible_reason || '') : '';
   const elig = v.set_aside_unverified ? ' <span style="color:#92400e;font-weight:600" title="Set-aside was not stated in the documents; the tool defaulted to unrestricted / full and open (anyone may bid) so the opportunity stays biddable. Eligibility depends on the real set-aside \u2014 verify on SAM.gov before relying on it.">\u26a0 not stated in docs \u2014 verify set-aside</span>' : (v.eligible === true) ? ' <span title="' + _er + '" style="color:#166534;font-weight:700">\u2713 eligible</span>' : (v.eligible === false) ? ' <span title="' + _er + '" style="color:#b45309;font-weight:700">\u2717 not eligible to prime \u00b7 sub path</span>' : (v.set_aside && /not stated/i.test(v.set_aside) ? ' <span style="color:#92400e;font-weight:600">\u26a0 set-aside unverified</span>' : '');
   const fit = v.naics_fit ? (' <span style="color:var(--muted)">(' + escHtml(v.naics_fit) + ' fit)</span>') : '';
-  const days = (v.days_remaining != null && v.days_remaining !== '') ? (' <span style="color:var(--muted)">(' + escHtml(String(v.days_remaining)) + ' days left)</span>') : '';
+  const _drC = (typeof _daysUntil === 'function' && v.response_date && v.response_date !== 'not stated') ? _daysUntil(v.response_date) : null;
+  const _drN = (_drC != null) ? _drC : ((v.days_remaining != null && /^-?\d+$/.test(String(v.days_remaining).trim())) ? parseInt(String(v.days_remaining).trim(), 10) : null);
+  const days = (_drN != null) ? (' <span style="color:var(--muted)">(' + (_drN < 0 ? 'closed ' + Math.abs(_drN) + 'd ago' : _drN + ' days left') + ')</span>') : '';
   return '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">'
     + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' + _triageBadge(v.verdict) + '<span style="font-weight:700;font-size:13px">' + escHtml(v.title || 'Untitled opportunity') + '</span></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin-bottom:8px">'
@@ -19274,6 +19405,7 @@ async function triageScreenZone(id) {
         const et = await resp.text(); z.verdict = { error: 'Request failed (' + resp.status + '): ' + et.slice(0, 140) }; return;
       } catch (_fe) {
         _tLastErr = _fe;                                   // transient 'Failed to fetch' (network/browser hiccup) - retry with backoff
+        if (typeof _analysisAborted === 'function' && _analysisAborted()) throw _fe;
         if (_att < 2) { await new Promise(r => setTimeout(r, 800 * (_att + 1))); continue; }
         throw _fe;
       }
@@ -19316,14 +19448,17 @@ async function triageScreenAll() {
   if (typeof setProgress === 'function') setProgress(5);
   async function worker() {
     while (i < pending.length) {
+      if (_analysisAborted()) break;
       const z = pending[i++];
-      await triageScreenZone(z.id);
+      try { await triageScreenZone(z.id); }
+      catch (e) { if (_isAbortError(e) || _analysisAborted()) break; throw e; }
       done++;
       if (typeof setProgress === 'function') setProgress(Math.round(5 + (done / total) * 90));
       if (typeof showStatus === 'function') showStatus('info', 'Screening opportunities', 'Screened ' + done + ' of ' + total + '\u2026', true);
     }
   }
   await Promise.all([worker(), worker()]);
+  if (_analysisAborted()) { if (typeof showStatus === 'function') showStatus('warn', 'Screening stopped', done + ' of ' + total + ' screened before you stopped it. Run it again when ready.'); if (typeof _analysisEnd === 'function') _analysisEnd(); return; }
   if (typeof setProgress === 'function') setProgress(100);
   const done2 = triageZones.filter(z => z.verdict && !z.verdict.error);
   const pu = done2.filter(z => z.verdict.verdict === 'Pursue').length, mb = done2.filter(z => z.verdict.verdict === 'Maybe').length, pa = done2.filter(z => z.verdict.verdict === 'Pass').length;
@@ -19401,14 +19536,56 @@ function _triageZoneForNumber(num) {
   triageZones.push(z);
   return z;
 }
+// PT: deterministic safety net over the AI grouping. Files that share a DETECTED solicitation number
+// are the SAME opportunity by definition, so group them strictly by number - the AI can no longer split
+// them across boxes, float one off on its own, or mismatch a numbered file. Numberless files keep the
+// AI's placement: if the AI put a numberless file in a group whose other files share ONE number, it
+// joins that opportunity (the AI corroborated it); otherwise it stays in its own AI-labeled cluster
+// (or Unsorted). Pure + deterministic.
+function _triageReconcileByNumber(aiGroups, numByName) {
+  if (!Array.isArray(aiGroups)) return aiGroups;
+  numByName = numByName || {};
+  const byNum = new Map();      // solicitation number -> { label, files }
+  const numberless = [];        // { file, aiLabel, nums:Set-of-numbers-in-its-AI-group }
+  aiGroups.forEach(function (g) {
+    const files = (g && g.files) || [];
+    const gnums = new Set(files.map(function (f) { return numByName[f.name]; }).filter(Boolean));
+    files.forEach(function (f) {
+      const n = numByName[f.name];
+      if (n) {
+        if (!byNum.has(n)) byNum.set(n, { label: n, files: [] });
+        byNum.get(n).files.push(f);
+      } else {
+        numberless.push({ file: f, aiLabel: (g && g.label) || 'Unsorted', nums: gnums });
+      }
+    });
+  });
+  const extra = new Map();      // aiLabel -> { label, files } for numberless clusters
+  numberless.forEach(function (x) {
+    if (x.nums.size === 1) {                       // AI grouped it with exactly one numbered opportunity
+      byNum.get([...x.nums][0]).files.push(x.file);
+    } else {
+      const key = x.aiLabel || 'Unsorted';
+      if (!extra.has(key)) extra.set(key, { label: key, files: [] });
+      extra.get(key).files.push(x.file);
+    }
+  });
+  return [].concat([...byNum.values()], [...extra.values()]);
+}
 async function triageAutoSort(files) {
   if (!files || !files.length) return;
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (typeof showStatus === 'function') showStatus('info', 'Sorting opportunities', 'Reading ' + files.length + ' file' + (files.length === 1 ? '' : 's') + ' and grouping by solicitation\u2026 (large batches take a moment)', true);
   if (typeof setProgress === 'function') setProgress(15);
+  // Detect each file's solicitation number FIRST (filename + first 3000 chars, labeled patterns) - the
+  // decisive grouping signal, and often not in the 600-char first-page snippet the AI sees. This also
+  // warms fileToContentBlockLocal's cache so the AI snippet read reuses it (no double read).
+  const _numByName = {};
+  for (const f of files) { try { _numByName[f.name] = await _triageDetectSolNum(f); } catch (e) { _numByName[f.name] = null; } }
   let groups = null;
-  if (apiKey) { try { groups = await _triageGroupByAI(files, apiKey); } catch (e) { groups = null; } }
+  if (apiKey) { try { groups = await _triageGroupByAI(files, apiKey, _numByName); } catch (e) { groups = null; } }
   if (!groups) groups = await _triageGroupByRegex(files);
+  else groups = _triageReconcileByNumber(groups, _numByName);
   if (typeof setProgress === 'function') setProgress(90);
   let unsorted = 0;
   const touched = {};
@@ -19424,6 +19601,7 @@ async function triageAutoSort(files) {
   const nOpps = triageZones.filter(z => touched[z.id] && z.label !== 'Unsorted').length;
   const msg = 'Grouped ' + files.length + ' file' + (files.length === 1 ? '' : 's') + ' into ' + nOpps + ' opportunit' + (nOpps === 1 ? 'y' : 'ies') + (unsorted ? (' \u00b7 ' + unsorted + ' unsorted') : '') + '. Check the grouping and drag files to fix it, then Screen all.';
   if (typeof showStatus === 'function') showStatus((nOpps === 0) ? 'warn' : 'success', 'Sorted', msg, false);
+  if (typeof _analysisEnd === 'function') _analysisEnd();
 }
 function _triageDragStart(e, zoneId, idx) {
   _triageDrag = { zoneId: zoneId, idx: idx };
@@ -19479,7 +19657,7 @@ function _triageListRowHtml(r, i) {
   if (r.agency && r.agency !== 'not stated') parts.push(escHtml(r.agency));
   if (r.naics && r.naics !== 'not stated') parts.push('NAICS ' + escHtml(r.naics) + (r.naics_fit ? ' (' + escHtml(r.naics_fit) + ' fit)' : ''));
   if (r.set_aside && r.set_aside !== 'not stated') parts.push(escHtml(r.set_aside) + (r.eligible === false ? ' \u2717' : ''));
-  if (r.response_date && r.response_date !== 'not stated') parts.push('due ' + escHtml(r.response_date) + ((r.days_remaining != null && r.days_remaining !== '') ? ' (' + escHtml(String(r.days_remaining)) + 'd)' : ''));
+  if (r.response_date && r.response_date !== 'not stated') { const _rd = (typeof _daysUntil === 'function') ? _daysUntil(r.response_date) : null; const _rn = (_rd != null) ? _rd : ((r.days_remaining != null && /^-?\d+$/.test(String(r.days_remaining).trim())) ? parseInt(String(r.days_remaining).trim(), 10) : null); parts.push('due ' + escHtml(r.response_date) + (_rn != null ? (' (' + (_rn < 0 ? 'closed' : _rn + 'd') + ')') : '')); }
   if (r.value && r.value !== 'not stated') parts.push(escHtml(r.value));
   if (r.solicitation_number && r.solicitation_number !== 'not stated') parts.push(escHtml(r.solicitation_number));
   const meta = parts.join(' \u00b7 ');
@@ -19570,7 +19748,7 @@ async function triageScreenList() {
   }
 }
 
-async function _triageGroupByAI(files, apiKey) {
+async function _triageGroupByAI(files, apiKey, numByName) {
   // Read a snippet of each file first so grouping can use the solicitation number INSIDE the
   // document, not just the filename. fileToContentBlockLocal caches on the File object, so the
   // Screen step reuses this work instead of re-reading everything.
@@ -19581,15 +19759,16 @@ async function _triageGroupByAI(files, apiKey) {
     try {
       const block = await fileToContentBlockLocal(f);
       if (block && block.type === 'text' && block.text && !block._unreadable) {
-        snip = block.text.replace(/^\[File:[^\]]*\]/, '').replace(/\s+/g, ' ').trim().slice(0, 600);
+        snip = block.text.replace(/^\[File:[^\]]*\]/, '').replace(/\s+/g, ' ').trim().slice(0, 1500);
       }
     } catch (e) {}
     if (typeof setProgress === 'function') setProgress(15 + Math.round((i / Math.max(1, files.length)) * 60));
-    entries.push((i + 1) + '. FILENAME: ' + f.name + (snip ? ('\n   FIRST-PAGE TEXT: ' + snip) : '  (no readable text)'));
+    const _dn = numByName && numByName[f.name];
+    entries.push((i + 1) + '. FILENAME: ' + f.name + (_dn ? ('\n   DETECTED SOL#: ' + _dn) : '') + (snip ? ('\n   FIRST-PAGE TEXT: ' + snip) : '  (no readable text)'));
   }
   const promptText =
     'These are files from a bulk download of U.S. Government solicitations, to be grouped by OPPORTUNITY so each opportunity can be screened. '
-    + 'Each file below has a FILENAME and, when readable, a FIRST-PAGE TEXT snippet. GROUP TWO FILES TOGETHER ONLY WHEN YOU ARE CONFIDENT THEY ARE THE SAME PROCUREMENT. The decisive signal is a shared solicitation / RFQ / RFP / notice / reference number \u2014 check BOTH the filename AND the text, since the number is often ONLY inside the document: if two files carry the SAME number they are the same opportunity, and if they carry DIFFERENT numbers they are DIFFERENT opportunities even when the agency or work looks similar. When a file shows no number, corroborate using MULTIPLE signals together \u2014 agency AND sub-agency/contracting office AND the requirement title/program AND the response/close date AND the KO/COR name \u2014 and match a file to an existing group only when SEVERAL of these agree; do NOT merge on a single weak signal alone (a shared agency, NAICS, or set-aside is NOT enough, since one agency runs many unrelated solicitations). When the signals are ambiguous or conflict, keep the files SEPARATE (or leave a truly unattributable file in "Unsorted") rather than guessing \u2014 a wrong merge that hides two different opportunities in one box is worse than an extra group or an Unsorted file the user can drag, because the user visually verifies these groups. '
+    + 'Each file below has a FILENAME and, when readable, a FIRST-PAGE TEXT snippet. GROUP TWO FILES TOGETHER ONLY WHEN YOU ARE CONFIDENT THEY ARE THE SAME PROCUREMENT. The decisive signal is a shared solicitation / RFQ / RFP / notice / reference number \u2014 check BOTH the filename AND the text, since the number is often ONLY inside the document: if two files carry the SAME number they are the same opportunity, and if they carry DIFFERENT numbers they are DIFFERENT opportunities even when the agency or work looks similar. A DETECTED SOL# line, when present, was extracted deterministically from the filename or text and is the STRONGEST signal - group files that share the same DETECTED SOL# together. When a file shows no number, corroborate using MULTIPLE signals together \u2014 agency AND sub-agency/contracting office AND the requirement title/program AND the response/close date AND the KO/COR name \u2014 and match a file to an existing group only when SEVERAL of these agree; do NOT merge on a single weak signal alone (a shared agency, NAICS, or set-aside is NOT enough, since one agency runs many unrelated solicitations). When the signals are ambiguous or conflict, keep the files SEPARATE (or leave a truly unattributable file in "Unsorted") rather than guessing \u2014 a wrong merge that hides two different opportunities in one box is worse than an extra group or an Unsorted file the user can drag, because the user visually verifies these groups. '
     + 'Ignore trailing timestamps in filenames like ".1785767112632" and copy markers like "(1)". '
     + 'Create a labeled group for EVERY distinct opportunity, INCLUDING single-file ones \u2014 do NOT lump unrelated files together, and do NOT drop a file just because it has no number in its name. Label each group with the solicitation number when you can find one (in the text or the filename); otherwise a short 3-6 word name taken from the document title or agency. '
     + 'Use the label "Unsorted" ONLY for a file you genuinely cannot tie to any opportunity \u2014 aim to leave Unsorted empty, but prefer Unsorted over a doubtful merge. '
@@ -20975,6 +21154,7 @@ function _bnaGapContent(opp, cap) {
     '{"items":[{"requirement":"the specific solicitation demand, one line","category":"Capability|Certification|Clearance|Contract Vehicle|Set-Aside|Key Personnel|Past Performance|Other","status":"covered|partial|gap","evidence":"what in the profile covers it, or the exact text: Nothing in the profile addresses this","fix":"for partial or gap: the concrete action to close it (team with a firm that holds X, obtain certification Y, hire or subcontract role Z, cite past performance A). For covered: an empty string","severity":"critical|important|minor"}],"summary":"2 to 4 sentences: the overall coverage picture and the one or two things that most threaten this bid."}\n\n' +
     'Rules:\n' +
     '- Base every judgment ONLY on the profile above. If the profile does not mention something, it is a gap or partial \u2014 never assume unstated strengths.\n' +
+    '- Only assess requirements the solicitation ACTUALLY imposes. A solicitation line shown as "None / Not stated" or "Not stated" is NOT a requirement - do NOT turn it into a requirement or flag a gap for it (if no facility clearance, CMMC, ISO, DCAA-accounting, or certification is required, none of those are gaps).\n' +
     '- severity: "critical" = a pass/fail eligibility or mandatory requirement the company does NOT clearly meet (wrong set-aside, missing mandatory clearance / certification / vehicle, business-size mismatch, cost-reimbursement without DCAA). "important" = a scored requirement with a real shortfall. "minor" = a small or easily-closed gap.\n' +
     '- A certification / clearance / vehicle the requirement demands and the company HOLDS = covered, with the held item named as evidence.\n' +
     '- Be specific and honest; never inflate coverage. Every partial or gap MUST have an actionable fix.\n' +
@@ -22387,7 +22567,8 @@ function _constrainedPwsContext() {
   // Label by PROVENANCE. A figure the tool inferred is not a requirement, and calling it one
   // makes the checker flag the user's own correct sizing as non-compliant.
   (function () {
-    const raw = (o.fte_count != null && o.fte_count !== '') ? o.fte_count : b.estimated_ftes;
+    const _ci = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel : {};
+    const raw = (_ci.fte_count != null && _ci.fte_count !== '') ? _ci.fte_count : (o.fte_count != null && o.fte_count !== '') ? o.fte_count : b.estimated_ftes;
     const s = String(raw == null ? '' : raw).trim();
     if (!s) return;
     if (/^\s*\[(inferred|proposed)\]/i.test(s)) {
@@ -22423,8 +22604,11 @@ function pricingModelReviewCsv() {
   const rows = (typeof pricingFlatRows === 'function') ? pricingFlatRows() : [];
   if (!rows.length) return '';
   const mny = n => '$' + Math.round(n).toLocaleString('en-US');
+  const _gsaMode = (typeof pricingIsGsa === 'function') ? pricingIsGsa() : !!(M.lcats || []).some(function (x) { return x && x.gsaLcat; });
   let out = "THE TOOL'S CURRENT PRICED MODEL (already built from the solicitation and the user's inputs; it SUPERSEDES any earlier uploaded sheet — review THIS).\n\n";
-  out += 'LABOR CATEGORIES (role | GSA Schedule LCAT | advertised FTE | priced rate - base rate, or the GSA Schedule/loaded rate in GSA mode):\n';
+  out += _gsaMode
+    ? 'LABOR CATEGORIES (role | GSA Schedule LCAT | advertised FTE | priced rate - base rate, or the GSA Schedule/loaded rate in GSA mode):\n'
+    : 'LABOR CATEGORIES (role | advertised FTE | priced rate). NOTE: this pricing is NOT on a GSA Schedule, so there are no GSA Schedule LCATs and none are required - do NOT suggest mapping roles to GSA MAS / Schedule labor categories.\n';
   M.lcats.forEach(l => {
     // Report the EFFECTIVE priced rate, not the raw baseRate. In GSA mode baseRate is deliberately
     // blank (the Schedule sets the rate), so reading baseRate alone made every GSA-priced role report
@@ -22436,7 +22620,8 @@ function pricingModelReviewCsv() {
       if (_g > 0) { _effRate = _g; _rateSrc = ' (GSA Schedule rate)'; }
     }
     if (!(_effRate > 0) && typeof pricingBilledRate === 'function') { const _b = pricingBilledRate(l, 0); if (_b > 0) { _effRate = _b; _rateSrc = ' (loaded rate)'; } }
-    out += '- ' + (l.name || '(unnamed)') + ' | GSA: ' + (l.gsaLcat || '(unmapped)') + ' | FTE: ' + (l.advertised != null && l.advertised !== '' ? l.advertised : '(blank)') + ' | rate: ' + (_effRate > 0 ? ('$' + _effRate.toFixed(2) + '/hr' + _rateSrc) : '(no rate)') + '\n';
+    const _gseg = _gsaMode ? (' | GSA: ' + (l.gsaLcat || '(unmapped)')) : '';
+    out += '- ' + (l.name || '(unnamed)') + _gseg + ' | FTE: ' + (l.advertised != null && l.advertised !== '' ? l.advertised : '(blank)') + ' | rate: ' + (_effRate > 0 ? ('$' + _effRate.toFixed(2) + '/hr' + _rateSrc) : '(no rate)') + '\n';
   });
   if (M.clins && M.clins.enabled && typeof pricingClinScheduleRows === 'function') {
     out += '\nCLIN SCHEDULE (CLIN | description | period | type | extended) — populated from the solicitation:\n';
@@ -22469,7 +22654,9 @@ function _constrainedPwsContent(csv, pws, statedFte) {
     'PWS / SOLICITATION REQUIREMENTS:\n' + pws + '\n\n' +
     'THE PRICING TO REVIEW:\n' + csv + '\n\n' +
     (statedFte != null ? 'AUTHORITATIVE STAFFING FIGURE: the solicitation states a level of effort of EXACTLY ' + statedFte + ' FTE. This may be fractional (e.g. 10.5) - use it VERBATIM and do NOT round it up or down to a whole number. When you assess staffing level, compare the priced FTE against ' + statedFte + ' EXACTLY; do not assert a different required FTE.\n\n' : '') +
-    'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a required, recurring base-period PWS task with no labor priced against it; a staffing level (FTEs/hours) below what the scope requires; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
+    'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a required, recurring base-period PWS task with no labor priced against it; a staffing level (FTEs/hours) below a level the SOLICITATION EXPLICITLY STATES as required; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
+    'STAFFING - CRITICAL: do NOT derive or propose a required headcount/FTE from your own reading of the scope. Raise a staffing-level conflict ONLY when the solicitation STATES a required level of effort and the priced level is below it. When level of effort is left to the offeror to propose (no stated FTE), ANY defensible staffing level is compliant - never say the effort "needs" more (or fewer) FTE than priced, and never suggest a specific different headcount.\n\n' +
+    'GSA - CRITICAL: recommend mapping roles to GSA MAS / GSA Schedule labor categories ONLY if the pricing above actually shows GSA Schedule LCATs (a GSA Schedule buy). If the pricing is not on a GSA Schedule, GSA-LCAT mapping is irrelevant - do NOT raise it as a conflict or a fix.\n\n' +
     'IMPORTANT - do NOT raise a task-coverage conflict merely because the base-period pricing does not staff a task. Many PWS tasks are CONDITIONAL (required only if an option period is exercised, or triggered by a specific event), OPTIONAL, surge, or ONE-TIME / single-use, and legitimately carry no base-period labor. Flag an unstaffed task ONLY when it is plainly a required, recurring base-period effort that the pricing omits; when a task is optional, option-year-only, event-triggered, or one-time / single-use, do NOT flag it. When in doubt, do not flag it.\n\n' +
     'Return ONLY JSON (no prose, no markdown fences):\n' +
     '{"items":[{"requirement":"what the PWS requires (paraphrase the specific requirement)","category":"Labor mix|Clearance|Certification|Task coverage|Staffing level|Period of performance|Over-scope|Other","issue":"how the uploaded pricing is non-compliant or in conflict with that requirement","fix":"the recommended change to the pricing","severity":"critical|important|minor"}],"summary":"one line: overall assessment of how well the pricing complies with the PWS"}\n\n' +
@@ -22529,7 +22716,8 @@ function _constrainedFteRecon() {
   }
   const b = (typeof cachedBriefing !== 'undefined' && cachedBriefing) ? cachedBriefing : {};
   const o = (window._bnaOpp) ? window._bnaOpp : {};
-  const raw = (o.fte_count != null && o.fte_count !== '') ? o.fte_count : b.estimated_ftes;
+  const _ci = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel : {};
+  const raw = (_ci.fte_count != null && _ci.fte_count !== '') ? _ci.fte_count : (o.fte_count != null && o.fte_count !== '') ? o.fte_count : b.estimated_ftes;
   const rs = String(raw == null ? '' : raw).trim();
   let toolFte = null, toolDerived = false, solStated = false;
   if (rs) {
@@ -22848,9 +23036,11 @@ let _bnaPct = 0;
 // billing) server-side -- abort stops the browser from waiting and cancels every
 // remaining step, which is where the time/cost saving comes from.
 let _analysisAbort = null;
+let _analysisStopped = false;
 function _showStopBtn(show){ ['gsbStopBtn','gsbMinStopBtn'].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display = show ? 'inline-block' : 'none'; }); }
 function _analysisBegin(title){
   _analysisAbort = new AbortController();
+  _analysisStopped = false;
   try { if (typeof showStatus === 'function') showStatus('info', title || 'Working\u2026', 'Running\u2026 you can stop this at any time with the Stop button above.', false); } catch(e){}
   _showStopBtn(true);
   return _analysisAbort.signal;
@@ -22858,7 +23048,7 @@ function _analysisBegin(title){
 function _analysisEnd(hideBar){ _analysisAbort = null; _showStopBtn(false); if (hideBar) { try { _gsbHide(); } catch(e){} } }
 function _analysisSignal(){ return _analysisAbort ? _analysisAbort.signal : undefined; }
 function _analysisAborted(){ return !!(_analysisAbort && _analysisAbort.signal.aborted); }
-function stopAnalysis(){ if (_analysisAbort) { try { _analysisAbort.abort(); } catch(e){} } _showStopBtn(false); }
+function stopAnalysis(){ if (_analysisAbort) { _analysisStopped = true; try { _analysisAbort.abort(); } catch(e){} } _showStopBtn(false); }
 function _isAbortError(e){ return !!(e && (e.name === 'AbortError' || (e.message && /abort/i.test(e.message)))); }
 (function(){
   if (window._fetchAbortPatched || typeof window.fetch !== 'function') return;
@@ -23001,6 +23191,33 @@ const _DIGEST_COMPANY =
   `- KEY PERSONNEL: names, roles/titles, relevant experience, certifications, clearances, degrees.\n` +
   `- CAPABILITIES / DIFFERENTIATORS: technical capabilities, tools/systems, methodologies, certifications (ISO, CMMI, CMMC), quality processes, and any quantified results or client testimonials (with attribution).\n` +
   `Preserve specifics - names, numbers, dates, dollar values, agency names, quotes verbatim. Attribute each fact to its source document. Omit generic marketing language. Be thorough; completeness over brevity.`;
+function _condenseCriticalFacts(text) {
+  // P8: pull the highest-stakes GovCon facts DETERMINISTICALLY from the FULL source text BEFORE condensing
+  // and prepend them to the digest, so a set-aside determination, solicitation number, NAICS, due/close
+  // date, or CLIN can never be lost when a large bundle is squeezed to fit the model budget. Regex/labelled
+  // detectors only - no model call - and authoritative over the LLM digest.
+  var t = String(text == null ? '' : text);
+  if (!t) return '';
+  var out = [], m;
+  try { if (typeof _setAsideFromText === 'function') { var sa = _setAsideFromText(t); if (sa && sa.type) out.push('Set-aside (detected): ' + sa.type); } } catch (e) {}
+  var sols = [];
+  try {
+    var s1 = (typeof _triageSolFromLabel === 'function') && _triageSolFromLabel(t); if (s1 && sols.indexOf(s1) < 0) sols.push(s1);
+    var s2 = (typeof _triageSolFromString === 'function') && _triageSolFromString(t); if (s2 && sols.indexOf(s2) < 0) sols.push(s2);
+  } catch (e) {}
+  if (sols.length) out.push('Solicitation number(s): ' + sols.join(', '));
+  var naics = [], reN = /NAICS[^0-9]{0,12}(\d{6})/gi;
+  while ((m = reN.exec(t)) && naics.length < 6) { if (naics.indexOf(m[1]) < 0) naics.push(m[1]); }
+  if (naics.length) out.push('NAICS code(s): ' + naics.join(', '));
+  var dues = [], reD = /((?:offers?|proposals?|quotes?|responses?)\s+(?:are\s+)?due|due\s+date|closing?\s+date|response\s+date|submission\s+deadline)[^\n]{0,80}/gi;
+  while ((m = reD.exec(t)) && dues.length < 6) { var ld = m[0].replace(/\s+/g, ' ').trim(); if (/\d/.test(ld) && dues.indexOf(ld) < 0) dues.push(ld); }
+  if (dues.length) out.push('Due/close date line(s): ' + dues.join(' | '));
+  var clins = [], reC = /\bCLIN\s*#?\s*(\d[0-9A-Z]{2,7})\b/gi;
+  while ((m = reC.exec(t)) && clins.length < 20) { if (clins.indexOf(m[1]) < 0) clins.push(m[1]); }
+  if (clins.length) out.push('CLIN number(s): ' + clins.join(', '));
+  if (!out.length) return '';
+  return 'PRESERVED CRITICAL FACTS (extracted deterministically from the FULL source text BEFORE condensing - authoritative; if the condensed digest below omits or disagrees with any of these, THESE win):\n- ' + out.join('\n- ') + '\n\n';
+}
 async function bnaDigestCall(apiKey, contentBlocks, digestPrompt) {
   const _dp = digestPrompt || _DIGEST_BNA;
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -23033,7 +23250,8 @@ async function bnaCondenseSources(apiKey, blocks, digestPrompt) {
     done++; showBnaStatus('info', 'Condensing large documents\u2026', `Reading section ${done} of ${total}\u2026`, true);
     const dg = await bnaDigestCall(apiKey, [db], digestPrompt); if (dg) digests.push(dg);
   }
-  return `CONDENSED SOURCE DIGEST \u2014 the documents were too large to send whole, so these are the bid/no-bid-relevant facts extracted from the full text. Treat this as the solicitation + company evidence:\n\n` + digests.join('\n\n---\n\n');
+  const _crit = (typeof _condenseCriticalFacts === 'function') ? _condenseCriticalFacts(combined) : '';
+  return _crit + `CONDENSED SOURCE DIGEST \u2014 the documents were too large to send whole, so these are the bid/no-bid-relevant facts extracted from the full text. Treat this as the solicitation + company evidence:\n\n` + digests.join('\n\n---\n\n');
 }
 
 async function runBnaCombined() {
@@ -23380,6 +23598,15 @@ async function runBidNoBid() {
         _correctSetAsideEverywhere(result, _canonSa);
         if (result && result.opportunity) _correctSetAsideEverywhere(result.opportunity, _canonSa);
       }
+    }
+    // v352 (cross-tab single-source): fte_count is a canonical FACT from Opportunity Details (reviewed +
+    // reconciled via reconcileStaffing). The scoring model re-reads it independently, so carry the canonical
+    // value onto the scoring opportunity too - otherwise the verdict, coverage-gap, decision panel and the
+    // Pricing PWS check could each reason about a DIFFERENT FTE than the Opportunity card shows.
+    if (window._lastBnaIntel && window._lastBnaIntel.fte_count != null && String(window._lastBnaIntel.fte_count).trim() !== '') {
+      const _canonFte = window._lastBnaIntel.fte_count;
+      if (result && result.opportunity) result.opportunity.fte_count = _canonFte;
+      if (window._bnaOpp) window._bnaOpp.fte_count = _canonFte;
     }
     if (typeof refreshBnaQaAvailability === 'function') refreshBnaQaAvailability();   // Phase 7: reveal the ad-hoc Q&A box once an opportunity is analyzed
     // Eligibility is now a GATE, not an AI-scored fit factor. Derive its bar from the
@@ -24204,14 +24431,14 @@ async function extractOpportunityIntel(docContent, apiKey) {
     `1. Use VERBATIM text from the document for all fields — do not paraphrase, expand, or infer the title or ID. Copy them exactly.\n` +
     `2. Break the federal customer into THREE separate fields, each WITH its standard abbreviation in parentheses: (a) department_agency = the top-level Cabinet Department or independent agency (e.g. "Department of Health and Human Services (HHS)", "Department of the Navy (DON)", "General Services Administration (GSA)", "National Aeronautics and Space Administration (NASA)"); (b) sub_agency = the operating division, bureau, or military command beneath it (e.g. "Administration for Children and Families (ACF)", "Naval Surface Warfare Center Dahlgren Division (NSWCDD)", "Federal Acquisition Service (FAS)") \u2014 use "" if there is none; (c) contracting_office = the specific buying/contracting office issuing this action (e.g. "Office of Administration (OA)") \u2014 use "" if not stated. Do NOT cram all three into one field. Example for ACF Office of Administration under HHS: department_agency "Department of Health and Human Services (HHS)", sub_agency "Administration for Children and Families (ACF)", contracting_office "Office of Administration (OA)". Common abbreviations: Army=DA, Navy=DON, Air Force=DAF, Marines=USMC, Space Force=USSF, Defense agencies=DoD, VA=VA, DHS=DHS, State=DoS, Justice=DOJ.\n` +
     `3. For requirement_name: copy the EXACT title from the solicitation cover page — do not reword or expand it. For id_number: find the solicitation / RFQ / RFP / notice / reference number and copy it EXACTLY (keep dashes, letters, and leading zeros). Look on the cover page, the SF-1449 / SF-18 / SF-33 form block, the document header or footer, the SAM.gov notice ID, AND the USER-PROVIDED CONTEXT. Agency formats vary widely — e.g. N00189-25-R-0001, W912DY-25-R-0042, FA8501-25-R-0001, 47QRAA25R0001, 36C10X26Q0225, 91990026Q0072, 70Z02326QDCO00001, NB204000-26-01138. Use "Not stated in documents" only if there is genuinely no such number anywhere in the input.\n` +
-    `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated.\n` +
+    `4. If a field is not explicitly stated, use "Not stated in documents". Only use [Inferred] prefix when making a genuinely reasonable inference that is not directly stated. NEVER fabricate a specific POC/KO/COR name, phone, or email, a FAR/DFARS clause number, a NAICS/SIN/PSC code, or a certification - copy each VERBATIM from the documents or leave it "Not stated"/empty; a plausible-looking value that is not literally in the text is a fabrication and is worse than an empty field.\n` +
     `5. For stage: classify into EXACTLY ONE controlled value from the notice/request type: "Sources Sought", "RFI", "Draft", "Pre-solicitation", "RFQ", or "RFP". Read the OVERALL action type from explicit language ("Request for Quotation" = RFQ, "Request for Proposal" = RFP, "Sources Sought", "Request for Information" = RFI, "Presolicitation" = Pre-solicitation, "Draft RFP/RFQ" = Draft). A draft PWS, draft SOW, or other draft ATTACHMENT is a document type, NOT a stage: never output "Draft PWS" and do NOT set stage to "Draft" merely because a draft attachment is present - if the action is an active RFQ or RFP that includes a draft PWS, the stage is RFQ or RFP. Use "Draft" ONLY when the solicitation ITSELF is explicitly released as a draft for industry comment. Output only one of the six values, or "Not stated in documents" if genuinely indeterminate.\n` +
     `6. For labor_categories, build the REALISTIC STAFFED TEAM you would actually price - NOT a menu of every title or skill mentioned. (a) If the solicitation gives a workload / level-of-effort / staffing table (see the WORKLOAD rule below), reproduce EXACTLY those categories and set loe_basis to "government". (b) Otherwise the labor is quoter-defined (you propose the team in a pricing model), so set loe_basis to "quoter": name each DISTINCT role and CONSOLIDATE overlapping skills under one qualified person. Expertise areas or SME domains (e.g. Records Management, Section 508, FOIA/FACA, Technical Writing, Content Management) are NOT separate labor categories when one senior person - often the PM/SME - would cover several; do NOT reify a list of required skills into one role per skill. Give the team you would actually staff to perform the scope: a small virtual A&AS / advisory / support effort is typically 2-5 people (e.g. a lead/PM plus 1-3 support analysts), not one role per mentioned domain. Assign EVERY role a base_year_fte (whole numbers preferred; fractional only for genuine part-time) and an est_loaded_rate = your realistic fully-loaded hourly rate for that role in USD (integer; e.g. senior PM/SME ~150-190, mid analyst ~95-130, junior/admin ~70-95) unless min_hourly_rate is stated. Set clin to the Section B / CLIN-schedule number this role's effort is priced under WHEN the solicitation ties this labor to a specific CLIN (base-period number, verbatim, leading zeros preserved); leave it EMPTY when the solicitation lists CLINs without tying this role to one, or lists none - never invent a CLIN. Sort by base_year_fte descending, then by name.\n` +
     `7. For is_sca: the contract is SCA/SCLS-covered whenever a Wage Determination is attached or referenced, or FAR 52.222-41 applies - treat a WD's presence as DECISIVE evidence of coverage. When the contract is SCA-covered, mark is_sca true for every non-exempt SERVICE position (administrative, technical support, clerical, operations, maintenance, help-desk, and similar roles). Mark a position false ONLY if it is a bona-fide exempt professional/administrative/executive/computer employee under 29 CFR 541, or the contract is genuinely not SCA-covered. Do NOT mark positions false just because the SCA clause does not name each one individually, and do NOT default everything to false when a WD is present.\n` +
     `8. For min_hourly_rate: ONLY populate this if the solicitation or an attached Wage Determination EXPLICITLY states the exact dollar amount for this LCAT. If no rate is stated verbatim, use "" (empty string). Do NOT estimate, infer, or look up WD rates - only copy exact figures from the document.\n` +
     `9. For pursuit_recommendation: this is a REQUIRED professional judgment — NEVER leave it blank or use "Not stated". Decide "Prime", "Subcontract", or "Pass" for ${CLIENT_CONFIG.companyShortName || 'the company'}${CLIENT_CONFIG.businessType ? ' (a ' + CLIENT_CONFIG.businessType + ')' : ''} and give a one- to two-sentence rationale grounded in set-aside fit, capability alignment, and competitive position. Begin the value with the decision word. Example: "Prime - the set-aside aligns directly with the company's certifications and the NAICS matches core capabilities."\n\n` +
     `10. For base_year_value and total_contract_value: these are HIGH-VALUE go/no-go sizing fields - do NOT default them to "Not stated". If a dollar figure is stated, copy it verbatim. If NOT stated, give a clearly-labeled order-of-magnitude ESTIMATE and prefix it with "[Inferred] ~" (example base_year_value "[Inferred] ~$15M-$30M/yr"; example total_contract_value "[Inferred] ~$80M-$160M" across the full period of performance), reasoned from scope breadth, number of work areas/CLINs, FTE count, period length, agency size, and comparable known contracts. In award_value_rationale state the basis in one sentence (example "Est. from nine work areas plus multi-year PoP and FAA financial-operations scope"). Only use "Not stated in documents" if there is genuinely nothing to reason from. When labor is quoter-defined (loe_basis "quoter", no Government hours table), do NOT guess the value from vague scope size - compute base_year_value = the sum over your proposed roles of (base_year_fte x 1912 x est_loaded_rate), prefix "[Inferred] ", and state the team basis in award_value_rationale (e.g. "Proposed team of 1 PM/SME + 2 support analysts = 3.0 FTE at a blended ~$130/hr loaded"). total_contract_value = base_year_value x the real contract LENGTH IN YEARS (not the number of ordering periods): if the base period is shorter than 12 months, count it as its actual fraction of a year - e.g. a 6-month base plus four 12-month options is 4.5 years, NOT 5.
-11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ".
+11. For incumbent: name the current/incumbent contractor IF the documents state or clearly identify it (for example the SOW references the current provider, or a recompete names the predecessor contract). If this is a recompete/follow-on but the incumbent is NOT identifiable from the documents, output "Not stated in documents - check USASpending.gov or FPDS for the predecessor award holder". Do NOT guess a company name from outside knowledge; if you provide a name inferred from document context rather than explicitly stated, prefix it with "[Inferred] ". Classify new_or_recompete as "Recompete" or "Follow-on" ONLY when the documents actually indicate an existing/predecessor contract (they name an incumbent, cite a predecessor contract number, or say the requirement is currently being performed); otherwise use "New" or "Not stated in documents". NEVER describe this requirement as a follow-on or recompete of a specific prior contract unless that prior contract is identified in the documents - do not infer a predecessor from outside knowledge.
 Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end with }.\n` +
     `WORKLOAD / LEVEL-OF-EFFORT TABLE (OVERRIDES rule 10 whenever such a table is present): If the solicitation gives an estimated-hours / workload / level-of-effort table by labor category, treat those hours as the authoritative basis and do NOT estimate. (a) ANNUAL hours = the sum of the BASE-YEAR hours column ONLY; NEVER add the base-year and option-year columns together (option periods are SEPARATE performance periods, not additional concurrent staff). (b) fte_count = annual hours / 1912, rounded to ONE decimal, PREFIXED with "[GovEst] " because it is derived from the government's STATED workload estimate (an estimate, not a firm requirement) - e.g. "[GovEst] 7.7". (c) For EACH labor category, base_year_fte = that category base-year hours / 1912 to one decimal, and set base_year_hours to that category's base-year hours as an INTEGER exactly as stated in the table. (d) base_year_value and total_contract_value are the government's stated workload priced at a rate WE assume, so PREFIX BOTH with "[Inferred] ". Compute base_year_value = annual hours times a REALISTIC blended fully-loaded hourly rate: for analytical / professional-services labor (data analysts, business process engineers, program managers, and similar) a defensible blended fully-loaded rate is roughly $100-$150/hr - use a higher rate ONLY for genuinely specialized or cleared labor and note that in award_value_rationale. Do NOT use inflated rates (e.g. $250+/hr) for standard analyst / professional labor. Example base_year_value "[Inferred] ~$1.8M/yr". total_contract_value = base_year_value times the real contract LENGTH IN YEARS, not the number of ordering periods - a 6-month base plus four 12-month option years is 4.5 years, not 5 - e.g. "[Inferred] ~$3.6M". In award_value_rationale state the hours basis and the assumed blended rate (e.g. "RFQ base-year workload of 14685 hours across 5 labor categories at a blended loaded rate of ~$125/hr").\n\n` +
     `IMPORTANT: Use only plain ASCII in all string values. No special characters, no em-dashes, no smart quotes, no newlines inside strings.\n\n` +
@@ -24285,6 +24512,7 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
       }
     }
     if (typeof reconcileStaffing === 'function') reconcileStaffing(intel);
+    if (typeof _sanitizeExtractedFacts === 'function') _sanitizeExtractedFacts(intel);
     window._lastBnaIntel = intel;
     if (typeof refreshBnaQaAvailability === 'function') refreshBnaQaAvailability();   // Phase 7: reveal the Q&A box as soon as opportunity details are extracted (before scoring / coverage-gap)
     renderOpportunityIntel(intel, body);
@@ -24307,18 +24535,20 @@ Respond with ONLY a raw JSON object. No markdown. No backticks. Start with { end
             if (found && found.incumbent) {
               var _weak = !found.source_url || _isWeakIncumbentSource(found.source_url);
               var _match = _incumbentNamesMatch(intel.incumbent, found.incumbent);
+              var _hi = String(found.confidence || '').toLowerCase() === 'high';   // only a verified same-requirement match is adopted
               if (_docNamed) {
                 // AUTHORITATIVE document name stays; attach a source link ONLY when the web result names the SAME company.
                 if (_match && !_weak) { intel.incumbent_source_url = found.source_url; intel.incumbent_source_name = found.source_name || ''; }
                 intel.incumbent_lookup = 'confirmed';   // never 'none'/'error' when the documents named the incumbent
-              } else if (_weak) {
-                intel.incumbent = '[Inferred] ' + found.incumbent; intel.incumbent_source_url = ''; intel.incumbent_source_name = ''; intel.incumbent_lookup = 'found';
-              } else {
+              } else if (_hi && !_weak) {
                 intel.incumbent = found.incumbent; intel.incumbent_source_url = found.source_url; intel.incumbent_source_name = found.source_name || ''; intel.incumbent_lookup = 'found';
+              } else {
+                // Not confident this is the SAME requirement (or only a weak source) - omit rather than assert an unrelated award.
+                intel.incumbent_lookup = 'none';
               }
               // Real award $ overrides inferred/missing values - only from a credible source that pertains to THIS
               // incumbent (always when we just adopted the name; match-gated when the docs already named it).
-              if (!_weak && found.source_url && (_docNamed ? _match : true)) {
+              if (_hi && !_weak && found.source_url && (_docNamed ? _match : true)) {
                 var _hasNum = function (s) { return /\d/.test(String(s == null ? '' : s)); };
                 var _infOrMiss = function (v) {
                   var s = String(v == null ? '' : v).trim();
@@ -24491,6 +24721,7 @@ async function lookupIncumbentViaWeb(intel, apiKey) {
     'Title: "' + title + '". ' + (idnum ? ('Solicitation/ID: ' + idnum + '. ') : '') + (agency ? ('Agency: ' + agency + '. ') : '') +
     'Determine incumbency ONLY from federal award/contract records. Prioritize USASpending.gov, FPDS.gov, and SAM.gov, then reputable GovCon trackers such as Orange Slices AI (orangeslices.ai), GovTribe, HigherGov, and GovWin. Base the answer on who holds or most recently held the contract, not on hiring activity. ' +
     'Do NOT cite job boards, recruiting pages, or applicant-tracking systems (for example Paylocity, Indeed, LinkedIn jobs, Greenhouse, Lever, Workday, iCIMS) as the source, and do NOT infer incumbency from a company posting similar jobs - those pages are unreliable and expire. The source_url must be a stable page that actually documents the award. ' +
+    'CRITICAL - SAME REQUIREMENT ONLY: report an incumbent/prior award ONLY if the award record is unmistakably THE SAME requirement - the same agency buying the same scope of work, ideally under the same or a directly-referenced predecessor solicitation/contract number. If the best match is a DIFFERENT contract, a similar-sounding program, or the same vendor on unrelated work, or if you are not confident it is the same requirement, return EMPTY STRINGS for every field and name no company - it is far better to omit than to assert an unrelated contract as the predecessor. Reserve confidence "high" for a record you have verified is the same requirement (matching agency AND scope, or an explicit predecessor-contract reference); use "medium" or "low" whenever the tie to THIS requirement is uncertain. ' +
     'ALSO capture the prior/current contract\'s REAL dollar figures from that SAME authoritative award record when they are shown: the total value / ceiling or total obligated to date, and the annual or base-period value if determinable. Report ONLY actual figures present in the award data - do NOT estimate, guess, round, or compute figures that are not shown. If real figures are not available, leave those fields as empty strings. ' +
     'Respond with ONLY a raw JSON object, no markdown, no backticks: {"incumbent":"company name, or empty string if you cannot find a credible source","source_url":"the exact URL of the page where you found it, or empty","source_name":"the website name or domain (for example USASpending.gov or Orange Slices AI), or empty","confidence":"high|medium|low","total_contract_value":"the actual total contract value/ceiling or total obligated on the prior/current award, verbatim with units (for example $45.2M), or empty if not shown in the award data","base_year_value":"the actual annual or base-period dollar value if the award data shows it (for example $9.1M/yr), or empty","value_basis":"one short phrase naming what the figures represent and the record they came from, for example: total obligated on prior award W91234-20-C-0001 per USASpending.gov; empty if there are no figures"}.';
   // A network/HTTP failure THROWS (caller marks the lookup 'error'); a clean run that simply finds
@@ -26633,7 +26864,7 @@ window.RecStore = (function () {
 // from CLIENT_CONFIG.recruiting.sharePoint.
 (function () {
   'use strict';
-  let cands = [], LT = null, _loaded = false;
+  let cands = [], LT = null, _loaded = false, _trkPage = 0, _lastFkey = null;
   function sp() { return (CLIENT_CONFIG.recruiting && CLIENT_CONFIG.recruiting.sharePoint) || {}; }
   function spSite() { return sp().site || ''; }
   function spScope() { return sp().scope || ''; }
@@ -26712,7 +26943,33 @@ window.RecStore = (function () {
     LT = (d && d.d && d.d.ListItemEntityTypeFullName) ? d.d.ListItemEntityTypeFullName : null;
     return LT;
   }
-  function nextLocalId() { return cands.length ? Math.max.apply(null, cands.map(function (c) { return c.id || 0; })) + 1 : 1; }
+  function nextLocalId() { var ids = cands.map(function (c) { return typeof c.id === 'number' ? c.id : 0; }); return ids.length ? Math.max.apply(null, ids) + 1 : 1; }
+  function appList() { return sp().applicantsList || ''; }
+  function appCols() { return sp().applicantsColumns || {}; }
+  function inclApplicants() { var e = document.getElementById('trkInclApplicants'); return !!(e && e.checked); }
+  function _mapApplicant(x, A) {
+    var fn = x[A.firstName] || '', ln = x[A.lastName] || '';
+    var nm = (String(fn) + ' ' + String(ln)).trim() || (x.Title || '');
+    var city = x[A.city] || '', st = x[A.state] || '';
+    var stTxt = (typeof st === 'string') ? st : (st && (st.Title || st.LookupValue) || '');
+    var loc = [city, stTxt].filter(Boolean).join(', ');
+    var stage = x[A.stage]; var stageTxt = (typeof stage === 'string') ? stage : (stage && (stage.Title || stage.LookupValue) || '');
+    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: x[A.linkedIn] || '', source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true };
+  }
+  // Second SharePoint list (the applicants repository) merged in READ-ONLY when the toggle is on. Its schema
+  // differs (applicantsColumns: firstName/lastName/position/city/state/stage), so we map it to the candidate
+  // shape and tag each 'app_<id>' + _ro so status/remove can't write to the wrong list.
+  async function loadApplicants(token) {
+    if (!appList() || !spSite()) return [];
+    try {
+      var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(appList()) + "')/items?$top=2000", { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=verbose' } });
+      if (!r.ok) return [];
+      var d = await r.json();
+      var rows = (d.d && d.d.results) || d.value || [];
+      var A = appCols();
+      return rows.map(function (x) { return _mapApplicant(x, A); });
+    } catch (e) { return []; }
+  }
   async function loadC(interactive) {
     if (window.RecStore.isLocal()) { cands = window.RecStore.load(); _loaded = true; renderC(); setB('ok', '\u2713 ' + cands.length + ' candidate' + (cands.length !== 1 ? 's' : '') + ' \u2014 stored locally in this browser.'); return; }
     if (!signedIn()) { setB('info', 'Sign in with Microsoft (top of the page) to load candidates from SharePoint.'); renderC(); return; }
@@ -26731,6 +26988,7 @@ window.RecStore = (function () {
       if (!r.ok) { if (r.status === 404) { showCreateList('The list \u201c' + spList() + '\u201d wasn\u2019t found. Create it automatically, or fix the name in Settings \u2192 Recruiting \u2014 or use Import CSV to work locally.'); return; } var e = await r.json().catch(function () { return null; }); setB('err', 'SharePoint error: ' + (e && e.error ? e.error.message.value : r.status)); return; }
       var d = await r.json();
       cands = (d.d.results || []).map(function (x) { return { id: x.Id, name: x[C.name] || '', role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '' }; });
+      if (inclApplicants() && appList()) { try { var _extra = await loadApplicants(t); if (_extra.length) cands = cands.concat(_extra); } catch (e) {} }
       _loaded = true;
       setB('ok', '\u2713 ' + cands.length + ' candidate' + (cands.length !== 1 ? 's' : '') + ' loaded');
       renderC();
@@ -26754,6 +27012,7 @@ window.RecStore = (function () {
     if (ld) ld.style.display = 'none';
   }
   async function updSt(id, val) {
+    if (String(id).indexOf('app_') === 0) { toast('Applicant-repository candidates are read-only here \u2014 manage them in Position / Candidate Match.'); return; }
     if (window.RecStore.isLocal()) { var lc = cands.filter(function (x) { return x.id === id; })[0]; if (lc) { lc.status = val; window.RecStore.save(cands); renderC(); toast('Updated'); } return; }
     if (!signedIn()) { toast('Not signed in'); return; }
     var C = spCols();
@@ -26766,6 +27025,7 @@ window.RecStore = (function () {
     } catch (e) { toast('Update failed'); }
   }
   async function remC(id) {
+    if (String(id).indexOf('app_') === 0) { toast('Applicant-repository candidates are read-only here \u2014 manage them in Position / Candidate Match.'); return; }
     if (window.RecStore.isLocal()) { if (!confirm('Remove this candidate?')) return; cands = cands.filter(function (x) { return x.id !== id; }); window.RecStore.save(cands); renderC(); toast('Removed'); return; }
     if (!confirm('Remove this candidate?')) return;
     var t = await getSpRestToken(true); if (!t) return;
@@ -26784,9 +27044,23 @@ window.RecStore = (function () {
     var cnt = document.getElementById('clistCount');
     if (cnt) cnt.textContent = cands.length ? ('\u2014 showing ' + f.length + ' of ' + cands.length) : '';
     var list = document.getElementById('clist'); if (!list) return;
-    if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet. Add one above, upload a resume, or import a CSV.' : 'No candidates match your filters.') + '</p></div>'; return; }
+    if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet. Add one above, upload a resume, or import a CSV.' : 'No candidates match your filters.') + '</p></div>'; var _pg0 = document.getElementById('clistPager'); if (_pg0) { _pg0.style.display = 'none'; _pg0.innerHTML = ''; } return; }
     var bm = { 'New': 'bn', 'Contacted': 'bc', 'Added to Repository': 'ba' };
-    list.innerHTML = f.map(function (c) { return '<div class="cc"><div class="cch"><div><div class="ccn">' + esc(c.name) + '</div><div class="ccr">' + esc(c.role) + '</div></div><span class="cbadge ' + bm[c.status] + '">' + esc(c.status) + '</span></div><div class="ccm">' + (c.location ? '<span>\uD83D\uDCCD ' + esc(c.location) + '</span>' : '') + (c.email ? '<span>\u2709 ' + esc(c.email) + '</span>' : '') + (c.phone ? '<span>\uD83D\uDCDE ' + esc(c.phone) + '</span>' : '') + (c.url ? '<span>\uD83D\uDD17 <a href="' + (c.url.indexOf('http') === 0 ? esc(c.url) : 'https://' + esc(c.url)) + '" target="_blank">Profile</a></span>' : '') + (c.source ? '<span>\u2732 ' + esc(c.source) + '</span>' : '') + '</div>' + (c.notes ? '<div class="ccnt">' + esc(c.notes) + '</div>' : '') + '<div class="cca"><select onchange="Rec.updSt(' + c.id + ',this.value)"><option value="New"' + (c.status === 'New' ? ' selected' : '') + '>New</option><option value="Contacted"' + (c.status === 'Contacted' ? ' selected' : '') + '>Contacted</option><option value="Added to Repository"' + (c.status === 'Added to Repository' ? ' selected' : '') + '>Added to Repository</option></select><button class="btn sm danger" onclick="Rec.remC(' + c.id + ')">\u2715 Remove</button></div></div>'; }).join('');
+    var _SIZE = 25;
+    var _fk = q + '|' + fs; if (_fk !== _lastFkey) { _trkPage = 0; _lastFkey = _fk; }   // a filter change resets to page 1
+    var _pages = Math.max(1, Math.ceil(f.length / _SIZE));
+    _trkPage = Math.min(Math.max(0, _trkPage), _pages - 1);
+    var _pf = f.slice(_trkPage * _SIZE, (_trkPage + 1) * _SIZE);
+    var _pg = document.getElementById('clistPager');
+    if (_pg) {
+      if (_pages <= 1) { _pg.style.display = 'none'; _pg.innerHTML = ''; }
+      else {
+        var _from = _trkPage * _SIZE + 1, _to = Math.min(f.length, (_trkPage + 1) * _SIZE);
+        _pg.style.display = 'flex';
+        _pg.innerHTML = '<button class="btn sm"' + (_trkPage === 0 ? ' disabled' : '') + ' onclick="Rec.trkPage(' + (_trkPage - 1) + ')">\u2039 Prev</button><span style="font-size:12px;color:var(--muted)">' + _from + '\u2013' + _to + ' of ' + f.length + ' \u00b7 page ' + (_trkPage + 1) + ' of ' + _pages + '</span><button class="btn sm"' + (_trkPage >= _pages - 1 ? ' disabled' : '') + ' onclick="Rec.trkPage(' + (_trkPage + 1) + ')">Next \u203a</button>';
+      }
+    }
+    list.innerHTML = _pf.map(function (c) { return '<div class="cc"><div class="cch"><div><div class="ccn">' + esc(c.name) + '</div><div class="ccr">' + esc(c.role) + '</div></div><span class="cbadge ' + bm[c.status] + '">' + esc(c.status) + '</span></div><div class="ccm">' + (c.location ? '<span>\uD83D\uDCCD ' + esc(c.location) + '</span>' : '') + (c.email ? '<span>\u2709 ' + esc(c.email) + '</span>' : '') + (c.phone ? '<span>\uD83D\uDCDE ' + esc(c.phone) + '</span>' : '') + (c.url ? '<span>\uD83D\uDD17 <a href="' + (c.url.indexOf('http') === 0 ? esc(c.url) : 'https://' + esc(c.url)) + '" target="_blank">Profile</a></span>' : '') + (c.source ? '<span>\u2732 ' + esc(c.source) + '</span>' : '') + '</div>' + (c.notes ? ('<div class="ccnt' + (String(c.notes).length > 140 ? ' ccnt-clamp' : '') + '"' + (String(c.notes).length > 140 ? ' onclick="Rec.trkToggleNote(this)" title="Click to expand or collapse"' : '') + '>' + esc(c.notes) + '</div>') : '') + '<div class="cca">' + (c._ro ? '<span style="font-size:12px;color:var(--muted)">From applicant repository \u2014 read-only here</span>' : ('<select onchange="Rec.updSt(' + c.id + ',this.value)"><option value="New"' + (c.status === 'New' ? ' selected' : '') + '>New</option><option value="Contacted"' + (c.status === 'Contacted' ? ' selected' : '') + '>Contacted</option><option value="Added to Repository"' + (c.status === 'Added to Repository' ? ' selected' : '') + '>Added to Repository</option></select><button class="btn sm danger" onclick="Rec.remC(' + c.id + ')">\u2715 Remove</button>')) + '</div></div>'; }).join('');
   }
   function clrC() { ['cn', 'cr', 'cl', 'ce', 'cp', 'cu', 'cso', 'cno'].forEach(function (id) { setV(id, ''); }); var cs = document.getElementById('cs'); if (cs) cs.value = 'New'; var rn = document.getElementById('review-notice'); if (rn) rn.style.display = 'none'; }
   function expCSV() {
@@ -26942,6 +27216,7 @@ window.RecStore = (function () {
     window.Rec.loadC = loadC; window.Rec.addC = addC; window.Rec.updSt = updSt; window.Rec.remC = remC;
     window.Rec.currentBench = function () { return (cands || []).slice(); };
     window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP; window.Rec.importCsv = importCsv;
+    window.Rec.trkPage = function (n) { _trkPage = n; renderC(); }; window.Rec.trkToggleNote = function (el) { if (el) el.classList.toggle('ccnt-clamp'); };
     window.Rec.dzOv = dzOv; window.Rec.dzLv = dzLv; window.Rec.dzDp = dzDp; window.Rec.handlePdf = handlePdf;
     window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint; window.Rec.onAuthChangedT = onAuthChanged; window.Rec.provisionTrackerList = provisionTrackerList;
   }
