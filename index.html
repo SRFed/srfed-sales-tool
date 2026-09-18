@@ -791,7 +791,8 @@
     font-size: 16px; font-weight: 600; cursor: pointer;
     transition: all 0.15s; letter-spacing: 0.2px;
     min-width: 0; width: 100%; text-align: left;
-    font-family: inherit; white-space: normal; line-height: 1.3; overflow-wrap: anywhere;
+    font-family: inherit; white-space: normal; line-height: 1.3; overflow-wrap: anywhere; padding-left: calc(16px + 1.5em); text-indent: -1.5em;
+    display: flex; flex-direction: column; justify-content: center; min-height: 70px;
     box-shadow: none;
   }
   .tab-btn:hover {
@@ -3291,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '374';
+const APP_VERSION = '377';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19149,7 +19150,7 @@ function triageAddZone(silent) {
   if (!silent) triageRenderZones();
 }
 function triageRemoveZone(id) { triageZones = triageZones.filter(z => z.id !== id); triageRenderZones(); }
-function triageSetLabel(id, val) { const z = triageZones.find(x => x.id === id); if (z) z.label = String(val || '').trim() || ('Opportunity ' + id); }
+function triageSetLabel(id, val) { const z = triageZones.find(x => x.id === id); if (z) { z.label = String(val || '').trim() || ('Opportunity ' + id); z._autoName = false; } }
 function triageSetEbuyId(id, val) { const z = triageZones.find(x => x.id === id); if (z) z.ebuyId = String(val || '').trim(); }
 // GSA eBuy / Unison-style portal Request IDs are RFQ/RFP/RFI followed by ~7 digits (e.g. RFQ1827479) -
 // the PORTAL's own tracking number, distinct from the agency solicitation number (e.g. 7571MN26R00001A).
@@ -19396,6 +19397,18 @@ function _triageApplyEligibility(v) {
   if (v.prime_ineligible && v.verdict === 'Pass' && !(v.hard_gates && v.hard_gates.length)) v.verdict = 'Maybe';
   return v;
 }
+// Name a triaged opportunity by its screened title when its label is still an AUTO token (not a real
+// solicitation number, not 'Unsorted', not user-renamed) - so "Ilab"/"Gmkfa3reet89oux" become the real
+// requirement name. Returns the new label, or null to leave the label alone. PURE (harnessed).
+function _looksLikeSolNum(s) { s = String(s || ''); return /^[A-Z0-9][A-Z0-9-]{5,24}$/.test(s) && (s.match(/\d/g) || []).length >= 2; }
+function _triageNameFromVerdict(label, autoName, verdict) {
+  if (autoName === false) return null;                                   // a real number or a user-edited name
+  if (String(label || '').trim() === 'Unsorted') return null;
+  if (_looksLikeSolNum(label)) return null;   // keep solicitation numbers (all-caps alphanumeric with digits)
+  var nm = String((verdict && (verdict.requirement_name || verdict.requirement_title)) || '').trim();
+  if (!nm) return null;
+  return nm.length > 72 ? (nm.slice(0, 71) + '\u2026') : nm;
+}
 async function triageScreenZone(id) {
   const z = triageZones.find(x => x.id === id);
   if (!z) return;
@@ -19467,6 +19480,7 @@ async function triageScreenZone(id) {
     }
     _triageApplyEligibility(z.verdict);   // 4a: deterministic set-aside eligibility overrides the model's guess
     if (!z.ebuyId && z.verdict && z.verdict.ebuy_request_id && z.verdict.ebuy_request_id !== 'not stated') z.ebuyId = String(z.verdict.ebuy_request_id).trim();
+    var _newNm = _triageNameFromVerdict(z.label, z._autoName, z.verdict); if (_newNm) { z.label = _newNm; z._autoName = false; }
   } catch (e) {
     z.verdict = { error: 'Something went wrong: ' + (e && e.message ? e.message : e) };
   } finally {
@@ -19653,6 +19667,7 @@ async function triageAutoSort(files) {
   groups.forEach(g => {
     const isUn = (!g.label || g.label === 'Unsorted');
     const z = isUn ? (triageZones.find(x => x.label === 'Unsorted') || _triageZoneForNumber('Unsorted')) : _triageZoneForNumber(String(g.label).slice(0, 80));
+    z._autoName = !isUn && !_looksLikeSolNum(z.label);   // token label (title-cased, not an all-caps number) -> gets renamed to the screened title
     (g.files || []).forEach(f => { if (!z.files.find(x => x.name === f.name && x.size === f.size)) { z.files.push(f); if (isUn) unsorted++; } });
     z.verdict = null; touched[z.id] = true;
   });
