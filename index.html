@@ -791,7 +791,7 @@
     font-size: 16px; font-weight: 600; cursor: pointer;
     transition: all 0.15s; letter-spacing: 0.2px;
     min-width: 0; width: 100%; text-align: left;
-    font-family: inherit; white-space: nowrap;
+    font-family: inherit; white-space: normal; line-height: 1.3; overflow-wrap: anywhere;
     box-shadow: none;
   }
   .tab-btn:hover {
@@ -2574,7 +2574,7 @@
         <div><label>Phone</label><input type="tel" id="cp" placeholder="(555) 867-5309" oninput="Rec.fmtP(this)"/></div>
       </div>
       <div class="r3">
-        <div><label>Status</label><select id="cs"><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select> <label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px;margin-left:8px"><input type="checkbox" id="trkInclApplicants" onchange="Rec.loadC(true)"/> Also show applicant repository</label></div>
+        <div><label>Status</label><select id="cs"><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select> <label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;margin-left:8px">Show <select id="trkSource" onchange="Rec.setTrkSource(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:white"><option value="both">Both lists</option><option value="applicants">Applicants Repository</option><option value="potentials">Scratch Pad</option></select></label></div>
         <div><label>Profile URL</label><input type="text" id="cu" placeholder="linkedin.com/in/..."/></div>
         <div><label>Source</label><input type="text" id="cso" placeholder="Resume upload, LinkedIn..."/></div>
       </div>
@@ -2587,7 +2587,7 @@
       <div class="ldg" id="cld">Saving to SharePoint...</div>
     </div>
     <div class="rec-card">
-    <div class="sec">📇 Candidate list <span id="clistCount" style="font-weight:400;font-size:13px;opacity:.85"></span></div>
+    <div class="sec" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>📇 Candidate list <span id="clistCount" style="font-weight:400;font-size:13px;opacity:.85"></span></span><button id="trkEditBtn" onclick="Rec.trkToggleEdit()" title="Toggle editing. In edit mode, changes write back to the row's own SharePoint list." style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer;white-space:nowrap">\u270E Edit</button></div>
     <div class="fb">
       <input type="text" id="fsrch" placeholder="Search name, role, location, notes..." oninput="Rec.renderC()"/>
       <select id="fstat" onchange="Rec.renderC()" style="min-width:170px"><option value="">All statuses</option><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select>
@@ -3194,6 +3194,7 @@
               <div class="settings-field"><label>Stage</label><input type="text" id="s_ac_stage" placeholder="internal name"/></div>
               <div class="settings-field"><label>LinkedIn</label><input type="text" id="s_ac_linkedIn" placeholder="internal name"/></div>
               <div class="settings-field"><label>Resume link</label><input type="text" id="s_ac_resume" placeholder="internal name"/></div>
+              <div class="settings-field"><label>HS Link (HubSpot)</label><input type="text" id="s_ac_hsLink" placeholder="internal name"/></div>
             </div>
             <div class="settings-field"><label>Exclude from keyword search <span style="font-weight:400;color:var(--muted);font-size:11px">— comma-separated internal names (e.g. status columns)</span></label><input type="text" id="s_ac_skip" placeholder="e.g. field_30, field_31"/></div>
           </div>
@@ -3290,7 +3291,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '366';
+const APP_VERSION = '374';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -3319,7 +3320,7 @@ const CLIENT_CONFIG = {
       trackerList: 'Recruiting Potentials',
       applicantsList: 'SRFed Applicants Repository',
       columns: { name: 'Title', role: 'CurrentRole', location: 'Location', email: 'Email', status: 'Status', url: 'ProfileURL', source: 'Source', notes: 'Notes', phone: 'PhoneNumber' },
-      applicantsColumns: { firstName: 'field_32', lastName: 'field_19', position: 'field_16', phone: 'field_24', state: 'field_27', city: 'field_26', email: 'field_23', stage: 'field_31', linkedIn: 'field_22', resume: 'field_35', skip: ['field_30', 'field_31'] },
+      applicantsColumns: { firstName: 'field_32', lastName: 'field_19', position: 'field_16', phone: 'field_24', state: 'field_27', city: 'field_26', email: 'field_23', stage: 'field_31', linkedIn: 'field_22', resume: 'field_35', hsLink: 'HSLink', skip: ['field_30', 'field_31'] },
       listLabels: { applicants: 'Official Applicant Repository', potentials: 'Recruiting Potentials — Scratchpad', both: 'Both Lists' }
     },
     // Candidate-outreach booking links shown on the Outreach Writer tab. Moves into Settings in a later phase.
@@ -8081,7 +8082,7 @@ function renderAssumptions(panelId, items) {
           <button class="assumption-btn reject ${a.status==='rejected'?'active':''}" title="Reject / Edit" onclick="setAssumption('${a.id}','rejected')">✗</button>
         </div>
       </div>
-      <div class="assumption-edit" id="aedit-${a.id}">
+      <div class="assumption-edit" id="aedit-${a.id}" style="display:${a.status==='rejected'?'block':'none'}">
         <input type="text" id="ainput-${a.id}" value="${escHtml(a.correction || '')}"
           placeholder="Enter corrected value (or leave blank to exclude)"
           onchange="updateCorrection('${a.id}', this.value)"/>
@@ -8090,21 +8091,23 @@ function renderAssumptions(panelId, items) {
     </div>`).join('');
 }
 
+// Re-render BOTH assumption panels from the assumptions array (the source of truth). A data-driven render
+// cannot desync from the data the way a surgical by-id DOM update can, so an accept/reject ALWAYS paints -
+// this is the permanent fix for the recurring "click registers but the card doesn't change" bug. The panels
+// are split by category exactly as the initial render is (rfp vs the rest).
+function _rerenderAssumptionPanels() {
+  const rfp = assumptions.filter(a => a.category === 'rfp');
+  const company = assumptions.filter(a => a.category !== 'rfp');
+  if (document.getElementById('rfpAssumptions') && rfp.length) renderAssumptions('rfpAssumptions', rfp);
+  if (document.getElementById('companyAssumptions') && company.length) renderAssumptions('companyAssumptions', company);
+}
 function setAssumption(id, status) {
   const a = assumptions.find(x => x.id === id);
   if (!a) return;
   a.status = status;
-  const card = document.getElementById(`acard-${id}`);
-  const edit = document.getElementById(`aedit-${id}`);
-  if (card) {
-    card.className = `assumption-card ${status}`;
-    const accBtn = card.querySelector('.assumption-btn.accept');
-    const rejBtn = card.querySelector('.assumption-btn.reject');
-    if (accBtn) accBtn.classList.toggle('active', status === 'accepted');
-    if (rejBtn) rejBtn.classList.toggle('active', status === 'rejected');
-  }
-  if (edit) edit.style.display = status === 'rejected' ? 'block' : 'none';
-  updateAssumptionSummary();   // always reflect the change in the counters + gate, even if the card lookup missed
+  _rerenderAssumptionPanels();
+  updateAssumptionSummary();
+  if (status === 'rejected') { const inp = document.getElementById(`ainput-${id}`); if (inp) inp.focus(); }
 }
 
 function updateCorrection(id, value) {
@@ -13724,9 +13727,10 @@ function pricingRenderBulkBasis() {
   var M = pricingModel;
   // Only meaningful in non-GSA mode (the rate basis governs what you enter); in GSA mode the rate comes
   // from the Schedule, so hide it. Also hide when there are no roles yet.
-  if ((typeof pricingIsGsa === 'function' && pricingIsGsa()) || !M || !(M.lcats || []).length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  if (!M || !(M.lcats || []).length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  var _isGsa = (typeof pricingIsGsa === 'function' && pricingIsGsa());   // rate-basis control is meaningless in GSA mode; hours/FTE still applies
   el.style.display = '';
-  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;flex-wrap:wrap">' +
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;flex-wrap:wrap">' + (_isGsa ? '' : (
     '<label style="color:var(--muted);white-space:nowrap">Set <strong>all</strong> rate inputs to:</label>' +
     '<select onchange="if(this.value){pricingSetAllRateBasis(this.value);this.selectedIndex=0;}" title="Apply one rate basis to every labor category at once. Each role is re-expressed in the new basis - no dollar amount changes." style="padding:6px 26px 6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:white">' +
       '<option value="">\u2014 choose a basis to apply to every role \u2014</option>' +
@@ -13734,7 +13738,16 @@ function pricingRenderBulkBasis() {
       '<option value="salary">Company Paid Annualized Salary</option>' +
       '<option value="loaded">Fully Burdened Hourly Rate</option>' +
       '<option value="annual">Fully Burdened Annualized Salary</option>' +
-    '</select></div>';
+    '</select>')) +
+    '<label style="color:var(--muted);white-space:nowrap' + (_isGsa ? '' : ';margin-left:14px') + '">Set <strong>all</strong> hours/FTE to:</label>' +
+    '<input type="number" min="1" step="1" id="pricingBulkHpf" value="' + defaultHpf() + '" title="Billable hours per FTE applied to every role. Clear a role\'s box to fall back to the Settings default." style="width:78px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;box-sizing:border-box"/>' +
+    '<button onclick="pricingSetAllHpf(document.getElementById(\'pricingBulkHpf\').value)" style="padding:6px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">Apply to all roles</button>' +
+    '</div>';
+}
+function pricingSetAllHpf(val) {
+  var v = parseFloat(val);
+  (pricingModel.lcats || []).forEach(function (l) { l.hpf = (v > 0) ? v : ''; });   // blank falls back to the Settings default
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
 function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
 function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
@@ -13749,6 +13762,7 @@ function pricingSetLcat(id, field, val) {
     pricingModel.fteSource = 'user';
     var _ut = pricingModel.lcats.reduce(function (s, x) { return s + (parseFloat(x.advertised) || 0); }, 0);
     pricingModel.statedFteTotal = _ut > 0 ? Math.round(_ut * 100) / 100 : null;
+    pricingEnforceTieOut();   // re-derive so the matrix stays tied to the edited FTE
   }
   pricingRenderAll();
 }
@@ -14697,7 +14711,7 @@ function _pxReassertConstraints(snap, fixed) {
         // The build dropped a role the user had fixed — put it back rather than lose it.
         const nl = { id: (typeof _prId === 'function' ? _prId('l_') : ('l_' + Math.random().toString(36).slice(2, 8))),
                      name: s.name, clin: s.clin || '', gsaLcat: s.gsaLcat || '', advertised: s.advertised || 0,
-                     hpf: s.hpf || '', baseRate: s.baseRate || 0, rateInput: s.rateInput || '',
+                     hpf: '', baseRate: s.baseRate || 0, rateInput: s.rateInput || '',
                      rateBasis: s.rateBasis || 'paid', rateStatus: s.rateStatus || '',
                      scaCovered: !!s.scaCovered, wdWage: s.wdWage || '', evaluated: false };
         M.lcats.push(nl);
@@ -15112,6 +15126,22 @@ function pricingDeriveHoursFromFte(lcats, hours, mask, tasks, hpf) {
     tids.forEach((tid, k) => { if (split[k] > 0) newH[tid] = split[k]; });
     hours[l.id] = newH;
   });
+}
+
+// INVARIANT: the hours matrix MUST tie out - every role's task-hours sum to advertised x hpf, so
+// ALLOCATED FTE (from hours) === ADVERTISED FTE (sum of roles). Re-derive from the CURRENT advertised,
+// preserving each role's task-distribution proportions. The stated-FTE path reconciles to the Government
+// total (which also writes advertised), so it stays tied too. Call this as the FINAL step of every path
+// that finalizes labor categories or FTEs - it is what guarantees "16.5 FTE cannot become 13.14".
+function pricingEnforceTieOut() {
+  var M = pricingModel;
+  if (!M || !Array.isArray(M.lcats) || !Array.isArray(M.tasks) || !M.tasks.length) return;
+  var hpf = defaultHpf();
+  if (M.fteSource === 'stated' && M.statedFteTotal != null) {
+    pricingReconcileStatedFte(M.lcats, M.hours, M.mask, M.tasks, M.statedFteTotal, hpf);
+  } else {
+    pricingDeriveHoursFromFte(M.lcats, M.hours, M.mask, M.tasks, hpf);
+  }
 }
 
 // No PWS task left unpriced: for any non-(non-labor) task with zero total hours, MOVE a small slice of
@@ -15607,7 +15637,7 @@ function pricingRenderLcats() {
       </div>
       ${pricingRateMatrixHtml(l)}
       <input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" title="Proposed FTE" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
-      <input type="number" min="0" step="1" value="${l.hpf}" onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" title="Billable hours per FTE for this role; blank = company default" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
+      <input type="number" min="0" step="1" value="${pricingHpf(l)}" onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" title="Billable hours per FTE for this role; blank = company default" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
       <div style="display:flex;align-items:center;justify-content:center"><button class="mkt-lookup-btn" onclick="pricingLcatLookup('${l.id}')" title="Look up prevailing pay for this role on Market Rates" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap;min-width:104px;text-align:center">${l.evaluated ? 'Look up again' : 'Look up \u2192'}</button></div><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">${_chip}<button onclick="pricingRemoveLcat('${l.id}')" title="Remove labor category" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button></div>
       ${_warn}
     </div>`;
@@ -19127,13 +19157,16 @@ function triageSetEbuyId(id, val) { const z = triageZones.find(x => x.id === id)
 // eBuy list without hunting. Digits must come right after the prefix, so agency numbers like
 // "RFQ_7571MN26R00001A" and "RFQ 75R60226Q00081" do NOT match.
 function _triageDetectEbuyId(files, text) {
-  const re = /\bRF[QPI][ -]?\d{5,9}\b/i;
-  for (let k = 0; k < (files || []).length; k++) {
-    const m = String((files[k] && files[k].name) || '').match(re);
-    if (m) return m[0].replace(/[ -]/g, '').toUpperCase();
+  var rePref = /\bRF[QPI][ +\-]?\d{5,9}(?!\d)/i;                                            // RFQ1827479 / RFQ-1827479 / RFQ+1827479
+  var reLbl = /(?:e-?buy|rf[qpi]|request)\b[^0-9A-Za-z]{0,4}(?:id|no\.?|number|#)?[^0-9A-Za-z]{0,4}(\d{6,9})(?!\d)/i;  // "RFQ ID: 1827479", "Request ID 1234567"
+  function scan(s) {
+    s = String(s || ''); if (!s) return '';
+    var m = s.match(rePref); if (m) return m[0].replace(/[ +\-]/g, '').toUpperCase();     // keep the RFQ/RFP/RFI prefix
+    var m2 = s.match(reLbl); if (m2) return m2[1];                                        // bare portal number
+    return '';
   }
-  const m2 = String(text || '').match(re);
-  return m2 ? m2[0].replace(/[ -]/g, '').toUpperCase() : '';
+  for (var k = 0; k < (files || []).length; k++) { var r = scan((files[k] && files[k].name) || ''); if (r) return r; }
+  return scan(text) || '';
 }
 
 function _triageBarColor(z) {
@@ -19512,8 +19545,13 @@ function _triageSolFromString(s) {
 // A number that follows an explicit label ("Solicitation No: X", "RFP # X") in the text.
 function _triageSolFromLabel(text) {
   if (!text) return null;
-  const m = text.match(/(?:solicitation|rf[pqi]|reference)\s*(?:no\.?|number|#|id)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-]{5,24})/i);
-  return m ? m[1].toUpperCase().replace(/[.,;:]+$/, '') : null;
+  const re = /(?:solicitation|rf[pqi]|reference)\s*(?:no\.?|number|#|id)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-]{5,24})/ig;
+  let m;
+  while ((m = re.exec(text))) {
+    const cap = m[1].toUpperCase().replace(/[.,;:]+$/, '');
+    if ((cap.match(/\d/g) || []).length >= 2) return cap;   // a real solicitation number carries digits - reject pure-word captures
+  }
+  return null;
 }
 async function _triageDetectSolNum(file) {
   let n = _triageSolFromString(file.name);
@@ -19542,6 +19580,16 @@ function _triageZoneForNumber(num) {
 // AI's placement: if the AI put a numberless file in a group whose other files share ONE number, it
 // joins that opportunity (the AI corroborated it); otherwise it stays in its own AI-labeled cluster
 // (or Unsorted). Pure + deterministic.
+// Distinctive filename tokens for clustering numberless files: strip the extension + generic GovCon/doc
+// words + pure numbers, leaving proper-noun-ish program tokens (e.g. "polaris", "gfebs"). Used to attach a
+// numberless attachment to the right opportunity and to label numberless clusters (never a junk AI word).
+const _TRIAGE_STOP = new Set(['rfp','rfq','rfi','sdvosb','wosb','edwosb','vosb','hubzone','pool','gwac','idiq','bpa','notification','award','preaward','notice','amendment','attachment','sample','form','document','documents','question','questions','response','responses','answer','answers','small','business','programs','program','solicitation','sources','sought','draft','final','revised','copy','updated','signed','executed','past','performance','rating','instructions','offerors','offeror','section','volume','appendix','exhibit','fpds','sam','gov','pdf','docx','xlsx','pricing','proposal','technical']);
+function _triageTokens(name) {
+  return String(name || '').toLowerCase()
+    .replace(/\.[a-z0-9]+$/, '')
+    .split(/[^a-z0-9]+/)
+    .filter(function (w) { return w.length >= 4 && !_TRIAGE_STOP.has(w) && !/^\d+$/.test(w); });
+}
 function _triageReconcileByNumber(aiGroups, numByName) {
   if (!Array.isArray(aiGroups)) return aiGroups;
   numByName = numByName || {};
@@ -19560,16 +19608,29 @@ function _triageReconcileByNumber(aiGroups, numByName) {
       }
     });
   });
-  const extra = new Map();      // aiLabel -> { label, files } for numberless clusters
+  // Build a distinctive-token index for the numbered opportunities so a numberless attachment can attach
+  // to the RIGHT one (e.g. a "Polaris SDVOSB" attachment -> the numbered Polaris RFP).
+  const numTokens = new Map();
+  byNum.forEach(function (v, n) { const s = new Set(); v.files.forEach(function (f) { _triageTokens(f.name).forEach(function (tk) { s.add(tk); }); }); numTokens.set(n, s); });
+  const extra = new Map();
+  const unsorted = [];
   numberless.forEach(function (x) {
-    if (x.nums.size === 1) {                       // AI grouped it with exactly one numbered opportunity
-      byNum.get([...x.nums][0]).files.push(x.file);
-    } else {
-      const key = x.aiLabel || 'Unsorted';
-      if (!extra.has(key)) extra.set(key, { label: key, files: [] });
-      extra.get(key).files.push(x.file);
-    }
+    if (x.nums.size === 1) { byNum.get([...x.nums][0]).files.push(x.file); return; }   // AI tied it to one numbered opp
+    const toks = _triageTokens(x.file.name);
+    // (a) attach to the numbered opportunity it shares the most distinctive tokens with
+    let bestNum = null, bestOv = 0;
+    numTokens.forEach(function (s, n) { let ov = 0; toks.forEach(function (tk) { if (s.has(tk)) ov++; }); if (ov > bestOv) { bestOv = ov; bestNum = n; } });
+    if (bestNum && bestOv >= 1) { byNum.get(bestNum).files.push(x.file); return; }
+    // (b) cluster leftover numberless files: join an existing cluster it shares ANY token with, else start one
+    let _cljoin = null;
+    extra.forEach(function (cl) { if (!_cljoin && cl._toks && toks.some(function (tk) { return cl._toks.has(tk); })) _cljoin = cl; });
+    if (_cljoin) { _cljoin.files.push(x.file); toks.forEach(function (tk) { _cljoin._toks.add(tk); }); return; }
+    const tk = toks.slice().sort(function (a, b) { return b.length - a.length; })[0];
+    if (tk) { extra.set('#tok:' + tk, { label: tk.charAt(0).toUpperCase() + tk.slice(1), files: [x.file], _toks: new Set(toks) }); return; }
+    // (c) genuinely unidentifiable -> Unsorted (not a junk one-word AI label)
+    unsorted.push(x.file);
   });
+  if (unsorted.length) extra.set('#unsorted', { label: 'Unsorted', files: unsorted });
   return [].concat([...byNum.values()], [...extra.values()]);
 }
 async function triageAutoSort(files) {
@@ -22428,6 +22489,7 @@ function _constrainedApply(a) {
     const br = parseFloat(m.base_rate);
     if (br > 0) l.baseRate = br;
     if (m.gsa_lcat && String(m.gsa_lcat).trim() && !l.gsaLcat) l.gsaLcat = String(m.gsa_lcat).trim();
+    const _ft = parseFloat(m.fte); if (_ft > 0) l.advertised = _ft;   // the sheet's FTE is authoritative for sizing
   });
   // An already-rated uploaded sheet is a build-up price — unlock the model if GSA was left undecided.
   if (pricingModel.gsaDecision == null) pricingModel.gsaDecision = 'na';
@@ -22436,6 +22498,7 @@ function _constrainedApply(a) {
   // against them, never as Government-stated.
   const _uT = pricingModel.lcats.reduce(function (s, l) { return s + (parseFloat(l.advertised) || 0); }, 0);
   pricingModel.fteSource = 'user'; pricingModel.statedFteTotal = _uT > 0 ? Math.round(_uT * 100) / 100 : null;
+  pricingEnforceTieOut();   // re-derive the matrix from the sheet's FTEs so ALLOCATED === ADVERTISED (tie-out)
   pricingModel._reverseSolved = true;   // (#4) a sheet has been applied \u2014 Draft confirms before re-drafting
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
@@ -26119,7 +26182,7 @@ function _readColMap() {
 function _readAppColMap() {
   const g = (id) => (document.getElementById(id) && document.getElementById(id).value.trim()) || '';
   const skip = ((document.getElementById('s_ac_skip') || {}).value || '').split(',').map(x => x.trim()).filter(Boolean);
-  const m = { firstName: g('s_ac_firstName'), lastName: g('s_ac_lastName'), position: g('s_ac_position'), phone: g('s_ac_phone'), state: g('s_ac_state'), city: g('s_ac_city'), email: g('s_ac_email'), stage: g('s_ac_stage'), linkedIn: g('s_ac_linkedIn'), resume: g('s_ac_resume') };
+  const m = { firstName: g('s_ac_firstName'), lastName: g('s_ac_lastName'), position: g('s_ac_position'), phone: g('s_ac_phone'), state: g('s_ac_state'), city: g('s_ac_city'), email: g('s_ac_email'), stage: g('s_ac_stage'), linkedIn: g('s_ac_linkedIn'), resume: g('s_ac_resume'), hsLink: g('s_ac_hsLink') };
   if (skip.length) m.skip = skip;
   return m;
 }
@@ -26414,7 +26477,7 @@ function loadSettingsIntoUI() {
   const rcols = rsp.columns || {}, acols = rsp.applicantsColumns || {};
   const setC = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
   setC('s_col_name', rcols.name); setC('s_col_role', rcols.role); setC('s_col_location', rcols.location); setC('s_col_email', rcols.email); setC('s_col_status', rcols.status); setC('s_col_url', rcols.url); setC('s_col_source', rcols.source); setC('s_col_notes', rcols.notes); setC('s_col_phone', rcols.phone);
-  setC('s_ac_firstName', acols.firstName); setC('s_ac_lastName', acols.lastName); setC('s_ac_position', acols.position); setC('s_ac_phone', acols.phone); setC('s_ac_state', acols.state); setC('s_ac_city', acols.city); setC('s_ac_email', acols.email); setC('s_ac_stage', acols.stage); setC('s_ac_linkedIn', acols.linkedIn); setC('s_ac_resume', acols.resume);
+  setC('s_ac_firstName', acols.firstName); setC('s_ac_lastName', acols.lastName); setC('s_ac_position', acols.position); setC('s_ac_phone', acols.phone); setC('s_ac_state', acols.state); setC('s_ac_city', acols.city); setC('s_ac_email', acols.email); setC('s_ac_stage', acols.stage); setC('s_ac_linkedIn', acols.linkedIn); setC('s_ac_resume', acols.resume); setC('s_ac_hsLink', acols.hsLink);
   setC('s_ac_skip', Array.isArray(acols.skip) ? acols.skip.join(', ') : '');
   // Capability statement fallback content — arrays shown one item per line
   const joinL = (a) => Array.isArray(a) ? a.join('\n') : (a || '');
@@ -26864,7 +26927,7 @@ window.RecStore = (function () {
 // from CLIENT_CONFIG.recruiting.sharePoint.
 (function () {
   'use strict';
-  let cands = [], LT = null, _loaded = false, _trkPage = 0, _lastFkey = null;
+  let cands = [], LT = null, _loaded = false, _trkPage = 0, _lastFkey = null, _trkSource = 'both', _trkEdit = false, _ltMap = {};
   function sp() { return (CLIENT_CONFIG.recruiting && CLIENT_CONFIG.recruiting.sharePoint) || {}; }
   function spSite() { return sp().site || ''; }
   function spScope() { return sp().scope || ''; }
@@ -26946,7 +27009,8 @@ window.RecStore = (function () {
   function nextLocalId() { var ids = cands.map(function (c) { return typeof c.id === 'number' ? c.id : 0; }); return ids.length ? Math.max.apply(null, ids) + 1 : 1; }
   function appList() { return sp().applicantsList || ''; }
   function appCols() { return sp().applicantsColumns || {}; }
-  function inclApplicants() { var e = document.getElementById('trkInclApplicants'); return !!(e && e.checked); }
+  function inclApplicants() { return _trkSource !== 'potentials'; }
+  function setTrkSource(v) { _trkSource = v || 'both'; _trkPage = 0; loadC(false); }
   function _mapApplicant(x, A) {
     var fn = x[A.firstName] || '', ln = x[A.lastName] || '';
     var nm = (String(fn) + ' ' + String(ln)).trim() || (x.Title || '');
@@ -26954,7 +27018,9 @@ window.RecStore = (function () {
     var stTxt = (typeof st === 'string') ? st : (st && (st.Title || st.LookupValue) || '');
     var loc = [city, stTxt].filter(Boolean).join(', ');
     var stage = x[A.stage]; var stageTxt = (typeof stage === 'string') ? stage : (stage && (stage.Title || stage.LookupValue) || '');
-    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: x[A.linkedIn] || '', source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true };
+    var _url = function (v) { return (v && typeof v === 'object') ? (v.Url || v.url || v.Description || '') : (v || ''); };
+    var _li = _url(x[A.linkedIn]), _rs = _url(x[A.resume]), _hs = _url(A.hsLink ? x[A.hsLink] : '');
+    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: _li, source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true, _source: 'Repository', firstName: String(fn || ''), lastName: String(ln || ''), position: x[A.position] || '', state: stTxt, linkedIn: _li, resume: _rs, hsLink: _hs };
   }
   // Second SharePoint list (the applicants repository) merged in READ-ONLY when the toggle is on. Its schema
   // differs (applicantsColumns: firstName/lastName/position/city/state/stage), so we map it to the candidate
@@ -26987,7 +27053,7 @@ window.RecStore = (function () {
       var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/items?$orderby=Created desc&$top=500&$select=" + sel, { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
       if (!r.ok) { if (r.status === 404) { showCreateList('The list \u201c' + spList() + '\u201d wasn\u2019t found. Create it automatically, or fix the name in Settings \u2192 Recruiting \u2014 or use Import CSV to work locally.'); return; } var e = await r.json().catch(function () { return null; }); setB('err', 'SharePoint error: ' + (e && e.error ? e.error.message.value : r.status)); return; }
       var d = await r.json();
-      cands = (d.d.results || []).map(function (x) { return { id: x.Id, name: x[C.name] || '', role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '' }; });
+      cands = (d.d.results || []).map(function (x) { var _nm = x[C.name] || ''; var _sp = _nm.trim().split(/\s+/); return { id: x.Id, name: _nm, role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '', _source: 'Scratch Pad', firstName: (_sp.length > 1 ? _sp[0] : _nm), lastName: (_sp.length > 1 ? _sp.slice(1).join(' ') : ''), position: x[C.role] || '', state: x[C.location] || '', linkedIn: x[C.url] || '', resume: '', hsLink: '' }; });
       if (inclApplicants() && appList()) { try { var _extra = await loadApplicants(t); if (_extra.length) cands = cands.concat(_extra); } catch (e) {} }
       _loaded = true;
       setB('ok', '\u2713 ' + cands.length + ' candidate' + (cands.length !== 1 ? 's' : '') + ' loaded');
@@ -27035,19 +27101,79 @@ window.RecStore = (function () {
       if (r.ok || r.status === 204) { cands = cands.filter(function (x) { return x.id !== id; }); renderC(); toast('Removed'); } else toast('Remove failed');
     } catch (e) { toast('Failed'); }
   }
+  // Map a unified edited field -> the SharePoint column + value for the row's OWN list. PURE (harnessed).
+  // Repository writes go to applicantsColumns; a resume/HS-Link cell writes an SP.FieldUrlValue object.
+  // Scratch Pad has only name/role/location/email/phone/url, so first/last recombine into the name
+  // column and there is no resume/HS-Link column to write.
+  function _trkEditPayload(isRepo, field, value, nameCombined, A, C) {
+    if (isRepo) {
+      var col = A[field] || '';
+      if (!col) return { skip: true, reason: 'unmapped' };
+      if (field === 'resume' || field === 'hsLink') return { col: col, val: { __metadata: { type: 'SP.FieldUrlValue' }, Url: value || '', Description: (field === 'resume' ? 'Resume' : 'HubSpot') } };
+      return { col: col, val: value };
+    }
+    if (field === 'resume' || field === 'hsLink') return { skip: true, reason: 'no-column' };
+    if (field === 'firstName' || field === 'lastName') return { col: C.name, val: nameCombined };
+    var m = { position: C.role, state: C.location, linkedIn: C.url, email: C.email, phone: C.phone };
+    var col2 = m[field] || '';
+    if (!col2) return { skip: true, reason: 'unmapped' };
+    return { col: col2, val: value };
+  }
+  async function _ltForList(name, t) {
+    if (_ltMap[name]) return _ltMap[name];
+    try {
+      var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(name) + "')?$select=ListItemEntityTypeFullName", { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
+      var d = await r.json(); _ltMap[name] = (d && d.d && d.d.ListItemEntityTypeFullName) || null; return _ltMap[name];
+    } catch (e) { return null; }
+  }
+  function trkToggleEdit() {
+    _trkEdit = !_trkEdit;
+    var b = document.getElementById('trkEditBtn');
+    if (b) { b.innerHTML = _trkEdit ? '\u2713 Done editing' : '\u270E Edit'; b.style.background = _trkEdit ? 'var(--blue)' : 'white'; b.style.color = _trkEdit ? '#fff' : 'var(--blue)'; }
+    renderC();
+  }
+  async function trkEditCell(id, field, value) {
+    var c = cands.find(function (x) { return String(x.id) === String(id); }); if (!c) return;
+    c[field] = value;
+    var isRepo = String(id).indexOf('app_') === 0;
+    if (!isRepo) {   // keep the Scratch Pad legacy fields in sync for the read view
+      if (field === 'firstName' || field === 'lastName') c.name = ((c.firstName || '') + ' ' + (c.lastName || '')).trim();
+      if (field === 'position') c.role = value; if (field === 'state') c.location = value; if (field === 'linkedIn') c.url = value;
+    }
+    if (window.RecStore.isLocal()) { window.RecStore.save(cands); return; }
+    if (!signedIn()) { toast('Sign in with Microsoft to save changes'); return; }
+    var listName = isRepo ? appList() : spList();
+    if (!listName) { toast('That list is not configured in Settings \u2192 Recruiting'); return; }
+    var pay = _trkEditPayload(isRepo, field, value, ((c.firstName || '') + ' ' + (c.lastName || '')).trim(), appCols(), spCols());
+    if (pay.skip) { toast(pay.reason === 'no-column' ? ('The Scratch Pad list has no ' + (field === 'hsLink' ? 'HubSpot' : 'resume') + ' column') : 'That column is not mapped in Settings \u2192 Recruiting'); return; }
+    var spId = isRepo ? String(id).slice(4) : id;
+    var t = await getSpRestToken(true); if (!t) return;
+    try {
+      var dg = await getDig(t), lt = await _ltForList(listName, t);
+      var b = {}; if (lt) b.__metadata = { type: lt }; b[pay.col] = pay.val;
+      var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(listName) + "')/items(" + spId + ")", { method: 'POST', headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose', 'X-RequestDigest': dg, 'IF-MATCH': '*', 'X-HTTP-Method': 'MERGE' }, body: JSON.stringify(b) });
+      if (r.ok || r.status === 204) toast('Saved to ' + (isRepo ? 'Applicants Repository' : 'Scratch Pad'));
+      else { var e = await r.json().catch(function () { return null; }); toast('Save failed: ' + (e && e.error ? e.error.message.value : 'HTTP ' + r.status)); }
+    } catch (e) { toast('Save failed \u2014 network error'); }
+  }
   function renderC() {
     var q = (document.getElementById('fsrch') ? document.getElementById('fsrch').value : '').toLowerCase();
     var fs = document.getElementById('fstat') ? document.getElementById('fstat').value : '';
-    var f = cands.filter(function (c) { var tx = (c.name + ' ' + c.role + ' ' + c.location + ' ' + c.notes + ' ' + c.source + ' ' + c.email).toLowerCase(); return (!q || tx.indexOf(q) >= 0) && (!fs || c.status === fs); });
+    var src = _trkSource || 'both';
+    var f = cands.filter(function (c) {
+      var inSrc = src === 'both' || (src === 'applicants' && c._source === 'Repository') || (src === 'potentials' && c._source === 'Scratch Pad');
+      if (!inSrc) return false;
+      var tx = ((c.firstName || '') + ' ' + (c.lastName || '') + ' ' + (c.position || '') + ' ' + (c.state || '') + ' ' + (c.email || '') + ' ' + (c._source || '')).toLowerCase();
+      return (!q || tx.indexOf(q) >= 0) && (!fs || c.status === fs);
+    });
     var setTx = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
     setTx('st-total', cands.length); setTx('st-new', cands.filter(function (c) { return c.status === 'New'; }).length); setTx('st-contacted', cands.filter(function (c) { return c.status === 'Contacted'; }).length); setTx('st-added', cands.filter(function (c) { return c.status === 'Added to Repository'; }).length);
     var cnt = document.getElementById('clistCount');
     if (cnt) cnt.textContent = cands.length ? ('\u2014 showing ' + f.length + ' of ' + cands.length) : '';
     var list = document.getElementById('clist'); if (!list) return;
     if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet. Add one above, upload a resume, or import a CSV.' : 'No candidates match your filters.') + '</p></div>'; var _pg0 = document.getElementById('clistPager'); if (_pg0) { _pg0.style.display = 'none'; _pg0.innerHTML = ''; } return; }
-    var bm = { 'New': 'bn', 'Contacted': 'bc', 'Added to Repository': 'ba' };
     var _SIZE = 25;
-    var _fk = q + '|' + fs; if (_fk !== _lastFkey) { _trkPage = 0; _lastFkey = _fk; }   // a filter change resets to page 1
+    var _fk = q + '|' + fs + '|' + src; if (_fk !== _lastFkey) { _trkPage = 0; _lastFkey = _fk; }
     var _pages = Math.max(1, Math.ceil(f.length / _SIZE));
     _trkPage = Math.min(Math.max(0, _trkPage), _pages - 1);
     var _pf = f.slice(_trkPage * _SIZE, (_trkPage + 1) * _SIZE);
@@ -27060,7 +27186,20 @@ window.RecStore = (function () {
         _pg.innerHTML = '<button class="btn sm"' + (_trkPage === 0 ? ' disabled' : '') + ' onclick="Rec.trkPage(' + (_trkPage - 1) + ')">\u2039 Prev</button><span style="font-size:12px;color:var(--muted)">' + _from + '\u2013' + _to + ' of ' + f.length + ' \u00b7 page ' + (_trkPage + 1) + ' of ' + _pages + '</span><button class="btn sm"' + (_trkPage >= _pages - 1 ? ' disabled' : '') + ' onclick="Rec.trkPage(' + (_trkPage + 1) + ')">Next \u203a</button>';
       }
     }
-    list.innerHTML = _pf.map(function (c) { return '<div class="cc"><div class="cch"><div><div class="ccn">' + esc(c.name) + '</div><div class="ccr">' + esc(c.role) + '</div></div><span class="cbadge ' + bm[c.status] + '">' + esc(c.status) + '</span></div><div class="ccm">' + (c.location ? '<span>\uD83D\uDCCD ' + esc(c.location) + '</span>' : '') + (c.email ? '<span>\u2709 ' + esc(c.email) + '</span>' : '') + (c.phone ? '<span>\uD83D\uDCDE ' + esc(c.phone) + '</span>' : '') + (c.url ? '<span>\uD83D\uDD17 <a href="' + (c.url.indexOf('http') === 0 ? esc(c.url) : 'https://' + esc(c.url)) + '" target="_blank">Profile</a></span>' : '') + (c.source ? '<span>\u2732 ' + esc(c.source) + '</span>' : '') + '</div>' + (c.notes ? ('<div class="ccnt' + (String(c.notes).length > 140 ? ' ccnt-clamp' : '') + '"' + (String(c.notes).length > 140 ? ' onclick="Rec.trkToggleNote(this)" title="Click to expand or collapse"' : '') + '>' + esc(c.notes) + '</div>') : '') + '<div class="cca">' + (c._ro ? '<span style="font-size:12px;color:var(--muted)">From applicant repository \u2014 read-only here</span>' : ('<select onchange="Rec.updSt(' + c.id + ',this.value)"><option value="New"' + (c.status === 'New' ? ' selected' : '') + '>New</option><option value="Contacted"' + (c.status === 'Contacted' ? ' selected' : '') + '>Contacted</option><option value="Added to Repository"' + (c.status === 'Added to Repository' ? ' selected' : '') + '>Added to Repository</option></select><button class="btn sm danger" onclick="Rec.remC(' + c.id + ')">\u2715 Remove</button>')) + '</div></div>'; }).join('');
+    var lnk = function (u, label) { if (!u) return '<span style="color:var(--muted)">\u2014</span>'; var h = (String(u).indexOf('http') === 0) ? u : ('https://' + u); return '<a href="' + esc(h) + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">' + label + '</a>'; };
+    var W = ['8%', '9%', '10%', '15%', '16%', '10%', '7%', '8%', '9%', '8%'];
+    var HD = ['Source', 'First Name', 'Last Name', 'Position', 'Email', 'Phone', 'State', 'LinkedIn', 'Resume', 'HubSpot'];
+    var head = '<tr>' + HD.map(function (h, i) { return '<th style="text-align:left;padding:7px 8px;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:700;width:' + W[i] + '">' + h + '</th>'; }).join('') + '</tr>';
+    var td = function (v) { return '<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere">' + v + '</td>'; };
+    var inp = function (c, field) { return '<input type="text" value="' + esc(c[field] || '') + '" onchange="Rec.trkEditCell(\'' + esc(String(c.id)) + '\',\'' + field + '\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px"/>'; };
+    var cell = function (c, field) { return _trkEdit ? inp(c, field) : esc(c[field] || ''); };
+    var linkCell = function (c, field, label) { var editable = (c._source === 'Repository') || field === 'linkedIn'; return (_trkEdit && editable) ? inp(c, field) : lnk(c[field], label); };
+    var rows = _pf.map(function (c) {
+      var isRepo = c._source === 'Repository';
+      var pill = '<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap;' + (isRepo ? 'background:#eef2ff;color:#3730a3' : 'background:#fef3c7;color:#92400e') + '">' + esc(c._source || '') + '</span>';
+      return '<tr>' + td(pill) + td(cell(c, 'firstName')) + td(cell(c, 'lastName')) + td(cell(c, 'position')) + td(cell(c, 'email')) + td(cell(c, 'phone')) + td(cell(c, 'state')) + td(linkCell(c, 'linkedIn', 'LinkedIn')) + td(linkCell(c, 'resume', 'Resume')) + td(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
+    }).join('');
+    list.innerHTML = '<div style="overflow-x:hidden;width:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';
   }
   function clrC() { ['cn', 'cr', 'cl', 'ce', 'cp', 'cu', 'cso', 'cno'].forEach(function (id) { setV(id, ''); }); var cs = document.getElementById('cs'); if (cs) cs.value = 'New'; var rn = document.getElementById('review-notice'); if (rn) rn.style.display = 'none'; }
   function expCSV() {
@@ -27217,6 +27356,7 @@ window.RecStore = (function () {
     window.Rec.currentBench = function () { return (cands || []).slice(); };
     window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP; window.Rec.importCsv = importCsv;
     window.Rec.trkPage = function (n) { _trkPage = n; renderC(); }; window.Rec.trkToggleNote = function (el) { if (el) el.classList.toggle('ccnt-clamp'); };
+    window.Rec.setTrkSource = setTrkSource; window.Rec.trkToggleEdit = trkToggleEdit; window.Rec.trkEditCell = trkEditCell;
     window.Rec.dzOv = dzOv; window.Rec.dzLv = dzLv; window.Rec.dzDp = dzDp; window.Rec.handlePdf = handlePdf;
     window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint; window.Rec.onAuthChangedT = onAuthChanged; window.Rec.provisionTrackerList = provisionTrackerList;
   }
