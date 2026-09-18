@@ -1848,7 +1848,7 @@
       </div>
       <div id="triageFilesView">
         <div class="drop-zone" id="triageMassDz" style="min-height:88px;margin-bottom:16px;padding:20px;border-style:dashed;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">
-          <input type="file" id="triageMassFi" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt" style="display:none" />
+          <input type="file" id="triageMassFi" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.zip" style="display:none" />
           <div class="dz-title" style="font-size:14px;font-weight:700;color:var(--blue)">⤓ Drop a pile of solicitations here to sort into opportunities for triage</div>
           <div class="dz-sub" style="font-size:12px;color:var(--muted)">Files are grouped by the solicitation number in each. Anything that can’t be matched lands in an Unsorted zone to sort manually. Or click to browse.</div>
         </div>
@@ -3292,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '377';
+const APP_VERSION = '378';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -19200,7 +19200,7 @@ function _triageZoneHtml(z) {
   return '<div class="card" id="triageCard-' + z.id + '" style="margin-bottom:16px;border-left:4px solid ' + bar + ';padding:16px' + (sent ? ';background:#f1f5f9' : '') + '">'
     + head
     + '<div class="drop-zone" id="triageDz-' + z.id + '" style="min-height:70px;margin-bottom:8px;padding:12px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center">'
-    +   '<input type="file" id="triageFi-' + z.id + '" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt" style="display:none" />'
+    +   '<input type="file" id="triageFi-' + z.id + '" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.zip" style="display:none" />'
     +   '<div class="dz-sub" style="font-size:11.5px;color:var(--muted)">Drop this opportunity\u2019s files, or click to browse</div>'
     + '</div>'
     + '<div class="file-list" id="triageFl-' + z.id + '"></div>'
@@ -19649,6 +19649,13 @@ function _triageReconcileByNumber(aiGroups, numByName) {
 }
 async function triageAutoSort(files) {
   if (!files || !files.length) return;
+  // Transparently unzip any dropped .zip so its members are sorted individually (the per-zone drop path
+  // already does this via _triageAddFiles). Falls back to dropping the zip if extraction fails.
+  if (typeof _anyZip === 'function' && _anyZip(files)) {
+    try { files = await _expandZipFiles(files); }
+    catch (e) { files = [].slice.call(files).filter(function (f) { return !(typeof _isZipFile === 'function' && _isZipFile(f)); }); }
+    if (!files || !files.length) return;
+  }
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (typeof showStatus === 'function') showStatus('info', 'Sorting opportunities', 'Reading ' + files.length + ' file' + (files.length === 1 ? '' : 's') + ' and grouping by solicitation\u2026 (large batches take a moment)', true);
   if (typeof setProgress === 'function') setProgress(15);
