@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '389';
+const APP_VERSION = '390';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14837,6 +14837,7 @@ async function pricingAutoBuildStructure() {
       if (_bnaHpf > 0 && parseFloat(pricingModel.hoursPerFte) !== _bnaHpf) {
         const _wasHpf = parseFloat(pricingModel.hoursPerFte) || 1912;
         pricingModel.hoursPerFte = _bnaHpf;
+        pricingModel._govHpfLocked = true;      // the solicitation-stated hours/FTE basis wins over Settings AND the model
         pricingModel._hpfChangedFrom = _wasHpf;      // rendered on the tab, not just logged
         try { log('Hours basis set to ' + _bnaHpf.toLocaleString() + ' hrs/FTE-year to match the solicitation\u2019s workload table.', 'warn'); } catch (e) {}
         // This divisor sets every FTE figure on the tab. The user is told, and told what to
@@ -15174,7 +15175,7 @@ function pricingApplyAutoBuild(a) {
   var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { var _adv = (l.advertised != null && l.advertised !== '' && parseFloat(l.advertised) > 0) ? parseFloat(l.advertised) : null; if ((l.rateInput != null && l.rateInput !== '') || l.evaluated || l.rateStatus || l.mktBand || _adv != null) { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate, rateStatus: l.rateStatus, evaluated: l.evaluated, mktBand: l.mktBand, advertised: _adv }; } });
   // Agency-stated FTE-hour basis (e.g. 2,080 hrs/FTE): honor it for THIS proposal, overriding the
   // company default. Only set when the model reports an explicit figure from the solicitation.
-  { const _h = parseFloat(a.hours_per_fte); pricingModel.hoursPerFte = (_h > 0) ? _h : null; }
+  { const _h = parseFloat(a.hours_per_fte); if (!pricingModel._govHpfLocked) { pricingModel.hoursPerFte = (_h > 0) ? _h : null; } else if (_h > 0 && _h !== parseFloat(pricingModel.hoursPerFte)) { try { if (typeof log === 'function') log('Kept the solicitation workload basis of ' + parseFloat(pricingModel.hoursPerFte).toLocaleString() + ' hrs/FTE (model suggested ' + _h.toLocaleString() + ').', 'warn'); } catch (e) {} } }
   if (!pricingModel.tasks.length && Array.isArray(a.proposed_tasks) && a.proposed_tasks.length) {
     pricingModel.tasks = _pxCleanTasks(a.proposed_tasks);   // same cleaning as the briefing path
   }
