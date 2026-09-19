@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '384';
+const APP_VERSION = '386';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -27092,7 +27092,7 @@ window.RecStore = (function () {
       var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/items?$orderby=Created desc&$top=500&$select=" + sel, { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
       if (!r.ok) { if (r.status === 404) { showCreateList('The list \u201c' + spList() + '\u201d wasn\u2019t found. Create it automatically, or fix the name in Settings \u2192 Recruiting \u2014 or use Import CSV to work locally.'); return; } var e = await r.json().catch(function () { return null; }); setB('err', 'SharePoint error: ' + (e && e.error ? e.error.message.value : r.status)); return; }
       var d = await r.json();
-      cands = (d.d.results || []).map(function (x) { var _nm = x[C.name] || ''; var _sp = _nm.trim().split(/\s+/); return { id: x.Id, name: _nm, role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '', _source: 'Scratch Pad', firstName: (_sp.length > 1 ? _sp[0] : _nm), lastName: (_sp.length > 1 ? _sp.slice(1).join(' ') : ''), position: x[C.role] || '', state: x[C.location] || '', linkedIn: x[C.url] || '', resume: '', hsLink: '' }; });
+      cands = (d.d.results || []).map(function (x) { var _nm = x[C.name] || ''; var _sp = _nm.trim().split(/\s+/); return { id: x.Id, name: _nm, role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '', _source: 'Scratch Pad', firstName: (_sp.length > 1 ? _sp[0] : _nm), lastName: (_sp.length > 1 ? _sp.slice(1).join(' ') : ''), position: '', state: x[C.location] || '', linkedIn: x[C.url] || '', resume: '', hsLink: '' }; });
       if (inclApplicants() && appList()) { try { var _extra = await loadApplicants(t); if (_extra.length) cands = cands.concat(_extra); } catch (e) {} }
       _loaded = true;
       setB('ok', '\u2713 ' + cands.length + ' candidate' + (cands.length !== 1 ? 's' : '') + ' loaded');
@@ -27152,6 +27152,7 @@ window.RecStore = (function () {
       return { col: col, val: value };
     }
     if (field === 'resume' || field === 'hsLink') return { skip: true, reason: 'no-column' };
+    if (field === 'name') return { col: C.name, val: value };
     if (field === 'firstName' || field === 'lastName') return { col: C.name, val: nameCombined };
     var m = { position: C.role, state: C.location, linkedIn: C.url, email: C.email, phone: C.phone };
     var col2 = m[field] || '';
@@ -27195,6 +27196,23 @@ window.RecStore = (function () {
       else { var e = await r.json().catch(function () { return null; }); toast('Save failed: ' + (e && e.error ? e.error.message.value : 'HTTP ' + r.status)); }
     } catch (e) { toast('Save failed \u2014 network error'); }
   }
+  // Merge the name for display: Repository has separate first/last; Scratch Pad has one Title, from which we
+  // drop a leading single initial when there are 3+ words ("N. Serena Blankenship" -> "Serena Blankenship").
+  function _cleanName(name) { var t = String(name || '').trim().split(/\s+/).filter(Boolean); if (t.length >= 3 && /^[A-Za-z]\.?$/.test(t[0])) t = t.slice(1); return t.join(' '); }
+  function _displayName(c) { return c._source === 'Repository' ? ((c.firstName || '') + ' ' + (c.lastName || '')).trim() : _cleanName(c.name); }
+  function _sortLastKey(c) { var t = _displayName(c).trim().split(/\s+/); return (t[t.length - 1] || '').toLowerCase(); }
+  var _US_STATES = { 'alabama':'AL','alaska':'AK','arizona':'AZ','arkansas':'AR','california':'CA','colorado':'CO','connecticut':'CT','delaware':'DE','florida':'FL','georgia':'GA','hawaii':'HI','idaho':'ID','illinois':'IL','indiana':'IN','iowa':'IA','kansas':'KS','kentucky':'KY','louisiana':'LA','maine':'ME','maryland':'MD','massachusetts':'MA','michigan':'MI','minnesota':'MN','mississippi':'MS','missouri':'MO','montana':'MT','nebraska':'NE','nevada':'NV','new hampshire':'NH','new jersey':'NJ','new mexico':'NM','new york':'NY','north carolina':'NC','north dakota':'ND','ohio':'OH','oklahoma':'OK','oregon':'OR','pennsylvania':'PA','rhode island':'RI','south carolina':'SC','south dakota':'SD','tennessee':'TN','texas':'TX','utah':'UT','vermont':'VT','virginia':'VA','washington':'WA','west virginia':'WV','wisconsin':'WI','wyoming':'WY','district of columbia':'DC' };
+  // Show just the STATE even when a town is present ("Edgewater, Maryland" -> "MD"). Reads the part after the
+  // last comma, maps a full state name to its abbreviation, keeps an existing 2-letter code, else shows it as-is.
+  function _stateAbbr(s) {
+    s = String(s || '').trim(); if (!s) return '';
+    var part = s.indexOf(',') >= 0 ? s.slice(s.lastIndexOf(',') + 1).trim() : s;
+    var norm = part.toLowerCase().replace(/[.]/g, '').replace(/\s+/g, ' ').trim();
+    if (_US_STATES[norm]) return _US_STATES[norm];
+    var up = part.replace(/[^A-Za-z]/g, '').toUpperCase();
+    if (up.length === 2) return up;
+    return part;
+  }
   function trkSort(col) { if (_trkSort.col === col) { _trkSort.dir = _trkSort.dir === 1 ? -1 : (_trkSort.dir === -1 ? 0 : 1); if (!_trkSort.dir) _trkSort.col = ''; } else { _trkSort.col = col; _trkSort.dir = 1; } renderC(); }
   function trkColFilter(col, val) { _trkColFilters[col] = val; renderC(); var el = document.getElementById('trkfilt-' + col); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } }
   function renderC() {
@@ -27203,13 +27221,13 @@ window.RecStore = (function () {
     var cf = _trkColFilters || {};
     var f = cands.filter(function (c) {
       if (!(src === 'both' || (src === 'applicants' && c._source === 'Repository') || (src === 'potentials' && c._source === 'Scratch Pad'))) return false;
-      if (q) { var tx = ((c.firstName || '') + ' ' + (c.lastName || '') + ' ' + (c.position || '') + ' ' + (c.state || '') + ' ' + (c.email || '') + ' ' + (c._source || '')).toLowerCase(); if (tx.indexOf(q) < 0) return false; }
-      for (var col in cf) { var fv = String(cf[col] || '').toLowerCase().trim(); if (fv && String(c[col] || '').toLowerCase().indexOf(fv) < 0) return false; }
+      if (q) { var tx = (_displayName(c) + ' ' + (c.position || '') + ' ' + (c.state || '') + ' ' + (c.email || '') + ' ' + (c._source || '')).toLowerCase(); if (tx.indexOf(q) < 0) return false; }
+      for (var col in cf) { var fv = String(cf[col] || '').toLowerCase().trim(); if (fv) { var cv = (col === 'name') ? _displayName(c) : (col === 'state') ? _stateAbbr(c.state) : (c[col] || ''); if (String(cv).toLowerCase().indexOf(fv) < 0) return false; } }
       return true;
     });
     if (_trkSort && _trkSort.col && _trkSort.dir) {
       var sc = _trkSort.col, sd = _trkSort.dir;
-      f = f.slice().sort(function (a, b) { var av = String(a[sc] || '').toLowerCase(), bv = String(b[sc] || '').toLowerCase(); return av < bv ? -sd : av > bv ? sd : 0; });
+      f = f.slice().sort(function (a, b) { var av = String((sc === 'name' ? _sortLastKey(a) : sc === 'state' ? _stateAbbr(a.state) : a[sc]) || '').toLowerCase(), bv = String((sc === 'name' ? _sortLastKey(b) : sc === 'state' ? _stateAbbr(b.state) : b[sc]) || '').toLowerCase(); return av < bv ? -sd : av > bv ? sd : 0; });
     }
     var setTx = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
     setTx('st-repo', cands.filter(function (c) { return c._source === 'Repository'; }).length); setTx('st-scratch', cands.filter(function (c) { return c._source === 'Scratch Pad'; }).length); setTx('st-total', cands.length);
@@ -27232,8 +27250,8 @@ window.RecStore = (function () {
       }
     }
     var lnk = function (u, label) { if (!u) return '<span style="color:var(--muted)">\u2014</span>'; var h = (String(u).indexOf('http') === 0) ? u : ('https://' + u); return '<a href="' + esc(h) + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">' + label + '</a>'; };
-    var W = ['9%', '9%', '9%', '13%', '14%', '11%', '6%', '8%', '7%', '9%'];
-    var COLS = [['_source', 'Source'], ['firstName', 'First Name'], ['lastName', 'Last Name'], ['position', 'Position'], ['email', 'Email'], ['phone', 'Phone'], ['state', 'State'], ['linkedIn', 'LinkedIn'], ['resume', 'Resume'], ['hsLink', 'HubSpot']];
+    var W = ['8%', '16%', '13%', '15%', '11%', '6%', '8%', '7%', '9%'];
+    var COLS = [['_source', 'Source'], ['name', 'Name'], ['position', 'Position'], ['email', 'Email'], ['phone', 'Phone'], ['state', 'State'], ['linkedIn', 'LinkedIn'], ['resume', 'Resume'], ['hsLink', 'HubSpot']];
     var head = '<tr>' + COLS.map(function (h, i) { var col = h[0]; var ind = (_trkSort && _trkSort.col === col && _trkSort.dir) ? (_trkSort.dir === 1 ? ' \u25B4' : ' \u25BE') : ''; return '<th onclick="Rec.trkSort(\'' + col + '\')" title="Click to sort" style="text-align:left;padding:6px 8px 3px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);font-weight:700;width:' + W[i] + ';cursor:pointer;user-select:none">' + h[1] + '<span style="color:var(--blue)">' + ind + '</span></th>'; }).join('') + '</tr>';
     var _srcOpt = function (v, txt) { return '<option value="' + v + '"' + (_trkSource === v ? ' selected' : '') + '>' + txt + '</option>'; };
     var filt = '<tr>' + COLS.map(function (h) { var col = h[0]; if (col === '_source') { return '<td style="padding:1px 5px 6px;border-bottom:2px solid var(--border)"><select onchange="Rec.setTrkSource(this.value)" style="width:100%;box-sizing:border-box;padding:2px 3px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:#fff">' + _srcOpt('both', 'All') + _srcOpt('applicants', 'Repository') + _srcOpt('potentials', 'Scratch Pad') + '</select></td>'; } return '<td style="padding:1px 5px 6px;border-bottom:2px solid var(--border)"><input type="text" id="trkfilt-' + col + '" value="' + esc((_trkColFilters || {})[col] || '') + '" oninput="Rec.trkColFilter(\'' + col + '\',this.value)" placeholder="filter\u2026" title="Filter this column" style="width:100%;box-sizing:border-box;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:10.5px"/></td>'; }).join('') + '</tr>';
@@ -27241,12 +27259,19 @@ window.RecStore = (function () {
     var tdNW = function (v) { return '<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;white-space:nowrap">' + v + '</td>'; };
     var inp = function (c, field) { return '<input type="text" value="' + esc(c[field] || '') + '" onchange="Rec.trkEditCell(\'' + esc(String(c.id)) + '\',\'' + field + '\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px"/>'; };
     var cell = function (c, field) { return _trkEdit ? inp(c, field) : esc(c[field] || ''); };
+    var nameCell = function (c) {
+      if (!_trkEdit) return esc(_displayName(c));
+      var eid = esc(String(c.id));
+      if (c._source === 'Repository') { return '<input type="text" placeholder="First" value="' + esc(c.firstName || '') + '" onchange="Rec.trkEditCell(\'' + eid + '\',\'firstName\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px;margin-bottom:3px"/><input type="text" placeholder="Last" value="' + esc(c.lastName || '') + '" onchange="Rec.trkEditCell(\'' + eid + '\',\'lastName\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px"/>'; }
+      return '<input type="text" placeholder="Full name" value="' + esc(c.name || '') + '" onchange="Rec.trkEditCell(\'' + eid + '\',\'name\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px"/>';
+    };
     var linkCell = function (c, field, label) { var editable = (c._source === 'Repository') || field === 'linkedIn'; return (_trkEdit && editable) ? inp(c, field) : lnk(c[field], label); };
+    var stateCell = function (c) { return _trkEdit ? inp(c, 'state') : esc(_stateAbbr(c.state)); };
     var emailCell = function (c) { if (_trkEdit) return inp(c, 'email'); return c.email ? '<a href="mailto:' + esc(c.email) + '" style="color:var(--blue)">' + esc(c.email) + '</a>' : '<span style="color:var(--muted)">\u2014</span>'; };
     var rows = _pf.map(function (c) {
       var isRepo = c._source === 'Repository';
       var pill = '<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap;' + (isRepo ? 'background:#eef2ff;color:#3730a3' : 'background:#fef3c7;color:#92400e') + '">' + esc(c._source || '') + '</span>';
-      return '<tr>' + td(pill) + td(cell(c, 'firstName')) + td(cell(c, 'lastName')) + td(cell(c, 'position')) + td(emailCell(c)) + tdNW(cell(c, 'phone')) + td(cell(c, 'state')) + tdNW(linkCell(c, 'linkedIn', 'LinkedIn')) + tdNW(linkCell(c, 'resume', 'Resume')) + tdNW(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
+      return '<tr>' + td(pill) + td(nameCell(c)) + td(cell(c, 'position')) + td(emailCell(c)) + tdNW(cell(c, 'phone')) + td(stateCell(c)) + tdNW(linkCell(c, 'linkedIn', 'LinkedIn')) + tdNW(linkCell(c, 'resume', 'Resume')) + tdNW(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
     }).join('');
     list.innerHTML = '<div style="overflow-x:hidden;width:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead>' + head + filt + '</thead><tbody>' + rows + '</tbody></table></div>';
   }
