@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '386';
+const APP_VERSION = '387';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -27030,6 +27030,12 @@ window.RecStore = (function () {
   function appCols() { return sp().applicantsColumns || {}; }
   function inclApplicants() { return _trkSource !== 'potentials'; }
   function setTrkSource(v) { _trkSource = v || 'both'; _trkPage = 0; loadC(false); }
+  function _fieldVal(v) {
+    if (v == null) return '';
+    if (typeof v === 'string' || typeof v === 'number') return String(v).trim();
+    if (v.results && v.results.length) return v.results.join(', ');
+    return String(v.Value || v.LookupValue || v.Title || v.Label || v.Description || '').trim();
+  }
   function _mapApplicant(x, A) {
     var fn = x[A.firstName] || '', ln = x[A.lastName] || '';
     var nm = (String(fn) + ' ' + String(ln)).trim() || (x.Title || '');
@@ -27039,7 +27045,7 @@ window.RecStore = (function () {
     var stage = x[A.stage]; var stageTxt = (typeof stage === 'string') ? stage : (stage && (stage.Title || stage.LookupValue) || '');
     var _url = function (v) { return (v && typeof v === 'object') ? (v.Url || v.url || v.Description || '') : (v || ''); };
     var _li = _url(x[A.linkedIn]), _rs = _url(x[A.resume]), _hs = _url(A.hsLink ? x[A.hsLink] : '');
-    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: _li, source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true, _source: 'Repository', firstName: String(fn || ''), lastName: String(ln || ''), position: (x[A.position] || (A.reqCode ? x[A.reqCode] : '') || ''), state: stTxt, linkedIn: _li, resume: _rs, hsLink: _hs };
+    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: _li, source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true, _source: 'Repository', firstName: String(fn || ''), lastName: String(ln || ''), position: _fieldVal(x[A.position]), reqCode: (A.reqCode ? _fieldVal(x[A.reqCode]) : ''), state: stTxt, linkedIn: _li, resume: _rs, hsLink: _hs };
   }
   // Second SharePoint list (the applicants repository) merged in READ-ONLY when the toggle is on. Its schema
   // differs (applicantsColumns: firstName/lastName/position/city/state/stage), so we map it to the candidate
@@ -27092,7 +27098,7 @@ window.RecStore = (function () {
       var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(spList()) + "')/items?$orderby=Created desc&$top=500&$select=" + sel, { headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/json;odata=verbose' } });
       if (!r.ok) { if (r.status === 404) { showCreateList('The list \u201c' + spList() + '\u201d wasn\u2019t found. Create it automatically, or fix the name in Settings \u2192 Recruiting \u2014 or use Import CSV to work locally.'); return; } var e = await r.json().catch(function () { return null; }); setB('err', 'SharePoint error: ' + (e && e.error ? e.error.message.value : r.status)); return; }
       var d = await r.json();
-      cands = (d.d.results || []).map(function (x) { var _nm = x[C.name] || ''; var _sp = _nm.trim().split(/\s+/); return { id: x.Id, name: _nm, role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '', _source: 'Scratch Pad', firstName: (_sp.length > 1 ? _sp[0] : _nm), lastName: (_sp.length > 1 ? _sp.slice(1).join(' ') : ''), position: '', state: x[C.location] || '', linkedIn: x[C.url] || '', resume: '', hsLink: '' }; });
+      cands = (d.d.results || []).map(function (x) { var _nm = x[C.name] || ''; var _sp = _nm.trim().split(/\s+/); return { id: x.Id, name: _nm, role: x[C.role] || '', location: x[C.location] || '', email: x[C.email] || '', phone: x[C.phone] || '', status: x[C.status] || 'New', url: x[C.url] || '', source: x[C.source] || '', notes: x[C.notes] || '', _source: 'Scratch Pad', firstName: (_sp.length > 1 ? _sp[0] : _nm), lastName: (_sp.length > 1 ? _sp.slice(1).join(' ') : ''), position: '', reqCode: '', state: x[C.location] || '', linkedIn: x[C.url] || '', resume: '', hsLink: '' }; });
       if (inclApplicants() && appList()) { try { var _extra = await loadApplicants(t); if (_extra.length) cands = cands.concat(_extra); } catch (e) {} }
       _loaded = true;
       setB('ok', '\u2713 ' + cands.length + ' candidate' + (cands.length !== 1 ? 's' : '') + ' loaded');
@@ -27268,10 +27274,16 @@ window.RecStore = (function () {
     var linkCell = function (c, field, label) { var editable = (c._source === 'Repository') || field === 'linkedIn'; return (_trkEdit && editable) ? inp(c, field) : lnk(c[field], label); };
     var stateCell = function (c) { return _trkEdit ? inp(c, 'state') : esc(_stateAbbr(c.state)); };
     var emailCell = function (c) { if (_trkEdit) return inp(c, 'email'); return c.email ? '<a href="mailto:' + esc(c.email) + '" style="color:var(--blue)">' + esc(c.email) + '</a>' : '<span style="color:var(--muted)">\u2014</span>'; };
+    var posCell = function (c) {
+      if (_trkEdit) return inp(c, 'position');
+      if (c.position) return esc(c.position);
+      if (c.reqCode) return '<span title="Requisition code (no position title on file for this applicant)" style="cursor:help;border-bottom:1px dotted var(--muted)">' + esc(c.reqCode) + '</span>';
+      return '<span style="color:var(--muted)">\u2014</span>';
+    };
     var rows = _pf.map(function (c) {
       var isRepo = c._source === 'Repository';
       var pill = '<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap;' + (isRepo ? 'background:#eef2ff;color:#3730a3' : 'background:#fef3c7;color:#92400e') + '">' + esc(c._source || '') + '</span>';
-      return '<tr>' + td(pill) + td(nameCell(c)) + td(cell(c, 'position')) + td(emailCell(c)) + tdNW(cell(c, 'phone')) + td(stateCell(c)) + tdNW(linkCell(c, 'linkedIn', 'LinkedIn')) + tdNW(linkCell(c, 'resume', 'Resume')) + tdNW(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
+      return '<tr>' + td(pill) + td(nameCell(c)) + td(posCell(c)) + td(emailCell(c)) + tdNW(cell(c, 'phone')) + td(stateCell(c)) + tdNW(linkCell(c, 'linkedIn', 'LinkedIn')) + tdNW(linkCell(c, 'resume', 'Resume')) + tdNW(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
     }).join('');
     list.innerHTML = '<div style="overflow-x:hidden;width:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead>' + head + filt + '</thead><tbody>' + rows + '</tbody></table></div>';
   }
