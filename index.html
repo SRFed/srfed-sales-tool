@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '387';
+const APP_VERSION = '389';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14964,7 +14964,7 @@ ${pricingScaActive() ? '- For SCA-covered roles the direct wage must meet or exc
     pxProgStart('pricingAutoBuildProgress', 1, 'Drafting the staffing plan\u2026',
                 'Reading the PWS and drafting roles\u2026', 30);
     const parsed = await callClaudeForJsonStreaming(
-      apiKey, [{ type: 'text', text: prompt }], 10000, 120000, 'Auto-building structure',
+      apiKey, [{ type: 'text', text: prompt }], 16000, 420000, 'Auto-building structure',
       function (p) {
         const n = p.items || 0;
         pxProgMark('pricingAutoBuildProgress', null,
