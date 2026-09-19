@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '383';
+const APP_VERSION = '384';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -27039,7 +27039,7 @@ window.RecStore = (function () {
     var stage = x[A.stage]; var stageTxt = (typeof stage === 'string') ? stage : (stage && (stage.Title || stage.LookupValue) || '');
     var _url = function (v) { return (v && typeof v === 'object') ? (v.Url || v.url || v.Description || '') : (v || ''); };
     var _li = _url(x[A.linkedIn]), _rs = _url(x[A.resume]), _hs = _url(A.hsLink ? x[A.hsLink] : '');
-    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: _li, source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true, _source: 'Repository', firstName: String(fn || ''), lastName: String(ln || ''), position: x[A.position] || '', state: stTxt, linkedIn: _li, resume: _rs, hsLink: _hs };
+    return { id: 'app_' + x.Id, name: nm, role: x[A.position] || '', location: loc, email: x[A.email] || '', phone: x[A.phone] || '', status: 'Added to Repository', url: _li, source: 'Applicant repository', notes: (stageTxt ? ('Stage: ' + stageTxt) : ''), _ro: true, _source: 'Repository', firstName: String(fn || ''), lastName: String(ln || ''), position: (x[A.position] || (A.reqCode ? x[A.reqCode] : '') || ''), state: stTxt, linkedIn: _li, resume: _rs, hsLink: _hs };
   }
   // Second SharePoint list (the applicants repository) merged in READ-ONLY when the toggle is on. Its schema
   // differs (applicantsColumns: firstName/lastName/position/city/state/stage), so we map it to the candidate
@@ -27071,6 +27071,7 @@ window.RecStore = (function () {
       var rows = (d.d && d.d.results) || d.value || [];
       var A = appCols();
       if (A && (!A.hsLink || A.hsLink === 'HSLink')) { var _hs = await _resolveAppField(['HS Link', 'HSLink', 'HubSpot', 'HubSpot Link', 'HS Opportunity Link'], token); if (_hs) A.hsLink = _hs; }
+      if (A) { var _pos = await _resolveAppField(['Position', 'Position Applied For', 'Applied Position', 'Requisition Position'], token); if (_pos) A.position = _pos; var _req = await _resolveAppField(['RequisitionCode', 'Requisition Code', 'Req Code', 'Requisition'], token); if (_req) A.reqCode = _req; }
       return rows.map(function (x) { return _mapApplicant(x, A); });
     } catch (e) { return []; }
   }
@@ -27231,12 +27232,13 @@ window.RecStore = (function () {
       }
     }
     var lnk = function (u, label) { if (!u) return '<span style="color:var(--muted)">\u2014</span>'; var h = (String(u).indexOf('http') === 0) ? u : ('https://' + u); return '<a href="' + esc(h) + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">' + label + '</a>'; };
-    var W = ['9%', '9%', '9%', '15%', '16%', '9%', '7%', '8%', '7%', '6%'];
+    var W = ['9%', '9%', '9%', '13%', '14%', '11%', '6%', '8%', '7%', '9%'];
     var COLS = [['_source', 'Source'], ['firstName', 'First Name'], ['lastName', 'Last Name'], ['position', 'Position'], ['email', 'Email'], ['phone', 'Phone'], ['state', 'State'], ['linkedIn', 'LinkedIn'], ['resume', 'Resume'], ['hsLink', 'HubSpot']];
     var head = '<tr>' + COLS.map(function (h, i) { var col = h[0]; var ind = (_trkSort && _trkSort.col === col && _trkSort.dir) ? (_trkSort.dir === 1 ? ' \u25B4' : ' \u25BE') : ''; return '<th onclick="Rec.trkSort(\'' + col + '\')" title="Click to sort" style="text-align:left;padding:6px 8px 3px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);font-weight:700;width:' + W[i] + ';cursor:pointer;user-select:none">' + h[1] + '<span style="color:var(--blue)">' + ind + '</span></th>'; }).join('') + '</tr>';
     var _srcOpt = function (v, txt) { return '<option value="' + v + '"' + (_trkSource === v ? ' selected' : '') + '>' + txt + '</option>'; };
     var filt = '<tr>' + COLS.map(function (h) { var col = h[0]; if (col === '_source') { return '<td style="padding:1px 5px 6px;border-bottom:2px solid var(--border)"><select onchange="Rec.setTrkSource(this.value)" style="width:100%;box-sizing:border-box;padding:2px 3px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:#fff">' + _srcOpt('both', 'All') + _srcOpt('applicants', 'Repository') + _srcOpt('potentials', 'Scratch Pad') + '</select></td>'; } return '<td style="padding:1px 5px 6px;border-bottom:2px solid var(--border)"><input type="text" id="trkfilt-' + col + '" value="' + esc((_trkColFilters || {})[col] || '') + '" oninput="Rec.trkColFilter(\'' + col + '\',this.value)" placeholder="filter\u2026" title="Filter this column" style="width:100%;box-sizing:border-box;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:10.5px"/></td>'; }).join('') + '</tr>';
     var td = function (v) { return '<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere">' + v + '</td>'; };
+    var tdNW = function (v) { return '<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;white-space:nowrap">' + v + '</td>'; };
     var inp = function (c, field) { return '<input type="text" value="' + esc(c[field] || '') + '" onchange="Rec.trkEditCell(\'' + esc(String(c.id)) + '\',\'' + field + '\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px"/>'; };
     var cell = function (c, field) { return _trkEdit ? inp(c, field) : esc(c[field] || ''); };
     var linkCell = function (c, field, label) { var editable = (c._source === 'Repository') || field === 'linkedIn'; return (_trkEdit && editable) ? inp(c, field) : lnk(c[field], label); };
@@ -27244,7 +27246,7 @@ window.RecStore = (function () {
     var rows = _pf.map(function (c) {
       var isRepo = c._source === 'Repository';
       var pill = '<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap;' + (isRepo ? 'background:#eef2ff;color:#3730a3' : 'background:#fef3c7;color:#92400e') + '">' + esc(c._source || '') + '</span>';
-      return '<tr>' + td(pill) + td(cell(c, 'firstName')) + td(cell(c, 'lastName')) + td(cell(c, 'position')) + td(emailCell(c)) + td(cell(c, 'phone')) + td(cell(c, 'state')) + td(linkCell(c, 'linkedIn', 'LinkedIn')) + td(linkCell(c, 'resume', 'Resume')) + td(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
+      return '<tr>' + td(pill) + td(cell(c, 'firstName')) + td(cell(c, 'lastName')) + td(cell(c, 'position')) + td(emailCell(c)) + tdNW(cell(c, 'phone')) + td(cell(c, 'state')) + tdNW(linkCell(c, 'linkedIn', 'LinkedIn')) + tdNW(linkCell(c, 'resume', 'Resume')) + tdNW(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
     }).join('');
     list.innerHTML = '<div style="overflow-x:hidden;width:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead>' + head + filt + '</thead><tbody>' + rows + '</tbody></table></div>';
   }
