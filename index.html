@@ -792,9 +792,9 @@
     transition: all 0.15s; letter-spacing: 0.2px;
     min-width: 0; width: 100%; text-align: left;
     font-family: inherit; white-space: normal; line-height: 1.3; overflow-wrap: anywhere; padding-left: calc(16px + 1.5em); text-indent: -1.5em;
-    display: flex; flex-direction: column; justify-content: center; min-height: 70px;
     box-shadow: none;
   }
+  .tab-btn[id^="tab-rec-"] { display: flex; flex-direction: column; justify-content: center; min-height: 70px; }
   .tab-btn:hover {
     background: rgba(255,255,255,0.12);
     color: #ffffff;
@@ -2545,10 +2545,9 @@
   <div class="rec-scope">
     <div id="sp-banner-tracker" class="spb info" style="display:none"></div>
     <div class="rec-stats">
+      <div class="rec-stat"><div class="sn" id="st-repo">0</div><div class="sl">Applicants Repository</div></div>
+      <div class="rec-stat"><div class="sn" id="st-scratch">0</div><div class="sl">Scratch Pad</div></div>
       <div class="rec-stat"><div class="sn" id="st-total">0</div><div class="sl">Total</div></div>
-      <div class="rec-stat"><div class="sn" id="st-new">0</div><div class="sl">New</div></div>
-      <div class="rec-stat"><div class="sn" id="st-contacted">0</div><div class="sl">Contacted</div></div>
-      <div class="rec-stat"><div class="sn" id="st-added">0</div><div class="sl">In Repository</div></div>
     </div>
     <div class="card rec-card">
       <div class="sec">Import from resume</div>
@@ -2575,7 +2574,6 @@
         <div><label>Phone</label><input type="tel" id="cp" placeholder="(555) 867-5309" oninput="Rec.fmtP(this)"/></div>
       </div>
       <div class="r3">
-        <div><label>Status</label><select id="cs"><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select> <label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;margin-left:8px">Show <select id="trkSource" onchange="Rec.setTrkSource(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:white"><option value="both">Both lists</option><option value="applicants">Applicants Repository</option><option value="potentials">Scratch Pad</option></select></label></div>
         <div><label>Profile URL</label><input type="text" id="cu" placeholder="linkedin.com/in/..."/></div>
         <div><label>Source</label><input type="text" id="cso" placeholder="Resume upload, LinkedIn..."/></div>
       </div>
@@ -2588,10 +2586,9 @@
       <div class="ldg" id="cld">Saving to SharePoint...</div>
     </div>
     <div class="rec-card">
-    <div class="sec" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>📇 Candidate list <span id="clistCount" style="font-weight:400;font-size:13px;opacity:.85"></span></span><button id="trkEditBtn" onclick="Rec.trkToggleEdit()" title="Toggle editing. In edit mode, changes write back to the row's own SharePoint list." style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer;white-space:nowrap">\u270E Edit</button></div>
+    <div class="sec" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>📇 Candidate List <span id="clistCount" style="font-weight:400;font-size:13px;opacity:.85"></span></span><button id="trkEditBtn" onclick="Rec.trkToggleEdit()" title="Toggle editing. In edit mode, changes write back to the row's own SharePoint list." style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer;white-space:nowrap">&#x270E; Edit</button></div>
     <div class="fb">
       <input type="text" id="fsrch" placeholder="Search name, role, location, notes..." oninput="Rec.renderC()"/>
-      <select id="fstat" onchange="Rec.renderC()" style="min-width:170px"><option value="">All statuses</option><option value="New">New</option><option value="Contacted">Contacted</option><option value="Added to Repository">Added to Repository</option></select>
       <button class="btn sm" onclick="Rec.loadC(true)">&#8635; Refresh</button>
       <button class="btn sm" onclick="Rec.expCSV()">&#8595; CSV</button>
       <button class="btn sm" onclick="document.getElementById('csvIn').click()" title="Bulk-import candidates from a CSV">&#8593; Import CSV</button>
@@ -3292,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '378';
+const APP_VERSION = '383';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -26949,7 +26946,7 @@ window.RecStore = (function () {
 // from CLIENT_CONFIG.recruiting.sharePoint.
 (function () {
   'use strict';
-  let cands = [], LT = null, _loaded = false, _trkPage = 0, _lastFkey = null, _trkSource = 'both', _trkEdit = false, _ltMap = {};
+  let cands = [], LT = null, _loaded = false, _trkPage = 0, _lastFkey = null, _trkSource = 'both', _trkEdit = false, _ltMap = {}, _trkSort = { col: '', dir: 0 }, _trkColFilters = {};
   function sp() { return (CLIENT_CONFIG.recruiting && CLIENT_CONFIG.recruiting.sharePoint) || {}; }
   function spSite() { return sp().site || ''; }
   function spScope() { return sp().scope || ''; }
@@ -27047,6 +27044,24 @@ window.RecStore = (function () {
   // Second SharePoint list (the applicants repository) merged in READ-ONLY when the toggle is on. Its schema
   // differs (applicantsColumns: firstName/lastName/position/city/state/stage), so we map it to the candidate
   // shape and tag each 'app_<id>' + _ro so status/remove can't write to the wrong list.
+  var _appFieldsCache = null;
+  // Match a SharePoint column's DISPLAY title to its INTERNAL name (they differ - e.g. "HS Link" might be
+  // stored as field_37 or an OData-encoded name). PURE, so it is harnessed; normalizes case + punctuation.
+  function _pickAppField(fields, displayNames) {
+    var map = {};
+    (fields || []).forEach(function (f) { var t = String(f.Title || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); if (t && !map[t]) map[t] = f.InternalName; });
+    for (var i = 0; i < (displayNames || []).length; i++) { var k = String(displayNames[i]).toLowerCase().replace(/[^a-z0-9]+/g, ''); if (map[k]) return map[k]; }
+    return '';
+  }
+  async function _resolveAppField(displayNames, token) {
+    try {
+      if (!_appFieldsCache) {
+        var r = await fetch(spSite() + "/_api/web/lists/getbytitle('" + encodeURIComponent(appList()) + "')/fields?$select=Title,InternalName&$top=500", { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=verbose' } });
+        var d = await r.json(); _appFieldsCache = (d.d && d.d.results) || d.value || [];
+      }
+      return _pickAppField(_appFieldsCache, displayNames);
+    } catch (e) { return ''; }
+  }
   async function loadApplicants(token) {
     if (!appList() || !spSite()) return [];
     try {
@@ -27055,6 +27070,7 @@ window.RecStore = (function () {
       var d = await r.json();
       var rows = (d.d && d.d.results) || d.value || [];
       var A = appCols();
+      if (A && (!A.hsLink || A.hsLink === 'HSLink')) { var _hs = await _resolveAppField(['HS Link', 'HSLink', 'HubSpot', 'HubSpot Link', 'HS Opportunity Link'], token); if (_hs) A.hsLink = _hs; }
       return rows.map(function (x) { return _mapApplicant(x, A); });
     } catch (e) { return []; }
   }
@@ -27178,24 +27194,30 @@ window.RecStore = (function () {
       else { var e = await r.json().catch(function () { return null; }); toast('Save failed: ' + (e && e.error ? e.error.message.value : 'HTTP ' + r.status)); }
     } catch (e) { toast('Save failed \u2014 network error'); }
   }
+  function trkSort(col) { if (_trkSort.col === col) { _trkSort.dir = _trkSort.dir === 1 ? -1 : (_trkSort.dir === -1 ? 0 : 1); if (!_trkSort.dir) _trkSort.col = ''; } else { _trkSort.col = col; _trkSort.dir = 1; } renderC(); }
+  function trkColFilter(col, val) { _trkColFilters[col] = val; renderC(); var el = document.getElementById('trkfilt-' + col); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } }
   function renderC() {
     var q = (document.getElementById('fsrch') ? document.getElementById('fsrch').value : '').toLowerCase();
-    var fs = document.getElementById('fstat') ? document.getElementById('fstat').value : '';
     var src = _trkSource || 'both';
+    var cf = _trkColFilters || {};
     var f = cands.filter(function (c) {
-      var inSrc = src === 'both' || (src === 'applicants' && c._source === 'Repository') || (src === 'potentials' && c._source === 'Scratch Pad');
-      if (!inSrc) return false;
-      var tx = ((c.firstName || '') + ' ' + (c.lastName || '') + ' ' + (c.position || '') + ' ' + (c.state || '') + ' ' + (c.email || '') + ' ' + (c._source || '')).toLowerCase();
-      return (!q || tx.indexOf(q) >= 0) && (!fs || c.status === fs);
+      if (!(src === 'both' || (src === 'applicants' && c._source === 'Repository') || (src === 'potentials' && c._source === 'Scratch Pad'))) return false;
+      if (q) { var tx = ((c.firstName || '') + ' ' + (c.lastName || '') + ' ' + (c.position || '') + ' ' + (c.state || '') + ' ' + (c.email || '') + ' ' + (c._source || '')).toLowerCase(); if (tx.indexOf(q) < 0) return false; }
+      for (var col in cf) { var fv = String(cf[col] || '').toLowerCase().trim(); if (fv && String(c[col] || '').toLowerCase().indexOf(fv) < 0) return false; }
+      return true;
     });
+    if (_trkSort && _trkSort.col && _trkSort.dir) {
+      var sc = _trkSort.col, sd = _trkSort.dir;
+      f = f.slice().sort(function (a, b) { var av = String(a[sc] || '').toLowerCase(), bv = String(b[sc] || '').toLowerCase(); return av < bv ? -sd : av > bv ? sd : 0; });
+    }
     var setTx = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
-    setTx('st-total', cands.length); setTx('st-new', cands.filter(function (c) { return c.status === 'New'; }).length); setTx('st-contacted', cands.filter(function (c) { return c.status === 'Contacted'; }).length); setTx('st-added', cands.filter(function (c) { return c.status === 'Added to Repository'; }).length);
+    setTx('st-repo', cands.filter(function (c) { return c._source === 'Repository'; }).length); setTx('st-scratch', cands.filter(function (c) { return c._source === 'Scratch Pad'; }).length); setTx('st-total', cands.length);
     var cnt = document.getElementById('clistCount');
     if (cnt) cnt.textContent = cands.length ? ('\u2014 showing ' + f.length + ' of ' + cands.length) : '';
     var list = document.getElementById('clist'); if (!list) return;
     if (!f.length) { list.innerHTML = '<div class="rec-empty"><div class="rec-empty-icon">\u25AF</div><p>' + (cands.length === 0 ? 'No candidates yet. Add one above, upload a resume, or import a CSV.' : 'No candidates match your filters.') + '</p></div>'; var _pg0 = document.getElementById('clistPager'); if (_pg0) { _pg0.style.display = 'none'; _pg0.innerHTML = ''; } return; }
     var _SIZE = 25;
-    var _fk = q + '|' + fs + '|' + src; if (_fk !== _lastFkey) { _trkPage = 0; _lastFkey = _fk; }
+    var _fk = q + '|' + src + '|' + JSON.stringify(cf) + '|' + (_trkSort ? _trkSort.col + _trkSort.dir : ''); if (_fk !== _lastFkey) { _trkPage = 0; _lastFkey = _fk; }
     var _pages = Math.max(1, Math.ceil(f.length / _SIZE));
     _trkPage = Math.min(Math.max(0, _trkPage), _pages - 1);
     var _pf = f.slice(_trkPage * _SIZE, (_trkPage + 1) * _SIZE);
@@ -27209,19 +27231,22 @@ window.RecStore = (function () {
       }
     }
     var lnk = function (u, label) { if (!u) return '<span style="color:var(--muted)">\u2014</span>'; var h = (String(u).indexOf('http') === 0) ? u : ('https://' + u); return '<a href="' + esc(h) + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600">' + label + '</a>'; };
-    var W = ['8%', '9%', '10%', '15%', '16%', '10%', '7%', '8%', '9%', '8%'];
-    var HD = ['Source', 'First Name', 'Last Name', 'Position', 'Email', 'Phone', 'State', 'LinkedIn', 'Resume', 'HubSpot'];
-    var head = '<tr>' + HD.map(function (h, i) { return '<th style="text-align:left;padding:7px 8px;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:700;width:' + W[i] + '">' + h + '</th>'; }).join('') + '</tr>';
+    var W = ['9%', '9%', '9%', '15%', '16%', '9%', '7%', '8%', '7%', '6%'];
+    var COLS = [['_source', 'Source'], ['firstName', 'First Name'], ['lastName', 'Last Name'], ['position', 'Position'], ['email', 'Email'], ['phone', 'Phone'], ['state', 'State'], ['linkedIn', 'LinkedIn'], ['resume', 'Resume'], ['hsLink', 'HubSpot']];
+    var head = '<tr>' + COLS.map(function (h, i) { var col = h[0]; var ind = (_trkSort && _trkSort.col === col && _trkSort.dir) ? (_trkSort.dir === 1 ? ' \u25B4' : ' \u25BE') : ''; return '<th onclick="Rec.trkSort(\'' + col + '\')" title="Click to sort" style="text-align:left;padding:6px 8px 3px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);font-weight:700;width:' + W[i] + ';cursor:pointer;user-select:none">' + h[1] + '<span style="color:var(--blue)">' + ind + '</span></th>'; }).join('') + '</tr>';
+    var _srcOpt = function (v, txt) { return '<option value="' + v + '"' + (_trkSource === v ? ' selected' : '') + '>' + txt + '</option>'; };
+    var filt = '<tr>' + COLS.map(function (h) { var col = h[0]; if (col === '_source') { return '<td style="padding:1px 5px 6px;border-bottom:2px solid var(--border)"><select onchange="Rec.setTrkSource(this.value)" style="width:100%;box-sizing:border-box;padding:2px 3px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:#fff">' + _srcOpt('both', 'All') + _srcOpt('applicants', 'Repository') + _srcOpt('potentials', 'Scratch Pad') + '</select></td>'; } return '<td style="padding:1px 5px 6px;border-bottom:2px solid var(--border)"><input type="text" id="trkfilt-' + col + '" value="' + esc((_trkColFilters || {})[col] || '') + '" oninput="Rec.trkColFilter(\'' + col + '\',this.value)" placeholder="filter\u2026" title="Filter this column" style="width:100%;box-sizing:border-box;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:10.5px"/></td>'; }).join('') + '</tr>';
     var td = function (v) { return '<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere">' + v + '</td>'; };
     var inp = function (c, field) { return '<input type="text" value="' + esc(c[field] || '') + '" onchange="Rec.trkEditCell(\'' + esc(String(c.id)) + '\',\'' + field + '\',this.value)" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:12px"/>'; };
     var cell = function (c, field) { return _trkEdit ? inp(c, field) : esc(c[field] || ''); };
     var linkCell = function (c, field, label) { var editable = (c._source === 'Repository') || field === 'linkedIn'; return (_trkEdit && editable) ? inp(c, field) : lnk(c[field], label); };
+    var emailCell = function (c) { if (_trkEdit) return inp(c, 'email'); return c.email ? '<a href="mailto:' + esc(c.email) + '" style="color:var(--blue)">' + esc(c.email) + '</a>' : '<span style="color:var(--muted)">\u2014</span>'; };
     var rows = _pf.map(function (c) {
       var isRepo = c._source === 'Repository';
       var pill = '<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;white-space:nowrap;' + (isRepo ? 'background:#eef2ff;color:#3730a3' : 'background:#fef3c7;color:#92400e') + '">' + esc(c._source || '') + '</span>';
-      return '<tr>' + td(pill) + td(cell(c, 'firstName')) + td(cell(c, 'lastName')) + td(cell(c, 'position')) + td(cell(c, 'email')) + td(cell(c, 'phone')) + td(cell(c, 'state')) + td(linkCell(c, 'linkedIn', 'LinkedIn')) + td(linkCell(c, 'resume', 'Resume')) + td(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
+      return '<tr>' + td(pill) + td(cell(c, 'firstName')) + td(cell(c, 'lastName')) + td(cell(c, 'position')) + td(emailCell(c)) + td(cell(c, 'phone')) + td(cell(c, 'state')) + td(linkCell(c, 'linkedIn', 'LinkedIn')) + td(linkCell(c, 'resume', 'Resume')) + td(linkCell(c, 'hsLink', 'HubSpot')) + '</tr>';
     }).join('');
-    list.innerHTML = '<div style="overflow-x:hidden;width:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';
+    list.innerHTML = '<div style="overflow-x:hidden;width:100%"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead>' + head + filt + '</thead><tbody>' + rows + '</tbody></table></div>';
   }
   function clrC() { ['cn', 'cr', 'cl', 'ce', 'cp', 'cu', 'cso', 'cno'].forEach(function (id) { setV(id, ''); }); var cs = document.getElementById('cs'); if (cs) cs.value = 'New'; var rn = document.getElementById('review-notice'); if (rn) rn.style.display = 'none'; }
   function expCSV() {
@@ -27378,7 +27403,7 @@ window.RecStore = (function () {
     window.Rec.currentBench = function () { return (cands || []).slice(); };
     window.Rec.renderC = renderC; window.Rec.clrC = clrC; window.Rec.expCSV = expCSV; window.Rec.fmtP = fmtP; window.Rec.importCsv = importCsv;
     window.Rec.trkPage = function (n) { _trkPage = n; renderC(); }; window.Rec.trkToggleNote = function (el) { if (el) el.classList.toggle('ccnt-clamp'); };
-    window.Rec.setTrkSource = setTrkSource; window.Rec.trkToggleEdit = trkToggleEdit; window.Rec.trkEditCell = trkEditCell;
+    window.Rec.setTrkSource = setTrkSource; window.Rec.trkToggleEdit = trkToggleEdit; window.Rec.trkEditCell = trkEditCell; window.Rec.trkSort = trkSort; window.Rec.trkColFilter = trkColFilter;
     window.Rec.dzOv = dzOv; window.Rec.dzLv = dzLv; window.Rec.dzDp = dzDp; window.Rec.handlePdf = handlePdf;
     window.Rec.trackerOpened = trackerOpened; window.Rec.connectSharePoint = connectSharePoint; window.Rec.onAuthChangedT = onAuthChanged; window.Rec.provisionTrackerList = provisionTrackerList;
   }
