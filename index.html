@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '390';
+const APP_VERSION = '391';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -15026,7 +15026,7 @@ function pricingReconcileStatedFte(lcats, hours, mask, tasks, target, hpf) {
   // Integers are the DEFAULT (cleaner staffing). Keep fractions only when actually warranted: the
   // Government stated a fractional total, or the model deliberately proposed a fractional (part-time)
   // role. When both the proposed roles and the target are whole, allocate clean integer FTEs.
-  const wantIntegers = Math.abs(target - Math.round(target)) < eps && proposed.every(x => Math.abs(x - Math.round(x)) < eps);
+  const wantIntegers = proposed.every(x => Math.abs(x - Math.round(x)) < eps);   // whole headcounts -> whole FTEs; the fractional Government total is rounded
   if (wantIntegers) {
     const tgt = Math.round(target);
     let hc = lcats.map(l => Math.max(1, Math.round(parseFloat(l.advertised) || 0) || 1));
@@ -16090,8 +16090,10 @@ function pricingRenderFteBar() {
     : _isUserFte
     ? `From your <strong>uploaded sheet</strong>: <strong>${statedStr} FTE</strong> (your figures)`
     : `<strong>You are sizing the effort</strong> (PWS didn't state FTEs)`;
-  const advOk = stated == null ? null : Math.abs(advTotal - stated) < 0.05;
-  const allocOk = stated == null ? null : Math.abs(allocated - stated) < 0.05;
+  const _statedWhole = stated == null ? null : Math.round(stated);
+  const advOk = stated == null ? null : (Math.abs(advTotal - stated) < 0.05 || Math.abs(advTotal - _statedWhole) < 0.05);
+  const allocOk = stated == null ? null : (Math.abs(allocated - stated) < 0.05 || Math.abs(allocated - _statedWhole) < 0.05);
+  const _rounded = stated != null && Math.abs(stated - _statedWhole) > 0.01 && Math.abs(advTotal - _statedWhole) < 0.05 && Math.abs(advTotal - stated) >= 0.05;
   const card = (label, val, ok) => `<div style="flex:1;min-width:150px;border:1px solid ${ok === false ? '#fca5a5' : 'var(--border)'};border-radius:8px;padding:10px 12px;background:${ok === false ? '#fef2f2' : 'white'}"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:15px;font-weight:800;margin-top:2px">${val}</div></div>`;
   let badge = '';
   if (stated != null) {
@@ -16099,7 +16101,7 @@ function pricingRenderFteBar() {
       ? '✓ Locked to the Government-directed labor table — exactly these ' + statedStr + ' FTE in the directed categories. PWS tasks only spread the hours.'
       : _isUserFte
       ? '✓ Matches your uploaded sheet — ' + statedStr + ' FTE; headcount and hours reconcile.'
-      : '✓ Staffing matches the Government-stated ' + statedStr + ' FTE — headcount and hours both reconcile.';
+      : (_rounded ? ('✓ Staffing is ' + advTotal.toFixed(0) + ' whole FTE — the Government’s per-category hours imply ' + statedStr + ' FTE, rounded to a whole headcount.') : ('✓ Staffing matches the Government-stated ' + statedStr + ' FTE — headcount and hours both reconcile.'));
     const _missMsg = _isUserFte
       ? ('⚠ Does not reconcile with your uploaded ' + statedStr + ' FTE (advertised ' + advTotal.toFixed(2) + ', allocated ' + allocated.toFixed(2) + '). Check the sheet.')
       : ('⚠ Does NOT match the Government-stated ' + statedStr + ' FTE (advertised ' + advTotal.toFixed(2) + ', allocated ' + allocated.toFixed(2) + '). Deviating from the stated FTE can be disqualifying — adjust headcount/hours to hit ' + statedStr + '.');
