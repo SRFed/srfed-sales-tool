@@ -3289,7 +3289,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '391';
+const APP_VERSION = '393';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14781,6 +14781,11 @@ async function pricingAutoBuildStructure() {
   if (pricingModel._reverseSolved && !confirm('You started from an uploaded pricing sheet. Drafting a staffing plan re-runs the AI to propose the labor mix from the PWS \u2014 this can change the roles and hours your sheet established. Your fixed rates and FTEs are re-applied wherever a role name still matches. Continue and re-draft?')) return;
   const _existing = (pricingModel.lcats || []).filter(l => String(l.name || '').trim());
   const _exFte = _existing.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
+  // The user has taken over sizing (edited an FTE, so fteSource is 'user'). A re-draft must BUILD AROUND their
+  // numbers, not revert to the Government total: keep them on the free-sizing path (the apply holds each role's
+  // advertised FTE and re-derives hours in the AI's proposed proportions) and hand the AI their exact roles + FTEs
+  // to hold fixed while it re-distributes hours across the PWS tasks.
+  const _userSized = pricingModel.fteSource === 'user' && _exFte > 0;
   const _fixed = _pxFixedStages();
   const _snap = _pxSnapshotConstraints();
   const btn = document.getElementById('pricingAutoBuildBtn');
@@ -14827,6 +14832,7 @@ async function pricingAutoBuildStructure() {
     }
     if (_govWorkload.length) {
       pricingModel.statedWorkloadByLcat = _govWorkload;
+      if (!_userSized) {      // a user-sized re-draft keeps the user's own fteSource / total / hours-basis; only a fresh build adopts the Government figure
       pricingModel.fteSource = _wlProposed ? 'estimated' : 'stated';
       // PHASE 6: if the BNA detected that the Government works on a different
       // hours-per-FTE year, the price model must bill on the same basis or Pricing
@@ -14851,6 +14857,7 @@ async function pricingAutoBuildStructure() {
         } catch (e) {}
       }
       pricingModel.statedFteTotal = Math.round((_govWorkload.reduce((s, r) => s + r.hours, 0) / defaultHpf()) * 100) / 100;
+      }
     }
     const _workloadBlock = _govWorkload.length
       ? (_wlProposed
@@ -14878,13 +14885,21 @@ async function pricingAutoBuildStructure() {
          + 'Reproduce every fixed value verbatim, INCLUDING the exact role names and FTE counts, and never drop a role that is listed above. '
          + 'Your job is to FILL THE GAPS the sheet left: any stage not listed as fixed, plus the hours allocation for any role/task pair the sheet did not set. '
          + 'These are the user\u2019s own figures, NOT a Government mandate \u2014 do not describe them as directed or stated by the solicitation.\n')
+      : _userSized
+      ? ('\nUSER-SIZED TEAM - THE ROLES AND THEIR FTE COUNTS ARE FINAL, REPRODUCE EXACTLY:\n'
+         + 'The user has hand-sized this team: ' + _existing.length + ' roles totalling ' + (Math.round(_exFte * 100) / 100) + ' FTE - '
+         + _existing.map(l => l.name + (parseFloat(l.advertised) > 0 ? (' (' + l.advertised + ' FTE)') : '')).join(', ') + '.\n'
+         + 'These FTE counts are the user decision, NOT a Government mandate, and NOT yours to change. Reproduce every role name AND its FTE EXACTLY; do NOT add, drop, rename, resize, or merge any role. '
+         + 'Your ONLY job is to (a) assign the appropriate PWS tasks to each role and (b) distribute the hours for each role across its assigned tasks so the whole PWS is covered and the hours for each role tie out to its stated FTE.\n')
       : ('\nSTRUCTURE ALREADY IN THE MODEL (from an earlier build): '
          + _existing.length + ' labor categories totalling ' + (Math.round(_exFte * 100) / 100)
          + ' FTE \u2014 ' + _existing.map(l => l.name).join(', ')
          + '. This is the user\u2019s own established sizing and is PRESERVED: copy each existing role name CHARACTER-FOR-CHARACTER (so its already-entered rate and FTE carry over) and keep its FTE \u2014 do NOT drop, rename, or shrink an existing role. Your job is the HOURS allocation across the PWS tasks, plus any ADDITIONAL roles the scope genuinely needs.\n'));
     const _statedFte = pricingModel.statedFteTotal != null ? pricingModel.statedFteTotal : null;
     const _statedFteStr = _statedFte != null ? pricingFmtFte(_statedFte) : '';
-    const fteLine = (pricingModel.fteSource === 'stated' && _statedFte != null)
+    const fteLine = _userSized
+      ? `The user has ALREADY sized this team to EXACTLY ${_statedFteStr} FTE across the roles listed above, and those per-role FTE counts are FINAL. Do NOT resize, add, drop, or rename any role and do NOT change any role's FTE. Your job is ONLY to assign the appropriate PWS tasks to each role and distribute each role's hours across its assigned tasks so the whole PWS is covered and every role's hours tie out to its stated FTE.`
+      : (pricingModel.fteSource === 'stated' && _statedFte != null)
       ? `The Government requires EXACTLY ${_statedFteStr} FTE of level of effort \u2014 this figure is GOSPEL and MAY be fractional (e.g. 2.5). Reproduce it EXACTLY; do NOT round a fractional FTE up or down to a whole number. The sum of the per-role "fte" values MUST equal EXACTLY ${_statedFteStr}, and total base-period billable hours MUST equal ${_statedFteStr} \u00d7 ${defaultHpf()} = ${Math.round(_statedFte * defaultHpf()).toLocaleString('en-US')} hours. A role's "fte" is its level of effort; whole numbers are preferred, but it may be fractional (0.5, 1.5, \u2026); "headcount" is the number of people and need not equal the fte (one half-time person is headcount 1, fte 0.5). Distribute the hours across the PWS tasks. Deviating from the stated FTE \u2014 including rounding a mandated fraction \u2014 is disqualifying.`
       : (_wlProposed && _statedFte != null)
         ? `A proposed team of about ${_statedFteStr} FTE is provided above as a STARTING POINT (the solicitation defines level of effort in its pricing model, so headcount is the offeror's decision, not a Government mandate). Use it as the default, but size the team to the scope \u2014 adjust, add, or drop roles as the work warrants. PREFER whole-number FTEs.`
@@ -15026,10 +15041,18 @@ function pricingReconcileStatedFte(lcats, hours, mask, tasks, target, hpf) {
   // Integers are the DEFAULT (cleaner staffing). Keep fractions only when actually warranted: the
   // Government stated a fractional total, or the model deliberately proposed a fractional (part-time)
   // role. When both the proposed roles and the target are whole, allocate clean integer FTEs.
-  const wantIntegers = proposed.every(x => Math.abs(x - Math.round(x)) < eps);   // whole headcounts -> whole FTEs; the fractional Government total is rounded
+  // The hpf artifact scales EVERY whole headcount by ONE common ratio k (1920/1912 = 1.004, 2080/1912 = 1.088, ...),
+  // and it scales the Government total by the same k. Estimate k as the MEDIAN per-role ratio (robust when a value
+  // like 9.792 rounds across a .5 boundary), de-scale to recover whole headcounts, and confirm every role
+  // reconstructs as heads x k. A deliberate part-timer (0.5, 1.5) fits no common k and is preserved.
+  const _rr = []; proposed.forEach(x => { const r = Math.round(x); if (r >= 1) _rr.push(x / r); });
+  _rr.sort((a, b) => a - b);
+  const _k = _rr.length ? _rr[Math.floor((_rr.length - 1) / 2)] : 1;
+  const _heads = proposed.map(x => Math.round(x / _k));
+  const wantIntegers = Math.abs(_k - 1) < 0.12 && proposed.every((x, i) => x < eps || (_heads[i] >= 1 && Math.abs(x - _heads[i] * _k) < 0.06 + 0.12 * _heads[i]));   // whole headcounts -> whole FTEs; the fractional Government total is rounded
   if (wantIntegers) {
-    const tgt = Math.round(target);
-    let hc = lcats.map(l => Math.max(1, Math.round(parseFloat(l.advertised) || 0) || 1));
+    const tgt = Math.max(n, Math.round(target / _k));   // de-scale the target by the same artifact ratio
+    let hc = _heads.map(h => Math.max(1, h || 1));
     let S = hc.reduce((a, b) => a + b, 0);
     if (S !== tgt && tgt >= n) {
       const ideal = hc.map(x => x / S * tgt);
@@ -15565,6 +15588,19 @@ function pricingRateMatrixHtml(l) {
 
 function pricingRenderLcats() {
   const el = document.getElementById('pricingLcatsList'); if (!el) return;
+  // One-time fix for a Government-stated model drafted under older code: if any per-role FTE still carries the
+  // fractional hpf artifact (e.g. 1.004 = a whole headcount over the wrong hours basis), snap the whole matrix to
+  // whole headcounts on load, so re-drafting is never required to clear it. Idempotent: once whole, it stops.
+  try {
+    if (pricingModel && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && Array.isArray(pricingModel.lcats) && pricingModel.lcats.length) {
+      var _adv = pricingModel.lcats.map(function (l) { return Math.max(0, parseFloat(l.advertised) || 0); });
+      var _rr2 = []; _adv.forEach(function (x) { var r = Math.round(x); if (r >= 1) _rr2.push(x / r); });
+      _rr2.sort(function (a, b) { return a - b; });
+      var _k2 = _rr2.length ? _rr2[Math.floor((_rr2.length - 1) / 2)] : 1;
+      var _artifact = Math.abs(_k2 - 1) < 0.12 && _adv.some(function (x) { return Math.abs(x - Math.round(x)) > 1e-6; }) && _adv.every(function (x) { var h = Math.round(x / _k2); return x < 1e-6 || (h >= 1 && Math.abs(x - h * _k2) < 0.06 + 0.12 * h); });
+      if (_artifact && typeof pricingEnforceTieOut === 'function') pricingEnforceTieOut();
+    }
+  } catch (e) {}
   if (typeof pricingRenderRateLegend === 'function') pricingRenderRateLegend();
   (function () { var _wb = document.getElementById('pricingWrapBanner'); if (_wb) { var _W = pricingWrapFactor(), _p = CLIENT_CONFIG.pricing || {}; var _mode = ((_p.wrapMode || 'compounded') === 'additive') ? 'additive' : 'compounded';
     // #4a: the banner showed the COMPANY factor while every row applied the per-role EFFECTIVE one.
