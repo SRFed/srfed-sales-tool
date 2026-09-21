@@ -3292,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '397';
+const APP_VERSION = '399';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13745,6 +13745,12 @@ function pricingRenderBulkBasis() {
     '<button onclick="pricingSetAllHpf(document.getElementById(\'pricingBulkHpf\').value)" style="padding:6px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">Apply to all roles</button>' +
     '</div>';
 }
+function pricingSetLcatHours(id, val) {
+  var l = pricingModel.lcats.find(function (x) { return x.id === id; }); if (!l) return;
+  var hrs = parseFloat(val), hpf = pricingHpf(l);
+  if (!(hrs > 0) || !(hpf > 0)) { if (typeof pricingRenderAll === 'function') pricingRenderAll(); return; }
+  pricingSetLcat(id, 'advertised', Math.round((hrs / hpf) * 10000) / 10000);   // hours -> FTE; reuses the advertised path (flips to user sizing, re-derives hours = FTE x hpf, ties out)
+}
 function pricingSetAllHpf(val) {
   var v = parseFloat(val);
   pricingModel.hoursPerFte = (v > 0) ? v : null;   // update the MODEL basis so the box, the FTE-basis card, and defaultHpf() all reflect it (previously the box reverted)
@@ -15385,6 +15391,26 @@ function pricingApplyAutoBuild(a) {
   }
 }
 
+function pricingAnalysisStale() {
+  // The analysis panel (role -> LCAT mapping, cost-realism) is a SNAPSHOT of the last draft. Detect when the
+  // user has since hand-edited the labor mix in Step 4 (renamed/added/removed a role, or changed an FTE or GSA
+  // mapping) so the panel can flag itself as stale instead of silently showing old LCATs.
+  var a = pricingAutoBuildLast;
+  if (!a || !Array.isArray(a.labor_mix)) return false;
+  var norm = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+  var cur = (pricingModel.lcats || []).filter(function (l) { return String(l.name || '').trim(); });
+  var mix = a.labor_mix.filter(function (m) { return String((m && m.role_name) || '').trim(); });
+  if (cur.length !== mix.length) return true;
+  var mm = {};
+  mix.forEach(function (m) { mm[norm(m.role_name)] = { fte: Math.round((parseFloat(m.fte) || parseFloat(m.headcount) || 0) * 100) / 100, gsa: norm(m.gsa_lcat) }; });
+  for (var i = 0; i < cur.length; i++) {
+    var l = cur[i], d = mm[norm(l.name)];
+    if (!d) return true;
+    if (Math.abs((Math.round((parseFloat(l.advertised) || 0) * 100) / 100) - d.fte) > 0.011) return true;
+    if (norm(l.gsaLcat) !== d.gsa) return true;
+  }
+  return false;
+}
 function pricingRenderAutoBuildPanel() {
   const el = document.getElementById('pricingAutoBuildPanel'); if (!el) return;
   const a = pricingAutoBuildLast;
@@ -15398,6 +15424,7 @@ function pricingRenderAutoBuildPanel() {
   const assess = s => badge(String(s == null ? '' : s).replace(/\s+/g, '_'), { in_range: ['#065f46', '#d1fae5', 'In market range'], below: ['#92400e', '#fef3c7', 'Below market'], above: ['#92400e', '#fef3c7', 'Above market'], far_below: ['#991b1b', '#fee2e2', 'Far below market'], far_above: ['#991b1b', '#fee2e2', 'Far above market'] });
   const gsa = pricingIsGsa();
   let h = '';
+  if (typeof pricingAnalysisStale === 'function' && pricingAnalysisStale()) h += '<div style="font-size:12px;font-weight:700;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 11px;margin-bottom:10px">\u26a0\ufe0f These figures reflect your <strong>last draft</strong> \u2014 you have changed the labor categories or FTEs in Step 4 since. Re-draft the staffing plan to refresh the role mapping and cost-realism check.</div>';
   if (a.fte_basis) h += `<div style="font-size:12px;color:var(--text);margin-bottom:8px"><strong>Team sizing:</strong> ${pricingEsc(a.fte_basis)}</div>`;
   if (a.directed_hours_note && String(a.directed_hours_note).trim()) h += `<div style="font-size:12px;color:#065f46;margin-bottom:8px;border-left:3px solid #10b981;padding-left:8px"><strong>Government-directed hours honored:</strong> ${pricingEsc(a.directed_hours_note)}</div>`;
   if (gsa) {
@@ -15467,8 +15494,9 @@ function pricingRedraftWarning() {
   var named = M.lcats.filter(function (l) { return String(l.name || '').trim(); });
   if (!named.length) return '';
   var curFte = Math.round(named.reduce(function (s, l) { return s + (parseFloat(l.advertised) || 0); }, 0) * 100) / 100;
-  var gov = (M.govStatedFteTotal != null) ? M.govStatedFteTotal
-          : ((M.fteSource === 'stated' && M.statedFteTotal != null) ? M.statedFteTotal : null);
+  var gov = (typeof pricingGovFte === 'function') ? pricingGovFte()
+          : ((M.govStatedFteTotal != null) ? M.govStatedFteTotal
+          : ((M.fteSource === 'stated' && M.statedFteTotal != null) ? M.statedFteTotal : null));
   var userAdded = named.some(function (l) { return l._userAdded; });
   var diverged = (gov != null && Math.abs(curFte - gov) > 0.05);
   if (!userAdded && !diverged) return '';
@@ -15578,7 +15606,7 @@ function pricingRenderTasks() {
 
 // The header banner. Column widths mirror the row below so labels sit over their controls. Rendered
 // once, above the list, and only when there is at least one non-GSA role to label.
-const PX_GSA_TRACKS = 'minmax(120px,1.2fr) 210px 72px 172px 112px 26px';
+const PX_GSA_TRACKS = 'minmax(90px,1fr) 195px 62px 74px 172px 104px 24px';
 
 // Schedule mode has different columns from the off-schedule build-up: there is no rate to
 // type, so "Paid Rate" is replaced by the Schedule LCAT the role maps to.
@@ -15589,6 +15617,7 @@ function pricingGsaLcatHeaderBanner() {
     + th('Labor Category', 'min-width:0;text-align:center', 'The role as you will name it in your proposal')
     + th('GSA Schedule LCAT', 'min-width:0;text-align:center', 'The Schedule labor category this role is priced from. The rate is fixed by the Schedule \u2014 there is nothing to type.')
     + th('Proposed FTE', 'min-width:0;text-align:center', 'Full-time-equivalent staffing you propose for this role (base year)')
+    + th('Hours/yr', 'min-width:0;text-align:center', 'Total base-year hours for this role (FTE x hours-per-FTE). Editable - changing it updates the FTE, and changing the FTE updates it.')
     + th('Rate Detail', 'min-width:0;text-align:center', 'Company-implied vs fully-burdened, hourly vs annual. In Schedule mode the burdened rate comes from the Schedule and the company figure is implied back out of it.')
     + th('Market', 'min-width:0;text-align:center', 'Look up prevailing pay for this role on Market Rates')
     + '<div></div>'
@@ -15695,6 +15724,7 @@ function pricingRenderLcats() {
         <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (as named in your proposal)" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
         <select title="${l.gsaLcat ? pricingEsc(l.gsaLcat) : 'Map this role to a GSA Schedule labor category'}" onchange="pricingSetGsaLcat('${l.id}',this.value)" style="min-width:0;width:100%;padding:6px 26px 6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:white;text-overflow:ellipsis;box-sizing:border-box">${opts}</select>
         <input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" title="Full-time-equivalent staffing you propose for this role (base year)" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
+        <input type="number" min="0" step="1" value="${Math.round(_roleHrs)}" onchange="pricingSetLcatHours('${l.id}',this.value)" title="Total base-year hours for this role. Editing this sets the FTE (hours / hrs-per-FTE); editing the FTE sets the hours." style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
         ${pricingRateMatrixHtml(l)}
         <div style="display:flex;align-items:center;justify-content:center"><button class="mkt-lookup-btn" onclick="pricingLcatLookup('${l.id}')" title="Look up prevailing pay for this role on Market Rates" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap;min-width:104px;text-align:center">${l.evaluated ? 'Look up again' : 'Look up \u2192'}</button></div><div style="display:flex;align-items:center;justify-content:center"><button onclick="pricingRemoveLcat('${l.id}')" title="Remove labor category" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px;padding:0;line-height:1">✕</button></div>
         <div style="grid-column:1/-1;font-size:10.5px;color:var(--muted);line-height:1.45;padding-left:2px">${rateNote}</div>
@@ -16166,13 +16196,27 @@ function pricingRemoveClinLine(id) { const c = pricingClin(); c.lines = c.lines.
 function pricingSetClinLine(id, field, val) { const l = pricingClin().lines.find(x => x.id === id); if (!l) return; if (field === 'amount') val = _pxCleanNum(val); l[field] = val; if (field === 'scope') { if (val !== 'tasks') l.taskIds = []; if (val === 'custom') { if (l.amount == null) l.amount = ''; if (!l.placement) l.placement = 'base'; } } if (field === 'title') return; pricingRenderClin(); }
 function pricingToggleClinTask(id, taskId) { const l = pricingClin().lines.find(x => x.id === id); if (!l) return; l.taskIds = l.taskIds || []; const i = l.taskIds.indexOf(taskId); if (i >= 0) l.taskIds.splice(i, 1); else l.taskIds.push(taskId); pricingRenderClin(); }
 
+function pricingGovFte() {
+  // The Government stated HOURS (statedWorkloadByLcat), not an FTE count; the FTE equivalent depends on the
+  // basis, so derive it live from the current hrs/FTE. That way setting the basis to 1920 makes 48,000 hrs
+  // read as 25 FTE (not the stale 25.1 computed at 1912), and the card + redraft banner stop disagreeing.
+  var w = pricingModel && pricingModel.statedWorkloadByLcat;
+  if (Array.isArray(w) && w.length) {
+    var h = w.reduce(function (s, r) { return s + (parseFloat(r && r.hours) || 0); }, 0);
+    var hpf = defaultHpf();
+    if (h > 0 && hpf > 0) return Math.round((h / hpf) * 100) / 100;
+  }
+  if (pricingModel && pricingModel.govStatedFteTotal != null) return pricingModel.govStatedFteTotal;
+  if (pricingModel && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) return pricingModel.statedFteTotal;
+  return null;
+}
 function pricingRenderFteBar() {
   const el = document.getElementById('pricingFteBar'); if (!el) return;
   if (!pricingModel.lcats.length) { el.innerHTML = ''; return; }
   const allocated = pricingTotalHours() / defaultHpf();
   const advTotal = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
   const _isUserFte = pricingModel.fteSource === 'user';
-  const stated = ((pricingModel.fteSource === 'stated' || _isUserFte) && pricingModel.statedFteTotal != null) ? pricingModel.statedFteTotal : null;
+  const stated = pricingModel.fteSource === 'stated' ? pricingGovFte() : ((_isUserFte && pricingModel.statedFteTotal != null) ? pricingModel.statedFteTotal : null);
   const statedStr = stated != null ? pricingFmtFte(stated) : '—';
   const src = pricingModel.directedLabor
     ? `Government-<strong>directed</strong> labor table (<strong>${statedStr} FTE</strong>, exact categories &amp; counts)`
@@ -16201,7 +16245,9 @@ function pricingRenderFteBar() {
       : `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px">${_missMsg}</div>`;
   }
   const _hpf = defaultHpf();
-  const _hpfTag = (pricingModel.hoursPerFte > 0) ? 'per PWS' : 'standard';
+  var _govFteNow = pricingGovFte();
+  var _hpfMatchesGov = _govFteNow != null && Math.abs(_govFteNow - Math.round(_govFteNow)) < 0.02 && Array.isArray(pricingModel.statedWorkloadByLcat) && pricingModel.statedWorkloadByLcat.length > 0;
+  const _hpfTag = _hpfMatchesGov ? 'matches the PWS workload' : ((pricingModel.hoursPerFte > 0) ? 'custom basis' : 'Settings default');
   const srcFull = src + ` &middot; <span style="font-weight:700">${Math.round(_hpf).toLocaleString()} hrs/FTE</span> <span style="color:var(--muted);font-weight:400">(${_hpfTag})</span>`;
   el.innerHTML = badge + card('FTE basis', srcFull) + card('Advertised FTE (sum of roles)', advTotal.toFixed(2), advOk) + card('Allocated FTE (from hours)', allocated.toFixed(2), allocOk);
 }
