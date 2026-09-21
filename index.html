@@ -3292,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '396';
+const APP_VERSION = '397';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14999,15 +14999,31 @@ ${pricingScaActive() ? '- For SCA-covered roles the direct wage must meet or exc
     // roles actually drafted so far, counted out of the partial JSON as it streams in.
     pxProgStart('pricingAutoBuildProgress', 1, 'Drafting the staffing plan\u2026',
                 'Reading the PWS and drafting roles\u2026', 30);
-    const parsed = await callClaudeForJsonStreaming(
-      apiKey, [{ type: 'text', text: prompt }], 16000, 420000, 'Auto-building structure',
-      function (p) {
-        const n = p.items || 0;
-        pxProgMark('pricingAutoBuildProgress', null,
-          (n > 0 ? ('Drafted ' + n + ' role' + (n === 1 ? '' : 's') + ' so far\u2026')
-                 : 'Reading the PWS and sizing the team\u2026'));
-      },
-      /"lcat"\s*:/g);
+    // Draft the plan, retrying ONCE if the response is empty or truncated. Sonnet 4.6 allows 64k output
+    // tokens, so the first pass gets a larger cap (24000) + longer window so a big opportunity (many PWS
+    // tasks x roles of hours_by_task) can finish instead of truncating mid-JSON (which parses to nothing ->
+    // "response was empty or could not be parsed"). The retry drops hours_by_task (the tool spreads each
+    // role's hours across its allowed_tasks) so the compact response always fits.
+    let parsed = null, _autoErr = null;
+    var _liteDirective = '\n\nCRITICAL \u2014 KEEP THE RESPONSE COMPACT so it cannot be truncated: OMIT the "hours_by_task" field entirely for every role (the tool distributes each role\'s hours across its allowed_tasks automatically) and return only "allowed_tasks"; keep every "why" / "assumptions" / rationale text to one short phrase.';
+    for (let _try = 0; _try < 2; _try++) {
+      if (_try > 0) pxProgMark('pricingAutoBuildProgress', null, 'The first response was incomplete \u2014 retrying more compactly\u2026');
+      try {
+        parsed = await callClaudeForJsonStreaming(
+          apiKey, [{ type: 'text', text: (_try === 0 ? prompt : (prompt + _liteDirective)) }],
+          (_try === 0 ? 24000 : 16000), (_try === 0 ? 600000 : 420000), 'Auto-building structure',
+          function (p) {
+            const n = p.items || 0;
+            pxProgMark('pricingAutoBuildProgress', null,
+              (n > 0 ? ('Drafted ' + n + ' role' + (n === 1 ? '' : 's') + ' so far\u2026')
+                     : 'Reading the PWS and sizing the team\u2026'));
+          },
+          /"lcat"\s*:/g);
+      } catch (_e) { _autoErr = _e; parsed = null; }
+      if (parsed && Array.isArray(parsed.labor_mix) && parsed.labor_mix.length) break;
+      parsed = null;
+    }
+    if (!parsed && _autoErr) throw _autoErr;
     if (!parsed || !Array.isArray(parsed.labor_mix) || !parsed.labor_mix.length) throw new Error('The model did not return a usable labor mix. Try again, or pull the RFP / add tasks first.');
     pricingApplyAutoBuild(parsed);
     // The prompt ASKED the model to honour the pinned stages; this GUARANTEES it.
