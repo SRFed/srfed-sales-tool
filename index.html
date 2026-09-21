@@ -3292,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '395';
+const APP_VERSION = '396';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13747,7 +13747,9 @@ function pricingRenderBulkBasis() {
 }
 function pricingSetAllHpf(val) {
   var v = parseFloat(val);
-  (pricingModel.lcats || []).forEach(function (l) { l.hpf = (v > 0) ? v : ''; });   // blank falls back to the Settings default
+  pricingModel.hoursPerFte = (v > 0) ? v : null;   // update the MODEL basis so the box, the FTE-basis card, and defaultHpf() all reflect it (previously the box reverted)
+  (pricingModel.lcats || []).forEach(function (l) { l.hpf = ''; });   // clear per-role overrides so every role uses the one basis
+  if (typeof pricingEnforceTieOut === 'function') pricingEnforceTieOut();   // re-derive hours = FTE x new basis, so whole FTEs stay whole (not old-hours / new-basis -> fractions)
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
 function pricingAddLcat() { if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
@@ -15363,7 +15365,7 @@ function pricingApplyAutoBuild(a) {
   pricingModel.lcats.forEach(function (l) { var _k = String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); var _pin = _ratePins[_k]; if (_pin) { l.rateBasis = _pin.rateBasis; l.rateInput = _pin.rateInput; l.baseRate = _pin.baseRate; l.rateStatus = _pin.rateStatus; l.evaluated = _pin.evaluated; if (_pin.mktBand) l.mktBand = _pin.mktBand; } });
   if (pricingModel.fteSource !== 'stated') {
     const total = lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
-    if (total > 0) { pricingModel.statedFteTotal = total; pricingModel.fteSource = 'estimated'; }
+    if (total > 0) { pricingModel.statedFteTotal = total; if (pricingModel.fteSource !== 'user') pricingModel.fteSource = 'estimated'; }   // preserve a user override; only an unsized model defaults to 'estimated'
   }
 }
 
@@ -15667,10 +15669,11 @@ function pricingRenderLcats() {
       const opts = '<option value="">— map to a GSA LCAT —</option>' + card.map(r => `<option value="${pricingEsc(r.lcat)}" ${r.lcat === l.gsaLcat ? 'selected' : ''}>${pricingEsc(r.lcat)} — ${pricingFmtC(rateAtAppl(r))}/hr (Yr ${applYear})</option>`).join('');
       const gsaRate = pricingGsaRateFor(l, applYear);
       const _gld = pricingLoadedRate(l, 0), _gW = pricingEffectiveWrapFactor(l), _gH = pricingHpf(l), _gpd = _gW > 0 ? _gld / _gW : 0;
+      const _roleHrs = Object.values((pricingModel.hours && pricingModel.hours[l.id]) || {}).reduce(function (s, h) { return s + Math.max(0, parseFloat(h) || 0); }, 0);
       // The four derived figures moved into the 2x2 above; this line now carries only what the
       // 2x2 cannot -- where the rate CAME FROM, which is the whole point in Schedule mode.
       const rateNote = l.gsaLcat
-        ? `<strong>${pricingEsc(l.gsaLcat)}</strong> · Schedule rate: Yr ${applYear} ${pricingFmtC(gsaRate)}${disc ? ` − ${disc}%` : ''} = ${pricingFmtC(_gld)}/hr loaded · billed at ${Math.round(_gH).toLocaleString()} hrs/FTE`
+        ? `<strong>${pricingEsc(l.gsaLcat)}</strong> · Schedule rate: Yr ${applYear} ${pricingFmtC(gsaRate)}${disc ? ` − ${disc}%` : ''} = ${pricingFmtC(_gld)}/hr loaded · billed at ${Math.round(_gH).toLocaleString()} hrs/FTE · <strong>${Math.round(_roleHrs).toLocaleString()} hrs/yr</strong>`
         : '<span style="color:var(--warn)">map to a GSA LCAT →</span>';
       return `<div id="pxLcat_${l.id}" style="display:grid;grid-template-columns:${PX_GSA_TRACKS};gap:6px 8px;align-items:center;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
         <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (as named in your proposal)" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
