@@ -2319,7 +2319,10 @@
       <div style="border:1px dashed var(--blue);border-radius:10px;padding:12px 14px;margin-bottom:16px;background:#f5f9ff">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div style="font-size:12.5px;color:var(--text);max-width:560px"><strong>✨ Draft the staffing plan.</strong> <span style="color:var(--muted)">Your PWS task list above is the input — confirm it first, then build.</span> Claude proposes a labor mix, integer headcount, an hours allocation across your PWS tasks, and the role rules — and, in GSA mode, maps each role to the best-fit Schedule LCAT by education, experience, and scope. It also runs a cost-realism check. <span style="color:var(--muted)">You review and adjust everything; rates are never invented.</span></div>
-          <button onclick="pricingAutoBuildStructure()" id="pricingAutoBuildBtn" style="padding:8px 15px;font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer;white-space:nowrap">✨ Draft the staffing plan</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+            <button onclick="pricingAutoBuildStructure('fresh')" id="pricingAutoBuildFreshBtn" title="Discard your manual role / FTE / GSA-mapping changes and rebuild the staffing plan from the solicitation's original criteria." style="display:none;padding:8px 15px;font-size:12.5px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:7px;cursor:pointer;white-space:nowrap">↺ Re-draft from the solicitation</button>
+            <button onclick="pricingAutoBuildStructure()" id="pricingAutoBuildBtn" style="padding:8px 15px;font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer;white-space:nowrap">✨ Draft the staffing plan</button>
+          </div>
         </div>
         <div id="pricingRedraftWarn"></div>
         <div id="pricingAutoBuildProgress" style="display:none;margin-top:10px"></div>
@@ -3289,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '393';
+const APP_VERSION = '395';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13747,7 +13750,7 @@ function pricingSetAllHpf(val) {
   (pricingModel.lcats || []).forEach(function (l) { l.hpf = (v > 0) ? v : ''; });   // blank falls back to the Settings default
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
-function pricingAddLcat() { pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
+function pricingAddLcat() { if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
 function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
 function pricingSetLcat(id, field, val) {
   const l = pricingModel.lcats.find(x => x.id === id); if (!l) return;
@@ -13761,6 +13764,11 @@ function pricingSetLcat(id, field, val) {
     var _ut = pricingModel.lcats.reduce(function (s, x) { return s + (parseFloat(x.advertised) || 0); }, 0);
     pricingModel.statedFteTotal = _ut > 0 ? Math.round(_ut * 100) / 100 : null;
     pricingEnforceTieOut();   // re-derive so the matrix stays tied to the edited FTE
+  } else if (field === 'name' || field === 'gsaLcat') {
+    // Renaming a role or re-mapping its GSA LCAT is the user customizing the structure. Take the model
+    // off the 'stated' path (total preserved) so a re-draft PRESERVES the user's roles and mappings.
+    if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal;
+    if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user';
   }
   pricingRenderAll();
 }
@@ -14769,27 +14777,37 @@ function _pxReassertConstraints(snap, fixed) {
   return { restored: restored, added: added };
 }
 
-async function pricingAutoBuildStructure() {
+async function pricingAutoBuildStructure(mode) {
   const apiKey = getApiKey();
   if (!apiKey) { alert('Enter your Anthropic API key on the Proposal tab (Step 2) first.'); return; }
   if (pricingModel.gsaDecision == null) { alert('Answer the GSA Schedule step (Step 1) first.'); return; }
   const gsa = pricingIsGsa();
   if (gsa && !(pricingModel.gsaRateCard || []).length) { alert('Read or add your GSA Schedule rates in Step 1 first, so roles can be mapped to Schedule LCATs.'); return; }
+  var _freshDraft = (mode === 'fresh');
+  if (_freshDraft) {
+    var _hasUserEdits = pricingModel.fteSource === 'user' && (pricingModel.lcats || []).some(function (l) { return String(l.name || '').trim(); });
+    if (_hasUserEdits && !confirm('Rebuild the staffing plan from the original solicitation criteria? This discards your manual role, FTE, and GSA-mapping changes.')) return;
+    // Discard the user's manual sizing so the Government workload / AI rebuild takes over and the apply does
+    // NOT anchor to the user's roles. govStatedFteTotal (the captured baseline) is left intact.
+    pricingModel.fteSource = 'estimated';
+    pricingModel.statedFteTotal = null;
+  }
   // (#4) A reverse-solved sheet is the user's own model. Draft re-runs the AI to propose the labor
   // mix from the PWS, which can reshape roles/hours; the pinned FIXED stages are snapshotted here and
   // re-asserted after the build, but re-drafting is a deliberate choice \u2014 so confirm first.
   if (pricingModel._reverseSolved && !confirm('You started from an uploaded pricing sheet. Drafting a staffing plan re-runs the AI to propose the labor mix from the PWS \u2014 this can change the roles and hours your sheet established. Your fixed rates and FTEs are re-applied wherever a role name still matches. Continue and re-draft?')) return;
-  const _existing = (pricingModel.lcats || []).filter(l => String(l.name || '').trim());
+  const _existing = _freshDraft ? [] : (pricingModel.lcats || []).filter(l => String(l.name || '').trim());
   const _exFte = _existing.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
   // The user has taken over sizing (edited an FTE, so fteSource is 'user'). A re-draft must BUILD AROUND their
   // numbers, not revert to the Government total: keep them on the free-sizing path (the apply holds each role's
   // advertised FTE and re-derives hours in the AI's proposed proportions) and hand the AI their exact roles + FTEs
   // to hold fixed while it re-distributes hours across the PWS tasks.
-  const _userSized = pricingModel.fteSource === 'user' && _exFte > 0;
+  const _userSized = !_freshDraft && pricingModel.fteSource === 'user' && _exFte > 0;
   const _fixed = _pxFixedStages();
   const _snap = _pxSnapshotConstraints();
   const btn = document.getElementById('pricingAutoBuildBtn');
-  const setBusy = (busy, msg) => { if (btn) { btn.disabled = busy; btn.innerHTML = busy ? ('<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></span> ' + (msg || 'Working…')) : ((typeof pricingModel !== 'undefined' && pricingModel && pricingModel._reverseSolved) ? '\u21ba Re-draft from scratch' : '\u2728 Draft the staffing plan'); } };
+  const _freshBtn2 = document.getElementById('pricingAutoBuildFreshBtn');
+  const setBusy = (busy, msg) => { if (_freshBtn2) _freshBtn2.disabled = busy; if (btn) { btn.disabled = busy; btn.innerHTML = busy ? ('<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></span> ' + (msg || 'Working…')) : ((typeof pricingModel !== 'undefined' && pricingModel && pricingModel._reverseSolved) ? '\u21ba Re-draft from scratch' : '\u2728 Draft the staffing plan'); } };
   setBusy(true, 'Thinking\u2026');
   try {
     let briefing = cachedBriefing;
@@ -15196,6 +15214,24 @@ function pricingEnsureTaskHoursCovered(lcats, hours, mask, tasks, nonLabor) {
 
 function pricingApplyAutoBuild(a) {
   var _ratePins = {}; (pricingModel.lcats || []).forEach(function (l) { var _adv = (l.advertised != null && l.advertised !== '' && parseFloat(l.advertised) > 0) ? parseFloat(l.advertised) : null; if ((l.rateInput != null && l.rateInput !== '') || l.evaluated || l.rateStatus || l.mktBand || _adv != null) { _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()] = { rateBasis: l.rateBasis || 'paid', rateInput: l.rateInput, baseRate: l.baseRate, rateStatus: l.rateStatus, evaluated: l.evaluated, mktBand: l.mktBand, advertised: _adv }; } });
+  // USER-OWNED STRUCTURE: when the user has hand-built the labor categories (edited an FTE, renamed or
+  // re-mapped a role, or added one -> fteSource 'user'), a re-draft must NOT let the AI replace the role
+  // list. Anchor the mix to the user's EXACT roles (name, FTE, GSA LCAT) and pull in the AI's task
+  // assignment + hours distribution for each role BY NAME where it gave one; a role the AI did not cover
+  // falls back to an even task spread. Deterministic guarantee: a split / renamed / re-mapped LCAT survives.
+  if (pricingModel.fteSource === 'user' && (pricingModel.lcats || []).some(function (l) { return String(l.name || '').trim(); })) {
+    var _nrm = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var _aiByName = {}; (a.labor_mix || []).forEach(function (m) { var _k = _nrm(m && m.role_name); if (_k && _aiByName[_k] == null) _aiByName[_k] = m; });
+    a.labor_mix = (pricingModel.lcats || []).filter(function (l) { return String(l.name || '').trim(); }).map(function (l) {
+      var _m = _aiByName[_nrm(l.name)] || {};
+      var _fte = parseFloat(l.advertised); if (!(_fte > 0)) _fte = _pxRoleFte(_m, defaultHpf());
+      return { role_name: l.name, fte: _fte, headcount: _fte, gsa_lcat: l.gsaLcat || _m.gsa_lcat || '',
+               allowed_tasks: Array.isArray(_m.allowed_tasks) ? _m.allowed_tasks : undefined,
+               hours_by_task: (_m.hours_by_task && typeof _m.hours_by_task === 'object') ? _m.hours_by_task : undefined,
+               sca_covered: _m.sca_covered, wd_occupation: _m.wd_occupation, wd_min_wage: _m.wd_min_wage };
+    });
+    a.directed_labor = [];               // the user's structure supersedes any AI directed-labor table
+  }
   // Agency-stated FTE-hour basis (e.g. 2,080 hrs/FTE): honor it for THIS proposal, overriding the
   // company default. Only set when the model reports an explicit figure from the solicitation.
   { const _h = parseFloat(a.hours_per_fte); if (!pricingModel._govHpfLocked) { pricingModel.hoursPerFte = (_h > 0) ? _h : null; } else if (_h > 0 && _h !== parseFloat(pricingModel.hoursPerFte)) { try { if (typeof log === 'function') log('Kept the solicitation workload basis of ' + parseFloat(pricingModel.hoursPerFte).toLocaleString() + ' hrs/FTE (model suggested ' + _h.toLocaleString() + ').', 'warn'); } catch (e) {} } }
@@ -15426,7 +15462,7 @@ function pricingRedraftWarning() {
 function pricingRenderAll() {
   if (typeof pricingNormalizeLcatClins === 'function') pricingNormalizeLcatClins();
   { var _rw = document.getElementById('pricingRedraftWarn'); if (_rw) { var _wtxt = (typeof pricingRedraftWarning === 'function') ? pricingRedraftWarning() : ''; _rw.innerHTML = _wtxt; } }
-  { const _db = document.getElementById('pricingAutoBuildBtn'); if (_db && !_db.disabled) _db.innerHTML = (typeof pricingModel !== 'undefined' && pricingModel && pricingModel._reverseSolved) ? '\u21ba Re-draft from scratch' : '\u2728 Draft the staffing plan'; }   // (#4) label reflects whether a sheet has been applied
+  { var _pm = (typeof pricingModel !== 'undefined') ? pricingModel : null; var _uo = !!(_pm && _pm.fteSource === 'user' && (_pm.lcats || []).some(function (l) { return String(l.name || '').trim(); })); var _db = document.getElementById('pricingAutoBuildBtn'); if (_db && !_db.disabled) _db.innerHTML = (_pm && _pm._reverseSolved) ? '\u21ba Re-draft from scratch' : (_uo ? '\u2728 Re-draft, keeping my changes' : '\u2728 Draft the staffing plan'); var _fb = document.getElementById('pricingAutoBuildFreshBtn'); if (_fb && !_fb.disabled) _fb.style.display = _uo ? 'inline-block' : 'none'; }   // (#4) label + the from-the-solicitation revert button reflect whether the user has customized the structure
   // Phase 5: seed the GSA rate card from the company default (Settings) the first time this
   // pricing session touches an empty rate card, and keep the shared default in sync with
   // whatever's on this tab afterward — last-edit-wins between Settings and Pricing.
