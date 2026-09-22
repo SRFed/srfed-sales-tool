@@ -722,7 +722,7 @@
   .rec-scope .btn.danger:hover { background: #fde8e8; }
   .rec-empty { text-align: center; padding: 40px 20px; color: var(--muted); }
   .rec-empty .rec-empty-icon { font-size: 32px; opacity: 0.4; margin-bottom: 8px; }
-  .rec-scope .lu-table-wrap { overflow-x: auto; }
+  .rec-scope .lu-table-wrap { overflow-x: hidden; }
   .rec-scope .lu-table { border-collapse: collapse; table-layout: fixed; width: 100%; font-size: 12px; }
   .rec-scope .lu-table th, .rec-scope .lu-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; overflow: hidden; text-overflow: ellipsis; }
   .rec-scope .lu-table thead th { position: relative; background: transparent; color: var(--muted); font-weight: 700; font-size: 11px; padding: 6px 8px 3px; cursor: pointer; user-select: none; white-space: nowrap; }
@@ -1992,9 +1992,9 @@
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--border);background:#fafbfc">
       <span style="font-size:11px;font-weight:600;color:var(--muted);margin-right:2px">Tags:</span>
       <span style="font-size:10.5px;font-weight:700;background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:1px 7px;color:#1d4ed8">Gov stated</span>
-      <span style="font-size:10.5px;font-weight:700;background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:1px 7px;color:#0e7490">Gov. estimate</span>
-      <span style="font-size:10.5px;font-weight:700;background:#ffedd5;border:1px solid #fdba74;border-radius:8px;padding:1px 7px;color:#9a3412">Proposed</span>
+      <span style="font-size:10.5px;font-weight:700;background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;padding:1px 7px;color:#0e7490">Gov estimate</span>
       <span style="font-size:10.5px;font-weight:700;background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:1px 7px;color:#92400e">Inferred</span>
+      <span style="font-size:10.5px;font-weight:700;background:#ffedd5;border:1px solid #fdba74;border-radius:8px;padding:1px 7px;color:#9a3412">Proposed</span>
       <span style="font-size:10.5px;font-weight:700;background:#ffedd5;border:1px solid #fdba74;border-radius:8px;padding:1px 7px;color:#9a3412">AI summary</span>
     </div>
     <div class="card-body" id="bnaIntelBody">
@@ -2273,11 +2273,21 @@
     <div class="card-body">
       <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 1 to unlock</span></div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div style="font-size:12.5px;color:var(--muted);max-width:540px">Pull the PWS tasks, period of performance, FTE basis, and the required pricing methodology straight from your RFP analysis — or add tasks by hand below.</div>
-        <button class="btn btn-primary" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull RFP Analysis from Proposal tab</button>
+        <div style="font-size:12.5px;color:var(--muted);max-width:540px">Pull the PWS tasks, period of performance, FTE basis, and the required pricing methodology straight from your RFP analysis. Starting here instead of the Proposal tab? Drop the solicitation documents in the box below, then Pull — or add tasks by hand below.</div>
+        <button class="btn btn-primary" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull RFP analysis</button>
+      </div>
+      <div id="pricingRfpDropWrap" style="margin-top:12px">
+        <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Starting on the Pricing tab? Add the solicitation documents here <span style="font-weight:400;color:var(--muted)">&mdash; they are read by the SAME RFP analysis, so PWS tasks, the FTE basis and the pricing methodology come through exactly as they would from the Proposal tab.</span></div>
+        <div class="drop-zone" id="dropZonePricingRFP" style="min-height:96px">
+          <input type="file" id="fileInputPricingRFP" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.zip"/>
+          <div class="dz-icon">&#128196;</div>
+          <div class="dz-title">Drop RFP / PWS files here</div>
+          <div class="dz-sub">SOW, PWS, RFP, amendments &mdash; PDF, Word, Excel, ZIP. Then click <strong>Pull RFP analysis</strong> above.</div>
+        </div>
+        <div class="file-list" id="fileListPricingRFP"></div>
       </div>
       <div id="pricingPullProgress" style="display:none;margin-top:10px"></div>
-        <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull RFP Analysis from Proposal tab</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
+        <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull RFP analysis</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
       <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
         <div style="flex:1;min-width:220px">
           <label style="display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Pricing Methodology <span style="color:var(--muted);font-weight:400">(how the Government wants it)</span></label>
@@ -3292,7 +3302,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '409';
+const APP_VERSION = '413';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13770,7 +13780,7 @@ function pricingRenderLockBar() {
   var el = document.getElementById('pricingLockBar'); if (!el) return;
   if (!pricingModel.lcats || !pricingModel.lcats.length) { el.innerHTML = ''; return; }
   var locked = !!pricingModel.staffingLocked;
-  var btn = '<button onclick="pricingToggleStaffingLock()" style="padding:7px 14px;font-size:12.5px;font-weight:700;border-radius:7px;cursor:pointer;border:1px solid ' + (locked ? '#166534;background:#dcfce7;color:#166534' : 'var(--blue);background:#fff;color:var(--blue)') + '">' + (locked ? 'Staffing locked \u2014 click to unlock' : 'Lock LCATs & hours') + '</button>';
+  var btn = '<button onclick="pricingToggleStaffingLock()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:1px solid ' + (locked ? '#14532d;background:#166534;color:#fff' : '#0f172a;background:#1e293b;color:#fff') + ';box-shadow:0 1px 3px rgba(0,0,0,0.18)">' + '<span style="font-size:16px;line-height:1">\uD83D\uDD12</span>' + (locked ? 'Staffing locked \u2014 click to unlock' : 'Lock LCATs & hours') + '</button>';
   var note = '<div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:660px">' + (locked ? 'Locked: a re-draft keeps these roles and their FTEs and only redistributes hours across the PWS tasks. In Step 5, a role whose hours don\u2019t total its locked FTE is flagged red (you can still override).' : 'Lock the roles and their FTE/hours so a re-draft can\u2019t resize the team \u2014 it will only redistribute hours across the PWS tasks.') + '</div>';
   el.innerHTML = btn + note;
 }
@@ -15603,7 +15613,7 @@ function pricingRenderAll() {
 function pricingRenderContext() {
   const el = document.getElementById('pricingContextBox'); if (!el) return;
   const meta = window._pricingBriefingMeta;
-  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull RFP Analysis from Proposal tab</strong> reads the RFP/PWS you uploaded on the <strong>Proposal</strong> tab in Step 4 (not the Bid/No-Bid or Partners tabs) and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
+  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull RFP analysis</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
   el.innerHTML =
     `<div style="font-size:11px;color:var(--success);font-weight:600;margin-bottom:3px">⤵ Pulled from your Proposal-tab RFP analysis</div>` +
     (meta.title ? `<div><strong>${pricingEsc(meta.title)}</strong>${meta.sol ? ' · ' + pricingEsc(meta.sol) : ''}</div>` : '') +
@@ -15898,8 +15908,8 @@ function pricingRenderMatrix() {
   h += th('Hours/yr', '#e0f2fe') + th('FTE', '#e0f2fe') + th('Price/yr', '#e0f2fe');
   h += '</tr></thead><tbody>';
   pricingModel.lcats.forEach(l => {
-    var _lockDrift = !!pricingModel.staffingLocked && Math.abs(pricingRowFte(l) - (parseFloat(l.advertised) || 0)) > 0.02;   // locked, but the task hours no longer total the locked FTE
-    h += _lockDrift ? '<tr style="background:#fef2f2">' : '<tr>';
+    var _fteDrift = Math.abs(pricingRowFte(l) - (parseFloat(l.advertised) || 0)) > 0.02;   // the task hours no longer total this role's Advertised FTE - flagged red whether or not staffing is locked
+    h += _fteDrift ? '<tr style="background:#fef2f2">' : '<tr>';
     h += `<td style="padding:4px 7px;border:1px solid var(--border);position:sticky;left:0;background:white;z-index:1;min-width:115px;max-width:155px"><div style="font-weight:600;font-size:11px;line-height:1.25">${pricingEsc(l.name || '(unnamed)')}</div><div style="font-size:9.5px;color:var(--muted)">${pricingFmtC(pricingBilledRate(l, 0))}/hr</div></td>`;
     pricingModel.tasks.forEach(t => {
       const v = pricingCell(l.id, t.id);            // effective hours (0 when none)
@@ -15920,7 +15930,7 @@ function pricingRenderMatrix() {
         `<input class="px-hours-cell" type="number" min="0" step="1" value="${v > 0 ? v : 0}" onfocus="this.select()" oninput="pricingSetHours('${l.id}','${t.id}',this.value);pricingCellPaint(this)" style="width:52px;padding:3px 4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:center;background:transparent;color:${zero ? 'var(--muted)' : 'var(--text)'}"/></td>`;
     });
     h += `<td id="prt-hours-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:#f0f9ff;font-weight:600">${pricingRowHours(l.id).toLocaleString()}</td>`;
-    h += `<td id="prt-fte-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:${_lockDrift ? '#fecaca' : '#f0f9ff'};font-weight:${_lockDrift ? '700' : '400'}" title="${_lockDrift ? ('Locked to ' + (parseFloat(l.advertised) || 0) + ' FTE, but these hours total ' + pricingRowFte(l).toFixed(2) + ' FTE \u2014 adjust the task hours or unlock in Step 4.') : ''}">${pricingRowFte(l).toFixed(2)}</td>`;
+    h += `<td id="prt-fte-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:${_fteDrift ? '#fecaca' : '#f0f9ff'};font-weight:${_fteDrift ? '700' : '400'}" title="${_fteDrift ? ((pricingModel.staffingLocked ? 'Locked to ' : 'Advertised FTE is ') + (parseFloat(l.advertised) || 0) + ' FTE, but these task hours total ' + pricingRowFte(l).toFixed(2) + ' FTE \u2014 adjust the task hours' + (pricingModel.staffingLocked ? ' or unlock in Step 4.' : ' or the Advertised FTE so they tie out.')) : ''}">${pricingRowFte(l).toFixed(2)}</td>`;
     h += `<td id="prt-cost-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:#f0f9ff">${pricingFmt(pricingRowCost(l))}</td>`;
     h += '</tr>';
   });
@@ -17056,9 +17066,9 @@ function pricingBuildWorkbook() {
     const per = P.map((p, i) => r2(pricingPeriodRowHours(l.id, i) * effRate(l, i) * frac(i)));
     bl.push([l.name || '(unnamed)', gsa ? (l.gsaLcat || l.name || '') : r2(parseFloat(l.baseRate) || 0), Math.round(pricingRowHours(l.id)), r2(pricingRowFte(l)), r2(pricingLoadedRate(l, 0)), ...per, r2(per.reduce((s, x) => s + x, 0))]);
   });
-  bl.push(['TOTAL', '', Math.round(pricingTotalHours()), '', '', ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
+  bl.push(['TOTAL', '', Math.round(pricingTotalHours()), r2(M.lcats.reduce(function (s, l) { return s + pricingRowFte(l); }, 0)), '', ...P.map((p, i) => r2(pricingPeriodCost(i))), r2(pricingGrandTotal())]);
   const wsBL = XLSX.utils.aoa_to_sheet(bl);
-  { const _nP = pNames.length, _last = bl.length - 1, _tot = 5 + _nP; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsBL, _r, _tot, 5, _tot - 1); for (let _c = 5; _c < _tot; _c++) pxSumCol(wsBL, _last, _c, 1, _last - 1); pxSumCol(wsBL, _last, 2, 1, _last - 1); }
+  { const _nP = pNames.length, _last = bl.length - 1, _tot = 5 + _nP; for (let _r = 1; _r <= _last; _r++) pxSumRow(wsBL, _r, _tot, 5, _tot - 1); for (let _c = 5; _c < _tot; _c++) pxSumCol(wsBL, _last, _c, 1, _last - 1); pxSumCol(wsBL, _last, 2, 1, _last - 1); pxSumCol(wsBL, _last, 3, 1, _last - 1); }
   M.lcats.forEach((l, k) => { P.forEach((p, i) => { const _f = _sumRows((_rowsLP[k] || {})[i]); if (_f) pxSetFormula(wsBL, k + 1, 5 + i, _f); }); });
   // Link the identity columns to their sources so nothing on this rollup is a stranded number.
   M.lcats.forEach((l, k) => {
@@ -20128,6 +20138,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDropZone('dropZoneCompliance', 'fileInputCompliance', complianceFiles, 'fileListCompliance');
   initDropZone('dropZoneBNA',        'fileInputBNA',        bnaFiles,        'fileListBNA');
   initDropZone('dropZoneBNADocs',    'fileInputBNADocs',    bnaCompanyFiles, 'fileListBNADocs');
+  initDropZone('dropZonePricingRFP', 'fileInputPricingRFP', rfpFiles,        'fileListPricingRFP');   // Phase 4 (C): Pricing-tab RFP drop -> same rfpFiles -> same ensureBriefing pipeline
   if (typeof triageInit === 'function') triageInit();
   if (typeof _triageRestoreAfterReload === 'function') _triageRestoreAfterReload();
   initBnaWeights();
@@ -22883,6 +22894,16 @@ function _constrainedPwsContext() {
   // makes the checker flag the user's own correct sizing as non-compliant.
   (function () {
     const _ci = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel : {};
+    // OFFEROR-COMMITTED / LOCKED STAFFING IS THE BASELINE (issue G): once the user LOCKS the LCATs and hours in
+    // Step 4, that staffing is their deliberate decision at their chosen work-year basis, so the check judges
+    // against IT - it does NOT re-derive an FTE from the solicitation's workload table (which at a different hours
+    // basis reads as a fractional figure like 24.42 and produced a false 'exceeds by ~0.6 FTE' against a locked 25).
+    var _pmLk = (typeof pricingModel !== 'undefined') ? pricingModel : null;
+    if (_pmLk && _pmLk.staffingLocked && Array.isArray(_pmLk.lcats) && _pmLk.lcats.length) {
+      var _lockFte = _pmLk.lcats.reduce(function (s, l) { return s + (parseFloat(l.advertised) || 0); }, 0);
+      bits.push('Offeror-committed staffing (LOCKED by the offeror): a finalized plan of ' + (Math.round(_lockFte * 100) / 100) + ' FTE at ' + Math.round(defaultHpf()).toLocaleString() + ' hrs/FTE-year. This committed staffing is the BASELINE for this review - it reflects the offeror\u2019s own decision on what constitutes one year of effort. Do NOT report a conflict, non-compliance, exceedance, or deviation because it differs from any FTE derived from the solicitation\u2019s workload / level-of-effort table; that table is background here, not a mandate. Judge coverage and realism against this committed staffing.');
+      return;
+    }
     // Prefer the RECONCILED required LOE: the solicitation's workload table (when trustworthy per the >50%
     // cross-check) summed and divided by the CURRENT hours basis - so 48,000 hrs reads as 25 at a 1920 basis
     // (matching Pricing), not the stale 24.38 estimate that made Compliance flag a false "exceeds by 0.62 FTE".
@@ -27754,7 +27775,7 @@ window.RecStore = (function () {
 
   var luResults = [], _luList = 'applicants', _searchMode = 'literal';
   var _luSort = { col: -1, dir: 1 }, _luFilters = {}, _luPage = 0;
-  var _luColWidths = [96, 150, 150, 190, 110, 64, 84, 76, 84], _luResizing = null;
+  var _luColWidths = ['7%', '15%', '12%', '13%', '9%', '5%', '8%', '7%', '9%'], _luResizing = null;
   var LU_COLS = ['source', 'name', 'position', 'email', 'phone', 'state', 'linkedIn', 'resume', 'hsLink'];
   var LU_LABELS = ['Source', 'Name', 'Position', 'Email', 'Phone', 'State', 'LinkedIn', 'Resume', 'HubSpot'];
 
@@ -27958,18 +27979,18 @@ window.RecStore = (function () {
     if (_luSort.col >= 0) { var sc = LU_COLS[_luSort.col], sd = _luSort.dir; filtered = filtered.slice().sort(function (a, b) { var av = getLuCell(a, sc).toLowerCase(), bv = getLuCell(b, sc).toLowerCase(); return av < bv ? -sd : av > bv ? sd : 0; }); }
     var lc = document.getElementById('lu-count'); if (lc) lc.textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' found' + (filtered.length < luResults.length ? ' (' + luResults.length + ' total, filtered)' : '');
     var cg = '<colgroup>';
-    for (var ci = 0; ci < _luColWidths.length; ci++) { cg += '<col style="width:' + _luColWidths[ci] + 'px">'; }
-    cg += '<col style="width:172px">';
+    for (var ci = 0; ci < _luColWidths.length; ci++) { cg += '<col style="width:' + _luColWidths[ci] + '">'; }
+    cg += '<col style="width:15%">';
     cg += '</colgroup>';
     var t = '<div class="lu-table-wrap"><table class="lu-table">' + cg + '<thead><tr>';
     for (var i = 0; i < LU_LABELS.length; i++) {
-      var cls = _luSort.col === i ? (_luSort.dir === 1 ? ' class="sort-asc"' : ' class="sort-desc"') : '';
-      t += '<th' + cls + ' onclick="Rec.luSortBy(' + i + ')" style="width:' + _luColWidths[i] + 'px">' + LU_LABELS[i] + ' <i class="sort-icon"></i><span class="col-resize" onclick="event.stopPropagation()"></span></th>';
+      var _ind = (_luSort.col === i) ? (_luSort.dir === 1 ? ' \u25B4' : ' \u25BE') : '';
+      t += '<th onclick="Rec.luSortBy(' + i + ')" title="Click to sort" style="width:' + _luColWidths[i] + '">' + LU_LABELS[i] + '<span style="color:var(--blue)">' + _ind + '</span></th>';
     }
-    t += '<th style="width:172px">Actions</th>';
+    t += '<th style="width:15%">Actions</th>';
     t += '</tr><tr class="lu-filter-row">';
-    for (var j = 0; j < LU_COLS.length; j++) { t += '<th style="width:' + _luColWidths[j] + 'px"><input class="lu-filter-input" type="text" placeholder="Filter..." value="' + esc(_luFilters[j] || '') + '" oninput="Rec.luFilter(' + j + ',this.value)"/></th>'; }
-    t += '<th style="width:172px"></th>';
+    for (var j = 0; j < LU_COLS.length; j++) { t += '<th style="width:' + _luColWidths[j] + '"><input class="lu-filter-input" type="text" placeholder="Filter..." value="' + esc(_luFilters[j] || '') + '" oninput="Rec.luFilter(' + j + ',this.value)"/></th>'; }
+    t += '<th style="width:15%"></th>';
     t += '</tr></thead><tbody>';
     var _pgSize = 25, _pgN = Math.max(1, Math.ceil(filtered.length / _pgSize));
     if (_luPage >= _pgN) _luPage = _pgN - 1; if (_luPage < 0) _luPage = 0;
@@ -28035,7 +28056,7 @@ window.RecStore = (function () {
     var table = document.querySelector('.lu-table'); if (!table) return;
     var ths = table.querySelectorAll('thead tr:first-child th');
     ths.forEach(function (th, i) {
-      th.style.width = _luColWidths[i] + 'px'; th.style.minWidth = _luColWidths[i] + 'px';
+      /* fit-to-width: column widths are percentages set in the render; do not overwrite with px */
       var handle = th.querySelector('.col-resize'); if (!handle) return;
       handle.addEventListener('mousedown', function (e) { e.stopPropagation(); e.preventDefault(); handle.classList.add('dragging'); _luResizing = { colIdx: i, startX: e.clientX, startW: _luColWidths[i] }; document.addEventListener('mousemove', onLuResizeMove); document.addEventListener('mouseup', onLuResizeUp); });
     });
