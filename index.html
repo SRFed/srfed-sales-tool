@@ -2480,7 +2480,6 @@
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div style="flex:2;min-width:220px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Position / labor category *</label><input type="text" id="mktRole" placeholder="e.g. Registered Nurse, Senior Software Engineer, Program Manager" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
         <div style="flex:1.4;min-width:180px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Location</label><input type="text" id="mktLoc" placeholder="e.g. Washington, DC" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text);padding-bottom:9px;white-space:nowrap"><input type="checkbox" id="mktRemote" onchange="mktToggleRemote()" style="width:auto"/> Remote / national</label>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
         <div style="flex:1;min-width:160px"><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:4px">Seniority <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" id="mktLevel" placeholder="e.g. mid, senior, lead" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;box-sizing:border-box"/></div>
@@ -3292,7 +3291,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '399';
+const APP_VERSION = '405';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13074,7 +13073,7 @@ function pricingSetTask(id, field, val) { const t = pricingModel.tasks.find(x =>
 // ═══ MARKET RATES TOOL (own tab; feeds Pricing rate anchors) ═══════════════
 function mktToggleRemote() {
   const loc = document.getElementById('mktLoc'); if (!loc) return;
-  const on = document.getElementById('mktRemote').checked;
+  var _rm = document.getElementById('mktRemote'); if (!_rm) return; const on = _rm.checked;
   loc.disabled = on; loc.style.opacity = on ? '0.5' : '1'; if (on) loc.value = '';
 }
 // ═══ #34 MARKET-RATE ENGINE ═══════════════════════════════════════════════════
@@ -13292,8 +13291,9 @@ function _mktPaidHourly(rec) {
 
 async function marketRun(btn) {
   const role = (document.getElementById('mktRole').value || '').trim();
-  const remote = document.getElementById('mktRemote').checked;
-  const loc = remote ? 'Remote (national US)' : (document.getElementById('mktLoc').value || '').trim();
+  var _rmEl = document.getElementById('mktRemote');
+  const remote = !!(_rmEl && _rmEl.checked);
+  const loc = remote ? 'Remote (national US)' : ((document.getElementById('mktLoc').value || '').trim() || 'National (US average)');
   const level = (document.getElementById('mktLevel').value || '').trim();
   const clear = (document.getElementById('mktClear').value || '').trim();
   const status = document.getElementById('mktStatus'), results = document.getElementById('mktResults');
@@ -13305,7 +13305,7 @@ async function marketRun(btn) {
   // #12: a validation bail means no lookup started, so the pending role binding is stale.
   // Left set, it would silently attach the NEXT free-form lookup's result to this role.
   if (!role) { _mktLookupRoleId = null; show('Enter a position / labor category first.', true); return; }
-  if (!remote && !loc) { _mktLookupRoleId = null; show('Enter a location, or check Remote / national.', true); return; }
+  // A blank location is fine \u2014 it defaults to a national lookup (the Remote/national toggle was removed).
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { _mktLookupRoleId = null; show('Enter your Anthropic API key (top of the page) first.', true); return; }
   // The old code HID the pane (display:none) and blanked it, so a running lookup
@@ -14187,12 +14187,20 @@ function pricingApplyBriefing(b) {
     ? b.workload_by_lcat.map(r => ({ lcat: String((r && r.lcat) || '').trim(), hours: parseFloat(String(((r && r.base_year_hours) != null ? r.base_year_hours : '')).replace(/[^0-9.]/g, '')) || 0 })).filter(r => r.lcat && r.hours > 0)
     : [];
   if (_wbl.length) {
+    const _wblSum = _wbl.reduce((s, r) => s + r.hours, 0);
     pricingModel.statedWorkloadByLcat = _wbl;
-    // This path reads the SOLICITATION's own workload table, so the provenance is known
-    // rather than inferred. Recorded explicitly so auto-build never has to guess it.
-    pricingModel.workloadSource = 'government';
-    pricingModel.fteSource = 'stated';
-    pricingModel.statedFteTotal = Math.round((_wbl.reduce((s, r) => s + r.hours, 0) / defaultHpf()) * 100) / 100;
+    // This path reads the SOLICITATION's own workload table. But an AI-extracted table that contradicts the
+    // stated FTE by >50% is almost certainly mis-read (e.g. 9 FTE of categories for a 2-FTE effort), so it is
+    // NOT asserted as Government-stated - the tool defers to the stated FTE instead.
+    if (pricingWorkloadTrusted(_wblSum, fteNum)) {
+      pricingModel.workloadSource = 'government';
+      pricingModel.fteSource = 'stated';
+      pricingModel.statedFteTotal = Math.round((_wblSum / defaultHpf()) * 100) / 100;
+    } else {
+      pricingModel.workloadSource = 'uncertain';
+      pricingModel.fteSource = (_govLoe && fteNum) ? 'stated' : 'estimated';
+      pricingModel.statedFteTotal = fteNum ? Math.round(parseFloat(fteNum) * 100) / 100 : null;
+    }
   } else {
     pricingModel.statedWorkloadByLcat = [];
     pricingModel.workloadSource = null;
@@ -14883,6 +14891,18 @@ async function pricingAutoBuildStructure(mode) {
         } catch (e) {}
       }
       pricingModel.statedFteTotal = Math.round((_govWorkload.reduce((s, r) => s + r.hours, 0) / defaultHpf()) * 100) / 100;
+      // Cross-check the workload table against the solicitation's stated FTE. A table that contradicts it by
+      // >50% is almost certainly mis-extracted (e.g. 9 FTE of categories for a 2-FTE effort), so don't assert
+      // it as Government-stated - defer to the stated figure. (User sizing, fteSource 'user', already skips
+      // this whole block, so a human edit still wins.)
+      var _wlSum2 = _govWorkload.reduce((s, r) => s + r.hours, 0);
+      var _estM2 = String((b && b.estimated_ftes) || '').match(/(\d+(?:\.\d+)?)/);
+      var _estFte2 = _estM2 ? parseFloat(_estM2[1]) : 0;
+      if (!pricingWorkloadTrusted(_wlSum2, _estFte2)) {
+        pricingModel.fteSource = 'estimated';
+        pricingModel.statedFteTotal = (_estFte2 > 0) ? Math.round(_estFte2 * 100) / 100 : null;
+        try { log('Workload table implies ~' + Math.round(_wlSum2 / defaultHpf()) + ' FTE but the solicitation states ' + _estFte2 + ' FTE \u2014 using the stated figure; final sizing is yours.', 'warn'); } catch (e) {}
+      }
       }
     }
     const _workloadBlock = _govWorkload.length
@@ -16196,6 +16216,17 @@ function pricingRemoveClinLine(id) { const c = pricingClin(); c.lines = c.lines.
 function pricingSetClinLine(id, field, val) { const l = pricingClin().lines.find(x => x.id === id); if (!l) return; if (field === 'amount') val = _pxCleanNum(val); l[field] = val; if (field === 'scope') { if (val !== 'tasks') l.taskIds = []; if (val === 'custom') { if (l.amount == null) l.amount = ''; if (!l.placement) l.placement = 'base'; } } if (field === 'title') return; pricingRenderClin(); }
 function pricingToggleClinTask(id, taskId) { const l = pricingClin().lines.find(x => x.id === id); if (!l) return; l.taskIds = l.taskIds || []; const i = l.taskIds.indexOf(taskId); if (i >= 0) l.taskIds.splice(i, 1); else l.taskIds.push(taskId); pricingRenderClin(); }
 
+function pricingWorkloadTrusted(wblHours, estFteNum) {
+  // A per-category workload table is authoritative only when it doesn't wildly contradict the solicitation's
+  // stated FTE. When the table's implied FTE (hours / basis) and the stated FTE disagree by more than ~50%,
+  // the AI-extracted table is suspect and must NOT override the stated figure as "Government-stated."
+  var hpf = defaultHpf();
+  if (!(wblHours > 0) || !(hpf > 0)) return false;
+  var est = parseFloat(estFteNum);
+  if (!(est > 0)) return true;             // no stated FTE to contradict -> trust the table
+  var ratio = (wblHours / hpf) / est;
+  return ratio <= 1.5 && ratio >= 0.67;    // within +/- 50%
+}
 function pricingGovFte() {
   // The Government stated HOURS (statedWorkloadByLcat), not an FTE count; the FTE equivalent depends on the
   // basis, so derive it live from the current hrs/FTE. That way setting the basis to 1920 makes 48,000 hrs
@@ -17943,17 +17974,25 @@ async function pricingAnalyzeGap(btn) {
   try {
     pxProgStart('pricingGapProgress', 1, 'Analyzing the price model\u2026',
                 'Reading the computed facts\u2026', 22);
-    const parsed = await callClaudeForJsonStreaming(
-      apiKey, [{ type: 'text', text: prompt }], 4000, 120000, 'Gap analysis',
-      function (p) {
-        const n = p.items || 0;
-        pxProgMark('pricingGapProgress', null,
-          (n > 0 ? ('Found ' + n + ' recommended move' + (n === 1 ? '' : 's') + ' so far\u2026')
-                 : 'Diagnosing the price model\u2026'));
-      },
-      /"headline"\s*:/g);
+    let parsed = null, _gapErr = null;
+    for (let _try = 0; _try < 2; _try++) {
+      if (_try > 0) pxProgMark('pricingGapProgress', null, 'The first response was incomplete \u2014 retrying\u2026');
+      try {
+        parsed = await callClaudeForJsonStreaming(
+          apiKey, [{ type: 'text', text: prompt }], 8000, 120000, 'Gap analysis',
+          function (p) {
+            const n = p.items || 0;
+            pxProgMark('pricingGapProgress', null,
+              (n > 0 ? ('Found ' + n + ' recommended move' + (n === 1 ? '' : 's') + ' so far\u2026')
+                     : 'Diagnosing the price model\u2026'));
+          },
+          /"headline"\s*:/g);
+      } catch (_e) { _gapErr = _e; parsed = null; }
+      if (parsed && typeof parsed === 'object') break;
+      parsed = null;
+    }
+    if (!parsed) throw (_gapErr || new Error('the response did not come through'));
     const moves = (parsed && Array.isArray(parsed.moves)) ? parsed.moves.filter(m => m && (m.headline || m.detail)) : [];
-    if (!moves.length) throw new Error('the analysis came back with no usable moves \u2014 try again.');
     moves.sort((a, b) => (parseInt(a.rank) || 99) - (parseInt(b.rank) || 99));
     _pxGapResult = {
       diagnosis: String((parsed && parsed.diagnosis) || ''),
@@ -17963,10 +18002,13 @@ async function pricingAnalyzeGap(btn) {
       brief: brief, sig: pricingGapSig(f), at: Date.now(),
       anchorMode: f.gap.hasStated ? f.gap.anchorMode : '', hasStated: !!f.gap.hasStated
     };
-    if (typeof showStatus === 'function') showStatus('success', 'Gap analysis ready', moves.length + ' ranked move' + (moves.length === 1 ? '' : 's') + ' below the Pricing Summary. Nothing was applied \u2014 the analysis is advisory.');
+    if (typeof showStatus === 'function') {
+      if (moves.length) showStatus('success', 'Gap analysis ready', moves.length + ' ranked move' + (moves.length === 1 ? '' : 's') + ' below the Pricing Summary. Nothing was applied \u2014 the analysis is advisory.');
+      else showStatus('success', 'Analysis complete', 'No improvement moves to flag \u2014 the price model looks sound on its own terms (e.g. there is no dollar value to reconcile against).');
+    }
   } catch (e) {
-    console.error('gap analysis failed:', e);
-    if (typeof showStatus === 'function') showStatus('error', 'Gap analysis failed', e.message || String(e));
+    console.warn('gap analysis did not complete:', e);
+    if (typeof showStatus === 'function') showStatus('warn', 'Analysis didn\u2019t complete', 'The model\u2019s response didn\u2019t come through cleanly \u2014 give it another try in a moment.');
   } finally {
     _pxGapBusy = false;
     pxProgEnd('pricingGapProgress', 'Analysis complete.');
@@ -19383,7 +19425,7 @@ function _triageRenderFiles(z) {
   if (!el) return;
   el.innerHTML = z.files.map((f, i) => {
     const size = f.size < 1048576 ? ((f.size / 1024).toFixed(0) + ' KB') : ((f.size / 1048576).toFixed(1) + ' MB');
-    return '<div class="file-item" draggable="true" ondragstart="_triageDragStart(event,' + z.id + ',' + i + ')" ondragend="_triageDrag=null" title="Drag to move to another opportunity" style="cursor:grab"><span class="file-name">' + escHtml(f.name) + '</span><span class="file-meta"><span class="file-size">' + size + '</span></span><span class="file-remove" title="Remove file" onclick="triageRemoveFile(' + z.id + ',' + i + ')">\u2715</span></div>';
+    return '<div class="file-item" draggable="true" ondragstart="_triageDragStart(event,' + z.id + ',' + i + ')" ondragend="_triageDrag=null;_triageStopAutoScroll()" title="Drag to move to another opportunity" style="cursor:grab"><span class="file-name">' + escHtml(f.name) + '</span><span class="file-meta"><span class="file-size">' + size + '</span></span><span class="file-remove" title="Remove file" onclick="triageRemoveFile(' + z.id + ',' + i + ')">\u2715</span></div>';
   }).join('');
 }
 function _triageBadge(v) {
@@ -19542,7 +19584,7 @@ function _triageNameFromVerdict(label, autoName, verdict) {
   if (autoName === false) return null;                                   // a real number or a user-edited name
   if (String(label || '').trim() === 'Unsorted') return null;
   if (_looksLikeSolNum(label)) return null;   // keep solicitation numbers (all-caps alphanumeric with digits)
-  var nm = String((verdict && (verdict.requirement_name || verdict.requirement_title)) || '').trim();
+  var nm = String((verdict && (verdict.title || verdict.requirement_name || verdict.requirement_title)) || '').trim();
   if (!nm) return null;
   return nm.length > 72 ? (nm.slice(0, 71) + '\u2026') : nm;
 }
@@ -19710,7 +19752,7 @@ async function _triageDetectSolNum(file) {
   try {
     const block = await fileToContentBlockLocal(file);
     if (block && block.type === 'text' && block.text) {
-      const head = block.text.slice(0, 3000);
+      const head = block.text.slice(0, 8000);
       n = _triageSolFromLabel(head) || _triageSolFromString(head);
       if (n) return n;
     }
@@ -19823,11 +19865,38 @@ async function triageAutoSort(files) {
   if (typeof showStatus === 'function') showStatus((nOpps === 0) ? 'warn' : 'success', 'Sorted', msg, false);
   if (typeof _analysisEnd === 'function') _analysisEnd();
 }
+var _triageDragScroll = { handler: null, raf: null, vy: 0 };
+function _triageStartAutoScroll() {
+  var st = _triageDragScroll;
+  if (st.handler) return;
+  var edge = 80, speed = 22;
+  st.handler = function (ev) {
+    var y = ev.clientY || 0, h = window.innerHeight || document.documentElement.clientHeight || 800;
+    if (y > 0 && y < edge) st.vy = -Math.ceil(speed * (1 - y / edge));
+    else if (y > h - edge && y <= h) st.vy = Math.ceil(speed * (1 - (h - y) / edge));
+    else st.vy = 0;
+  };
+  try { document.addEventListener('dragover', st.handler, true); } catch (e) {}
+  var tick = function () {
+    if (!st.handler) return;
+    if (st.vy) { try { window.scrollBy(0, st.vy); } catch (e) {} }
+    st.raf = requestAnimationFrame(tick);
+  };
+  st.raf = requestAnimationFrame(tick);
+}
+function _triageStopAutoScroll() {
+  var st = _triageDragScroll;
+  if (st.handler) { try { document.removeEventListener('dragover', st.handler, true); } catch (e) {} st.handler = null; }
+  if (st.raf) { try { cancelAnimationFrame(st.raf); } catch (e) {} st.raf = null; }
+  st.vy = 0;
+}
 function _triageDragStart(e, zoneId, idx) {
   _triageDrag = { zoneId: zoneId, idx: idx };
   try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'triage-move'); } catch (err) {}
+  _triageStartAutoScroll();
 }
 function _triageMoveFile(fromId, idx, toId) {
+  if (typeof _triageStopAutoScroll === 'function') _triageStopAutoScroll();
   if (fromId === toId) return;
   const from = triageZones.find(z => z.id === fromId);
   const to = triageZones.find(z => z.id === toId);
@@ -22790,6 +22859,17 @@ function _constrainedPwsContext() {
   // makes the checker flag the user's own correct sizing as non-compliant.
   (function () {
     const _ci = (typeof window !== 'undefined' && window._lastBnaIntel) ? window._lastBnaIntel : {};
+    // Prefer the RECONCILED required LOE: the solicitation's workload table (when trustworthy per the >50%
+    // cross-check) summed and divided by the CURRENT hours basis - so 48,000 hrs reads as 25 at a 1920 basis
+    // (matching Pricing), not the stale 24.38 estimate that made Compliance flag a false "exceeds by 0.62 FTE".
+    var _pmC = (typeof pricingModel !== 'undefined') ? pricingModel : null;
+    var _wblSumC = (_pmC && Array.isArray(_pmC.statedWorkloadByLcat)) ? _pmC.statedWorkloadByLcat.reduce(function (x, r) { return x + (parseFloat(r && r.hours) || 0); }, 0) : 0;
+    var _estMC = String((b && b.estimated_ftes) || _ci.fte_count || '').match(/(\d+(?:\.\d+)?)/);
+    var _estNC = _estMC ? parseFloat(_estMC[1]) : 0;
+    if (_wblSumC > 0 && typeof pricingWorkloadTrusted === 'function' && pricingWorkloadTrusted(_wblSumC, _estNC)) {
+      bits.push('Required staffing / FTEs (the solicitation\u2019s workload table, reconciled to the ' + Math.round(defaultHpf()).toLocaleString() + '-hour work-year): ' + (Math.round((_wblSumC / defaultHpf()) * 100) / 100) + '. Judge the priced staffing against THIS figure, not any rounded estimate.');
+      return;
+    }
     const raw = (_ci.fte_count != null && _ci.fte_count !== '') ? _ci.fte_count : (o.fte_count != null && o.fte_count !== '') ? o.fte_count : b.estimated_ftes;
     const s = String(raw == null ? '' : raw).trim();
     if (!s) return;
@@ -22859,6 +22939,17 @@ function pricingModelReviewCsv() {
       ? '\nCLIN SCHEDULE: the solicitation defines ' + _nSt + ' CLIN(s), but they have NOT been applied to this pricing yet. CLINs are applied deliberately from the solicitation in the CLIN builder and reviewed before export \u2014 treat this as an action item to complete, NOT proof of an inherent pricing error.\n'
       : '\nCLIN SCHEDULE: the solicitation does not state CLINs, so none are applied (correct, not a gap).\n';
   }
+  // PER-TASK COVERAGE: complete, UNCAPPED total base-year hours per PWS task across all roles. The line-item
+  // detail below is capped at 350 rows and hides tasks on a large opportunity, which made the check flag
+  // already-covered tasks as omissions. THIS is the authoritative coverage signal.
+  if (Array.isArray(M.tasks) && M.tasks.length) {
+    out += '\nPER-TASK COVERAGE (base-year hours summed across ALL roles; a task with >0 hrs IS staffed \u2014 do NOT flag it as an omission. This list is COMPLETE and authoritative for coverage):\n';
+    M.tasks.forEach(function (tk) {
+      var _th = 0;
+      (M.lcats || []).forEach(function (l) { var _row = M.hours && M.hours[l.id]; if (_row) _th += (parseFloat(_row[tk.id]) || 0); });
+      out += '- ' + (tk.code ? tk.code + ' ' : '') + (tk.name || '') + ': ' + Math.round(_th) + ' hrs\n';
+    });
+  }
   out += '\nLINE-ITEM DETAIL (category | role | task | CLIN | period | hours | price):\n';
   const cap = Math.min(rows.length, 350);
   for (let i = 0; i < cap; i++) { const r = rows[i]; out += [r.category, r.lcat, r.task, (r.clin || '(none)'), r.period, Math.round(r.hours), mny(r.price)].join(' | ') + '\n'; }
@@ -22879,7 +22970,7 @@ function _constrainedPwsContent(csv, pws, statedFte) {
     'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a required, recurring base-period PWS task with no labor priced against it; a staffing level (FTEs/hours) below a level the SOLICITATION EXPLICITLY STATES as required; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
     'STAFFING - CRITICAL: do NOT derive or propose a required headcount/FTE from your own reading of the scope. Raise a staffing-level conflict ONLY when the solicitation STATES a required level of effort and the priced level is below it. When level of effort is left to the offeror to propose (no stated FTE), ANY defensible staffing level is compliant - never say the effort "needs" more (or fewer) FTE than priced, and never suggest a specific different headcount.\n\n' +
     'GSA - CRITICAL: recommend mapping roles to GSA MAS / GSA Schedule labor categories ONLY if the pricing above actually shows GSA Schedule LCATs (a GSA Schedule buy). If the pricing is not on a GSA Schedule, GSA-LCAT mapping is irrelevant - do NOT raise it as a conflict or a fix.\n\n' +
-    'IMPORTANT - do NOT raise a task-coverage conflict merely because the base-period pricing does not staff a task. Many PWS tasks are CONDITIONAL (required only if an option period is exercised, or triggered by a specific event), OPTIONAL, surge, or ONE-TIME / single-use, and legitimately carry no base-period labor. Flag an unstaffed task ONLY when it is plainly a required, recurring base-period effort that the pricing omits; when a task is optional, option-year-only, event-triggered, or one-time / single-use, do NOT flag it. When in doubt, do not flag it.\n\n' +
+    'IMPORTANT - do NOT raise a task-coverage conflict merely because the base-period pricing does not staff a task. Many PWS tasks are CONDITIONAL (required only if an option period is exercised, or triggered by a specific event), OPTIONAL, surge, or ONE-TIME / single-use, and legitimately carry no base-period labor. Flag an unstaffed task ONLY when it is plainly a required, recurring base-period effort that the pricing omits; when a task is optional, option-year-only, event-triggered, or one-time / single-use, do NOT flag it. When in doubt, do not flag it. Judge task coverage from the PER-TASK COVERAGE list (COMPLETE and authoritative): a task shown there with >0 hrs IS staffed - NEVER report it as omitted, whatever the truncated LINE-ITEM DETAIL happens to show.\n\n' +
     'Return ONLY JSON (no prose, no markdown fences):\n' +
     '{"items":[{"requirement":"what the PWS requires (paraphrase the specific requirement)","category":"Labor mix|Clearance|Certification|Task coverage|Staffing level|Period of performance|Over-scope|Other","issue":"how the uploaded pricing is non-compliant or in conflict with that requirement","fix":"the recommended change to the pricing","severity":"critical|important|minor"}],"summary":"one line: overall assessment of how well the pricing complies with the PWS"}\n\n' +
     'If the pricing fully complies, return "items":[] and say so in the summary.'
@@ -27636,9 +27727,9 @@ window.RecStore = (function () {
 
   var luResults = [], _luList = 'applicants', _searchMode = 'literal';
   var _luSort = { col: -1, dir: 1 }, _luFilters = {}, _luPage = 0;
-  var _luColWidths = [110, 180, 120, 200, 120, 90, 80], _luResizing = null;
-  var LU_COLS = ['source', 'name', 'location', 'email', 'phone', 'linkedIn', 'resume'];
-  var LU_LABELS = ['Source', 'Name', 'Location', 'Email', 'Phone', 'LinkedIn', 'Resume'];
+  var _luColWidths = [96, 150, 150, 190, 110, 64, 84, 76, 84], _luResizing = null;
+  var LU_COLS = ['source', 'name', 'position', 'email', 'phone', 'state', 'linkedIn', 'resume', 'hsLink'];
+  var LU_LABELS = ['Source', 'Name', 'Position', 'Email', 'Phone', 'State', 'LinkedIn', 'Resume', 'HubSpot'];
 
   async function aiRankCandidates(candidates, role, loc, skills) {
     if (!candidates.length) return [];
@@ -27812,14 +27903,18 @@ window.RecStore = (function () {
       resume: resume, title: fieldStr(x[A.position]) || '', location: location, stage: stage, source: source
     };
   }
+  function _luState(c) { return String((c.state || (String(c.location || '').split(',').pop()) || '')).trim(); }
   function getLuCell(c, col) {
     if (col === 'source') return c.source === 'official' ? 'Applicant' : (c.source === 'local' ? 'Local' : 'Potential');
     if (col === 'name') return c.name || '';
+    if (col === 'position') return c.title || '';
     if (col === 'location') return c.location || '';
+    if (col === 'state') return _luState(c);
     if (col === 'email') return c.email || '';
     if (col === 'phone') return c.phone || '';
     if (col === 'linkedIn') return c.linkedIn ? 'LinkedIn' : '';
     if (col === 'resume') return c.resume ? 'Resume' : '';
+    if (col === 'hsLink') return c.hsLink ? 'HubSpot' : '';
     return '';
   }
   function renderLookup() {
@@ -27862,9 +27957,13 @@ window.RecStore = (function () {
       var titleStr = c.title ? '<br><small style="color:var(--text3)">' + esc(c.title) + '</small>' : '';
       var _ci = luResults.indexOf(c);
       var _actTd = '<td style="white-space:nowrap"><button type="button" class="btn sm" style="padding:4px 8px;font-size:11px" title="Pre-fill the Resume Builder with this candidate" onclick="Rec.sendToResume(' + _ci + ')">\u2192 Resume</button></td>';
-      t += '<tr><td>' + srcTag + stageStr + '</td><td><strong>' + esc(c.name) + '</strong>' + titleStr + '</td><td>' + esc(c.location) + '</td><td>' + emailStr + '</td><td>' + esc(c.phone) + '</td><td>' + liStr + '</td><td>' + resStr + '</td>' + _actTd + '</tr>';
+      var _dash = '<span style="color:var(--muted)">&mdash;</span>';
+      var _posStr = c.title ? esc(c.title) : _dash;
+      var _stStr = _luState(c) ? esc(_luState(c)) : _dash;
+      var _hsStr = c.hsLink ? '<a class="lu-link" href="' + esc(c.hsLink) + '" target="_blank">HubSpot</a>' : _dash;
+      t += '<tr><td>' + srcTag + stageStr + '</td><td><strong>' + esc(c.name) + '</strong></td><td>' + _posStr + '</td><td>' + emailStr + '</td><td>' + (c.phone ? esc(c.phone) : _dash) + '</td><td>' + _stStr + '</td><td>' + liStr + '</td><td>' + resStr + '</td><td>' + _hsStr + '</td>' + _actTd + '</tr>';
     }
-    if (!filtered.length) { t += '<tr><td colspan="8" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
+    if (!filtered.length) { t += '<tr><td colspan="10" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
     t += '</tbody></table></div>';
     if (_pgN > 1) { t += '<div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-size:13px">' + (_luPage > 0 ? '<button type="button" class="btn sm" onclick="Rec.luGoPage(-1)">\u2190 Prev</button>' : '') + '<span style="color:var(--muted)">Showing ' + (_pgStart + 1) + '\u2013' + (_pgStart + _pgRows.length) + ' of ' + filtered.length + '  \u00b7  Page ' + (_luPage + 1) + ' of ' + _pgN + '</span>' + (_luPage < _pgN - 1 ? '<button type="button" class="btn sm" onclick="Rec.luGoPage(1)">Next \u2192</button>' : '') + '</div>'; }
     out.innerHTML = t;
