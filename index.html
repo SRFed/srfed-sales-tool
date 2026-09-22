@@ -722,12 +722,12 @@
   .rec-scope .btn.danger:hover { background: #fde8e8; }
   .rec-empty { text-align: center; padding: 40px 20px; color: var(--muted); }
   .rec-empty .rec-empty-icon { font-size: 32px; opacity: 0.4; margin-bottom: 8px; }
-  .rec-scope .lu-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
-  .rec-scope .lu-table { border-collapse: collapse; table-layout: fixed; width: 100%; font-size: 13px; }
-  .rec-scope .lu-table th, .rec-scope .lu-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; overflow: hidden; text-overflow: ellipsis; }
-  .rec-scope .lu-table thead th { position: relative; background: #f1f5f9; color: var(--text); font-weight: 700; cursor: pointer; user-select: none; white-space: nowrap; }
-  .rec-scope .lu-table thead th:hover { background: #e6edf6; }
-  .rec-scope .lu-table thead .lu-filter-row th { background: #fafcff; cursor: default; padding: 6px 8px; }
+  .rec-scope .lu-table-wrap { overflow-x: auto; }
+  .rec-scope .lu-table { border-collapse: collapse; table-layout: fixed; width: 100%; font-size: 12px; }
+  .rec-scope .lu-table th, .rec-scope .lu-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; overflow: hidden; text-overflow: ellipsis; }
+  .rec-scope .lu-table thead th { position: relative; background: transparent; color: var(--muted); font-weight: 700; font-size: 11px; padding: 6px 8px 3px; cursor: pointer; user-select: none; white-space: nowrap; }
+  .rec-scope .lu-table thead th:hover { color: var(--blue); }
+  .rec-scope .lu-table thead .lu-filter-row th { background: transparent; cursor: default; padding: 1px 5px 6px; border-bottom: 2px solid var(--border); }
   .rec-scope .lu-table .lu-filter-input { width: 100%; padding: 5px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; font-family: inherit; box-sizing: border-box; }
   .rec-scope .lu-table .lu-filter-input:focus { outline: none; border-color: var(--mid-blue); }
   .rec-scope .lu-table tbody tr:hover { background: var(--pale); }
@@ -738,9 +738,9 @@
   .rec-scope .lu-table .col-resize:hover, .rec-scope .lu-table .col-resize.dragging { background: var(--mid-blue); opacity: 0.4; }
   .rec-scope .lu-link { color: var(--blue); text-decoration: none; font-weight: 600; }
   .rec-scope .lu-link:hover { text-decoration: underline; }
-  .rec-scope .lu-source-tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 12px; white-space: nowrap; }
-  .rec-scope .lu-source-tag.official { background: var(--success-bg); color: var(--success); }
-  .rec-scope .lu-source-tag.potential { background: var(--pale); color: var(--blue); }
+  .rec-scope .lu-source-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px; white-space: nowrap; }
+  .rec-scope .lu-source-tag.official { background: #eef2ff; color: #3730a3; }
+  .rec-scope .lu-source-tag.potential { background: #fef3c7; color: #92400e; }
   .rec-scope .lu-no-results { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; border: 1px solid var(--border); border-radius: 10px; }
   .rec-link-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
   .rec-link-row .rec-link-label { flex: 0 0 190px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; }
@@ -2358,6 +2358,7 @@
         <div style="margin-top:10px">
           <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
         </div>
+        <div id="pricingLockBar" style="margin-top:12px"></div>
         <div id="pricingScaByLcat" style="margin-top:10px"></div>
       </div>
 
@@ -3291,7 +3292,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '405';
+const APP_VERSION = '409';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -7800,6 +7801,7 @@ async function _expandZipFiles(files) {
         if (!base || /^\./.test(base)) continue;
         var blob = await entry.async('blob');
         var member = new File([blob], base, { type: _mimeForName(base) });
+        try { member._triageBundle = (String(f.name || '').replace(/\.zip$/i, '').replace(/[_\-]+/g, ' ').trim()) || f.name; } catch (e) {}
         if (_isZipFile(member)) { var nested = await _expandZipFiles([member]); out = out.concat(nested); }
         else out.push(member);
       }
@@ -13759,7 +13761,20 @@ function pricingSetAllHpf(val) {
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
 function pricingAddLcat() { if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
-function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; pricingRenderAll(); }
+function pricingToggleStaffingLock() {
+  pricingModel.staffingLocked = !pricingModel.staffingLocked;
+  if (typeof showStatus === 'function') showStatus(pricingModel.staffingLocked ? 'success' : 'info', pricingModel.staffingLocked ? 'Staffing locked' : 'Staffing unlocked', pricingModel.staffingLocked ? 'A re-draft will keep your roles and FTEs and only redistribute hours across the PWS tasks.' : 'A re-draft can resize the team again.');
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+}
+function pricingRenderLockBar() {
+  var el = document.getElementById('pricingLockBar'); if (!el) return;
+  if (!pricingModel.lcats || !pricingModel.lcats.length) { el.innerHTML = ''; return; }
+  var locked = !!pricingModel.staffingLocked;
+  var btn = '<button onclick="pricingToggleStaffingLock()" style="padding:7px 14px;font-size:12.5px;font-weight:700;border-radius:7px;cursor:pointer;border:1px solid ' + (locked ? '#166534;background:#dcfce7;color:#166534' : 'var(--blue);background:#fff;color:var(--blue)') + '">' + (locked ? 'Staffing locked \u2014 click to unlock' : 'Lock LCATs & hours') + '</button>';
+  var note = '<div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:660px">' + (locked ? 'Locked: a re-draft keeps these roles and their FTEs and only redistributes hours across the PWS tasks. In Step 5, a role whose hours don\u2019t total its locked FTE is flagged red (you can still override).' : 'Lock the roles and their FTE/hours so a re-draft can\u2019t resize the team \u2014 it will only redistribute hours across the PWS tasks.') + '</div>';
+  el.innerHTML = btn + note;
+}
+function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; var _ut = pricingModel.lcats.reduce(function (s, x) { return s + (parseFloat(x.advertised) || 0); }, 0); if (_ut > 0) pricingModel.statedFteTotal = Math.round(_ut * 100) / 100; pricingRenderAll(); }
 function pricingSetLcat(id, field, val) {
   const l = pricingModel.lcats.find(x => x.id === id); if (!l) return;
   l[field] = val;
@@ -14794,6 +14809,7 @@ function _pxReassertConstraints(snap, fixed) {
 }
 
 async function pricingAutoBuildStructure(mode) {
+  if (pricingModel && pricingModel.staffingLocked) mode = 'keep';   // a locked staffing plan holds its roles + FTEs; a re-draft only redistributes hours
   const apiKey = getApiKey();
   if (!apiKey) { alert('Enter your Anthropic API key on the Proposal tab (Step 2) first.'); return; }
   if (pricingModel.gsaDecision == null) { alert('Answer the GSA Schedule step (Step 1) first.'); return; }
@@ -14818,7 +14834,7 @@ async function pricingAutoBuildStructure(mode) {
   // numbers, not revert to the Government total: keep them on the free-sizing path (the apply holds each role's
   // advertised FTE and re-derives hours in the AI's proposed proportions) and hand the AI their exact roles + FTEs
   // to hold fixed while it re-distributes hours across the PWS tasks.
-  const _userSized = !_freshDraft && pricingModel.fteSource === 'user' && _exFte > 0;
+  const _userSized = !_freshDraft && (pricingModel.fteSource === 'user' || pricingModel.staffingLocked) && _exFte > 0;
   const _fixed = _pxFixedStages();
   const _snap = _pxSnapshotConstraints();
   const btn = document.getElementById('pricingAutoBuildBtn');
@@ -14855,7 +14871,12 @@ async function pricingAutoBuildStructure(mode) {
       : [];
     // The briefing path stamps its own provenance; only the intel fallback must be judged.
     let _wlProposed = _govWorkload.length > 0 && pricingModel.workloadSource !== 'government';
-    if (!_govWorkload.length && window._lastBnaIntel && Array.isArray(window._lastBnaIntel.labor_categories)) {
+    // START ANYWHERE: only inherit the BNA's team as the Pricing workload when it is an AFFIRMATIVE
+    // Government-stated workload. A legitimate BNA->Pricing flow carries its workload via
+    // statedWorkloadByLcat (above), so this fallback only ever fires on LEFTOVER intel - and a stale/garbage
+    // analysis (e.g. the BNA was run on auto-pulled resumes, giving one 'role' per document) is NOT a
+    // government workload, so it no longer bleeds into a model the user built at Proposal or Pricing.
+    if (!_govWorkload.length && window._lastBnaIntel && window._lastBnaIntel.staffing_source === 'government-workload' && Array.isArray(window._lastBnaIntel.labor_categories)) {
       _govWorkload = window._lastBnaIntel.labor_categories
         .map(c => ({ lcat: String((c && c.lcat) || '').trim(), hours: parseFloat(String(((c && c.base_year_hours) != null ? c.base_year_hours : '')).replace(/[^0-9.]/g, '')) || 0 }))
         .filter(r => r.lcat && r.hours > 0);
@@ -15263,7 +15284,7 @@ function pricingApplyAutoBuild(a) {
   // list. Anchor the mix to the user's EXACT roles (name, FTE, GSA LCAT) and pull in the AI's task
   // assignment + hours distribution for each role BY NAME where it gave one; a role the AI did not cover
   // falls back to an even task spread. Deterministic guarantee: a split / renamed / re-mapped LCAT survives.
-  if (pricingModel.fteSource === 'user' && (pricingModel.lcats || []).some(function (l) { return String(l.name || '').trim(); })) {
+  if ((pricingModel.fteSource === 'user' || pricingModel.staffingLocked) && (pricingModel.lcats || []).some(function (l) { return String(l.name || '').trim(); })) {
     var _nrm = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
     var _aiByName = {}; (a.labor_mix || []).forEach(function (m) { var _k = _nrm(m && m.role_name); if (_k && _aiByName[_k] == null) _aiByName[_k] = m; });
     a.labor_mix = (pricingModel.lcats || []).filter(function (l) { return String(l.name || '').trim(); }).map(function (l) {
@@ -15877,7 +15898,8 @@ function pricingRenderMatrix() {
   h += th('Hours/yr', '#e0f2fe') + th('FTE', '#e0f2fe') + th('Price/yr', '#e0f2fe');
   h += '</tr></thead><tbody>';
   pricingModel.lcats.forEach(l => {
-    h += '<tr>';
+    var _lockDrift = !!pricingModel.staffingLocked && Math.abs(pricingRowFte(l) - (parseFloat(l.advertised) || 0)) > 0.02;   // locked, but the task hours no longer total the locked FTE
+    h += _lockDrift ? '<tr style="background:#fef2f2">' : '<tr>';
     h += `<td style="padding:4px 7px;border:1px solid var(--border);position:sticky;left:0;background:white;z-index:1;min-width:115px;max-width:155px"><div style="font-weight:600;font-size:11px;line-height:1.25">${pricingEsc(l.name || '(unnamed)')}</div><div style="font-size:9.5px;color:var(--muted)">${pricingFmtC(pricingBilledRate(l, 0))}/hr</div></td>`;
     pricingModel.tasks.forEach(t => {
       const v = pricingCell(l.id, t.id);            // effective hours (0 when none)
@@ -15898,7 +15920,7 @@ function pricingRenderMatrix() {
         `<input class="px-hours-cell" type="number" min="0" step="1" value="${v > 0 ? v : 0}" onfocus="this.select()" oninput="pricingSetHours('${l.id}','${t.id}',this.value);pricingCellPaint(this)" style="width:52px;padding:3px 4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:center;background:transparent;color:${zero ? 'var(--muted)' : 'var(--text)'}"/></td>`;
     });
     h += `<td id="prt-hours-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:#f0f9ff;font-weight:600">${pricingRowHours(l.id).toLocaleString()}</td>`;
-    h += `<td id="prt-fte-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:#f0f9ff">${pricingRowFte(l).toFixed(2)}</td>`;
+    h += `<td id="prt-fte-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:${_lockDrift ? '#fecaca' : '#f0f9ff'};font-weight:${_lockDrift ? '700' : '400'}" title="${_lockDrift ? ('Locked to ' + (parseFloat(l.advertised) || 0) + ' FTE, but these hours total ' + pricingRowFte(l).toFixed(2) + ' FTE \u2014 adjust the task hours or unlock in Step 4.') : ''}">${pricingRowFte(l).toFixed(2)}</td>`;
     h += `<td id="prt-cost-${l.id}" style="padding:4px 8px;border:1px solid var(--border);text-align:center;background:#f0f9ff">${pricingFmt(pricingRowCost(l))}</td>`;
     h += '</tr>';
   });
@@ -16242,6 +16264,7 @@ function pricingGovFte() {
   return null;
 }
 function pricingRenderFteBar() {
+  if (typeof pricingRenderLockBar === 'function') pricingRenderLockBar();
   const el = document.getElementById('pricingFteBar'); if (!el) return;
   if (!pricingModel.lcats.length) { el.innerHTML = ''; return; }
   const allocated = pricingTotalHours() / defaultHpf();
@@ -19747,6 +19770,7 @@ function _triageSolFromLabel(text) {
   return null;
 }
 async function _triageDetectSolNum(file) {
+  if (file && file._triageBundle) return file._triageBundle;   // every file from a single dropped .zip is one opportunity
   let n = _triageSolFromString(file.name);
   if (n) return n;
   try {
@@ -23045,7 +23069,10 @@ function renderConstrainedPws(data) {
   const results = document.getElementById('constrainedPwsResults');
   if (!results) return;
   const esc = escHtml;
-  const items = Array.isArray(data && data.items) ? data.items.slice() : [];
+  let items = Array.isArray(data && data.items) ? data.items.slice() : [];
+  // A finding the model argued then retracted in its own text ("this item is withdrawn" / "no fix required")
+  // must not still appear as an open finding.
+  items = items.filter(function (it) { if (!it) return false; var _s = String(it.issue || '') + ' ' + String(it.fix || ''); if (/\bwithdrawn\b/i.test(_s)) return false; if (/no fix\s*(is\s*)?(required|needed)/i.test(String(it.fix || ''))) return false; return true; });
   const sev = { critical: 0, important: 1, minor: 2 };
   const _rank = function (s) { const v = sev[s]; return (v == null) ? 2 : v; };
   items.sort(function (a, b) { return _rank((a && a.severity) || 'minor') - _rank((b && b.severity) || 'minor'); });
