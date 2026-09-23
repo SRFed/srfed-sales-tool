@@ -3294,7 +3294,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '424';
+const APP_VERSION = '425';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -15474,6 +15474,14 @@ function pricingApplyAutoBuild(a) {
   if (pricingModel.fteSource !== 'stated') {
     const total = lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
     if (total > 0) { pricingModel.statedFteTotal = total; if (pricingModel.fteSource !== 'user') pricingModel.fteSource = 'estimated'; }   // preserve a user override; only an unsized model defaults to 'estimated'
+  }
+  if (pricingModel.staffingLocked && Array.isArray(pricingModel.tasks) && pricingModel.tasks.length) {
+    // LOCK IS GOSPEL (final guarantee): whatever the draft / stated / AI path produced above, a LOCKED plan's
+    // Step-5 hours MUST total each role's locked Advertised FTE exactly. Force the tie-out LAST so nothing
+    // upstream can override it, then re-establish the locked baseline (_lockedFte/_lockedHours) FROM the tied
+    // result so a clean re-draft shows zero drift-red; a later manual cell edit still drifts and flags.
+    pricingDeriveHoursFromFte(pricingModel.lcats, pricingModel.hours, pricingModel.mask, pricingModel.tasks, defaultHpf());
+    (pricingModel.lcats || []).forEach(function (l) { l._lockedFte = Math.round((parseFloat(l.advertised) || 0) * 100) / 100; l._lockedHours = pricingRowHours(l.id); });
   }
 }
 
