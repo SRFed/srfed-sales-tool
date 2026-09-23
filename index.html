@@ -2691,6 +2691,8 @@
       </div>
 
       <!-- ── Target position + requirements ────────────────────────────── -->
+      <div id="resModeBar" style="margin-top:4px"></div>
+
       <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Target position</div>
         <p class="hint" style="margin:0 0 8px">What role this resume is being tailored to, and the qualifications it must satisfy.</p>
@@ -3303,7 +3305,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '418';
+const APP_VERSION = '421';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -18724,6 +18726,7 @@ function switchTab(name) {
   if (name !== 'settings' && typeof _showSuitePanel === 'function') { const _s = _suiteOf(name); _suiteLastTab[_s] = name; _showSuitePanel(_s); }
   if (name === 'rec-tracker' && window.Rec && Rec.trackerOpened) Rec.trackerOpened();
   if (name === 'rec-match' && window.Rec && Rec.matchOpened) Rec.matchOpened();
+  if (name === 'rec-resume' && typeof resumeRenderModeBar === 'function') resumeRenderModeBar();
   sessionStorage.setItem('srfed_active_tab', name);
   // Land at the top of the newly shown tab. Callers that need a specific scroll
   // position (pricingBackToProposal restore, field-focus flows) run their own
@@ -22191,6 +22194,8 @@ function _resRenderFileChip(file) {
 }
 function _resClearFile() {
   window._resumeUploadedText = '';
+  window._resumeOrigDocx = null;
+  if (typeof resumeRenderModeBar === 'function') resumeRenderModeBar();
   var box = document.getElementById('resFileList'); if (box) box.innerHTML = '';
   var fi = document.getElementById('resFile'); if (fi) fi.value = '';
 }
@@ -22200,6 +22205,7 @@ async function resumeFileChosen(file) {
   var exts = ['.pdf', '.docx', '.doc', '.txt', '.md'];
   if (!exts.some(function (x) { return fname.endsWith(x); })) { resumeMsg('PDF, Word (.docx / .doc), or text files only.', true); return; }
   _resRenderFileChip(file);
+  window._resumeOrigDocx = null; if (typeof resumeRenderModeBar === 'function') resumeRenderModeBar();
   resumeMsg('Reading ' + file.name + '\u2026', false);
   try {
     // Route through the tool's shared document reader. It extracts .docx/.doc/.txt text client-side
@@ -22213,6 +22219,8 @@ async function resumeFileChosen(file) {
       var t = String(block.text || '').replace(/^\[File:[^\]]*\]\s*/, '').trim();
       if (t.length < 20) { window._resumeUploadedText = ''; resumeMsg('The file had no readable text. Try a different file, or enter details manually.', true); return; }
       window._resumeUploadedText = t;
+      if (fname.endsWith('.docx')) { try { window._resumeOrigDocx = { name: file.name, buffer: await file.arrayBuffer() }; } catch (e) { window._resumeOrigDocx = null; } }
+      if (typeof resumeRenderModeBar === 'function') resumeRenderModeBar();
       resumeMsg('\u2713 Loaded ' + file.name + ' \u2014 add any overrides in the fields below, then Generate.', false);
       return;
     }
@@ -22356,8 +22364,129 @@ function _resumeContent(role, req, overrides, uploadedText) {
   );
 }
 
+function resumeRenderModeBar() {
+  var el = document.getElementById('resModeBar'); if (!el) return;
+  var hasDocx = !!(window._resumeOrigDocx && window._resumeOrigDocx.buffer);
+  if (window._resumeMode == null) window._resumeMode = 'new';
+  if (window._resumeMode === 'revise' && !hasDocx) window._resumeMode = 'new';
+  var mode = window._resumeMode;
+  el.innerHTML =
+    '<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:12px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:8px">What should Generate do?</div>'
+    + '<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;margin-bottom:8px"><input type="radio" name="resMode" ' + (mode === 'new' ? 'checked' : '') + ' onchange="resumeSetMode(\'new\')" style="margin-top:2px"/><span><strong>Create a new tailored resume</strong><br><span style="font-size:11.5px;color:var(--muted)">Builds a fresh, compliant resume in the tool\u2019s format from the details below (and any uploaded resume).</span></span></label>'
+    + '<label style="display:flex;gap:8px;align-items:flex-start;cursor:' + (hasDocx ? 'pointer' : 'not-allowed') + ';opacity:' + (hasDocx ? '1' : '0.55') + '"><input type="radio" name="resMode" ' + (mode === 'revise' ? 'checked' : '') + ' ' + (hasDocx ? '' : 'disabled') + ' onchange="resumeSetMode(\'revise\')" style="margin-top:2px"/><span><strong>Revise my resume in place \u2014 keep formatting, change only wording</strong> <span style="font-weight:700;color:var(--blue)">(.docx only)</span><br><span style="font-size:11.5px;color:var(--muted)">Keeps your Word file exactly \u2014 same fonts, spacing and layout \u2014 and rewrites only the words to match the requirement.' + (hasDocx ? '' : ' <strong style="color:#92400e">Upload a .docx resume above to enable this \u2014 no other file type works.</strong>') + '</span></span></label>'
+    + '</div>';
+}
+function resumeSetMode(m) {
+  var hasDocx = !!(window._resumeOrigDocx && window._resumeOrigDocx.buffer);
+  if (m === 'revise' && !hasDocx) { resumeMsg('Revise-in-place only works with a .docx (Word) file \u2014 no other file type will work for it. Upload a .docx resume above, or choose \u201cCreate a new tailored resume.\u201d', true); window._resumeMode = 'new'; resumeRenderModeBar(); return; }
+  window._resumeMode = m;
+  resumeRenderModeBar();
+}
+function _resumeInTable(p) { var n = p && p.parentNode; while (n) { if (n.nodeName === 'w:tbl') return true; n = n.parentNode; } return false; }
+function _resumeIsProse(s) {
+  var t = String(s == null ? '' : s).trim();
+  if (t.length < 12) return false;                 // headers, short labels, names
+  if (!/\s/.test(t)) return false;                 // single token
+  if (/@/.test(t)) return false;                   // email
+  if (/^[\d\s().+\-]{7,}$/.test(t)) return false;   // phone-like
+  if (t.length < 45 && t === t.toUpperCase() && /[A-Z]/.test(t)) return false;   // ALL-CAPS section header
+  if (t.length < 40 && /^(19|20)\d\d\b/.test(t)) return false;   // date line
+  if (t.length <= 35 && t.split(/\s+/).every(function (w) { return /^[A-Z]/.test(w); })) return false;   // all-title-case short line: name, proper-noun header, clearance/label
+  return true;
+}
+async function runResumeRevise() {
+  var apiKey = (typeof getApiKey === 'function') && getApiKey();
+  if (!apiKey) { resumeMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
+  if (typeof JSZip === 'undefined') { resumeMsg('The .docx engine (JSZip) has not finished loading \u2014 wait a moment and try again.', true); return; }
+  if (!(window._resumeOrigDocx && window._resumeOrigDocx.buffer)) { resumeMsg('No .docx is loaded to revise. Upload a .docx resume above.', true); return; }
+  var role = (document.getElementById('resRole') || {}).value || '';
+  var req = (document.getElementById('resReq') || {}).value || '';
+  var _rb = document.getElementById('resumeGenBtn'); var _rbOrig = _rb ? _rb.innerHTML : '';
+  if (_rb) { _rb.disabled = true; _rb.innerHTML = '<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Revising in place\u2026'; }
+  var res = document.getElementById('resResults'); if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+  resumeMsg('Reading your .docx and preserving its formatting\u2026', false);
+  try {
+    var zip = await JSZip.loadAsync(window._resumeOrigDocx.buffer);
+    var docFile = zip.file('word/document.xml');
+    if (!docFile) throw new Error('this .docx has no readable document body.');
+    var doc = new DOMParser().parseFromString(await docFile.async('string'), 'application/xml');
+    var paras = doc.getElementsByTagName('w:p');
+    var items = [], skipped = 0;
+    for (var i = 0; i < paras.length; i++) {
+      var ts = paras[i].getElementsByTagName('w:t');
+      if (!ts.length) continue;
+      var full = ''; for (var k = 0; k < ts.length; k++) full += (ts[k].textContent || '');
+      if (!full.trim()) continue;
+      if (_resumeInTable(paras[i]) || !_resumeIsProse(full)) { skipped++; continue; }   // Phase 4: leave tables, headers, names, dates and contact lines untouched
+      items.push({ i: items.length, pIdx: i, text: full, max: full.length });
+    }
+    if (!items.length) throw new Error('no editable text was found in this .docx.');
+    var listForAi = items.map(function (it) { return { i: it.i, max: it.max, text: it.text }; });
+    var content = 'You are revising resume text to align with a target role/requirement WITHOUT changing any formatting.\n'
+      + 'TARGET ROLE: ' + (role || '(unspecified)') + '\n'
+      + 'REQUIREMENT / QUALIFICATIONS:\n' + (req || '(none given \u2014 just keep the wording professional and concise)') + '\n\n'
+      + 'You are given BLOCKS of text (JSON). Rewrite each block to better reflect the target role/requirement.\n'
+      + 'HARD RULES:\n'
+      + '1. Each revised block MUST be <= its "max" character count. Count characters. If you cannot improve a block within max, return its ORIGINAL text unchanged.\n'
+      + '2. Preserve every fact, name, employer, job title, date, number and acronym EXACTLY. Never invent, inflate or add achievements.\n'
+      + '3. Only sharpen the wording; keep the same tense and person. Plain text only \u2014 no markdown, no added quotes, no bullet characters.\n'
+      + '4. If a block is a person name, section header, date line, address, phone, email, or otherwise not a prose sentence, return it UNCHANGED.\n\n'
+      + 'BLOCKS (JSON):\n' + JSON.stringify(listForAi) + '\n\n'
+      + 'Return ONLY JSON of this exact shape, covering every block i: {"blocks":[{"i":<number>,"revised":"<text>"}]}';
+    var data = await callClaudeForJson(apiKey, content, 8000, 150000, 'Resume revise');
+    var arr = (data && Array.isArray(data.blocks)) ? data.blocks : (Array.isArray(data) ? data : null);
+    if (!arr) throw new Error('the rewrite came back in an unexpected shape \u2014 please try again.');
+    var byI = {}; arr.forEach(function (r) { if (r && r.i != null) byI[r.i] = String(r.revised == null ? '' : r.revised); });
+    var changed = 0, kept = 0, tightened = 0, retry = [];
+    function _resumeApply(it, rev) {
+      // LENGTH CLAMP: apply only a genuine change that is <= the original length, so a line can never grow.
+      if (rev == null || !rev.trim() || rev === it.text || rev.length > it.max) return false;
+      var ts = paras[it.pIdx].getElementsByTagName('w:t');
+      ts[0].textContent = rev; try { ts[0].setAttribute('xml:space', 'preserve'); } catch (e) {}
+      for (var k = 1; k < ts.length; k++) ts[k].textContent = '';
+      return true;
+    }
+    items.forEach(function (it) {
+      var rev = byI[it.i];
+      if (_resumeApply(it, rev)) changed++;
+      else if (rev != null && rev.trim() && rev !== it.text && rev.length > it.max) retry.push(it);   // came back too long -> tighten below
+      else kept++;
+    });
+    if (retry.length) {
+      var tContent = 'These resume blocks were rewritten too long. TIGHTEN each to fit its "max" CHARACTER count without losing meaning or any fact, name, date or number. Keep the same tense/person; plain text only. Return ONLY {"blocks":[{"i":<number>,"revised":"<text>"}]}.\nTARGET ROLE: ' + (role || '(unspecified)') + '\n\nBLOCKS (JSON):\n' + JSON.stringify(retry.map(function (it) { return { i: it.i, max: it.max, text: it.text }; }));
+      try {
+        var tData = await callClaudeForJson(apiKey, tContent, 4000, 120000, 'Resume tighten');
+        var tArr = (tData && Array.isArray(tData.blocks)) ? tData.blocks : (Array.isArray(tData) ? tData : []);
+        var tById = {}; tArr.forEach(function (r) { if (r && r.i != null) tById[r.i] = String(r.revised == null ? '' : r.revised); });
+        retry.forEach(function (it) { if (_resumeApply(it, tById[it.i])) { changed++; tightened++; } else kept++; });
+      } catch (e) { kept += retry.length; }
+    }
+    zip.file('word/document.xml', new XMLSerializer().serializeToString(doc));
+    var buffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+    var url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+    var fname = (window._resumeOrigDocx.name || 'resume.docx').replace(/\.docx$/i, '') + ' - revised.docx';
+    resumeMsg('\u2713 Revised in place \u2014 formatting preserved. ' + changed + ' block' + (changed === 1 ? '' : 's') + ' reworded' + (tightened ? ' (' + tightened + ' tightened to fit)' : '') + '; ' + kept + ' kept as-is' + (skipped ? '; ' + skipped + ' left untouched (names, dates, tables)' : '') + '.', false);
+    if (res) {
+      res.style.display = 'block';
+      res.innerHTML = '<div style="border:1px solid var(--border);border-radius:10px;padding:16px;background:#f0fdf4">'
+        + '<div style="font-weight:700;margin-bottom:6px">Revised resume ready</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Same fonts, spacing and layout as your original \u2014 only the wording changed, and every block kept within its original length. Names, dates, contact lines and tables were left as-is.</div>'
+        + '<a href="' + url + '" download="' + escHtml(fname) + '" class="btn primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none">\u2b07 Download revised .docx</a>'
+        + '</div>';
+    }
+  } catch (e) {
+    resumeMsg('Could not revise in place: ' + (e.message || 'unknown error'), true);
+  } finally {
+    if (_rb) { _rb.disabled = false; _rb.innerHTML = _rbOrig; }
+  }
+}
 async function runResume() {
   var status = document.getElementById('resStatus');
+  if (window._resumeMode === 'revise') {
+    if (!(window._resumeOrigDocx && window._resumeOrigDocx.buffer)) { resumeMsg('Revise-in-place only works with a .docx (Word) file \u2014 no other file type will work for it. Upload a .docx resume above, or switch to "Create a new tailored resume."', true); return; }
+    return runResumeRevise();
+  }
   var role = (document.getElementById('resRole') || {}).value || '';
   var req = (document.getElementById('resReq') || {}).value || '';
   var overrides = _resumeOverrides();
