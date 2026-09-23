@@ -2357,7 +2357,7 @@
           <div style="font-weight:700;font-size:13px">👤 Labor Categories &amp; Rates <span style="color:var(--muted);font-weight:400;font-size:11px">— the rows of your matrix</span></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="pxRecommendBtn" onclick="pricingRecommendRates(this)" title="Drops the market MEDIAN (50th percentile) into every un-priced role as an orange 'proposed' starting point - edit any to make it yours. It can differ from a per-role 'Look up': that runs the full Market Rates search with the role's own location/seniority and lets you send the percentile you choose (25th/50th/75th), which lands as a green 'researched' rate." style="padding:7px 15px;font-size:12px;font-weight:700;border:1px solid #c2410c;color:#fff;background:#ea580c;border-radius:6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15)">✨ Recommend rates</button><div id="pxRecommendProgress" style="display:none;flex-basis:100%;margin-top:8px"></div>
-            <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
+            <button id="pxAddLcatBtn1" onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
           </div>
         </div>
         <div id="pxRateLegend"></div>
@@ -2366,7 +2366,7 @@
         <div id="pricingLcatHeader"></div>
         <div id="pricingLcatsList" style="display:flex;flex-direction:column;gap:8px"></div>
         <div style="margin-top:10px">
-          <button onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
+          <button id="pxAddLcatBtn2" onclick="pricingAddLcat()" style="padding:5px 12px;font-size:12px;font-weight:600;border:1px solid var(--blue);color:var(--blue);background:white;border-radius:6px;cursor:pointer">+ Add Labor Category</button>
         </div>
         <div id="pricingLockBar" style="margin-top:12px"></div>
         <div id="pricingScaByLcat" style="margin-top:10px"></div>
@@ -2405,6 +2405,7 @@
         </div>
         <div id="pricingPeriodsNote" style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5"></div>
         <div id="pricingEscModeBar" style="margin:0 0 10px"></div>
+        <div id="pricingGsaTailBar" style="margin:0 0 10px"></div>
         <div id="pricingPeriodsList" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
 
@@ -3302,7 +3303,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '413';
+const APP_VERSION = '418';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -11995,6 +11996,8 @@ let pricingModel = {
   odcEscalationMode: 'none',       // travel/ODC + materials escalation: 'none' | 'match' (use the labor rate) | 'flat' (own rate). Defaults to 'none' = today's behaviour, so no saved model changes price on upgrade.
   odcEscalationFlat: '',           // the ODC-specific rate, used only when odcEscalationMode === 'flat'.
   escalationFlat: 3,               // one COLA rate compounding across every option period
+  gsaTailEscalate: false,          // #7: escalate GSA years BEYOND the imported schedule (off = held flat; honest default)
+  gsaTailEscalatePct: '',          // the % applied to those tail years (defaults to escalationFlat when enabled)
 };
 let pricingWdFiles = [];           // uploaded Wage Determination file(s)
 let pricingGsaFiles = [];          // the uploaded GSA MAS schedule file(s)
@@ -12195,6 +12198,27 @@ function pricingGsaScheduleYearForPeriod(i) {
   const base = pricingGsaYearForDate(pricingModel.gsaPopStart || new Date().toISOString().slice(0, 10));
   return Math.min(base + i, years);
 }
+function pricingGsaScheduleYearNatural(i) {
+  var base = pricingGsaYearForDate(pricingModel.gsaPopStart || new Date().toISOString().slice(0, 10));
+  return base + (i | 0);
+}
+function pricingGsaHasTail() {
+  if (!pricingIsGsa()) return false;
+  var years = Math.max(1, parseInt(pricingModel.gsaScheduleYears) || 1);
+  var P = pricingModel.periods || [];
+  for (var i = 0; i < P.length; i++) { if (pricingGsaScheduleYearNatural(i) > years) return true; }
+  return false;
+}
+function pricingGsaTailFactor(i) {
+  if (!pricingIsGsa() || !pricingModel.gsaTailEscalate) return 1;
+  var years = Math.max(1, parseInt(pricingModel.gsaScheduleYears) || 1);
+  var over = pricingGsaScheduleYearNatural(i) - years;
+  if (over <= 0) return 1;
+  var pct = parseFloat(pricingModel.gsaTailEscalatePct);
+  if (!(pct > 0)) pct = parseFloat(pricingModel.escalationFlat) || 0;
+  if (!(pct > 0)) return 1;
+  return Math.pow(1 + pct / 100, over);
+}
 // The schedule's ceiling rate for a labor category in a given schedule year (1-based).
 function pricingGsaRateFor(l, year) {
   if (!l || !l.gsaLcat) return 0;
@@ -12207,7 +12231,7 @@ function pricingGsaRateFor(l, year) {
 //  • GSA mode  : the Schedule ceiling rate for THAT period's schedule year, reduced by the offered discount (NO wrap).
 //  • Build-up  : base rate × wrap factor (period-independent; escalation is applied separately per period).
 function pricingLoadedRate(l, periodIndex) {
-  if (pricingIsGsa()) return pricingGsaRateFor(l, pricingGsaScheduleYearForPeriod(periodIndex || 0)) * pricingDiscountFactor();
+  if (pricingIsGsa()) return pricingGsaRateFor(l, pricingGsaScheduleYearForPeriod(periodIndex || 0)) * pricingGsaTailFactor(periodIndex || 0) * pricingDiscountFactor();
   return pricingEffectiveBaseRate(l) * pricingEffectiveWrapFactor(l);
 }
 function pricingCell(lid, tid) {
@@ -12765,7 +12789,7 @@ function pricingClinForRow(scope, periodIdx, explicitTie, roleName) {
       var s = t ? _pxWdMatchScore(roleName, t) : 0;
       if (s > bestScore) { bestScore = s; best = pool[k]; }
     }
-    return (best && bestScore >= 0.55) ? out(best) : '';
+    return (best && bestScore >= 0.55) ? out(best) : out(pool[0]);   // #3: every labor line must land on a CLIN - a role that name-matches no per-role CLIN falls back to the period's primary (first-stated) labor CLIN, deterministically, so added/modified roles are never left in (unmapped).
   }
   // 3) PER-SCOPE: a single CLIN for this scope+period (all labor -> one CLIN; travel -> one; etc.).
   return out(pool[0]);
@@ -13763,30 +13787,48 @@ function pricingSetLcatHours(id, val) {
   if (!(hrs > 0) || !(hpf > 0)) { if (typeof pricingRenderAll === 'function') pricingRenderAll(); return; }
   pricingSetLcat(id, 'advertised', Math.round((hrs / hpf) * 10000) / 10000);   // hours -> FTE; reuses the advertised path (flips to user sizing, re-derives hours = FTE x hpf, ties out)
 }
-function pricingSetAllHpf(val) {
+function pricingSetAllHpf(val) { if (pricingModel.staffingLocked) { if (typeof showStatus === 'function') showStatus('warn', 'Staffing locked', 'Unlock Step 4 to change hours/FTE.'); return; }
   var v = parseFloat(val);
   pricingModel.hoursPerFte = (v > 0) ? v : null;   // update the MODEL basis so the box, the FTE-basis card, and defaultHpf() all reflect it (previously the box reverted)
   (pricingModel.lcats || []).forEach(function (l) { l.hpf = ''; });   // clear per-role overrides so every role uses the one basis
   if (typeof pricingEnforceTieOut === 'function') pricingEnforceTieOut();   // re-derive hours = FTE x new basis, so whole FTEs stay whole (not old-hours / new-basis -> fractions)
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
-function pricingAddLcat() { if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
+function pricingAddLcat() { if (pricingModel.staffingLocked) { if (typeof showStatus === 'function') showStatus('warn', 'Staffing locked', 'Unlock Step 4 to add labor categories.'); return; } if (pricingModel.govStatedFteTotal == null && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null) pricingModel.govStatedFteTotal = pricingModel.statedFteTotal; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; pricingModel.lcats.push({ id: _prId('l_'), name: '', baseRate: '', hpf: '', advertised: '', gsaLcat: '', _userAdded: true }); pricingRenderAll(); }
 function pricingToggleStaffingLock() {
   pricingModel.staffingLocked = !pricingModel.staffingLocked;
+  if (pricingModel.staffingLocked) {
+    // TRUE LOCK: freeze each role's Step-4 FTE as the baseline Step 5 must hold to (see the red-row check).
+    (pricingModel.lcats || []).forEach(function (l) { l._lockedFte = Math.round(((parseFloat(l.advertised) || pricingRowFte(l)) || 0) * 100) / 100; l._lockedHours = pricingRowHours(l.id); });
+  } else {
+    (pricingModel.lcats || []).forEach(function (l) { delete l._lockedFte; delete l._lockedHours; });
+  }
   if (typeof showStatus === 'function') showStatus(pricingModel.staffingLocked ? 'success' : 'info', pricingModel.staffingLocked ? 'Staffing locked' : 'Staffing unlocked', pricingModel.staffingLocked ? 'A re-draft will keep your roles and FTEs and only redistribute hours across the PWS tasks.' : 'A re-draft can resize the team again.');
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
+function pricingLockRedraftBusy(busy, msg) {
+  var b = document.getElementById('pricingLockRedraftBtn');
+  if (b) { b.disabled = busy; b.innerHTML = busy ? ('<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>' + (msg || 'Drafting\u2026')) : '\u2728 Re-draft the staffing plan'; }
+  try {
+    if (busy) { if (typeof pxProgStart === 'function') pxProgStart('pricingLockRedraftProgress', 1, 'Re-drafting the staffing plan\u2026', 'Redistributing hours across the PWS tasks\u2026', 20); }
+    else { if (typeof pxProgEnd === 'function') pxProgEnd('pricingLockRedraftProgress'); }
+  } catch (e) {}
+}
 function pricingRenderLockBar() {
   var el = document.getElementById('pricingLockBar'); if (!el) return;
-  if (!pricingModel.lcats || !pricingModel.lcats.length) { el.innerHTML = ''; return; }
   var locked = !!pricingModel.staffingLocked;
+  ['pxAddLcatBtn1', 'pxAddLcatBtn2'].forEach(function (bid) { var b = document.getElementById(bid); if (b) { b.disabled = locked; b.style.opacity = locked ? '0.45' : ''; b.style.cursor = locked ? 'not-allowed' : 'pointer'; b.title = locked ? 'Unlock Step 4 to add labor categories' : ''; } });
+  if (!pricingModel.lcats || !pricingModel.lcats.length) { el.innerHTML = ''; return; }
   var btn = '<button onclick="pricingToggleStaffingLock()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:1px solid ' + (locked ? '#14532d;background:#166534;color:#fff' : '#0f172a;background:#1e293b;color:#fff') + ';box-shadow:0 1px 3px rgba(0,0,0,0.18)">' + '<span style="font-size:16px;line-height:1">\uD83D\uDD12</span>' + (locked ? 'Staffing locked \u2014 click to unlock' : 'Lock LCATs & hours') + '</button>';
   var note = '<div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:660px">' + (locked ? 'Locked: a re-draft keeps these roles and their FTEs and only redistributes hours across the PWS tasks. In Step 5, a role whose hours don\u2019t total its locked FTE is flagged red (you can still override).' : 'Lock the roles and their FTE/hours so a re-draft can\u2019t resize the team \u2014 it will only redistribute hours across the PWS tasks.') + '</div>';
-  el.innerHTML = btn + note;
+  var redraft = locked ? ('<button id="pricingLockRedraftBtn" onclick="pricingAutoBuildStructure()" title="Re-draft: keep these locked roles and FTEs and only redistribute hours across the PWS tasks" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.18)">\u2728 Re-draft the staffing plan</button>') : '';
+  var redraftProg = locked ? '<div id="pricingLockRedraftProgress" style="display:none;margin-top:8px;max-width:660px"></div>' : '';
+  el.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' + btn + redraft + '</div>' + note + redraftProg;
 }
-function pricingRemoveLcat(id) { pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; var _ut = pricingModel.lcats.reduce(function (s, x) { return s + (parseFloat(x.advertised) || 0); }, 0); if (_ut > 0) pricingModel.statedFteTotal = Math.round(_ut * 100) / 100; pricingRenderAll(); }
+function pricingRemoveLcat(id) { if (pricingModel.staffingLocked) { if (typeof showStatus === 'function') showStatus('warn', 'Staffing locked', 'Unlock Step 4 to remove labor categories.'); return; } pricingModel.lcats = pricingModel.lcats.filter(l => l.id !== id); delete pricingModel.hours[id]; delete pricingModel.mask[id]; if (pricingModel.fteSource === 'stated') pricingModel.fteSource = 'user'; var _ut = pricingModel.lcats.reduce(function (s, x) { return s + (parseFloat(x.advertised) || 0); }, 0); if (_ut > 0) pricingModel.statedFteTotal = Math.round(_ut * 100) / 100; pricingRenderAll(); }
 function pricingSetLcat(id, field, val) {
   const l = pricingModel.lcats.find(x => x.id === id); if (!l) return;
+  if (pricingModel.staffingLocked && (field === 'advertised' || field === 'hpf')) { if (typeof showStatus === 'function') showStatus('warn', 'Staffing locked', 'Unlock Step 4 to change a role\u2019s FTE or hours. (You can still re-allocate task hours in Step 5.)'); pricingRenderAll(); return; }
   l[field] = val;
   if (field === 'advertised') {
     // The user is now directing the sizing. Capture the Government-stated baseline ONCE (so the button
@@ -14849,7 +14891,7 @@ async function pricingAutoBuildStructure(mode) {
   const _snap = _pxSnapshotConstraints();
   const btn = document.getElementById('pricingAutoBuildBtn');
   const _freshBtn2 = document.getElementById('pricingAutoBuildFreshBtn');
-  const setBusy = (busy, msg) => { if (_freshBtn2) _freshBtn2.disabled = busy; if (btn) { btn.disabled = busy; btn.innerHTML = busy ? ('<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></span> ' + (msg || 'Working…')) : ((typeof pricingModel !== 'undefined' && pricingModel && pricingModel._reverseSolved) ? '\u21ba Re-draft from scratch' : '\u2728 Draft the staffing plan'); } };
+  const setBusy = (busy, msg) => { pricingLockRedraftBusy(busy, msg); if (_freshBtn2) _freshBtn2.disabled = busy; if (btn) { btn.disabled = busy; btn.innerHTML = busy ? ('<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></span> ' + (msg || 'Working…')) : ((typeof pricingModel !== 'undefined' && pricingModel && pricingModel._reverseSolved) ? '\u21ba Re-draft from scratch' : '\u2728 Draft the staffing plan'); } };
   setBusy(true, 'Thinking\u2026');
   try {
     let briefing = cachedBriefing;
@@ -15722,6 +15764,7 @@ function pricingRateMatrixHtml(l) {
 
 function pricingRenderLcats() {
   const el = document.getElementById('pricingLcatsList'); if (!el) return;
+  var _lk = !!(pricingModel && pricingModel.staffingLocked);   // TRUE LOCK: freeze FTE / hours inputs while locked
   // One-time fix for a Government-stated model drafted under older code: if any per-role FTE still carries the
   // fractional hpf artifact (e.g. 1.004 = a whole headcount over the wrong hours basis), snap the whole matrix to
   // whole headcounts on load, so re-drafting is never required to clear it. Idempotent: once whole, it stops.
@@ -15774,8 +15817,8 @@ function pricingRenderLcats() {
       return `<div id="pxLcat_${l.id}" style="display:grid;grid-template-columns:${PX_GSA_TRACKS};gap:6px 8px;align-items:center;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px">
         <input value="${pricingEsc(l.name)}" onchange="pricingSetLcat('${l.id}','name',this.value)" placeholder="Labor category (as named in your proposal)" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
         <select title="${l.gsaLcat ? pricingEsc(l.gsaLcat) : 'Map this role to a GSA Schedule labor category'}" onchange="pricingSetGsaLcat('${l.id}',this.value)" style="min-width:0;width:100%;padding:6px 26px 6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;background:white;text-overflow:ellipsis;box-sizing:border-box">${opts}</select>
-        <input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" title="Full-time-equivalent staffing you propose for this role (base year)" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
-        <input type="number" min="0" step="1" value="${Math.round(_roleHrs)}" onchange="pricingSetLcatHours('${l.id}',this.value)" title="Total base-year hours for this role. Editing this sets the FTE (hours / hrs-per-FTE); editing the FTE sets the hours." style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
+        <input type="number" min="0" step="0.1" value="${l.advertised}"${_lk ? ' disabled' : ''} onchange="pricingSetLcat('${l.id}','advertised',this.value)" title="Full-time-equivalent staffing you propose for this role (base year)" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
+        <input type="number" min="0" step="1" value="${Math.round(_roleHrs)}"${_lk ? ' disabled' : ''} onchange="pricingSetLcatHours('${l.id}',this.value)" title="Total base-year hours for this role. Editing this sets the FTE (hours / hrs-per-FTE); editing the FTE sets the hours." style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
         ${pricingRateMatrixHtml(l)}
         <div style="display:flex;align-items:center;justify-content:center"><button class="mkt-lookup-btn" onclick="pricingLcatLookup('${l.id}')" title="Look up prevailing pay for this role on Market Rates" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap;min-width:104px;text-align:center">${l.evaluated ? 'Look up again' : 'Look up \u2192'}</button></div><div style="display:flex;align-items:center;justify-content:center"><button onclick="pricingRemoveLcat('${l.id}')" title="Remove labor category" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px;padding:0;line-height:1">✕</button></div>
         <div style="grid-column:1/-1;font-size:10.5px;color:var(--muted);line-height:1.45;padding-left:2px">${rateNote}</div>
@@ -15807,8 +15850,8 @@ function pricingRenderLcats() {
         <input type="text" inputmode="decimal" value="${_pxFmtMoney(rInput)}" onchange="pricingSetLcatRate('${l.id}','rateInput',this.value)" title="${l.rateStatus==='proposed'?'Proposed rate \u2014 recommended by the tool; edit or confirm to make it yours':(l.rateStatus==='entered'?'You set this rate':'')}" style="width:84px;flex-shrink:0;padding:6px 8px;border-radius:6px;font-size:12.5px;text-align:center;${_pxRateCellCss(l)}"/>
       </div>
       ${pricingRateMatrixHtml(l)}
-      <input type="number" min="0" step="0.1" value="${l.advertised}" onchange="pricingSetLcat('${l.id}','advertised',this.value)" title="Proposed FTE" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
-      <input type="number" min="0" step="1" value="${pricingHpf(l)}" onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" title="Billable hours per FTE for this role; blank = company default" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
+      <input type="number" min="0" step="0.1" value="${l.advertised}"${_lk ? ' disabled' : ''} onchange="pricingSetLcat('${l.id}','advertised',this.value)" title="Proposed FTE" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
+      <input type="number" min="0" step="1" value="${pricingHpf(l)}"${_lk ? ' disabled' : ''} onchange="pricingSetLcat('${l.id}','hpf',this.value)" placeholder="${defaultHpf()}" title="Billable hours per FTE for this role; blank = company default" style="min-width:0;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;text-align:center;box-sizing:border-box"/>
       <div style="display:flex;align-items:center;justify-content:center"><button class="mkt-lookup-btn" onclick="pricingLcatLookup('${l.id}')" title="Look up prevailing pay for this role on Market Rates" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap;min-width:104px;text-align:center">${l.evaluated ? 'Look up again' : 'Look up \u2192'}</button></div><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">${_chip}<button onclick="pricingRemoveLcat('${l.id}')" title="Remove labor category" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px">✕</button></div>
       ${_warn}
     </div>`;
@@ -15880,6 +15923,16 @@ function pricingClearMask() {
     + 'Re-run Draft the staffing plan to take them from the solicitation again.');
 }
 
+function pricingRowLockTarget(l) { return (l && l._lockedFte != null) ? l._lockedFte : (parseFloat(l && l.advertised) || 0); }
+function pricingRowLockTargetHours(l) { return (l && l._lockedHours != null) ? l._lockedHours : ((parseFloat(l && l.advertised) || 0) * pricingHpf(l)); }
+function pricingRowLockDrift(l) { return !!(pricingModel && pricingModel.staffingLocked) && Math.abs(pricingRowHours(l.id) - pricingRowLockTargetHours(l)) > 0.5; }
+function pricingRenderMatrixDriftNote(n) {
+  var el = document.getElementById('pricingMatrixDriftNote'); if (!el) return;
+  if (n > 0 && pricingModel && pricingModel.staffingLocked) {
+    el.style.display = '';
+    el.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;font-size:12px;color:#991b1b;font-weight:600">\u26a0 ' + n + ' role' + (n === 1 ? '' : 's') + ' no longer total ' + (n === 1 ? 'its' : 'their') + ' locked Step-4 FTE \u2014 see the red row' + (n === 1 ? '' : 's') + ' below. Move the task hours back so each row ties out, or unlock Step 4 to resize.</div>';
+  } else { el.style.display = 'none'; el.innerHTML = ''; }
+}
 function pricingRenderMatrix() {
   const el = document.getElementById('pricingMatrix'); if (!el) return;
   pricingRenderMaskNote();   // before the early return, so the note clears with the matrix
@@ -15888,7 +15941,7 @@ function pricingRenderMatrix() {
     return;
   }
   const th = (txt, bg) => `<th style="padding:5px 5px;border:1px solid var(--border);background:${bg};font-size:11px;text-align:center;white-space:nowrap">${txt}</th>`;
-  let h = '<div style="overflow-x:auto;max-width:100%">';
+  let h = '<div id="pricingMatrixDriftNote" style="display:none;margin-bottom:8px"></div><div style="overflow-x:auto;max-width:100%">';
   h += '<table style="border-collapse:collapse;font-size:11.5px"><thead><tr>';
   h += `<th style="text-align:left;padding:5px 7px;border:1px solid var(--border);background:#f1f5f9;position:sticky;left:0;z-index:1;min-width:115px;max-width:155px;font-size:11px;vertical-align:bottom">Labor Category \\ Task</th>`;
   pricingModel.tasks.forEach(t => {
@@ -15908,8 +15961,8 @@ function pricingRenderMatrix() {
   h += th('Hours/yr', '#e0f2fe') + th('FTE', '#e0f2fe') + th('Price/yr', '#e0f2fe');
   h += '</tr></thead><tbody>';
   pricingModel.lcats.forEach(l => {
-    var _fteDrift = Math.abs(pricingRowFte(l) - (parseFloat(l.advertised) || 0)) > 0.02;   // the task hours no longer total this role's Advertised FTE - flagged red whether or not staffing is locked
-    h += _fteDrift ? '<tr style="background:#fef2f2">' : '<tr>';
+    var _fteDrift = pricingRowLockDrift(l);   // LOCKED-only: this role's task hours no longer total its FROZEN Step-4 FTE (l._lockedFte). Live - clears the moment the hours tie back out.
+    h += _fteDrift ? `<tr id="prt-row-${l.id}" style="background:#fef2f2">` : `<tr id="prt-row-${l.id}">`;
     h += `<td style="padding:4px 7px;border:1px solid var(--border);position:sticky;left:0;background:white;z-index:1;min-width:115px;max-width:155px"><div style="font-weight:600;font-size:11px;line-height:1.25">${pricingEsc(l.name || '(unnamed)')}</div><div style="font-size:9.5px;color:var(--muted)">${pricingFmtC(pricingBilledRate(l, 0))}/hr</div></td>`;
     pricingModel.tasks.forEach(t => {
       const v = pricingCell(l.id, t.id);            // effective hours (0 when none)
@@ -15946,15 +15999,22 @@ function pricingRenderMatrix() {
   h += `<td colspan="3" style="border:1px solid var(--border);background:#f8fafc"></td></tr>`;
   h += '</tbody></table></div>';
   el.innerHTML = h;
+  pricingRenderMatrixDriftNote(pricingModel.lcats.filter(function (l) { return pricingRowLockDrift(l); }).length);
 }
 
 // Targeted recompute used while typing in matrix cells (no structural rebuild → keeps focus).
 function pricingRecalc() {
+  var _drN = 0;
   pricingModel.lcats.forEach(l => {
     const a = document.getElementById('prt-hours-' + l.id); if (a) a.textContent = pricingRowHours(l.id).toLocaleString();
     const b = document.getElementById('prt-fte-' + l.id); if (b) b.textContent = pricingRowFte(l).toFixed(2);
     const c = document.getElementById('prt-cost-' + l.id); if (c) c.textContent = pricingFmt(pricingRowCost(l));
+    // LIVE red: a LOCKED role whose task hours no longer total its frozen FTE goes red here, and clears the moment it ties back out.
+    var _d = pricingRowLockDrift(l); if (_d) _drN++;
+    const _row = document.getElementById('prt-row-' + l.id); if (_row) _row.style.background = _d ? '#fef2f2' : '';
+    if (b) { b.style.background = _d ? '#fecaca' : '#f0f9ff'; b.style.fontWeight = _d ? '700' : '400'; b.title = _d ? ('Locked to ' + pricingRowLockTarget(l).toFixed(2) + ' FTE, but these task hours total ' + pricingRowFte(l).toFixed(2) + ' FTE \u2014 move the hours back so the row ties out.') : ''; }
   });
+  pricingRenderMatrixDriftNote(_drN);
   pricingModel.tasks.forEach(t => {
     const a = document.getElementById('pct-hours-' + t.id); if (a) a.textContent = pricingColHours(t.id).toLocaleString();
     const c = document.getElementById('pct-cost-' + t.id); if (c) c.textContent = pricingFmt(pricingColCost(t.id));
@@ -15978,6 +16038,27 @@ function pricingRenumberPeriods() {
     if (i === 0) p.name = yr ? 'Base Year' : 'Base Period';
     else { opt++; p.name = yr ? ('Option Year ' + opt) : ('Option Period ' + opt); }
   });
+}
+function pricingRenderGsaTailBar() {
+  var el = document.getElementById('pricingGsaTailBar'); if (!el) return;
+  if (!pricingGsaHasTail()) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  var on = !!pricingModel.gsaTailEscalate;
+  var pct = (pricingModel.gsaTailEscalatePct !== '' && pricingModel.gsaTailEscalatePct != null) ? pricingModel.gsaTailEscalatePct : (parseFloat(pricingModel.escalationFlat) || 3);
+  el.innerHTML = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#92400e;line-height:1.5">'
+    + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="pricingToggleGsaTail(this.checked)"/> Escalate years beyond the GSA Schedule</label>'
+    + '<div style="margin-top:4px">Your GSA Schedule has no priced rate past its last year, so those tail years are held flat by default. Turn this on to escalate them at '
+    + '<input type="number" min="0" step="0.1" value="' + pricingEsc(String(pct)) + '" onchange="pricingSetGsaTailPct(this.value)" ' + (on ? '' : 'disabled') + ' style="width:56px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;font-size:11.5px;text-align:right"/> % per year, compounded from the last priced year.</div>'
+    + '</div>';
+}
+function pricingToggleGsaTail(on) {
+  pricingModel.gsaTailEscalate = !!on;
+  if (pricingModel.gsaTailEscalate && (pricingModel.gsaTailEscalatePct === '' || pricingModel.gsaTailEscalatePct == null)) pricingModel.gsaTailEscalatePct = (parseFloat(pricingModel.escalationFlat) || 3);
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
+}
+function pricingSetGsaTailPct(val) {
+  pricingModel.gsaTailEscalatePct = val;
+  if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
 function pricingRenderPeriods() {
   const el = document.getElementById('pricingPeriodsList'); if (!el) return;
@@ -16005,6 +16086,7 @@ function pricingRenderPeriods() {
     return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="flex:1;min-width:110px;padding:6px 8px;font-size:13px;font-weight:600">${pricingEsc(p.name)}</span>${term}${mid}${rm}</div>`;
   }).join('');
   pricingRenderEscMode();
+  pricingRenderGsaTailBar();
   pricingRenderDiscount();
 }
 
@@ -18386,6 +18468,17 @@ function pricingTieOutHtml() {
     + '</div>';
 }
 
+function pricingPeriodEscalLabel(i, p) {
+  if (i === 0) return '\u2014';
+  if (pricingIsGsa()) {
+    var prev = pricingPeriodCost(i - 1), cur = pricingPeriodCost(i);
+    var pct = (prev > 0) ? ((cur / prev - 1) * 100) : 0;
+    if (Math.abs(pct) < 0.05) return '<span title="The GSA Schedule has no priced rate past its last year, so this period is held flat. Use the escalate-beyond-schedule option in Step 6 to escalate it.">\u2014 flat</span>';
+    return (pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+  }
+  var e = (pricingModel.escalationMode === 'flat') ? (parseFloat(pricingModel.escalationFlat) || 0) : (parseFloat(p.escalation) || 0);
+  return '+' + e + '%';
+}
 function pricingRenderSummary() {
   const el = document.getElementById('pricingSummary'); if (!el) return;
   if (!pricingModel.lcats.length || !pricingModel.tasks.length) { el.innerHTML = ''; return; }
@@ -18404,7 +18497,7 @@ function pricingRenderSummary() {
       pricingModel.lcats.map(l => `<tr><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9">${pricingEsc(l.name || '(unnamed)')} <span style="color:var(--muted)">(${pricingFmtC(pricingBilledRate(l, 0))}/hr × ${pricingRowHours(l.id).toLocaleString()} hrs)</span></td><td style="padding:3px 10px;border-bottom:1px solid #f1f5f9;text-align:right">${pricingFmt(pricingRowCost(l))}</td></tr>`).join('') + '</table>';
   }
   const _ppf = !!pricingModel.perPeriodFte;
-  const periodsHtml = pricingModel.periods.map((p, i) => { const mo = pricingPeriodMonths(p); return `<tr><td style="padding:4px 10px;border-bottom:1px solid #eee">${pricingEsc(p.name)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${mo === 12 ? '12 mo' : '<strong>' + mo + ' mo</strong>'}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${i === 0 ? '—' : '+' + ((pricingModel.escalationMode === 'flat') ? (parseFloat(pricingModel.escalationFlat) || 0) : (parseFloat(p.escalation) || 0)) + '%'}</td>${_ppf ? `<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${pricingPeriodTotalFte(i).toFixed(2)} FTE</td>` : ''}<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${pricingFmt(pricingPeriodCost(i))}</td></tr>`; }).join('');
+  const periodsHtml = pricingModel.periods.map((p, i) => { const mo = pricingPeriodMonths(p); return `<tr><td style="padding:4px 10px;border-bottom:1px solid #eee">${pricingEsc(p.name)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${mo === 12 ? '12 mo' : '<strong>' + mo + ' mo</strong>'}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${pricingPeriodEscalLabel(i, p)}</td>${_ppf ? `<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right">${pricingPeriodTotalFte(i).toFixed(2)} FTE</td>` : ''}<td style="padding:4px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${pricingFmt(pricingPeriodCost(i))}</td></tr>`; }).join('');
   el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#f0fdf4">
     <div style="font-weight:700;font-size:13px;margin-bottom:8px">💰 Pricing Summary</div>
     ${methodHtml}
@@ -27775,7 +27868,7 @@ window.RecStore = (function () {
 
   var luResults = [], _luList = 'applicants', _searchMode = 'literal';
   var _luSort = { col: -1, dir: 1 }, _luFilters = {}, _luPage = 0;
-  var _luColWidths = ['7%', '15%', '12%', '13%', '9%', '5%', '8%', '7%', '9%'], _luResizing = null;
+  var _luColWidths = ['8%', '16%', '13%', '15%', '11%', '6%', '8%', '7%', '9%'], _luResizing = null;
   var LU_COLS = ['source', 'name', 'position', 'email', 'phone', 'state', 'linkedIn', 'resume', 'hsLink'];
   var LU_LABELS = ['Source', 'Name', 'Position', 'Email', 'Phone', 'State', 'LinkedIn', 'Resume', 'HubSpot'];
 
@@ -27980,17 +28073,14 @@ window.RecStore = (function () {
     var lc = document.getElementById('lu-count'); if (lc) lc.textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' found' + (filtered.length < luResults.length ? ' (' + luResults.length + ' total, filtered)' : '');
     var cg = '<colgroup>';
     for (var ci = 0; ci < _luColWidths.length; ci++) { cg += '<col style="width:' + _luColWidths[ci] + '">'; }
-    cg += '<col style="width:15%">';
     cg += '</colgroup>';
     var t = '<div class="lu-table-wrap"><table class="lu-table">' + cg + '<thead><tr>';
     for (var i = 0; i < LU_LABELS.length; i++) {
       var _ind = (_luSort.col === i) ? (_luSort.dir === 1 ? ' \u25B4' : ' \u25BE') : '';
       t += '<th onclick="Rec.luSortBy(' + i + ')" title="Click to sort" style="width:' + _luColWidths[i] + '">' + LU_LABELS[i] + '<span style="color:var(--blue)">' + _ind + '</span></th>';
     }
-    t += '<th style="width:15%">Actions</th>';
     t += '</tr><tr class="lu-filter-row">';
     for (var j = 0; j < LU_COLS.length; j++) { t += '<th style="width:' + _luColWidths[j] + '"><input class="lu-filter-input" type="text" placeholder="Filter..." value="' + esc(_luFilters[j] || '') + '" oninput="Rec.luFilter(' + j + ',this.value)"/></th>'; }
-    t += '<th style="width:15%"></th>';
     t += '</tr></thead><tbody>';
     var _pgSize = 25, _pgN = Math.max(1, Math.ceil(filtered.length / _pgSize));
     if (_luPage >= _pgN) _luPage = _pgN - 1; if (_luPage < 0) _luPage = 0;
@@ -28003,15 +28093,13 @@ window.RecStore = (function () {
       var liStr = c.linkedIn ? '<a class="lu-link" href="' + esc(c.linkedIn) + '" target="_blank">LinkedIn</a>' : '&mdash;';
       var resStr = c.resume ? '<a class="lu-link" href="' + esc(c.resume) + '" target="_blank">Resume</a>' : '&mdash;';
       var titleStr = c.title ? '<br><small style="color:var(--text3)">' + esc(c.title) + '</small>' : '';
-      var _ci = luResults.indexOf(c);
-      var _actTd = '<td style="white-space:nowrap"><button type="button" class="btn sm" style="padding:4px 8px;font-size:11px" title="Pre-fill the Resume Builder with this candidate" onclick="Rec.sendToResume(' + _ci + ')">\u2192 Resume</button></td>';
       var _dash = '<span style="color:var(--muted)">&mdash;</span>';
       var _posStr = c.title ? esc(c.title) : _dash;
       var _stStr = _luState(c) ? esc(_luState(c)) : _dash;
       var _hsStr = c.hsLink ? '<a class="lu-link" href="' + esc(c.hsLink) + '" target="_blank">HubSpot</a>' : _dash;
-      t += '<tr><td>' + srcTag + stageStr + '</td><td><strong>' + esc(c.name) + '</strong></td><td>' + _posStr + '</td><td>' + emailStr + '</td><td>' + (c.phone ? esc(c.phone) : _dash) + '</td><td>' + _stStr + '</td><td>' + liStr + '</td><td>' + resStr + '</td><td>' + _hsStr + '</td>' + _actTd + '</tr>';
+      t += '<tr><td>' + srcTag + stageStr + '</td><td><strong>' + esc(c.name) + '</strong></td><td>' + _posStr + '</td><td>' + emailStr + '</td><td>' + (c.phone ? esc(c.phone) : _dash) + '</td><td>' + _stStr + '</td><td>' + liStr + '</td><td>' + resStr + '</td><td>' + _hsStr + '</td></tr>';
     }
-    if (!filtered.length) { t += '<tr><td colspan="10" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
+    if (!filtered.length) { t += '<tr><td colspan="9" style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px">No candidates match your filters.</td></tr>'; }
     t += '</tbody></table></div>';
     if (_pgN > 1) { t += '<div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px;font-size:13px">' + (_luPage > 0 ? '<button type="button" class="btn sm" onclick="Rec.luGoPage(-1)">\u2190 Prev</button>' : '') + '<span style="color:var(--muted)">Showing ' + (_pgStart + 1) + '\u2013' + (_pgStart + _pgRows.length) + ' of ' + filtered.length + '  \u00b7  Page ' + (_luPage + 1) + ' of ' + _pgN + '</span>' + (_luPage < _pgN - 1 ? '<button type="button" class="btn sm" onclick="Rec.luGoPage(1)">Next \u2192</button>' : '') + '</div>'; }
     out.innerHTML = t;
