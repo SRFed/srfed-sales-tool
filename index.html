@@ -2700,17 +2700,6 @@
       <label>Target position / labor category</label>
       <input type="text" id="resRole" placeholder="e.g. Program Manager (Key Personnel)"/>
 
-      <!-- Saved position templates: user-defined role + requirements, reusable across candidates. -->
-      <label style="margin-top:10px">Saved position templates <span class="rec-opt">(optional)</span></label>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <select id="resPositionSelect" onchange="resumePositionSelected(this.value)" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:white">
-          <option value="">&mdash; Select a saved position &mdash;</option>
-        </select>
-        <button type="button" class="btn sm" onclick="resumeSavePosition()">Save current</button>
-        <button type="button" class="btn sm danger" onclick="resumeDeletePosition()">Delete</button>
-      </div>
-      <p class="hint">Save the target position above and its requirements below as a reusable template. Selecting one fills both fields &mdash; so you don't retype a role you hire for often.</p>
-
       <label style="margin-top:10px">Key-personnel requirements for this position</label>
       <textarea id="resReq" placeholder="Paste the solicitation's qualification requirements for this role &mdash; degree, years of experience, certifications, clearance. The AI checks the resume against each one." style="min-height:80px"></textarea>
       <div style="margin-top:8px;padding:10px 12px;background:var(--pale,var(--info-bg));border:1px solid var(--info-border);border-radius:8px">
@@ -3305,7 +3294,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '421';
+const APP_VERSION = '424';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -15296,9 +15285,11 @@ function pricingEnforceTieOut() {
   var M = pricingModel;
   if (!M || !Array.isArray(M.lcats) || !Array.isArray(M.tasks) || !M.tasks.length) return;
   var hpf = defaultHpf();
-  if (M.fteSource === 'stated' && M.statedFteTotal != null) {
+  if (!M.staffingLocked && M.fteSource === 'stated' && M.statedFteTotal != null) {
     pricingReconcileStatedFte(M.lcats, M.hours, M.mask, M.tasks, M.statedFteTotal, hpf);
   } else {
+    // Locked (or user-sized / free) -> each role's hours are derived straight from its Advertised FTE, so a
+    // locked plan's Step-5 hours ALWAYS tie out exactly to the Step-4 FTEs (no stale stated total can override).
     pricingDeriveHoursFromFte(M.lcats, M.hours, M.mask, M.tasks, hpf);
   }
 }
@@ -15437,7 +15428,7 @@ function pricingApplyAutoBuild(a) {
   // normalized name. (Rate provenance is re-restored after the rebuild below.) The stated-FTE path still
   // reconciles to the Government total; only the free-sizing path keeps the user's advertised FTE.
   lcats.forEach(function (l) { var _p = _ratePins[String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()]; if (_p && _p.advertised != null && _p.advertised > 0) l.advertised = _p.advertised; });
-  if (pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && pricingModel.tasks.length) {
+  if (!pricingModel.staffingLocked && pricingModel.fteSource === 'stated' && pricingModel.statedFteTotal != null && pricingModel.tasks.length) {
     pricingReconcileStatedFte(lcats, hours, mask, pricingModel.tasks, pricingModel.statedFteTotal, defaultHpf());
     if (!pricingModel.directedLabor) (a.labor_mix || []).forEach((m, i) => { if (lcats[i]) m.headcount = lcats[i].advertised; });
   } else if (pricingModel.tasks.length) {
@@ -17213,7 +17204,7 @@ function pricingBuildWorkbook() {
     const rt = [hdrRT];
     M.lcats.forEach(l => {
       const row = [l.name || '(unnamed)', l.gsaLcat || l.name || '', (discPct || 0) / 100];
-      P.forEach((p, i) => { row.push(xv(pricingGsaRateFor(l, pricingGsaScheduleYearForPeriod(i)))); row.push(xv(effRate(l, i))); });
+      P.forEach((p, i) => { row.push(xv(pricingGsaRateFor(l, pricingGsaScheduleYearForPeriod(i)) * pricingGsaTailFactor(i))); row.push(xv(effRate(l, i))); });   // #7: fold the beyond-schedule tail escalation into the per-period GSA rate so the Net Rate formula (GSA*(1-disc)) and every downstream live formula (Line-Item Detail price, ps/By-CLIN SUMIFS) carry it too
       rt.push(row);
     });
     wsRT = XLSX.utils.aoa_to_sheet(rt);
@@ -22279,45 +22270,7 @@ function resumeClear() {
 }
 
 // ── Resume Builder: saved position templates (user-defined role + requirements) ──
-var RES_POS_KEY = 'srfed_resume_positions_v1';
-function _resPosLoad() { try { return JSON.parse(localStorage.getItem(RES_POS_KEY) || '[]') || []; } catch (e) { return []; } }
-function _resPosSave(list) { try { localStorage.setItem(RES_POS_KEY, JSON.stringify(list || [])); } catch (e) {} }
-function resumeRenderPositions(selectName) {
-  var sel = document.getElementById('resPositionSelect'); if (!sel) return;
-  var list = _resPosLoad();
-  sel.innerHTML = '<option value="">\u2014 Select a saved position \u2014</option>' +
-    list.map(function (p) { return '<option value="' + escHtml(p.name) + '">' + escHtml(p.name) + '</option>'; }).join('');
-  sel.value = selectName || '';
-}
-function resumePositionSelected(name) {
-  if (!name) return;
-  var p = _resPosLoad().filter(function (x) { return x.name === name; })[0];
-  if (!p) return;
-  var roleEl = document.getElementById('resRole'); if (roleEl) roleEl.value = p.name || '';
-  var reqEl = document.getElementById('resReq'); if (reqEl) reqEl.value = p.req || '';
-  resumeMsg('\u2713 Loaded position template \u201C' + name + '\u201D into the position and requirements fields.', false);
-}
-function resumeSavePosition() {
-  var name = ((document.getElementById('resRole') || {}).value || '').trim();
-  var req = ((document.getElementById('resReq') || {}).value || '').trim();
-  if (!name) { resumeMsg('Enter a target position / labor category first, then click Save current.', true); return; }
-  var list = _resPosLoad();
-  var i = -1; for (var k = 0; k < list.length; k++) { if (list[k].name === name) { i = k; break; } }
-  if (i >= 0) list[i] = { name: name, req: req }; else list.push({ name: name, req: req });
-  list.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
-  _resPosSave(list);
-  resumeRenderPositions(name);
-  resumeMsg('\u2713 Saved position template \u201C' + name + '\u201D.', false);
-}
-function resumeDeletePosition() {
-  var sel = document.getElementById('resPositionSelect'); if (!sel) return;
-  var name = sel.value; if (!name) { resumeMsg('Select a saved position from the dropdown to delete.', true); return; }
-  var list = _resPosLoad().filter(function (x) { return x.name !== name; });
-  _resPosSave(list);
-  resumeRenderPositions('');
-  resumeMsg('Deleted position template \u201C' + name + '\u201D.', false);
-}
-
+// Saved position templates feature removed per user request (localStorage-backed; did not persist across sessions).
 // ── Resume Builder: Reset (snapshot + clear) / Restore fields ──
 window._resumeSnapshot = null;
 function _resumeFieldIds() {
@@ -22395,6 +22348,19 @@ function _resumeIsProse(s) {
   if (t.length <= 35 && t.split(/\s+/).every(function (w) { return /^[A-Z]/.test(w); })) return false;   // all-title-case short line: name, proper-noun header, clearance/label
   return true;
 }
+async function _resumeReviseCall(apiKey, content, maxTok, label) {
+  var delays = [0, 1500, 4000, 9000], lastErr;
+  for (var a = 0; a < delays.length; a++) {
+    if (delays[a]) await new Promise(function (r) { setTimeout(r, delays[a]); });
+    try { return await callClaudeForJson(apiKey, content, maxTok, 150000, label); }
+    catch (e) {
+      lastErr = e;
+      if (!/overload|\b429\b|\b529\b|rate limit|busy/i.test(String(e && e.message || ''))) throw e;
+      if (a < delays.length - 1 && typeof resumeMsg === 'function') resumeMsg('Anthropic is busy (overloaded) \u2014 waiting and retrying\u2026 (attempt ' + (a + 2) + ' of ' + delays.length + ')', false);
+    }
+  }
+  throw lastErr;
+}
 async function runResumeRevise() {
   var apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { resumeMsg('Enter your Anthropic API key (top of the page) first.', true); return; }
@@ -22434,7 +22400,7 @@ async function runResumeRevise() {
       + '4. If a block is a person name, section header, date line, address, phone, email, or otherwise not a prose sentence, return it UNCHANGED.\n\n'
       + 'BLOCKS (JSON):\n' + JSON.stringify(listForAi) + '\n\n'
       + 'Return ONLY JSON of this exact shape, covering every block i: {"blocks":[{"i":<number>,"revised":"<text>"}]}';
-    var data = await callClaudeForJson(apiKey, content, 8000, 150000, 'Resume revise');
+    var data = await _resumeReviseCall(apiKey, content, 8000, 'Resume revise');
     var arr = (data && Array.isArray(data.blocks)) ? data.blocks : (Array.isArray(data) ? data : null);
     if (!arr) throw new Error('the rewrite came back in an unexpected shape \u2014 please try again.');
     var byI = {}; arr.forEach(function (r) { if (r && r.i != null) byI[r.i] = String(r.revised == null ? '' : r.revised); });
@@ -22456,11 +22422,15 @@ async function runResumeRevise() {
     if (retry.length) {
       var tContent = 'These resume blocks were rewritten too long. TIGHTEN each to fit its "max" CHARACTER count without losing meaning or any fact, name, date or number. Keep the same tense/person; plain text only. Return ONLY {"blocks":[{"i":<number>,"revised":"<text>"}]}.\nTARGET ROLE: ' + (role || '(unspecified)') + '\n\nBLOCKS (JSON):\n' + JSON.stringify(retry.map(function (it) { return { i: it.i, max: it.max, text: it.text }; }));
       try {
-        var tData = await callClaudeForJson(apiKey, tContent, 4000, 120000, 'Resume tighten');
+        var tData = await _resumeReviseCall(apiKey, tContent, 4000, 'Resume tighten');
         var tArr = (tData && Array.isArray(tData.blocks)) ? tData.blocks : (Array.isArray(tData) ? tData : []);
         var tById = {}; tArr.forEach(function (r) { if (r && r.i != null) tById[r.i] = String(r.revised == null ? '' : r.revised); });
         retry.forEach(function (it) { if (_resumeApply(it, tById[it.i])) { changed++; tightened++; } else kept++; });
       } catch (e) { kept += retry.length; }
+    }
+    if (changed === 0) {
+      resumeMsg('No wording changes were applied, so your .docx is unchanged. This usually means the service was briefly overloaded, or no bullet could be tightened to fit its current line length. Please click Generate again.', true);
+      return;
     }
     zip.file('word/document.xml', new XMLSerializer().serializeToString(doc));
     var buffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
@@ -28328,7 +28298,7 @@ window.addEventListener('load', () => {
   applyClientConfig();
   loadSettingsIntoUI();
   try { const _v = document.getElementById('appVersionText'); if (_v) _v.textContent = APP_VERSION; } catch (e) {}
-  try { if (typeof resumeRenderPositions === 'function') resumeRenderPositions(); } catch (e) {}
+  /* saved-position templates feature removed */
   initMsal();
   initScrollContainment();
   if (window.Rec && Rec.renderMeetGrid) Rec.renderMeetGrid();
