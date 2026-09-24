@@ -1567,6 +1567,21 @@
     </div>
   </div>
 
+  <div class="card" style="margin-bottom:24px" id="propQaCard">
+    <div class="card-header"><span class="icon"></span> Ask about this opportunity</div>
+    <div class="card-body">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.5"><strong>Note:</strong> A standalone scratchpad for quick questions about the analyzed solicitation. Answers are grounded in the RFP you loaded and do not feed the rest of the tool.</div>
+      <label style="display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px">Your question</label>
+      <textarea id="propQaInput" onkeydown="_bnaQaKey(event,'propQa')" placeholder="e.g. What is the page limit for the technical volume? When are questions due? What evaluation factors apply?" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:4px">Enter to ask &middot; Shift+Enter for a new line</div>
+      <div class="btn-row" style="margin-top:10px">
+        <button id="propQaBtn" onclick="runBnaQa('propQa')" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;font-size:14px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">Ask</button>
+      </div>
+      <div id="propQaStatus" class="ldg" style="display:none;margin-top:12px"><div style="display:flex;align-items:center;gap:10px"><span class="spinner-dark" style="width:14px;height:14px;border-width:2px"></span><span id="propQaStatusText">Reading the solicitation&hellip;</span></div></div>
+      <div id="propQaAnswer" style="display:none;margin-top:14px"></div>
+    </div>
+  </div>
+
 </div><!-- end tab-pane proposal -->
 
 <!-- ══════════════════════════ COMPLIANCE TAB ════════════════════════════ -->
@@ -2253,6 +2268,13 @@
         <label id="constrainedUploadBtn" style="font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">Upload pricing spreadsheet<input type="file" id="constrainedFile" accept=".xlsx,.xls,.csv" onchange="constrainedFileChosen(event)" style="display:none"/></label>
         <span id="constrainedFileName" style="font-size:12px;color:var(--muted)"></span>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">Use the button above <strong>or</strong> drop a file below &mdash; either works, and both are optional (you can also skip Step 0 entirely and build pricing from scratch).</div>
+      <div class="drop-zone" id="dropZoneConstrained" style="min-height:88px;margin-top:8px">
+        <input type="file" id="constrainedFileDz" accept=".xlsx,.xls,.csv" onchange="constrainedFileChosen(event)"/>
+        <div class="dz-icon">&#128202;</div>
+        <div class="dz-title">Drop your pricing spreadsheet here</div>
+        <div class="dz-sub">.xlsx, .xls or .csv &mdash; optional</div>
+      </div>
       <div id="constrainedDetectProgress" style="display:none;margin-top:12px"></div>
       <div id="constrainedStatus" style="display:none;font-size:13px;color:var(--muted);margin-top:12px"></div>
       <div id="constrainedResults" style="display:none;margin-top:14px"></div>
@@ -2305,6 +2327,7 @@
         <div id="pricingMethodologyNote" style="flex:2;min-width:220px;font-size:11px;color:var(--muted);line-height:1.5"></div>
       </div>
       <div id="pricingScaBox" style="margin-top:16px"></div>
+      <div id="pricingStep2ApplyMirror" style="margin-top:16px"></div>
     </div>
   </div>
 
@@ -3294,7 +3317,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '425';
+const APP_VERSION = '431';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14532,6 +14555,7 @@ async function pricingParseWd() {
   }
 }
 
+function pricingToggleScaWages() { if (pricingModel && pricingModel.sca) pricingModel.sca._collapsed = !pricingModel.sca._collapsed; if (typeof pricingRenderSca === 'function') pricingRenderSca(); }
 function pricingRenderSca() {
   const el = document.getElementById('pricingScaBox'); if (!el) return;
   const sca = pricingModel.sca || (pricingModel.sca = { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] });
@@ -14541,6 +14565,8 @@ function pricingRenderSca() {
   const radio = (val, label) => `<label style="font-size:12px;display:inline-flex;align-items:center;gap:5px;margin-right:14px;cursor:pointer"><input type="radio" name="pricingScaCov" value="${val}" ${covVal === val ? 'checked' : ''} onchange="pricingSetScaCovered('${val}')" style="width:auto"/> ${label}</label>`;
   let h = `<div style="border:1px solid ${cov === true ? '#f59e0b' : 'var(--border)'};border-radius:10px;padding:12px 14px;background:${cov === true ? '#fffbeb' : '#fcfcfd'}"><div style="font-weight:700;font-size:13px;margin-bottom:6px;color:${cov === true ? '#92400e' : 'var(--text)'}">${cov === true ? '\u2696 ' : ''}Service Contract Act / Wage Determination${cov === true ? ' \u2014 covered; set up the Wage Determination below' : ''}</div><div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">If this contract is SCA/SCLS-covered, the Wage Determination sets <strong>minimum hourly wages</strong> (by occupation and locality) and a <strong>Health &amp; Welfare</strong> fringe paid on top of wages. The tool then uses these as floors and makes fringe H&amp;W-aware instead of a flat ${fringePct}%.</div><div style="margin-bottom:6px">${radio('yes', 'SCA / SCLS-covered')}${radio('no', 'Not covered (e.g. exempt professional services)')}${radio('unsure', 'Not sure')}</div>`;
   if (cov === true) {
+    h += `<div style="display:flex;justify-content:flex-end;margin:2px 0 6px"><button onclick="pricingToggleScaWages()" title="Collapse/expand the Wage Determination wages \u2014 visibility only" style="font-size:11px;font-weight:700;background:#fff;border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;color:var(--muted)">${sca._collapsed ? '\u25be Show WD wages' : '\u25b4 Hide WD wages'}</button></div>`;
+    h += `<div id="pricingScaWagesDetail"${sca._collapsed ? ' style="display:none"' : ''}>`;
     h += `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"><div><label style="display:block;font-size:11px;color:var(--muted)">WD number</label><input value="${pricingEsc(sca.wdNumber)}" onchange="pricingSetScaField('wdNumber',this.value)" placeholder="2015-4281" style="width:130px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></div><div><label style="display:block;font-size:11px;color:var(--muted)">Revision</label><input value="${pricingEsc(sca.wdRevision)}" onchange="pricingSetScaField('wdRevision',this.value)" placeholder="23" style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></div><div style="flex:1;min-width:140px"><label style="display:block;font-size:11px;color:var(--muted)">Locality (place of performance)</label><input value="${pricingEsc(sca.locality)}" onchange="pricingSetScaField('locality',this.value)" placeholder="e.g. Anne Arundel County, MD" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></div></div>`;
     h += `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:8px"><div><label style="display:block;font-size:11px;color:var(--muted)">H&amp;W basis</label><select onchange="pricingSetScaHwBasis(this.value)" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:white"><option value="standard" ${sca.hwBasis === 'standard' ? 'selected' : ''}>Standard ($5.55/hr)</option><option value="eo13706" ${sca.hwBasis === 'eo13706' ? 'selected' : ''}>EO 13706 sick leave ($5.09/hr)</option><option value="custom" ${sca.hwBasis === 'custom' ? 'selected' : ''}>Custom</option></select></div><div><label style="display:block;font-size:11px;color:var(--muted)">H&amp;W $/hr</label><input type="text" inputmode="decimal" value="${_pxFmtMoney(sca.hw)}" onchange="pricingSetScaHw(this.value)" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:right"/></div><div style="font-size:10.5px;color:var(--muted);max-width:340px;line-height:1.4">July 2025 rates. H&amp;W updates annually and is furnished separately from wages \u2014 confirm the figure on the actual WD (SAM.gov).</div></div>`;
     const rows = sca.rates || [];
@@ -14574,6 +14600,7 @@ function pricingRenderSca() {
     if (_scaErr.length) h += `<div style="margin-top:10px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;padding:9px 11px"><div style="font-weight:700;font-size:11.5px;color:#991b1b">\u26a0 SCA compliance check</div><ul style="margin:5px 0 0;padding-left:18px;font-size:11px;color:#7f1d1d">${_scaErr.map(i => `<li>${pricingEsc(i.msg)}</li>`).join('')}</ul></div>`;
     if (_scaInfo.length) h += `<div style="margin-top:8px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:9px 11px"><div style="font-weight:700;font-size:11.5px;color:#1e40af">\u2713 WD wage floor applied in pricing</div><ul style="margin:5px 0 0;padding-left:18px;font-size:11px;color:#1e3a8a">${_scaInfo.map(i => `<li>${pricingEsc(i.msg)}</li>`).join('')}</ul></div>`;
     h += `</div>`;
+    h += `</div>`;   // #6: close #pricingScaWagesDetail collapsible wrapper
   }
   h += `</div>`;
   el.innerHTML = h;
@@ -16363,6 +16390,15 @@ function pricingRenderFteBar() {
   const allocated = pricingTotalHours() / defaultHpf();
   const advTotal = pricingModel.lcats.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
   const _isUserFte = pricingModel.fteSource === 'user';
+  const _fromUpload = !!pricingModel._reverseSolved;   // #4: model actually came from an uploaded pricing sheet
+  const _upFteBase = pricingModel._uploadedFteByName;
+  let _uplEdited = false;   // has the labor mix changed since the upload?
+  if (_fromUpload && _upFteBase) {
+    const _normU = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    const _curFte = {}; (pricingModel.lcats || []).forEach(function (l) { const _k = _normU(l.name); if (_k) _curFte[_k] = Math.round((parseFloat(l.advertised) || 0) * 100) / 100; });
+    const _uk = Object.keys(_upFteBase), _ck = Object.keys(_curFte);
+    _uplEdited = (_uk.length !== _ck.length) || _uk.some(function (k) { return _curFte[k] == null || Math.abs(_curFte[k] - _upFteBase[k]) > 0.01; }) || _ck.some(function (k) { return _upFteBase[k] == null; });
+  }
   const stated = pricingModel.fteSource === 'stated' ? pricingGovFte() : ((_isUserFte && pricingModel.statedFteTotal != null) ? pricingModel.statedFteTotal : null);
   const statedStr = stated != null ? pricingFmtFte(stated) : '—';
   const src = pricingModel.directedLabor
@@ -16370,7 +16406,7 @@ function pricingRenderFteBar() {
     : pricingModel.fteSource === 'stated'
     ? `Government-stated: <strong>${statedStr} FTE</strong>`
     : _isUserFte
-    ? `From your <strong>uploaded sheet</strong>: <strong>${statedStr} FTE</strong> (your figures)`
+    ? (_fromUpload ? (_uplEdited ? `Based on your <strong>uploaded sheet</strong>, since edited: <strong>${statedStr} FTE</strong> (your figures)` : `From your <strong>uploaded sheet</strong>: <strong>${statedStr} FTE</strong> (your figures)`) : `<strong>Your figures</strong>: <strong>${statedStr} FTE</strong>`)
     : `<strong>You are sizing the effort</strong> (PWS didn't state FTEs)`;
   const _statedWhole = stated == null ? null : Math.round(stated);
   const advOk = stated == null ? null : (Math.abs(advTotal - stated) < 0.05 || Math.abs(advTotal - _statedWhole) < 0.05);
@@ -16382,10 +16418,10 @@ function pricingRenderFteBar() {
     const _okMsg = pricingModel.directedLabor
       ? '✓ Locked to the Government-directed labor table — exactly these ' + statedStr + ' FTE in the directed categories. PWS tasks only spread the hours.'
       : _isUserFte
-      ? '✓ Matches your uploaded sheet — ' + statedStr + ' FTE; headcount and hours reconcile.'
+      ? (_fromUpload ? (_uplEdited ? ('✓ Reflects your edits — ' + statedStr + ' FTE; headcount and hours reconcile (this differs from the uploaded sheet, which is expected once you edit).') : ('✓ Matches your uploaded sheet — ' + statedStr + ' FTE; headcount and hours reconcile.')) : ('✓ Your staffing — ' + statedStr + ' FTE; headcount and hours reconcile.'))
       : (_rounded ? ('✓ Staffing is ' + advTotal.toFixed(0) + ' whole FTE — the Government’s per-category hours imply ' + statedStr + ' FTE, rounded to a whole headcount.') : ('✓ Staffing matches the Government-stated ' + statedStr + ' FTE — headcount and hours both reconcile.'));
     const _missMsg = _isUserFte
-      ? ('⚠ Does not reconcile with your uploaded ' + statedStr + ' FTE (advertised ' + advTotal.toFixed(2) + ', allocated ' + allocated.toFixed(2) + '). Check the sheet.')
+      ? ((_fromUpload && !_uplEdited) ? ('⚠ Does not reconcile with your uploaded ' + statedStr + ' FTE (advertised ' + advTotal.toFixed(2) + ', allocated ' + allocated.toFixed(2) + '). Check the sheet.') : ('⚠ Does not reconcile — advertised ' + advTotal.toFixed(2) + ' FTE vs allocated ' + allocated.toFixed(2) + ' FTE. Check the hours matrix.'))
       : ('⚠ Does NOT match the Government-stated ' + statedStr + ' FTE (advertised ' + advTotal.toFixed(2) + ', allocated ' + allocated.toFixed(2) + '). Deviating from the stated FTE can be disqualifying — adjust headcount/hours to hit ' + statedStr + '.');
     badge = (advOk && allocOk)
       ? `<div style="flex-basis:100%;font-size:12px;font-weight:700;color:#065f46;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:8px 12px">${_okMsg}</div>`
@@ -20234,6 +20270,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDropZone('dropZoneBNA',        'fileInputBNA',        bnaFiles,        'fileListBNA');
   initDropZone('dropZoneBNADocs',    'fileInputBNADocs',    bnaCompanyFiles, 'fileListBNADocs');
   initDropZone('dropZonePricingRFP', 'fileInputPricingRFP', rfpFiles,        'fileListPricingRFP');   // Phase 4 (C): Pricing-tab RFP drop -> same rfpFiles -> same ensureBriefing pipeline
+  if (typeof initConstrainedDropZone === 'function') initConstrainedDropZone();
   if (typeof triageInit === 'function') triageInit();
   if (typeof _triageRestoreAfterReload === 'function') _triageRestoreAfterReload();
   initBnaWeights();
@@ -21759,13 +21796,13 @@ function _bnaQaContext() {
   push('Summary', g('summary') || g('description'));
   return lines.join('\n');
 }
-function _bnaQaKey(e) {
+function _bnaQaKey(e, pfx) {
   // Enter asks; Shift+Enter (or a modifier) inserts a newline, matching every other chat box.
   if (!e || e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
   e.preventDefault();
-  const btn = document.getElementById('bnaQaBtn');
+  const btn = document.getElementById((pfx || 'bnaQa') + 'Btn');
   if (btn && btn.disabled) return;    // a question is already in flight
-  runBnaQa();
+  runBnaQa(pfx);
 }
 
 // Minimal, deliberately narrow markdown renderer for the Q&A answer.
@@ -21846,21 +21883,22 @@ function _bnaQaMd(raw) {
 }
 
 
-async function runBnaQa() {
-  const input = document.getElementById('bnaQaInput');
-  const status = document.getElementById('bnaQaStatus');
-  const answer = document.getElementById('bnaQaAnswer');
+async function runBnaQa(pfx) {
+  pfx = pfx || 'bnaQa';   // #5: same handler powers the mirrored Proposal-tab Ask box (pfx='propQa')
+  const input = document.getElementById(pfx + 'Input');
+  const status = document.getElementById(pfx + 'Status');
+  const answer = document.getElementById(pfx + 'Answer');
   const q = (input && input.value || '').trim();
   const showErr = (msg) => { if (answer) { answer.style.display = 'block'; answer.innerHTML = '<div style="font-size:12.5px;color:var(--error)">' + escHtml(msg) + '</div>'; } };
   if (!(window._bnaOpp && Object.keys(window._bnaOpp).length) && !(window._lastBnaIntel && Object.keys(window._lastBnaIntel).length)) { showErr('Analyze the opportunity first (Steps 1\u20132 above).'); return; }
   if (!q) { if (input) input.focus(); return; }
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { showErr('Enter your Anthropic API key (top of the page) first.'); return; }
-  const btn = document.getElementById('bnaQaBtn');
+  const btn = document.getElementById(pfx + 'Btn');
   const orig = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Thinking\u2026'; }
   if (answer) answer.style.display = 'none';
-  if (status) { status.style.display = 'block'; const t = document.getElementById('bnaQaStatusText'); if (t) t.textContent = 'Reading the solicitation\u2026'; }
+  if (status) { status.style.display = 'block'; const t = document.getElementById(pfx + 'StatusText'); if (t) t.textContent = 'Reading the solicitation\u2026'; }
   try {
     _analysisBegin('Answering your question');
     const ctx = _bnaQaContext();
@@ -22751,6 +22789,24 @@ function copyResume() {
    nothing is solved here. Modeled at the cell/column level: real data present = a constraint. */
 window._constrainedCsv = window._constrainedCsv || '';
 
+function pricingRenderStep2ApplyMirror() {
+  var el = document.getElementById('pricingStep2ApplyMirror'); if (!el) return;
+  if (!window._constrainedPending) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px">'
+    + '<div style="font-size:12px;color:#1e3a8a;line-height:1.5;margin-bottom:8px">You uploaded a pricing sheet in Step 0 that is detected but <strong>not yet applied</strong>. Now that the PWS is loaded, apply it here \u2014 no need to scroll back up to Step 0.</div>'
+    + '<button onclick="runConstrainedSolve()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer">Apply uploaded pricing sheet</button>'
+    + '</div>';
+}
+function initConstrainedDropZone() {
+  var zone = document.getElementById('dropZoneConstrained'); if (!zone) return;
+  var stop = function (e) { e.preventDefault(); e.stopPropagation(); };
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (ev) { zone.addEventListener(ev, stop); });
+  zone.addEventListener('drop', function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) constrainedFileChosen({ target: { files: [f] } });
+  });
+}
 async function constrainedFileChosen(event) {
   const file = event && event.target && event.target.files && event.target.files[0];
   const nameEl = document.getElementById('constrainedFileName');
@@ -22889,7 +22945,7 @@ function renderConstrainedDetect(data) {
   const solveBtn = '<button id="constrainedSolveBtn" onclick="runConstrainedSolve()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">'
     + (nSolve > 0 ? ('Solve the blank stage' + (nSolve === 1 ? '' : 's') + ' and apply') : 'Apply this sheet to pricing')
     + '</button>';
-  const noSolveNote = (nSolve === 0) ? '<div style="margin:12px 0 0;font-size:12px;line-height:1.55;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:9px 12px"><strong>\u26a0 Detected, not yet applied.</strong> Every stage is already populated, so there is nothing to derive \u2014 but you still need to <strong>Apply this sheet to pricing</strong>, which loads your labor categories, FTEs, rates, and hours into the pricing model and pins them for auto-build.</div>' : '';
+  const noSolveNote = (nSolve === 0) ? '<div id="constrainedNoSolveNote" style="margin:12px 0 0;font-size:12px;line-height:1.55;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:9px 12px"><strong>\u26a0 Detected, not yet applied.</strong> Every stage is already populated, so there is nothing to derive \u2014 but you still need to <strong>Apply this sheet to pricing</strong>, which loads your labor categories, FTEs, rates, and hours into the pricing model and pins them for auto-build.</div>' : '';
   const nextHtml = oos ? '' :
     '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' + solveBtn + '</div>' + noSolveNote
     + '<div id="constrainedSolveProgress" style="display:none;margin-top:12px"></div>'
@@ -22898,6 +22954,8 @@ function renderConstrainedDetect(data) {
 
   results.innerHTML = header + rows + detectedHtml + planHtml + oosHtml + nextHtml;
   results.style.display = 'block';
+  window._constrainedPending = !oos;   // a sheet is detected but not yet applied -> offer Apply here AND at the bottom of Step 2
+  if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror();
 }
 
 /* ═══════════════════ Constrained / reverse pricing (Phase 8) — the solver ═══════════════════
@@ -22940,7 +22998,12 @@ function _constrainedApply(a) {
   // The uploaded sheet is the USER'S own figures — Gospel (precedence: solicitation > user > AI),
   // NEVER Government-stated. Clear any stale 'stated' provenance FIRST so the build preserves the
   // sheet's exact per-role FTEs (free-sizing) instead of snapping them to a prior Government total.
-  pricingModel.fteSource = 'user'; pricingModel.directedLabor = false; pricingModel.statedFteTotal = null;
+  // #Phase5: a reverse-solve REPLACES the model with the uploaded sheet's roles. Clear any prior/partial roles and
+  // UNSET fteSource + unlock FIRST, so pricingApplyAutoBuild does NOT treat the current model as 'user-owned'
+  // and anchor a.labor_mix to a stale role list (which silently dropped ~half the uploaded LCATs). With no
+  // prior roles and fteSource!='user', the apply builds every role in the AI's labor_mix (the full upload).
+  pricingModel.lcats = []; pricingModel.hours = {}; pricingModel.mask = {}; pricingModel.staffingLocked = false;
+  pricingModel.fteSource = null; pricingModel.directedLabor = false; pricingModel.statedFteTotal = null;
   pricingApplyAutoBuild(a);   // builds labor categories, FTEs, hours allocation, task masks, tasks
   // Carry the FIXED rates and GSA mapping from the upload. pricingApplyAutoBuild blanks rates by
   // design (it never invents them) — but here the rate IS the user's own fixed figure, so carry it.
@@ -22962,7 +23025,13 @@ function _constrainedApply(a) {
   const _uT = pricingModel.lcats.reduce(function (s, l) { return s + (parseFloat(l.advertised) || 0); }, 0);
   pricingModel.fteSource = 'user'; pricingModel.statedFteTotal = _uT > 0 ? Math.round(_uT * 100) / 100 : null;
   pricingEnforceTieOut();   // re-derive the matrix from the sheet's FTEs so ALLOCATED === ADVERTISED (tie-out)
+  pricingModel._uploadedFteByName = {};   // #4: snapshot the uploaded sheet's per-role FTEs so the FTE-basis card can tell when the user has since edited and stop claiming a 'match'.
+  (pricingModel.lcats || []).forEach(function (l) { var _k = String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); if (_k) pricingModel._uploadedFteByName[_k] = Math.round((parseFloat(l.advertised) || 0) * 100) / 100; });
   pricingModel._reverseSolved = true;   // (#4) a sheet has been applied \u2014 Draft confirms before re-drafting
+  window._constrainedPending = false;
+  var _csb = document.getElementById('constrainedSolveBtn'); if (_csb && _csb.parentNode) _csb.parentNode.innerHTML = '<div style="color:#166534;font-weight:700;font-size:12.5px">\u2713 Applied to pricing \u2014 your labor categories, FTEs, rates and hours are loaded into the model.</div>';
+  var _cnsn = document.getElementById('constrainedNoSolveNote'); if (_cnsn) _cnsn.style.display = 'none';
+  if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror();
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
 
@@ -23294,6 +23363,7 @@ function renderConstrainedPws(data) {
   // A finding the model argued then retracted in its own text ("this item is withdrawn" / "no fix required")
   // must not still appear as an open finding.
   items = items.filter(function (it) { if (!it) return false; var _s = String(it.issue || '') + ' ' + String(it.fix || ''); if (/\bwithdrawn\b/i.test(_s)) return false; if (/no fix\s*(is\s*)?(required|needed)/i.test(String(it.fix || ''))) return false; return true; });
+  items = items.filter(function (it) { var _fx = String((it && it.fix) || '').trim(); if (/^(n\/?a|none|not applicable|[\u2014-])$/i.test(_fx)) return false; if (/\bno\s+(change|fix|action|issue|conflict|gap|deviation|discrepanc\w*|correction|adjustment|revision|update|concern|problem)s?\b/i.test(_fx)) return false; return true; });   // #7: drop no-issue findings (fix reads 'no change required' / 'no conflict' / 'no gap' / N/A / none) so only real problems populate; when all drop, the empty-state below shows the green 'Complies with the PWS'.
   const sev = { critical: 0, important: 1, minor: 2 };
   const _rank = function (s) { const v = sev[s]; return (v == null) ? 2 : v; };
   items.sort(function (a, b) { return _rank((a && a.severity) || 'minor') - _rank((b && b.severity) || 'minor'); });
