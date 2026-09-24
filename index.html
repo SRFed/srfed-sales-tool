@@ -3317,7 +3317,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '434';
+const APP_VERSION = '436';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -12252,7 +12252,13 @@ function pricingCell(lid, tid) {
   if (pricingModel.mask[lid] && pricingModel.mask[lid][tid] === false) return 0;     // locked
   return (pricingModel.hours[lid] && parseFloat(pricingModel.hours[lid][tid])) || 0;
 }
-function pricingRowHours(lid) { return pricingModel.tasks.reduce((s, t) => s + pricingCell(lid, t.id), 0); }
+function pricingRowHours(lid) {
+  // Before any PWS tasks exist (e.g. right after a Step-0 reverse-solve, before the PWS is pulled), there are no
+  // task cells to sum, so a role's hours would read 0 and be un-editable. Fall back to the role's INTENDED hours
+  // (Advertised FTE x hrs/FTE) so Hours/yr auto-fills and stays editable; once tasks exist we sum the real cells.
+  if (!pricingModel.tasks || !pricingModel.tasks.length) { var _l = (pricingModel.lcats || []).find(function (x) { return x.id === lid; }); return _l ? Math.round((parseFloat(_l.advertised) || 0) * pricingHpf(_l)) : 0; }
+  return pricingModel.tasks.reduce((s, t) => s + pricingCell(lid, t.id), 0);
+}
 function pricingColHours(tid) { return pricingModel.lcats.reduce((s, l) => s + pricingCell(l.id, tid), 0); }
 function pricingTotalHours() { return pricingModel.lcats.reduce((s, l) => s + pricingRowHours(l.id), 0); }
 function pricingRowCost(l) { return pricingRowHours(l.id) * pricingBilledRate(l, 0); }
@@ -19625,7 +19631,7 @@ function _triageVerdictHtml(z) {
   const _drN = (_drC != null) ? _drC : ((v.days_remaining != null && /^-?\d+$/.test(String(v.days_remaining).trim())) ? parseInt(String(v.days_remaining).trim(), 10) : null);
   const days = (_drN != null) ? (' <span style="color:var(--muted)">(' + (_drN < 0 ? 'closed ' + Math.abs(_drN) + 'd ago' : _drN + ' days left') + ')</span>') : '';
   return '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px">'
-    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' + _triageBadge(v.verdict) + '<span style="font-weight:700;font-size:13px">' + escHtml(v.title || 'Untitled opportunity') + '</span></div>'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' + _triageBadge(v.verdict) + '<span style="font-weight:700;font-size:13px">' + escHtml(_triageCleanTitle(v.title) || 'Untitled opportunity') + '</span></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin-bottom:8px">'
     +   _triageField('Agency', v.agency) + _triageField('eBuy Request ID', z.ebuyId || v.ebuy_request_id) + _triageField('Solicitation #', v.solicitation_number) + _triageField('Type', v.notice_type)
     +   _triageField('Set-aside', v.set_aside, elig) + _triageField('NAICS', v.naics, fit) + _triageField('Response due', v.response_date, days)
@@ -19743,12 +19749,18 @@ function _triageApplyEligibility(v) {
 // Name a triaged opportunity by its screened title when its label is still an AUTO token (not a real
 // solicitation number, not 'Unsorted', not user-renamed) - so "Ilab"/"Gmkfa3reet89oux" become the real
 // requirement name. Returns the new label, or null to leave the label alone. PURE (harnessed).
+function _triageCleanTitle(s) {
+  // Titles pulled from form-encoded sources (SAM.gov filenames/URLs) show '+' for spaces (and sometimes %XX).
+  var t = String(s || '').replace(/\++/g, ' ');
+  if (/%[0-9A-Fa-f]{2}/.test(t)) { try { t = decodeURIComponent(t); } catch (e) {} }
+  return t.replace(/\s+/g, ' ').trim();
+}
 function _looksLikeSolNum(s) { s = String(s || ''); return /^[A-Z0-9][A-Z0-9-]{5,24}$/.test(s) && (s.match(/\d/g) || []).length >= 2; }
 function _triageNameFromVerdict(label, autoName, verdict) {
   if (autoName === false) return null;                                   // a real number or a user-edited name
   if (String(label || '').trim() === 'Unsorted') return null;
   if (_looksLikeSolNum(label)) return null;   // keep solicitation numbers (all-caps alphanumeric with digits)
-  var nm = String((verdict && (verdict.title || verdict.requirement_name || verdict.requirement_title)) || '').trim();
+  var nm = _triageCleanTitle(String((verdict && (verdict.title || verdict.requirement_name || verdict.requirement_title)) || ''));
   if (!nm) return null;
   return nm.length > 72 ? (nm.slice(0, 71) + '\u2026') : nm;
 }
