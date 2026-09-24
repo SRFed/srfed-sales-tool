@@ -3317,7 +3317,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '431';
+const APP_VERSION = '434';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -21759,25 +21759,28 @@ function refreshBnaQaAvailability() {
   empty.style.display = ready ? 'none' : 'block';
   main.style.display = ready ? 'block' : 'none';
 }
-function _bnaQaContext() {
-  // Merge both intel sources: the extraction (_lastBnaIntel, available right after Step 1) as the
-  // base, overlaid by the scoring facts (_bnaOpp) when present. Covers both field-name conventions.
-  const opp = Object.assign({}, window._lastBnaIntel || {}, window._bnaOpp || {});
+function _bnaQaContext(pfx) {
+  // Each Ask box grounds on ITS OWN tab's opportunity: the Proposal box (pfx='propQa') on the Proposal
+  // tab's analyzed RFP (cachedBriefing); the BNA box on the Bid/No-Bid intel (_lastBnaIntel + _bnaOpp).
+  // Usually the same opportunity, but need not be - and either tab can be used on its own.
+  const opp = (pfx === 'propQa')
+    ? Object.assign({}, (typeof cachedBriefing !== 'undefined' && cachedBriefing) || {})
+    : Object.assign({}, window._lastBnaIntel || {}, window._bnaOpp || {});
   const g = (k) => (opp[k] != null && String(opp[k]).trim()) ? String(opp[k]).trim() : '';
   const arr = (k) => [].concat(opp[k] || []).filter(Boolean);
   const lines = [];
   const push = (label, val) => { if (val) lines.push(label + ': ' + val); };
   push('Title', g('requirement_title') || g('requirement_name'));
   push('Solicitation number', g('id_number') || g('solicitation_number'));
-  push('Department / agency', g('department_agency'));
+  push('Department / agency', g('department_agency') || g('agency_name'));
   push('Sub-agency', g('sub_agency'));
   push('Contracting office', g('contracting_office'));
   push('Stage', g('stage'));
   push('Set-aside', g('set_aside'));
   push('NAICS', arr('naics_codes').join(', ') || g('naics_code'));
   push('Contract vehicle', g('contract_vehicle'));
-  push('Period of performance', g('period_of_performance'));
-  push('FTE count', g('fte_count'));
+  push('Period of performance', g('period_of_performance') || g('period_structure'));
+  push('FTE count', g('fte_count') || g('estimated_ftes'));
   push('Estimated value', g('estimated_value') || g('base_year_value') || g('total_contract_value'));
   push('Facility clearance required', g('required_clearance') || g('facility_clearance_required'));
   push('Personnel clearance required', g('personnel_clearance_required'));
@@ -21793,7 +21796,7 @@ function _bnaQaContext() {
   push('Place of performance', g('place_of_performance'));
   push('Point of contact', g('point_of_contact') || g('contracting_officer') || g('ko_name_office'));
   push('Source', g('source'));
-  push('Summary', g('summary') || g('description'));
+  push('Summary', g('summary') || g('description') || g('scope_summary') || g('requirement_summary'));
   return lines.join('\n');
 }
 function _bnaQaKey(e, pfx) {
@@ -21890,7 +21893,7 @@ async function runBnaQa(pfx) {
   const answer = document.getElementById(pfx + 'Answer');
   const q = (input && input.value || '').trim();
   const showErr = (msg) => { if (answer) { answer.style.display = 'block'; answer.innerHTML = '<div style="font-size:12.5px;color:var(--error)">' + escHtml(msg) + '</div>'; } };
-  if (!(window._bnaOpp && Object.keys(window._bnaOpp).length) && !(window._lastBnaIntel && Object.keys(window._lastBnaIntel).length)) { showErr('Analyze the opportunity first (Steps 1\u20132 above).'); return; }
+  var _hasOpp = (pfx === 'propQa') ? (typeof cachedBriefing !== 'undefined' && cachedBriefing && Object.keys(cachedBriefing).length > 0) : ((window._bnaOpp && Object.keys(window._bnaOpp).length) || (window._lastBnaIntel && Object.keys(window._lastBnaIntel).length)); if (!_hasOpp) { showErr(pfx === 'propQa' ? 'Analyze the RFP on the Proposal tab first (Steps 1\u20132 above), then ask.' : 'Analyze the opportunity first (Steps 1\u20132 above).'); return; }
   if (!q) { if (input) input.focus(); return; }
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { showErr('Enter your Anthropic API key (top of the page) first.'); return; }
@@ -21901,7 +21904,7 @@ async function runBnaQa(pfx) {
   if (status) { status.style.display = 'block'; const t = document.getElementById(pfx + 'StatusText'); if (t) t.textContent = 'Reading the solicitation\u2026'; }
   try {
     _analysisBegin('Answering your question');
-    const ctx = _bnaQaContext();
+    const ctx = _bnaQaContext(pfx);
     const promptText =
       'You are helping a government-contracting professional understand a specific solicitation they are evaluating. ' +
       'Answer their question about THIS opportunity succinctly and accurately, using the attached solicitation documents (if any) and the extracted details below. ' +
@@ -22982,10 +22985,11 @@ function _constrainedSolveContent(csv, det, taskList, ctx) {
     'OPPORTUNITY CONTEXT:\n' + ctx + '\n\n' +
     'YOUR JOB:\n' +
     '- PRESERVE every FIXED value exactly: labor categories, their FTEs/headcount, their GSA-schedule mapping, and their rates as they appear in the spreadsheet. Echo them back unchanged.\n' +
-    '- SOLVE only the BLANK stages. Blank task allocation: distribute each role\u2019s base-period hours across the PWS task areas above, proportional to how much of each task that role performs. Blank GSA mapping: map each role to the best-fit Schedule labor category. Blank FTEs: size them from the scope. \n' +
+    '- SOLVE only the BLANK stages. Do NOT output any per-task hour breakdown \u2014 the tool distributes each role\u2019s hours from its FTE. Blank GSA mapping: map each role to the best-fit Schedule labor category. Blank FTEs: size them from the scope. \n' +
+    '- CRITICAL: return ONE labor_mix entry for EVERY labor category in the spreadsheet, in order \u2014 never omit, merge, summarize, or truncate. The labor_mix array length MUST equal the number of labor categories in the sheet. \n' +
     '- NEVER invent an hourly rate. base_rate is the spreadsheet\u2019s exact rate for that role, or null if the spreadsheet has none.\n\n' +
     'Return ONLY JSON (no prose, no markdown fences):\n' +
-    '{"labor_mix":[{"role_name":"exact labor-category name from the spreadsheet","fte":<the FIXED FTE echoed exactly, or a solved value if FTEs were blank>,"base_rate":<the FIXED hourly rate echoed EXACTLY from the spreadsheet, or null if the spreadsheet has no rate for this role>,"gsa_lcat":"the FIXED GSA LCAT echoed from the spreadsheet, or the best-fit Schedule LCAT if that mapping was blank, or null","hours_by_task":{"<task code or name exactly as listed above>":<hours over the base period>},"allowed_tasks":["<task code or name>"]}],"proposed_tasks":[{"code":"<real PWS task number, e.g. 2.1>","name":"<real PWS task title; NO evaluation factors / Volume II-III / Section L-M>"}],"hours_per_fte":<number if the spreadsheet or context states a productive-hours/FTE basis, else null>,"preserved":["one short line per FIXED stage carried verbatim"],"solved":["one short line per BLANK stage solved, and how"],"assumptions":["..."],"notes":"any caveat, or an empty string"}\n\n' +
+    '{"labor_mix":[{"role_name":"exact labor-category name from the spreadsheet","fte":<the FIXED FTE echoed exactly, or a solved value if FTEs were blank>,"base_rate":<the FIXED hourly rate echoed EXACTLY from the spreadsheet, or null if the spreadsheet has no rate for this role>,"gsa_lcat":"the FIXED GSA LCAT echoed from the spreadsheet, or the best-fit Schedule LCAT if that mapping was blank, or null",}],"proposed_tasks":[{"code":"<real PWS task number, e.g. 2.1>","name":"<real PWS task title; NO evaluation factors / Volume II-III / Section L-M>"}],"hours_per_fte":<number if the spreadsheet or context states a productive-hours/FTE basis, else null>,"preserved":["one short line per FIXED stage carried verbatim"],"solved":["one short line per BLANK stage solved, and how"],"assumptions":["..."],"notes":"any caveat, or an empty string"}\n\n' +
     'Rules:\n' +
     '- Preserve FIXED values EXACTLY \u2014 never change labor categories, FTEs, GSA mapping, or rates already in the spreadsheet.\n' +
     '- NEVER invent an hourly rate. base_rate is either the spreadsheet\u2019s exact figure or null.\n' +
@@ -23035,6 +23039,68 @@ function _constrainedApply(a) {
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
 }
 
+function _csvSplitLine(line) {
+  var out = [], cur = '', q = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else { q = !q; } }
+    else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  out.push(cur);
+  return out.map(function (s) { return s.trim(); });
+}
+// DETERMINISTIC role extraction: pull EVERY labor category straight from the uploaded sheet's rows so
+// the LCAT list never depends on the AI echoing it back (which truncated). Identifies the LCAT / GSA /
+// FTE / rate columns by header keyword, with a conservative positional fallback.
+function _constrainedParseRoles(csv) {
+  var roles = [];
+  var blocks = String(csv || '').split(/=== Sheet: [^\n]*===/).map(function (b) { return b.trim(); }).filter(Boolean);
+  if (!blocks.length) return roles;
+  var KW = { name: /lcat|labor\s*categ|\brole\b|position|title|personnel|key\s*person/i, gsa: /gsa|\bmas\b|schedule|\bsin\b/i, fte: /\bftes?\b|head\s*count|\bhc\b|qty|quantity|\bcount\b|# ?of/i, rate: /rate|\$|hourly|\bhour\b|price|loaded|burdened/i };
+  blocks.forEach(function (block) {
+    var lines = block.split('\n').map(function (l) { return l.replace(/\r$/, ''); }).filter(function (l) { return l.trim(); });
+    if (lines.length < 2) return;
+    var rows = lines.map(_csvSplitLine);
+    var hdr = -1, ci = null;
+    for (var i = 0; i < Math.min(rows.length, 6); i++) {
+      var f = { name: -1, gsa: -1, fte: -1, rate: -1 };
+      rows[i].forEach(function (c, idx) {
+        if (f.fte < 0 && KW.fte.test(c)) { f.fte = idx; return; }
+        if (f.rate < 0 && KW.rate.test(c)) { f.rate = idx; return; }
+        if (f.gsa < 0 && KW.gsa.test(c)) { f.gsa = idx; return; }
+        if (f.name < 0 && KW.name.test(c)) { f.name = idx; return; }
+      });
+      if (f.name >= 0 && f.fte >= 0) { hdr = i; ci = f; break; }
+    }
+    if (!ci) {
+      // Positional fallback: only when a column is clearly numeric FTE-like (0<n<=200) in most rows and col 0 is text.
+      var probe = rows.slice(0, Math.min(rows.length, 10)), best = -1, bestScore = 0;
+      var ncols = rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+      for (var col = 1; col < ncols; col++) {
+        var nums = 0, tot = 0;
+        probe.forEach(function (rw) { var raw = (rw[col] || '').trim(); if (!raw) return; tot++; var v = parseFloat(raw.replace(/[^0-9.]/g, '')); if (!isNaN(v) && v > 0 && v <= 200) nums++; });
+        if (tot >= 2 && nums / tot >= 0.6 && nums > bestScore) { bestScore = nums; best = col; }
+      }
+      if (best < 0) return;
+      var firstText = rows.some(function (r) { return r[0] && /[a-z]/i.test(r[0]) && !/^[\d.$%\s]+$/.test(r[0]); });
+      if (!firstText) return;
+      ci = { name: 0, gsa: (best > 1 ? 1 : -1), fte: best, rate: -1 };
+      var h0 = rows[0]; hdr = (h0 && /[a-z]/i.test(h0[0] || '') && isNaN(parseFloat((h0[best] || '').replace(/[^0-9.]/g, '')))) ? 0 : -1;
+    }
+    for (var r = hdr + 1; r < rows.length; r++) {
+      var row = rows[r];
+      var name = (row[ci.name] || '').trim();
+      if (!name || name.length > 140 || /^(total|subtotal|grand total|sum)\b/i.test(name)) continue;
+      var fte = ci.fte >= 0 ? parseFloat(String(row[ci.fte] || '').replace(/[^0-9.]/g, '')) : NaN;
+      var gsa = ci.gsa >= 0 ? (row[ci.gsa] || '').trim() : '';
+      var rate = ci.rate >= 0 ? parseFloat(String(row[ci.rate] || '').replace(/[^0-9.]/g, '')) : NaN;
+      roles.push({ role_name: name, fte: (fte > 0 ? fte : 0), gsa_lcat: gsa, base_rate: (rate > 0 ? rate : null) });
+      if (roles.length >= 300) break;
+    }
+  });
+  return roles;
+}
 async function runConstrainedSolve() {
   const det = window._constrainedIntake;
   const status = document.getElementById('constrainedSolveStatus');
@@ -23049,6 +23115,18 @@ async function runConstrainedSolve() {
     };
   if (!det || !window._constrainedCsv) { show('Run detection first.', true); return; }
   if (det.feasibility === 'out_of_scope') { show('This combination is out of scope (a fixed total with a blank labor mix cannot be reverse-solved).', true); return; }
+  // DETERMINISTIC ANCHOR: build the LCAT list straight from the sheet's rows (every role, no AI truncation).
+  // The PWS task allocation is a SEPARATE step (pull the PWS in Step 2; hours derive from each role's FTE).
+  var _detRoles = (typeof _constrainedParseRoles === 'function') ? _constrainedParseRoles(window._constrainedCsv || '') : [];
+  if (_detRoles.length) {
+    var _da = { labor_mix: _detRoles.map(function (r) { return { role_name: r.role_name, fte: r.fte || 0, gsa_lcat: r.gsa_lcat || '', base_rate: r.base_rate }; }), preserved: ['Loaded ' + _detRoles.length + ' labor categor' + (_detRoles.length === 1 ? 'y' : 'ies') + ' \u2014 names, GSA mappings and FTEs \u2014 straight from your sheet (task hours derive from each FTE; pull the PWS in Step 2 to allocate).'], solved: [], assumptions: [], notes: '', proposed_tasks: [], hours_per_fte: null };
+    _constrainedApply(_da);
+    window._constrainedSolveLast = _da;
+    if (status) status.style.display = 'none';
+    if (results) renderConstrainedSolve(_da);
+    if (btn) { btn.disabled = false; }
+    return;
+  }
   const apiKey = (typeof getApiKey === 'function') && getApiKey();
   if (!apiKey) { show('Enter your Anthropic API key (top of the page) first.', true); return; }
 
@@ -23076,7 +23154,7 @@ async function runConstrainedSolve() {
   if (results) { results.style.display = 'none'; results.innerHTML = ''; }
   show('Solving the blank stages while holding the fixed ones\u2026', false);
   try {
-    const a = await callClaudeForJson(apiKey, [{ type: 'text', text: _constrainedSolveContent(window._constrainedCsv, det, taskList, ctx) }], 10000, 150000, 'Constrained pricing solve');
+    const a = await callClaudeForJson(apiKey, [{ type: 'text', text: _constrainedSolveContent(window._constrainedCsv, det, taskList, ctx) }], 32000, 150000, 'Constrained pricing solve');
     _constrainedApply(a);
     window._constrainedSolveLast = a;
     if (status) status.style.display = 'none';
