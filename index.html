@@ -2296,7 +2296,6 @@
       <div class="lock-msg"><span class="lock-icon">🔒</span><span class="lock-text">Complete Step 1 to unlock</span></div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div style="font-size:12.5px;color:var(--muted);max-width:540px">Pull the PWS tasks, period of performance, FTE basis, and the required pricing methodology straight from your RFP analysis. Starting here instead of the Proposal tab? Drop the solicitation documents in the box below, then Pull — or add tasks by hand below.</div>
-        <button class="btn btn-primary" onclick="pricingPullBriefing()" id="pricingPullBtn" style="padding:7px 16px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull RFP analysis</button>
       </div>
       <div id="pricingRfpDropWrap" style="margin-top:12px">
         <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Starting on the Pricing tab? Add the solicitation documents here <span style="font-weight:400;color:var(--muted)">&mdash; they are read by the SAME RFP analysis, so PWS tasks, the FTE basis and the pricing methodology come through exactly as they would from the Proposal tab.</span></div>
@@ -2304,16 +2303,16 @@
           <input type="file" id="fileInputPricingRFP" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.zip"/>
           <div class="dz-icon">&#128196;</div>
           <div class="dz-title">Drop RFP / PWS files here</div>
-          <div class="dz-sub">SOW, PWS, RFP, amendments &mdash; PDF, Word, Excel, ZIP. Then click <strong>Pull RFP analysis</strong> above.</div>
+          <div class="dz-sub">SOW, PWS, RFP, amendments &mdash; PDF, Word, Excel, ZIP. Then click <strong>Read the PWS</strong> below.</div>
         </div>
         <div class="file-list" id="fileListPricingRFP"></div>
-        <div id="pricingPullMirrorWrap" style="display:none;margin-top:10px">
-          <button class="btn btn-primary" onclick="pricingPullBriefing()" style="padding:8px 18px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull RFP analysis</button>
-          <span style="font-size:11px;color:var(--muted);margin-left:8px">Files added above &mdash; no need to scroll up.</span>
+        <div id="pricingPullMirrorWrap" style="margin-top:12px">
+          <button id="pricingReadPwsBtn" class="btn btn-primary" onclick="pricingReadPws()" style="padding:9px 20px;font-size:13px;font-weight:700;width:auto;white-space:nowrap">Read the PWS &rarr;</button>
+          <span id="pricingReadPwsHint" style="font-size:11px;color:var(--muted);margin-left:10px"></span>
         </div>
       </div>
       <div id="pricingPullProgress" style="display:none;margin-top:10px"></div>
-        <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull RFP analysis</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
+        <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Read the PWS</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
       <div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
         <div style="flex:1;min-width:220px">
           <label style="display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Pricing Methodology <span style="color:var(--muted);font-weight:400">(how the Government wants it)</span></label>
@@ -3321,7 +3320,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '443';
+const APP_VERSION = '445';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14130,9 +14129,9 @@ async function pricingPullBriefing() {
   }
   pxProgStart('pricingPullProgress', 1, 'Reading the PWS\u2026', 'Pulling tasks, period of performance and pricing method\u2026', 20);
     try { b = await ensureBriefing(apiKey); }
-    catch (e) { pxProgEnd('pricingPullProgress'); showStatus('warn', 'Could not read the PWS', e.message); if (btn) { btn.disabled = false; btn.innerHTML = '⤵ Pull RFP Analysis from Proposal tab'; } return; }
+    catch (e) { pxProgEnd('pricingPullProgress'); showStatus('warn', 'Could not read the PWS', e.message); if (btn) { btn.disabled = false; btn.innerHTML = 'Read the PWS \u2192'; } return; }
     pxProgEnd('pricingPullProgress', 'PWS read.');
-  if (btn) { btn.disabled = false; btn.innerHTML = '⤵ Pull RFP Analysis from Proposal tab'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = 'Read the PWS \u2192'; }
   }
   pricingApplyBriefing(b);
   pricingStampOpp();                          // #32: seeded from THIS opportunity's analysis
@@ -14942,7 +14941,7 @@ async function pricingAutoBuildStructure(mode) {
     if (!briefing && typeof ensureBriefing === 'function' && typeof rfpFiles !== 'undefined' && rfpFiles && rfpFiles.length) {
       try { briefing = await ensureBriefing(apiKey); } catch (e) {}
     }
-    if (!pricingModel.tasks.length && !briefing) { setBusy(false); alert('Add your RFP on the Proposal tab (then Pull RFP Analysis from Proposal tab in Step 2), or add at least one PWS task, so there is scope to build from.'); return; }
+    if (!pricingModel.tasks.length && !briefing) { setBusy(false); alert('Add your RFP on the Proposal tab (then Read the PWS in Step 2), or add at least one PWS task, so there is scope to build from.'); return; }
 
     const tasks = pricingModel.tasks.slice();
     const taskList = tasks.length
@@ -15709,7 +15708,7 @@ function pricingRenderAll() {
 function pricingRenderContext() {
   const el = document.getElementById('pricingContextBox'); if (!el) return;
   const meta = window._pricingBriefingMeta;
-  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Pull RFP analysis</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
+  if (!meta) { el.innerHTML = 'No opportunity loaded. <strong>Read the PWS</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.'; return; }
   el.innerHTML =
     `<div style="font-size:11px;color:var(--success);font-weight:600;margin-bottom:3px">⤵ Pulled from your Proposal-tab RFP analysis</div>` +
     (meta.title ? `<div><strong>${pricingEsc(meta.title)}</strong>${meta.sol ? ' · ' + pricingEsc(meta.sol) : ''}</div>` : '') +
@@ -22841,24 +22840,37 @@ async function pricingApplyUploadedSheet(btn) {
     setTimeout(function () { if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror(); }, 1600);
   }
 }
+async function pricingReadPws() {
+  // Single Step-2 action: apply a pending Step-0 sheet FIRST (so the user's roles/FTEs are the baseline),
+  // then read the PWS (tasks / periods / methodology). Folds in the old separate 'Apply uploaded sheet' button.
+  var btn = document.getElementById('pricingReadPwsBtn');
+  var orig = btn ? btn.innerHTML : '';
+  var hadSheet = !!window._constrainedPending;   // capture before runConstrainedSolve clears it
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:7px"></span>Reading the PWS\u2026'; }
+  try {
+    if (hadSheet && typeof runConstrainedSolve === 'function') { await runConstrainedSolve(); }
+    await pricingPullBriefing();
+    if ((hadSheet || pricingModel._reverseSolved) && typeof pricingAutoBuildStructure === 'function' && pricingModel.lcats && pricingModel.lcats.length && pricingModel.tasks && pricingModel.tasks.length) {
+      // The sheet supplied the roles/FTEs; now DRAFT the hours across the PWS tasks so they concentrate where
+      // each role actually works (the draft's allowed_tasks), instead of blanketing every task evenly. Keep
+      // mode anchors to your locked FTEs, so role/total FTEs stay on your figures - only the spread changes.
+      await pricingAutoBuildStructure();
+    }
+  } catch (e) { /* pricingPullBriefing / the draft surface their own status on failure */ }
+  finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig || 'Read the PWS \u2192'; }
+    if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror();
+  }
+}
 function pricingRenderStep2ApplyMirror() {
-  if (window._constrainedApplying) return;   // an apply is in flight - keep the spinner + progress bar on screen
-  var el = document.getElementById('pricingStep2ApplyMirror'); if (!el) return;
-  if (!window._constrainedPending) { el.style.display = 'none'; el.innerHTML = ''; return; }
-  el.style.display = 'block';
-  el.innerHTML = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px">'
-    + '<div style="font-size:12px;color:#1e3a8a;line-height:1.5;margin-bottom:8px">You uploaded a pricing sheet in Step 0 that is detected but <strong>not yet applied</strong>. Now that the PWS is loaded, apply it here \u2014 no need to scroll back up to Step 0.</div>'
-    + '<button id="pricingApplyMirrorBtn" onclick="pricingApplyUploadedSheet(this)" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer">Apply uploaded pricing sheet</button>'
-    + '<div id="pricingApplyMirrorProgress" style="display:none;margin-top:10px"></div>'
-    + '</div>';
+  // The Step-0 sheet apply is folded into the single 'Read the PWS' button, so this no longer renders a
+  // separate Apply button - it hides the old mirror and notes on the Read button when a sheet is still pending.
+  var old = document.getElementById('pricingStep2ApplyMirror'); if (old) { old.style.display = 'none'; old.innerHTML = ''; }
+  var hint = document.getElementById('pricingReadPwsHint');
+  if (hint) hint.textContent = window._constrainedPending ? '\u2014 also applies your uploaded Step-0 sheet' : '';
 }
 function initPricingPullMirror() {
-  var list = document.getElementById('fileListPricingRFP');
-  var wrap = document.getElementById('pricingPullMirrorWrap');
-  if (!list || !wrap) return;
-  var sync = function () { wrap.style.display = (list.children.length > 0) ? 'block' : 'none'; };
-  try { new MutationObserver(sync).observe(list, { childList: true, subtree: true }); } catch (e) {}
-  sync();
+  var wrap = document.getElementById('pricingPullMirrorWrap'); if (wrap) wrap.style.display = 'block';   // single always-visible 'Read the PWS' button
 }
 function initConstrainedDropZone() {
   var zone = document.getElementById('dropZoneConstrained'); if (!zone) return;
