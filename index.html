@@ -2307,6 +2307,10 @@
           <div class="dz-sub">SOW, PWS, RFP, amendments &mdash; PDF, Word, Excel, ZIP. Then click <strong>Pull RFP analysis</strong> above.</div>
         </div>
         <div class="file-list" id="fileListPricingRFP"></div>
+        <div id="pricingPullMirrorWrap" style="display:none;margin-top:10px">
+          <button class="btn btn-primary" onclick="pricingPullBriefing()" style="padding:8px 18px;font-size:12.5px;font-weight:700;width:auto;white-space:nowrap">⤵ Pull RFP analysis</button>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">Files added above &mdash; no need to scroll up.</span>
+        </div>
       </div>
       <div id="pricingPullProgress" style="display:none;margin-top:10px"></div>
         <div id="pricingContextBox" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.6">No opportunity loaded. <strong>Pull RFP analysis</strong> reads the RFP/PWS documents from the <strong>Proposal</strong> tab (Step 4) <strong>or the ones you drop in the box above</strong> and brings in PWS tasks, the FTE count, period structure, and the pricing methodology the Government asked for — or add tasks manually below.</div>
@@ -3317,7 +3321,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '436';
+const APP_VERSION = '443';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14094,10 +14098,20 @@ function pricingAddPeriod() { pricingModel.periods.push({ id: _prId('p_'), name:
 function pricingRemovePeriod(id) { pricingModel.periods = pricingModel.periods.filter(p => p.id !== id); if (!pricingModel.periods.length) pricingModel.periods = [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }]; pricingRenderAll(); }
 function pricingSetPeriod(id, field, val) { const p = pricingModel.periods.find(x => x.id === id); if (p) { p[field] = val; pricingRenderAll(); } }
 function pricingOnMethodologyChange() { pricingModel.methodology = document.getElementById('pricingMethodology').value; pricingRenderAll(); }
+function pricingClearStep0() {
+  // Step 0 (the reverse-solve pricing-sheet upload) lives in window vars + its own DOM, NOT in pricingModel,
+  // so resetting the model alone left the uploaded filename, detected results and 'Applied' line on screen.
+  window._constrainedIntake = null; window._constrainedCsv = null; window._constrainedPending = false; window._constrainedSolveLast = null;
+  ['constrainedResults', 'constrainedStatus', 'constrainedDetectProgress'].forEach(function (id) { var el = document.getElementById(id); if (el) { el.innerHTML = ''; el.style.display = 'none'; } });
+  var _fn = document.getElementById('constrainedFileName'); if (_fn) _fn.textContent = '';
+  ['constrainedFile', 'constrainedFileDz'].forEach(function (id) { var el = document.getElementById(id); if (el) { try { el.value = ''; } catch (e) {} } });
+  if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror();
+}
 function pricingResetModel(silent) {
   if (!silent && !confirm('Reset the entire pricing model? This clears the GSA Schedule choice, tasks, labor categories, hours, and periods for this opportunity.')) return;
   pricingModel = { methodology: 'lcat', tasks: [], lcats: [], hours: {}, mask: {}, periods: [{ id: 'p_base', name: 'Base Year', escalation: 0, months: 12 }], perPeriodFte: false, periodFte: {}, escalationMode: 'flat', escalationFlat: 3, discountMode: 'none', discountPct: '', statedFteTotal: null, fteSource: 'estimated', statedWorkloadByLcat: [], directedLabor: false, hoursPerFte: null, gsaDecision: null, gsaDiscount: 1, gsaRateCard: [], gsaScheduleStart: '', gsaScheduleYears: 5, gsaPopStart: '', sca: { covered: null, wdNumber: '', wdRevision: '', locality: '', hw: 5.55, hwBasis: 'standard', rates: [] }, travel: { mode: 'none', method: 'lump', lumpBasis: 'perPeriod', lumpAmount: '', odcCategory: 'Travel & ODC', nte: '', travelers: '1', tripsPerYear: '', nightsPerTrip: '', airfare: '', lodgingRate: '', mieRate: '', localTransport: '', flatPerTrip: '', markup: 'passthrough', gaPct: '', notes: '' }, materials: { mode: 'none', basis: 'perPeriod', amount: '', gaPct: '', notes: '' }, clins: { enabled: false, unitBasis: 'period', farExtension: false, lines: [], _basisTouched: false, _autoMonthly: false } };
   pricingGsaFiles = [];
+  if (typeof pricingClearStep0 === 'function') pricingClearStep0();   // #clear: also wipe the Step-0 reverse-solve upload (intake, CSV, detected results, filename, pending mirror)
   pricingRenderAll();
 }
 
@@ -14257,6 +14271,11 @@ function pricingApplyBriefing(b) {
   // offeror/AI estimate, not a mandate, and must never be labeled "Government-stated."
   const _loe = String((b && b.loe_basis) || (typeof window !== 'undefined' && window._lastBnaIntel && window._lastBnaIntel.loe_basis) || '');
   const _govLoe = /govern|directed|mandat|stipulat|prescrib/i.test(_loe);
+  if (pricingModel._reverseSolved) {
+    // #Step0-authoritative: the user uploaded a pricing sheet in Step 0, so THEIR labor mix and FTEs are the
+    // baseline. Pulling the PWS still brings in tasks / travel / SCA / periods below, but must NOT re-infer or
+    // override the FTE count from the solicitation - keep fteSource='user' and the uploaded totals untouched.
+  } else {
   if (wlHours > 0) {
     pricingModel.fteSource = 'stated';
     pricingModel.statedFteTotal = Math.round((wlHours / defaultHpf()) * 100) / 100;
@@ -14291,6 +14310,7 @@ function pricingApplyBriefing(b) {
   } else {
     pricingModel.statedWorkloadByLcat = [];
     pricingModel.workloadSource = null;
+  }
   }
   // Period-of-performance start (drives GSA year selection). Prefer the briefing; fall back to the
   // analyzed opportunity's pop_start_date (strip an [Inferred]/[GovEst] prefix) so the schedule year
@@ -16831,7 +16851,7 @@ function pricingBuildWorkbook() {
 
   // ---- Inputs (single source of truth; the Fully Burdened Rate Table's cells are live formulas that read
   // from here, so editing any assumption recalculates the rates). Stage 1: non-GSA fully-burdened build. ----
-  let _ixRole = {}, _ixPer = {}, _ixFringe = '', _ixOH = '', _ixGA = '', _ixFee = '', _ixHW = '', _ixHolDisc = '', _ixHpf = '';
+  let _ixRole = {}, _ixPer = {}, _ixFringe = '', _ixOH = '', _ixGA = '', _ixFee = '', _ixHW = '', _ixHolDisc = '', _ixDisc = '', _ixHpf = '';
   if (gsa) {
     // On a Schedule the wage build-up is not ours to state — the Schedule rate is the input.
     // What IS ours is the discount stack and the escalation curve, and those had no home at
@@ -16843,7 +16863,7 @@ function pricingBuildWorkbook() {
     _gi.push(['']);
     _gi.push(['Rate basis']);
     _gi.push(['Source', 'GSA Schedule rate card']);
-    _gi.push(['Schedule discount off ceiling', (parseFloat(pricingModel.gsaDiscount) || 0) / 100]);
+    _ixDisc = 'Inputs!$B$' + _gi.push(['Schedule discount off ceiling', (parseFloat(pricingModel.gsaDiscount) || 0) / 100]);
     _gi.push(['Competitive discount mode', pricingModel.discountMode || 'none']);
     _gi.push(['']);
     _gi.push(['Hours basis']);
@@ -17268,6 +17288,7 @@ function pricingBuildWorkbook() {
       const R = k + 1; const _dc = XLSX.utils.encode_col(2) + (R + 1);
       P.forEach((p, i) => { pxSetFormula(wsRT, R, 4 + 2 * i, XLSX.utils.encode_col(3 + 2 * i) + (R + 1) + '*(1-' + _dc + ')'); });
       const _dca = XLSX.utils.encode_cell({ r: R, c: 2 }); if (wsRT[_dca]) wsRT[_dca].z = '0.0%';
+      if (_ixDisc) pxSetFormula(wsRT, R, 2, _ixDisc);   // column C (Discount %) is a LIVE ref to the Inputs discount cell (B6), so editing the discount there recomputes every Net Rate and all downstream totals
     });
   } else {
     const _locOnRT = !!pricingModel.localityEnabled;   // #13: show the locality component that's baked into the wrap
@@ -20283,6 +20304,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDropZone('dropZoneBNADocs',    'fileInputBNADocs',    bnaCompanyFiles, 'fileListBNADocs');
   initDropZone('dropZonePricingRFP', 'fileInputPricingRFP', rfpFiles,        'fileListPricingRFP');   // Phase 4 (C): Pricing-tab RFP drop -> same rfpFiles -> same ensureBriefing pipeline
   if (typeof initConstrainedDropZone === 'function') initConstrainedDropZone();
+  if (typeof initPricingPullMirror === 'function') initPricingPullMirror();
   if (typeof triageInit === 'function') triageInit();
   if (typeof _triageRestoreAfterReload === 'function') _triageRestoreAfterReload();
   initBnaWeights();
@@ -22461,7 +22483,7 @@ async function runResumeRevise() {
       + '4. If a block is a person name, section header, date line, address, phone, email, or otherwise not a prose sentence, return it UNCHANGED.\n\n'
       + 'BLOCKS (JSON):\n' + JSON.stringify(listForAi) + '\n\n'
       + 'Return ONLY JSON of this exact shape, covering every block i: {"blocks":[{"i":<number>,"revised":"<text>"}]}';
-    var data = await _resumeReviseCall(apiKey, content, 8000, 'Resume revise');
+    var data = await _resumeReviseCall(apiKey, content, 32000, 'Resume revise');
     var arr = (data && Array.isArray(data.blocks)) ? data.blocks : (Array.isArray(data) ? data : null);
     if (!arr) throw new Error('the rewrite came back in an unexpected shape \u2014 please try again.');
     var byI = {}; arr.forEach(function (r) { if (r && r.i != null) byI[r.i] = String(r.revised == null ? '' : r.revised); });
@@ -22483,7 +22505,7 @@ async function runResumeRevise() {
     if (retry.length) {
       var tContent = 'These resume blocks were rewritten too long. TIGHTEN each to fit its "max" CHARACTER count without losing meaning or any fact, name, date or number. Keep the same tense/person; plain text only. Return ONLY {"blocks":[{"i":<number>,"revised":"<text>"}]}.\nTARGET ROLE: ' + (role || '(unspecified)') + '\n\nBLOCKS (JSON):\n' + JSON.stringify(retry.map(function (it) { return { i: it.i, max: it.max, text: it.text }; }));
       try {
-        var tData = await _resumeReviseCall(apiKey, tContent, 4000, 'Resume tighten');
+        var tData = await _resumeReviseCall(apiKey, tContent, 16000, 'Resume tighten');
         var tArr = (tData && Array.isArray(tData.blocks)) ? tData.blocks : (Array.isArray(tData) ? tData : []);
         var tById = {}; tArr.forEach(function (r) { if (r && r.i != null) tById[r.i] = String(r.revised == null ? '' : r.revised); });
         retry.forEach(function (it) { if (_resumeApply(it, tById[it.i])) { changed++; tightened++; } else kept++; });
@@ -22804,14 +22826,39 @@ function copyResume() {
    nothing is solved here. Modeled at the cell/column level: real data present = a constraint. */
 window._constrainedCsv = window._constrainedCsv || '';
 
+async function pricingApplyUploadedSheet(btn) {
+  // Mirror the Step-0 apply feedback (spinner + the same pxProg bar) so it's obvious the click worked - the
+  // deterministic apply is near-instant, so without this the mirror just vanished with no signal.
+  window._constrainedApplying = true;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-auto" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>Applying uploaded sheet\u2026'; }
+  if (typeof pxProgStart === 'function') pxProgStart('pricingApplyMirrorProgress', 1, 'Applying your uploaded pricing sheet\u2026', 'Loading labor categories, FTEs, rates and hours into the model\u2026', 3);
+  await new Promise(function (r) { setTimeout(r, 450); });
+  try { await runConstrainedSolve(); }
+  finally {
+    if (typeof pxProgEnd === 'function') pxProgEnd('pricingApplyMirrorProgress', 'Applied \u2713 \u2014 your labor categories and FTEs are loaded in Step 4.');
+    var _b = document.getElementById('pricingApplyMirrorBtn'); if (_b) _b.outerHTML = '<div style="color:#166534;font-weight:700;font-size:12.5px">\u2713 Applied to pricing.</div>';
+    window._constrainedApplying = false;
+    setTimeout(function () { if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror(); }, 1600);
+  }
+}
 function pricingRenderStep2ApplyMirror() {
+  if (window._constrainedApplying) return;   // an apply is in flight - keep the spinner + progress bar on screen
   var el = document.getElementById('pricingStep2ApplyMirror'); if (!el) return;
   if (!window._constrainedPending) { el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = 'block';
   el.innerHTML = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px">'
     + '<div style="font-size:12px;color:#1e3a8a;line-height:1.5;margin-bottom:8px">You uploaded a pricing sheet in Step 0 that is detected but <strong>not yet applied</strong>. Now that the PWS is loaded, apply it here \u2014 no need to scroll back up to Step 0.</div>'
-    + '<button onclick="runConstrainedSolve()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer">Apply uploaded pricing sheet</button>'
+    + '<button id="pricingApplyMirrorBtn" onclick="pricingApplyUploadedSheet(this)" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer">Apply uploaded pricing sheet</button>'
+    + '<div id="pricingApplyMirrorProgress" style="display:none;margin-top:10px"></div>'
     + '</div>';
+}
+function initPricingPullMirror() {
+  var list = document.getElementById('fileListPricingRFP');
+  var wrap = document.getElementById('pricingPullMirrorWrap');
+  if (!list || !wrap) return;
+  var sync = function () { wrap.style.display = (list.children.length > 0) ? 'block' : 'none'; };
+  try { new MutationObserver(sync).observe(list, { childList: true, subtree: true }); } catch (e) {}
+  sync();
 }
 function initConstrainedDropZone() {
   var zone = document.getElementById('dropZoneConstrained'); if (!zone) return;
@@ -23370,9 +23417,9 @@ function _constrainedPwsContent(csv, pws, statedFte) {
     'The pricing below is the tool\'s current model — it already reflects the solicitation\'s CLINs (when stated) and computes all totals from ONE consistent source, so do NOT flag missing CLIN codes or internal total mismatches unless they are genuinely absent from what is shown.\n\n' +
     'PWS / SOLICITATION REQUIREMENTS:\n' + pws + '\n\n' +
     'THE PRICING TO REVIEW:\n' + csv + '\n\n' +
-    (statedFte != null ? 'AUTHORITATIVE STAFFING FIGURE: the solicitation states a level of effort of EXACTLY ' + statedFte + ' FTE. This may be fractional (e.g. 10.5) - use it VERBATIM and do NOT round it up or down to a whole number. When you assess staffing level, compare the priced FTE against ' + statedFte + ' EXACTLY; do not assert a different required FTE.\n\n' : '') +
+    (statedFte != null ? 'AUTHORITATIVE STAFFING FIGURE: the solicitation states a level of effort of EXACTLY ' + statedFte + ' FTE. This may be fractional (e.g. 10.5) - use it VERBATIM and do NOT round it up or down to a whole number. When you assess staffing level, compare the priced FTE against ' + statedFte + ', BUT a difference within about 2% or half an FTE (e.g. 24.87 vs 25) is an IMMATERIAL rounding / hours-per-FTE-basis artifact (1,912 vs 1,920 hrs/yr) and is NOT a conflict - treat it as a match. Do not assert a different required FTE.\n\n' : '') +
     'Look for conflicts such as: a required labor category, skill, clearance, or certification the pricing does not staff; a required, recurring base-period PWS task with no labor priced against it; a staffing level (FTEs/hours) below a level the SOLICITATION EXPLICITLY STATES as required; a period-of-performance or option-year mismatch; or scope priced that the PWS does not require (over-scope). Only flag genuine conflicts.\n\n' +
-    'STAFFING - CRITICAL: do NOT derive or propose a required headcount/FTE from your own reading of the scope. Raise a staffing-level conflict ONLY when the solicitation STATES a required level of effort and the priced level is below it. When level of effort is left to the offeror to propose (no stated FTE), ANY defensible staffing level is compliant - never say the effort "needs" more (or fewer) FTE than priced, and never suggest a specific different headcount.\n\n' +
+    'STAFFING - CRITICAL: do NOT derive or propose a required headcount/FTE from your own reading of the scope. Raise a staffing-level conflict ONLY when the solicitation STATES a required level of effort and the priced level is MATERIALLY below it (short by more than ~2% or half an FTE); a small difference from rounding or the hours-per-FTE basis (e.g. 24.87 vs 25) is NOT a conflict. When level of effort is left to the offeror to propose (no stated FTE), ANY defensible staffing level is compliant - never say the effort "needs" more (or fewer) FTE than priced, and never suggest a specific different headcount.\n\n' +
     'GSA - CRITICAL: recommend mapping roles to GSA MAS / GSA Schedule labor categories ONLY if the pricing above actually shows GSA Schedule LCATs (a GSA Schedule buy). If the pricing is not on a GSA Schedule, GSA-LCAT mapping is irrelevant - do NOT raise it as a conflict or a fix.\n\n' +
     'IMPORTANT - do NOT raise a task-coverage conflict merely because the base-period pricing does not staff a task. Many PWS tasks are CONDITIONAL (required only if an option period is exercised, or triggered by a specific event), OPTIONAL, surge, or ONE-TIME / single-use, and legitimately carry no base-period labor. Flag an unstaffed task ONLY when it is plainly a required, recurring base-period effort that the pricing omits; when a task is optional, option-year-only, event-triggered, or one-time / single-use, do NOT flag it. When in doubt, do not flag it. Judge task coverage from the PER-TASK COVERAGE list (COMPLETE and authoritative): a task shown there with >0 hrs IS staffed - NEVER report it as omitted, whatever the truncated LINE-ITEM DETAIL happens to show.\n\n' +
     'Return ONLY JSON (no prose, no markdown fences):\n' +
@@ -23454,6 +23501,23 @@ function renderConstrainedPws(data) {
   // must not still appear as an open finding.
   items = items.filter(function (it) { if (!it) return false; var _s = String(it.issue || '') + ' ' + String(it.fix || ''); if (/\bwithdrawn\b/i.test(_s)) return false; if (/no fix\s*(is\s*)?(required|needed)/i.test(String(it.fix || ''))) return false; return true; });
   items = items.filter(function (it) { var _fx = String((it && it.fix) || '').trim(); if (/^(n\/?a|none|not applicable|[\u2014-])$/i.test(_fx)) return false; if (/\bno\s+(change|fix|action|issue|conflict|gap|deviation|discrepanc\w*|correction|adjustment|revision|update|concern|problem)s?\b/i.test(_fx)) return false; return true; });   // #7: drop no-issue findings (fix reads 'no change required' / 'no conflict' / 'no gap' / N/A / none) so only real problems populate; when all drop, the empty-state below shows the green 'Complies with the PWS'.
+  // Small FTE differences are rounding / hours-per-FTE-basis artifacts (e.g. 24.87 FTE at 1,912 hrs vs a stated
+  // 25 at 1,920), NOT conflicts. If the sheet's total FTE is within tolerance of the stated figure, drop any
+  // staffing-level 'mismatch' the AI raised anyway.
+  try {
+    var _frec = (typeof _constrainedFteRecon === 'function') ? _constrainedFteRecon() : null;
+    if (_frec && _frec.sheetFte != null && _frec.toolFte != null) {
+      var _ftol = Math.max(0.6, 0.02 * Math.max(_frec.sheetFte, _frec.toolFte));
+      if (Math.abs(_frec.sheetFte - _frec.toolFte) <= _ftol) {
+        items = items.filter(function (it) {
+          var _cat = String((it && it.category) || '');
+          var _blob = String((it && it.requirement) || '') + ' ' + String((it && it.issue) || '') + ' ' + String((it && it.fix) || '');
+          var _staffing = /staffing level/i.test(_cat) || (/\b(fte|full[- ]?time equivalent|level of effort|staffing level|head\s*count)\b/i.test(_blob) && /\b(match|matches|differ|reconcile|does not|doesn.t|mismatch|short|below|under|above|fewer|less than|vs\.?|instead of|rather than)\b/i.test(_blob));
+          return !_staffing;
+        });
+      }
+    }
+  } catch (e) {}
   const sev = { critical: 0, important: 1, minor: 2 };
   const _rank = function (s) { const v = sev[s]; return (v == null) ? 2 : v; };
   items.sort(function (a, b) { return _rank((a && a.severity) || 'minor') - _rank((b && b.severity) || 'minor'); });
@@ -23497,7 +23561,10 @@ function renderConstrainedPws(data) {
       const _tTxt = _rec.toolFte.toFixed(_rec.toolFte % 1 ? 1 : 0);
       const _d = _rec.sheetFte - _rec.toolFte;
       const _dTxt = (_d > 0 ? '+' : '') + _d.toFixed(Math.abs(_d) % 1 ? 1 : 0);
-      if (_rec.solStated) {
+      const _ftol = Math.max(0.6, 0.02 * Math.max(_rec.sheetFte, _rec.toolFte));
+      if (Math.abs(_d) <= _ftol) {
+        _line += ' The solicitation states <strong>' + _tTxt + ' FTE</strong> \u2014 your figure matches within rounding (the small difference is just the hours-per-FTE basis, e.g. 1,912 vs 1,920 hrs/yr). No conflict.';
+      } else if (_rec.solStated) {
         _line += ' The solicitation states <strong>' + _tTxt + ' FTE</strong> \u2014 a difference of ' + _dTxt + ' FTE. A stated Government staffing level is a requirement: reconcile it, or justify the difference in the narrative.';
       } else {
         _line += ' The tool\u2019s BNA sizing derived <strong>' + _tTxt + ' FTE</strong> as a starting point \u2014 a difference of ' + _dTxt + ' FTE. That figure is <strong>not</strong> a Government requirement; where the solicitation leaves level of effort to the offeror, your sheet\u2019s staffing is what governs. This is a comparison, not a non-compliance.';
