@@ -3320,7 +3320,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '446';
+const APP_VERSION = '447';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14979,6 +14979,7 @@ async function pricingAutoBuildStructure(mode) {
       // table from a figure the analysis derived or the user supplied on a spreadsheet.
       _wlProposed = _govWorkload.length > 0 && (window._lastBnaIntel.staffing_source !== 'government-workload');
     }
+    if (pricingModel._reverseSolved) { _govWorkload = []; _wlProposed = false; }   // #Step0-authoritative: the uploaded sheet IS the team; ignore any Government/BNA workload so it can't be ADDED to the user's roles (fixes 45.5 = 20.5 upload + 25 solicitation)
     if (_govWorkload.length) {
       pricingModel.statedWorkloadByLcat = _govWorkload;
       if (!_userSized) {      // a user-sized re-draft keeps the user's own fteSource / total / hours-basis; only a fresh build adopts the Government figure
