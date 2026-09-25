@@ -3320,7 +3320,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '445';
+const APP_VERSION = '446';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14922,7 +14922,6 @@ async function pricingAutoBuildStructure(mode) {
   // (#4) A reverse-solved sheet is the user's own model. Draft re-runs the AI to propose the labor
   // mix from the PWS, which can reshape roles/hours; the pinned FIXED stages are snapshotted here and
   // re-asserted after the build, but re-drafting is a deliberate choice \u2014 so confirm first.
-  if (pricingModel._reverseSolved && !confirm('You started from an uploaded pricing sheet. Drafting a staffing plan re-runs the AI to propose the labor mix from the PWS \u2014 this can change the roles and hours your sheet established. Your fixed rates and FTEs are re-applied wherever a role name still matches. Continue and re-draft?')) return;
   const _existing = _freshDraft ? [] : (pricingModel.lcats || []).filter(l => String(l.name || '').trim());
   const _exFte = _existing.reduce((s, l) => s + (parseFloat(l.advertised) || 0), 0);
   // The user has taken over sizing (edited an FTE, so fteSource is 'user'). A re-draft must BUILD AROUND their
@@ -22850,13 +22849,7 @@ async function pricingReadPws() {
   try {
     if (hadSheet && typeof runConstrainedSolve === 'function') { await runConstrainedSolve(); }
     await pricingPullBriefing();
-    if ((hadSheet || pricingModel._reverseSolved) && typeof pricingAutoBuildStructure === 'function' && pricingModel.lcats && pricingModel.lcats.length && pricingModel.tasks && pricingModel.tasks.length) {
-      // The sheet supplied the roles/FTEs; now DRAFT the hours across the PWS tasks so they concentrate where
-      // each role actually works (the draft's allowed_tasks), instead of blanketing every task evenly. Keep
-      // mode anchors to your locked FTEs, so role/total FTEs stay on your figures - only the spread changes.
-      await pricingAutoBuildStructure();
-    }
-  } catch (e) { /* pricingPullBriefing / the draft surface their own status on failure */ }
+  } catch (e) { /* pricingPullBriefing surfaces its own status on failure */ }
   finally {
     if (btn) { btn.disabled = false; btn.innerHTML = orig || 'Read the PWS \u2192'; }
     if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror();
@@ -22867,7 +22860,7 @@ function pricingRenderStep2ApplyMirror() {
   // separate Apply button - it hides the old mirror and notes on the Read button when a sheet is still pending.
   var old = document.getElementById('pricingStep2ApplyMirror'); if (old) { old.style.display = 'none'; old.innerHTML = ''; }
   var hint = document.getElementById('pricingReadPwsHint');
-  if (hint) hint.textContent = window._constrainedPending ? '\u2014 also applies your uploaded Step-0 sheet' : '';
+  if (hint) hint.textContent = window._constrainedPending ? '\u2014 also applies your uploaded Step-0 sheet' : '\u2014 uses your Proposal-tab analysis, or the files dropped above';
 }
 function initPricingPullMirror() {
   var wrap = document.getElementById('pricingPullMirrorWrap'); if (wrap) wrap.style.display = 'block';   // single always-visible 'Read the PWS' button
