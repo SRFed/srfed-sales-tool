@@ -2356,7 +2356,6 @@
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div style="font-size:12.5px;color:var(--text);max-width:560px"><strong>✨ Draft the staffing plan.</strong> <span style="color:var(--muted)">Your PWS task list above is the input — confirm it first, then build.</span> Claude proposes a labor mix, integer headcount, an hours allocation across your PWS tasks, and the role rules — and, in GSA mode, maps each role to the best-fit Schedule LCAT by education, experience, and scope. It also runs a cost-realism check. <span style="color:var(--muted)">You review and adjust everything; rates are never invented.</span></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
-            <button onclick="pricingAutoBuildStructure('fresh')" id="pricingAutoBuildFreshBtn" title="Discard your manual role / FTE / GSA-mapping changes and rebuild the staffing plan from the solicitation's original criteria." style="display:none;padding:8px 15px;font-size:12.5px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:7px;cursor:pointer;white-space:nowrap">↺ Re-draft from the solicitation</button>
             <button onclick="pricingAutoBuildStructure()" id="pricingAutoBuildBtn" style="padding:8px 15px;font-size:12.5px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:7px;cursor:pointer;white-space:nowrap">✨ Draft the staffing plan</button>
           </div>
         </div>
@@ -3320,7 +3319,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '448';
+const APP_VERSION = '451';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -13844,7 +13843,7 @@ function pricingRenderLockBar() {
   if (!pricingModel.lcats || !pricingModel.lcats.length) { el.innerHTML = ''; return; }
   var btn = '<button onclick="pricingToggleStaffingLock()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:1px solid ' + (locked ? '#14532d;background:#166534;color:#fff' : '#0f172a;background:#1e293b;color:#fff') + ';box-shadow:0 1px 3px rgba(0,0,0,0.18)">' + '<span style="font-size:16px;line-height:1">\uD83D\uDD12</span>' + (locked ? 'Staffing locked \u2014 click to unlock' : 'Lock LCATs & hours') + '</button>';
   var note = '<div style="font-size:11.5px;color:var(--muted);margin-top:5px;max-width:660px">' + (locked ? 'Locked: a re-draft keeps these roles and their FTEs and only redistributes hours across the PWS tasks. In Step 5, a role whose hours don\u2019t total its locked FTE is flagged red (you can still override).' : 'Lock the roles and their FTE/hours so a re-draft can\u2019t resize the team \u2014 it will only redistribute hours across the PWS tasks.') + '</div>';
-  var redraft = locked ? ('<button id="pricingLockRedraftBtn" onclick="pricingAutoBuildStructure()" title="Re-draft: keep these locked roles and FTEs and only redistribute hours across the PWS tasks" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.18)">\u2728 Re-draft the staffing plan</button>') : '';
+  var redraft = locked ? ('<button id="pricingLockRedraftBtn" onclick="pricingAutoBuildStructure()" title="Re-draft: keep these locked roles and FTEs and only redistribute hours across the PWS tasks" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.18)">' + ((typeof pricingModel !== 'undefined' && pricingModel._hasDrafted) ? '\u21bb Re-draft' : '\u2728 Draft') + ' the staffing plan</button>') : '';
   var redraftProg = locked ? '<div id="pricingLockRedraftProgress" style="display:none;margin-top:8px;max-width:660px"></div>' : '';
   el.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' + btn + redraft + '</div>' + note + redraftProg;
 }
@@ -15129,7 +15128,7 @@ Return ONLY JSON, no prose:
 
 Rules:
 - "fte" is the staffing decision and drives the math: each role's total base-period hours are set to exactly fte times ${hpf}. When the GOVERNMENT-STATED WORKLOAD block lists per-category hours, reproduce those exact fractional FTEs and DO NOT apply any whole-number preference. Otherwise, WHOLE-NUMBER FTEs ARE STRONGLY PREFERRED because they make staffing cleaner - default each role to an integer FTE. Use a fractional fte ONLY when genuinely justified: the Government stipulates a fractional FTE, or a role's scope truly needs only part of a full-time person (a small, well-bounded effort that clearly does not justify a whole FTE). Never split a role into a fraction just to make a total come out even. "headcount" is the number of distinct people (a single part-time person is headcount 1, fte 0.5). Use "hours_by_task" only to show how each role's hours split across its tasks; those per-task numbers are rescaled so the role total equals fte times ${hpf}.
-- Allocate hours so that EVERY PWS task listed above receives hours from at least one labor category \u2014 the union of all roles' allowed_tasks must cover every task. BUT CONCENTRATE each role: give a labor category hours ONLY on the tasks its function actually performs, and 0 (omit it from hours_by_task) on tasks outside its function \u2014 do NOT give every role hours on every task. A Program Manager works oversight/management tasks; a specialist analyst works its own analysis tasks; most roles touch only a handful of the tasks, not all of them. Coverage comes from the UNION of the roles, never from spreading each single role across everything. Only leave a task with no labor if it is genuinely not a labor effort (a pure travel/ODC or materials line); list any such task codes in "non_labor_tasks".
+- HOURS ALLOCATION \u2014 the heart of a realistic plan. For each role, hours_by_task must be SPARSE and REALISTIC: list ONLY the tasks that role's function actually performs (typically 4-12 tasks, NEVER all of them) and give each a REALISTIC block of hours proportional to how much effort that task genuinely needs from that role. Do NOT scatter token 1-hour or tiny placeholder entries to fill cells, do NOT front-load everything onto the first task, and do NOT give every role hours on every task \u2014 an omitted task means that role does 0 there, which is correct and expected. A Program Manager works oversight/governance/reporting tasks; a data analyst the data tasks; a policy analyst the policy tasks; match each role to the tasks its title and function fit. COVERAGE: across the whole team, every PWS task above must receive meaningful hours from at least one role whose function fits it \u2014 coverage comes from the UNION of the roles, never from spreading one role thin. Keeping each role's list short also keeps this response compact so it never truncates. Only leave a task with no labor if it is genuinely not a labor effort (a pure travel/ODC or materials line); list any such task codes in "non_labor_tasks".
 - Per-year staffing is CONSTANT by default. ONLY if the solicitation explicitly specifies different staffing by ordering period (a manning/staffing table that changes year to year, or wording like "base year: N FTE; option years: M FTE") provide "fte_by_period" for each affected role, aligned in order to the ${pricingModel.periods.length} period(s). If staffing does not change by year, OMIT fte_by_period for every role.
 - ${gsa ? 'Map by SCOPE, EDUCATION, and EXPERIENCE \u2014 never by title alone. A Schedule LCAT is a valid vehicle for a role only if ONE person could satisfy BOTH the Government\'s stated minimums for the role AND the Schedule LCAT\'s own minimums. EDUCATION IS HIERARCHICAL \u2014 rank it High School/GED < Associate\'s < Bachelor\'s < Master\'s < Doctorate, where a HIGHER credential satisfies any LOWER requirement (a Doctorate satisfies everything; a Master\'s satisfies a Bachelor\'s or Associate\'s requirement; a Bachelor\'s does NOT satisfy a Master\'s or Doctorate requirement). So the staffed person\'s degree must be >= BOTH the Government\'s required degree AND the Schedule LCAT\'s required degree; treat EXPERIENCE the same way (years must clear both minimums). Prefer the Schedule LCAT whose SCOPE fits AND whose education/experience sit at the CLOSEST appropriate level: if the Schedule LCAT requires a HIGHER degree or MORE years than the Government role, it over-levels the role (billable, but more senior and costly than required) \u2014 say so in match_rationale; if it requires LESS, it clears the bar comfortably. Do not force a scope mismatch just to hit a degree, and do not over-level a role. If nothing reasonably fits, set gsa_lcat=null, match_confidence="none", and list it under "unmatched" with the specific gap. Be honest.' : 'Do not invent specific dollar rates for our cost; market_low/high are rough reference ranges only.'}
 - If the RFP explicitly directs a level of effort, hours, or staffing for any task (e.g. "the contractor shall provide X hours" or a staffing/manning table), USE those numbers exactly instead of proposing your own, and record what you honored in directed_hours_note.
@@ -15153,7 +15152,7 @@ ${pricingScaActive() ? '- For SCA-covered roles the direct wage must meet or exc
       try {
         parsed = await callClaudeForJsonStreaming(
           apiKey, [{ type: 'text', text: (_try === 0 ? prompt : (prompt + _liteDirective)) }],
-          (_try === 0 ? 24000 : 16000), (_try === 0 ? 600000 : 420000), 'Auto-building structure',
+          (_try === 0 ? 40000 : 16000), (_try === 0 ? 600000 : 420000), 'Auto-building structure',
           function (p) {
             const n = p.items || 0;
             pxProgMark('pricingAutoBuildProgress', null,
@@ -15181,6 +15180,7 @@ ${pricingScaActive() ? '- For SCA-covered roles the direct wage must meet or exc
            + ' the rebuild had dropped ' + (_re.added.length === 1 ? 'was' : 'were') + ' put back: ' + _re.added.join(', ') + '.') : ''));
     }
     pricingAutoBuildLast = parsed;
+    pricingModel._hasDrafted = true;   // a staffing plan now exists -> the button reads 'Re-draft' from here on
     pricingRenderAll();
     showStatus('success', 'Structure proposed', `Built ${parsed.labor_mix.length} labor categor${parsed.labor_mix.length > 1 ? 'ies' : 'y'} with hours and role rules. Review the analysis and adjust anything below \u2014 it is all editable.`);
   } catch (e) {
@@ -15654,7 +15654,7 @@ function pricingRedraftWarning() {
 function pricingRenderAll() {
   if (typeof pricingNormalizeLcatClins === 'function') pricingNormalizeLcatClins();
   { var _rw = document.getElementById('pricingRedraftWarn'); if (_rw) { var _wtxt = (typeof pricingRedraftWarning === 'function') ? pricingRedraftWarning() : ''; _rw.innerHTML = _wtxt; } }
-  { var _pm = (typeof pricingModel !== 'undefined') ? pricingModel : null; var _uo = !!(_pm && _pm.fteSource === 'user' && (_pm.lcats || []).some(function (l) { return String(l.name || '').trim(); })); var _db = document.getElementById('pricingAutoBuildBtn'); if (_db && !_db.disabled) _db.innerHTML = (_pm && _pm._reverseSolved) ? '\u21ba Re-draft from scratch' : (_uo ? '\u2728 Re-draft, keeping my changes' : '\u2728 Draft the staffing plan'); var _fb = document.getElementById('pricingAutoBuildFreshBtn'); if (_fb && !_fb.disabled) _fb.style.display = _uo ? 'inline-block' : 'none'; }   // (#4) label + the from-the-solicitation revert button reflect whether the user has customized the structure
+  { var _pm = (typeof pricingModel !== 'undefined') ? pricingModel : null; var _uo = !!(_pm && _pm.fteSource === 'user' && (_pm.lcats || []).some(function (l) { return String(l.name || '').trim(); })); var _db = document.getElementById('pricingAutoBuildBtn'); if (_db && !_db.disabled) _db.innerHTML = (_pm && _pm._hasDrafted) ? '\u21bb Re-draft the staffing plan' : '\u2728 Draft the staffing plan'; }   // (#4) label + the from-the-solicitation revert button reflect whether the user has customized the structure
   // Phase 5: seed the GSA rate card from the company default (Settings) the first time this
   // pricing session touches an empty rate card, and keep the shared default in sync with
   // whatever's on this tab afterward — last-edit-wins between Settings and Pricing.
@@ -23010,10 +23010,8 @@ function renderConstrainedDetect(data) {
   // ALWAYS offered. Solving the gaps and applying the sheet are the same operation, and a
   // fully-populated sheet still has to be APPLIED or the constraints never exist. Gating this
   // on nSolve meant the most complete sheets were the ones silently discarded.
-  const solveBtn = '<button id="constrainedSolveBtn" onclick="runConstrainedSolve()" style="padding:9px 18px;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer">'
-    + (nSolve > 0 ? ('Solve the blank stage' + (nSolve === 1 ? '' : 's') + ' and apply') : 'Apply this sheet to pricing')
-    + '</button>';
-  const noSolveNote = (nSolve === 0) ? '<div id="constrainedNoSolveNote" style="margin:12px 0 0;font-size:12px;line-height:1.55;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:9px 12px"><strong>\u26a0 Detected, not yet applied.</strong> Every stage is already populated, so there is nothing to derive \u2014 but you still need to <strong>Apply this sheet to pricing</strong>, which loads your labor categories, FTEs, rates, and hours into the pricing model and pins them for auto-build.</div>' : '';
+  const solveBtn = '<div id="constrainedApplyNote" style="font-size:12.5px;line-height:1.55;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px"><strong>\u2713 Detected.</strong> These labor categories, FTEs and rates load into pricing when you click <strong>Read the PWS \u2192</strong> in Step 2 below \u2014 no separate apply step needed.</div>';
+  const noSolveNote = false ? '<div id="constrainedNoSolveNote" style="margin:12px 0 0;font-size:12px;line-height:1.55;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:9px 12px"><strong>\u26a0 Detected, not yet applied.</strong> Every stage is already populated, so there is nothing to derive \u2014 but you still need to <strong>Apply this sheet to pricing</strong>, which loads your labor categories, FTEs, rates, and hours into the pricing model and pins them for auto-build.</div>' : '';
   const nextHtml = oos ? '' :
     '<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">' + solveBtn + '</div>' + noSolveNote
     + '<div id="constrainedSolveProgress" style="display:none;margin-top:12px"></div>'
@@ -23096,9 +23094,9 @@ function _constrainedApply(a) {
   pricingEnforceTieOut();   // re-derive the matrix from the sheet's FTEs so ALLOCATED === ADVERTISED (tie-out)
   pricingModel._uploadedFteByName = {};   // #4: snapshot the uploaded sheet's per-role FTEs so the FTE-basis card can tell when the user has since edited and stop claiming a 'match'.
   (pricingModel.lcats || []).forEach(function (l) { var _k = String(l.name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); if (_k) pricingModel._uploadedFteByName[_k] = Math.round((parseFloat(l.advertised) || 0) * 100) / 100; });
-  pricingModel._reverseSolved = true;   // (#4) a sheet has been applied \u2014 Draft confirms before re-drafting
+  pricingModel._reverseSolved = true; pricingModel._hasDrafted = false;   // (#4) a sheet has been applied \u2014 Draft confirms before re-drafting
   window._constrainedPending = false;
-  var _csb = document.getElementById('constrainedSolveBtn'); if (_csb && _csb.parentNode) _csb.parentNode.innerHTML = '<div style="color:#166534;font-weight:700;font-size:12.5px">\u2713 Applied to pricing \u2014 your labor categories, FTEs, rates and hours are loaded into the model.</div>';
+  var _csb = document.getElementById('constrainedApplyNote'); if (_csb && _csb.parentNode) _csb.parentNode.innerHTML = '<div style="color:#166534;font-weight:700;font-size:12.5px">\u2713 Applied to pricing \u2014 your labor categories, FTEs, rates and hours are loaded into the model.</div>';
   var _cnsn = document.getElementById('constrainedNoSolveNote'); if (_cnsn) _cnsn.style.display = 'none';
   if (typeof pricingRenderStep2ApplyMirror === 'function') pricingRenderStep2ApplyMirror();
   if (typeof pricingRenderAll === 'function') pricingRenderAll();
