@@ -3319,7 +3319,7 @@ let CLAUDE_MODEL = 'claude-sonnet-4-6';
 // Bump this by 1 on every deploy. Rendered into #appVersionText on load, so you
 // can confirm which build is live from the Settings-tab footer, or by searching
 // the page source for the APP_VERSION value below.
-const APP_VERSION = '452';
+const APP_VERSION = '455';
 
 // Compute the loaded-cost wrap factor from the configured rate components.
 // 'compounded' nests each rate on the running subtotal (the DCAA-style buildup);
@@ -14640,7 +14640,7 @@ function pricingRenderScaByLcat() {
   const _covRoles = pricingModel.lcats.filter(l => l.scaCovered);
   const _mappedN = _covRoles.filter(l => pricingLcatWdWage(l) > 0).length;
   const _unmapN = _covRoles.length - _mappedN;
-  let h = `<div style="border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;background:#fffbeb"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px"><div style="font-weight:700;font-size:12px;color:#92400e">\u2696 SCA wage floors by labor category</div>${rates.length ? `<button onclick="pricingAutoMapWd(false)" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer">\u2728 Auto-match roles to WD</button>` : ''}</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Mark which roles are SCA-covered (non-exempt) and tie each to a WD occupation. Covered roles get an H&amp;W-aware fringe and a wage-floor check.</div>${_covRoles.length ? `<div style="font-size:11px;font-weight:600;margin-bottom:8px;color:${_unmapN ? '#991b1b' : '#065f46'}">${_mappedN} of ${_covRoles.length} covered role${_covRoles.length === 1 ? '' : 's'} tied to a WD occupation${_unmapN ? ` \u2014 ${_unmapN} still ${_unmapN === 1 ? 'needs' : 'need'} one` : ''}.</div>` : ''}`;
+  let h = `<div style="border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;background:#fffbeb"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px"><div style="font-weight:700;font-size:12px;color:#92400e">\u2696 SCA wage floors by labor category</div>${rates.length ? `<button onclick="pricingAutoMapWd(false)" style="font-size:11px;font-weight:700;background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;cursor:pointer">\u2728 Auto-match roles to WD</button>` : ''}</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Mark which roles are SCA-covered (non-exempt) and tie each to a WD occupation. Covered roles get an H&amp;W-aware fringe and a wage-floor check.</div>${_covRoles.length ? `<div style="font-size:11px;font-weight:600;margin-bottom:8px;color:${_unmapN ? '#991b1b' : '#065f46'}">${_covRoles.length} of ${pricingModel.lcats.length} role${pricingModel.lcats.length === 1 ? '' : 's'} SCA-covered${_unmapN ? ` \u2014 ${_unmapN} still ${_unmapN === 1 ? 'needs' : 'need'} a WD occupation` : ` \u2014 all tied to a WD occupation`}.</div>` : ''}`;
   pricingModel.lcats.forEach(l => {
     const covered = !!l.scaCovered;
     const wage = pricingLcatWdWage(l);
@@ -22474,17 +22474,17 @@ async function runResumeRevise() {
       var full = ''; for (var k = 0; k < ts.length; k++) full += (ts[k].textContent || '');
       if (!full.trim()) continue;
       if (_resumeInTable(paras[i]) || !_resumeIsProse(full)) { skipped++; continue; }   // Phase 4: leave tables, headers, names, dates and contact lines untouched
-      items.push({ i: items.length, pIdx: i, text: full, max: full.length });
+      items.push({ i: items.length, pIdx: i, text: full, max: Math.round(full.length * 1.20) });
     }
     if (!items.length) throw new Error('no editable text was found in this .docx.');
     var listForAi = items.map(function (it) { return { i: it.i, max: it.max, text: it.text }; });
     var content = 'You are revising resume text to align with a target role/requirement WITHOUT changing any formatting.\n'
       + 'TARGET ROLE: ' + (role || '(unspecified)') + '\n'
       + 'REQUIREMENT / QUALIFICATIONS:\n' + (req || '(none given \u2014 just keep the wording professional and concise)') + '\n\n'
-      + 'You are given BLOCKS of text (JSON). Rewrite each block to better reflect the target role/requirement.\n'
+      + 'You are given BLOCKS of text (JSON). AGGRESSIVELY tailor each PROSE block toward the TARGET ROLE and its REQUIREMENT above: reframe the wording so the block\'s relevance to that role is obvious, foreground the experience that maps to the requirement, and use the requirement\'s own vocabulary and domain terms WHERE THE UNDERLYING EXPERIENCE GENUINELY SUPPORTS IT. The professional summary and the experience bullets are the PRIORITY \u2014 recast them so a reader instantly sees the fit for the target role. Do NOT invent or inflate; surface what is truthfully already there.\n'
       + 'HARD RULES:\n'
-      + '1. Each revised block MUST be <= its "max" character count. Count characters. If you cannot improve a block within max, return its ORIGINAL text unchanged.\n'
-      + '2. Preserve every fact, name, employer, job title, date, number and acronym EXACTLY. Never invent, inflate or add achievements.\n'
+      + '1. Each revised block MUST be <= its "max" character count (max already includes a little headroom \u2014 spend it working in the target-role language, but never exceed max). Count characters. Only if a block truly cannot be improved toward the target role within max, return its ORIGINAL text unchanged.\n'
+      + '2. Preserve every fact, name, employer, job title, date, number and acronym EXACTLY. You MAY reframe and re-emphasize the EXISTING experience toward the target role, but NEVER invent, inflate, or add achievements that are not already there.\n'
       + '3. Only sharpen the wording; keep the same tense and person. Plain text only \u2014 no markdown, no added quotes, no bullet characters.\n'
       + '4. If a block is a person name, section header, date line, address, phone, email, or otherwise not a prose sentence, return it UNCHANGED.\n\n'
       + 'BLOCKS (JSON):\n' + JSON.stringify(listForAi) + '\n\n'
@@ -22906,15 +22906,16 @@ async function constrainedFileChosen(event) {
           // carry the clean role/GSA/FTE/rate list — which is how a 3rd labor category got dropped.
           // Cap EACH sheet so every summary survives; a header + sample rows is enough to detect and
           // solve, and the summaries hold the full picture.
-          const _CAP = 10000;
-          if (c.length > _CAP) c = c.slice(0, _CAP) + '\n\u2026 (rows truncated for length \u2014 see the summary sheets for the complete list)';
+          const _MAXROWS = 500;
+          var _cr = c.split('\n');
+          if (_cr.length > _MAXROWS) c = _cr.slice(0, _MAXROWS).join('\n') + '\n\u2026 (rows truncated for length \u2014 see the summary sheets for the complete list)';
           csv += '\n=== Sheet: ' + name + ' ===\n' + c + '\n';
         }
       });
       csv = csv.trim();
     }
     if (!csv || csv.trim().length < 5) throw new Error('That file appears to be empty or unreadable.');
-    window._constrainedCsv = csv.slice(0, 60000);
+    window._constrainedCsv = csv.slice(0, 400000);
     if (nameEl) { nameEl.style.color = 'var(--success)'; nameEl.textContent = '\u2713 ' + file.name + ' loaded'; }
     await runConstrainedDetect();
   } catch (e) {
@@ -23131,7 +23132,7 @@ function _constrainedParseRoles(csv) {
     if (lines.length < 2) return;
     var rows = lines.map(_csvSplitLine);
     var hdr = -1, ci = null;
-    for (var i = 0; i < Math.min(rows.length, 6); i++) {
+    for (var i = 0; i < Math.min(rows.length, 15); i++) {
       var f = { name: -1, gsa: -1, fte: -1, rate: -1 };
       rows[i].forEach(function (c, idx) {
         if (f.fte < 0 && KW.fte.test(c)) { f.fte = idx; return; }
